@@ -1,0 +1,13 @@
+flask
+flask-sqlalchemy
+flask-migrate
+sqlalchemy
+requests
+pandas
+python-dotenv
+httpx
+openpyxl
+psycopg2-binary
+flask-cors
+openai
+google-genai

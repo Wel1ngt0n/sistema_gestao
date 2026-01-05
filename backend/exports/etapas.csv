@@ -1,0 +1,22 @@
+Loja,Etapa,Implantador,Início Real,Fim Real,Tempo Etapa (Dias),Retrabalhos
+Fazenda Orgânica ,CADASTRO_OMIE,,2025-12-26 08:30:04.857000,,0.0,0
+Fazenda Orgânica ,ONBOARDING,,2025-12-26 08:30:05.496000,,0.0,0
+Fazenda Orgânica ,CRIAR_LOJAS,,2025-12-26 08:30:05.988000,,0.0,0
+Fazenda Orgânica,CADASTRO_OMIE,,2025-12-23 18:24:46.864000,,0.0,0
+Fazenda Orgânica,ONBOARDING,,2025-12-23 18:24:47.652000,,0.0,0
+Fazenda Orgânica,CRIAR_LOJAS,,2025-12-23 18:24:48.088000,,0.0,0
+Nidobox Supermercados Fortaleza (Migração Mercadapp),CADASTRO_OMIE,,2025-12-19 10:57:06.417000,,0.0,0
+Nidobox Supermercados Fortaleza (Migração Mercadapp),ONBOARDING,,2025-12-19 10:57:07.136000,2025-12-22 16:52:48.717000,3.25,0
+Nidobox Supermercados Fortaleza (Migração Mercadapp),CRIAR_LOJAS,,2025-12-19 10:57:07.698000,,0.0,0
+Nidobox Supermercados Maracanaú (Migração Mercadapp),CADASTRO_OMIE,,2025-12-19 10:52:25.642000,,0.0,0
+Nidobox Supermercados Maracanaú (Migração Mercadapp),ONBOARDING,,2025-12-19 10:52:26.632000,2025-12-22 16:52:02.104000,3.25,0
+Nidobox Supermercados Maracanaú (Migração Mercadapp),CRIAR_LOJAS,,2025-12-19 10:52:27.545000,,0.0,0
+Atacadão São Roque,SUBIR_APPS,Paulo Henrique,2025-12-15 14:01:09.521000,,0.0,0
+Atacadão São Roque,INTEGRACAO,,2025-12-15 14:01:09.576000,,0.0,0
+Atacadão São Roque,CADASTRO_OMIE,,2025-12-11 15:05:57.983000,2025-12-15 14:01:09.922000,3.95,0
+Atacadão São Roque,ONBOARDING,,2025-12-11 15:06:00.301000,,0.0,0
+Atacadão São Roque,CRIAR_LOJAS,,2025-12-11 15:06:00.813000,,0.0,0
+Atacadão São Roque,ATIVAR_RECORRENCIA,,2025-12-15 14:01:09.535000,,0.0,0
+Atacadão São Roque,TREINAMENTO,,2025-12-15 14:01:09.597000,,0.0,0
+Atacadão São Roque,CADASTRO_PRODUTOS,,2025-12-15 14:01:09.617000,,0.0,0
+Atacadão São Roque,QUALIDADE,Welington,2025-12-15 14:01:10.083000,,0.0,0
