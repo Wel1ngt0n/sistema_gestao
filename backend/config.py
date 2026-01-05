@@ -6,7 +6,7 @@ load_dotenv()
 
 
 class Config:
-    CLICKUP_API_KEY = "pk_61029153_OZYMFRVK07NEKLIBQRINT2ZA5BLG3HBF"
+    CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
     # List IDs extracted from URLs
