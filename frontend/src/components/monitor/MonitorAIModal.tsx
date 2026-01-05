@@ -15,6 +15,7 @@ interface AIAnalysisResult {
     summary_network: string;
     specific_blockers: string[];
     action_plan: string[];
+    ai_tags?: string[];
 }
 
 export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModalProps) {
@@ -143,6 +144,13 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 <div className="text-right">
                                                     <span className="text-xs text-slate-500">Loja Analisada</span>
                                                     <p className="font-bold text-white">{store?.name}</p>
+                                                    <div className="flex gap-1 justify-end mt-1">
+                                                        {analysis.ai_tags?.map(tag => (
+                                                            <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 uppercase tracking-wider">
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
 

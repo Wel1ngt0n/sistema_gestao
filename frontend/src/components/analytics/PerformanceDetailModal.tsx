@@ -10,6 +10,17 @@ interface StoreDetail {
     points: number;
     potential_points: number;
     finished_at: string | null;
+    reasons?: string[];
+    impact_score?: number;
+    impact_breakdown?: string;
+}
+
+interface ScoreBreakdown {
+    total: number;
+    volume: number;
+    otd: number;
+    quality: number;
+    time_score: number;
 }
 
 interface PerformanceDetailData {
@@ -17,6 +28,7 @@ interface PerformanceDetailData {
     stores: StoreDetail[];
     total_done_points: number;
     total_wip_points: number;
+    score_breakdown?: ScoreBreakdown;
 }
 
 interface PerformanceDetailModalProps {
@@ -72,7 +84,7 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
                     ) : (
                         <div className="space-y-6">
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl">
                                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase">Pontos Entregues (Done)</p>
                                     <p className="text-3xl font-black text-emerald-700 dark:text-emerald-300">{data?.total_done_points}</p>
@@ -81,6 +93,27 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
                                     <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Pontos em Aberto (WIP)</p>
                                     <p className="text-3xl font-black text-indigo-700 dark:text-indigo-300">{data?.total_wip_points}</p>
                                 </div>
+
+                                {/* New Score Card */}
+                                {data?.score_breakdown && (
+                                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl relative overflow-hidden group">
+                                        <div className="absolute right-2 top-2 opacity-10 scale-[2.5] text-amber-500">🏆</div>
+                                        <div className="relative z-10">
+                                            <p className="text-xs text-amber-600 dark:text-amber-400 font-bold uppercase flex justify-between">
+                                                <span>Performance Score</span>
+                                                <span className="text-[10px] opacity-70">0-100</span>
+                                            </p>
+                                            <p className="text-3xl font-black text-amber-700 dark:text-amber-300 mb-2">{data.score_breakdown.total}</p>
+
+                                            <div className="grid grid-cols-4 gap-1 text-[9px] uppercase font-bold text-amber-800/70 dark:text-amber-200/70">
+                                                <div title={`Volume: ${data.score_breakdown.volume} pts`}>Vol: {data.score_breakdown.volume}</div>
+                                                <div title={`OTD: ${data.score_breakdown.otd}%`}>OTD: {data.score_breakdown.otd}%</div>
+                                                <div title={`Qualidade: ${data.score_breakdown.quality}%`}>Qual: {data.score_breakdown.quality}%</div>
+                                                <div title={`Tempo: ${data.score_breakdown.time_score} pts`}>Time: {data.score_breakdown.time_score}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Table */}
@@ -91,8 +124,10 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
                                             <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Loja</th>
                                             <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
                                             <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Conclusão</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Pontos</th>
+                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Motivos</th>
+                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Impacto</th>
+                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Conclusão</th>
+                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Potencial</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
@@ -111,12 +146,36 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
                                                         {store.is_done ? '🚀 CONCLUÍDO' : `⏳ ${store.status}`}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-slate-500 dark:text-slate-400 font-medium">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {store.reasons?.map((reason, idx) => (
+                                                            <span key={idx} className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border ${reason.includes('Atraso') ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' :
+                                                                reason.includes('Retrabalho') ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' :
+                                                                    'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
+                                                                }`}>
+                                                                {reason}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="group relative inline-block cursor-help">
+                                                        <span className={`font-bold ${store.impact_score && store.impact_score > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300'}`}>
+                                                            {store.impact_score && store.impact_score > 0 ? `+${store.impact_score}` : '--'}
+                                                        </span>
+                                                        {store.impact_breakdown && (
+                                                            <div className="absolute right-0 bottom-full mb-2 w-32 bg-slate-800 text-white text-[10px] rounded p-2 shadow-lg z-50 invisible group-hover:visible whitespace-nowrap">
+                                                                {store.impact_breakdown}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-medium text-xs">
                                                     {store.finished_at || '--'}
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <span className={`font-black ${store.is_done ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
-                                                        {store.is_done ? `+${store.points}` : `(${store.potential_points})`}
+                                                    <span className={`font-mono text-xs ${store.is_done ? 'text-slate-400' : 'text-indigo-400'}`}>
+                                                        {store.is_done ? '-' : `(${store.potential_points})`}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -138,7 +197,7 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

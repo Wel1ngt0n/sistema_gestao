@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import Dashboard from './components/Dashboard'
 import Monitor from './components/Monitor'
-import StepsView from './components/StepsView'
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import logo from './assets/logo.png'
 
 function App() {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'steps' | 'sync' | 'analytics'>('dashboard')
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'sync' | 'analytics'>('dashboard')
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
     // Theme Toggle Logic
@@ -104,12 +103,6 @@ function App() {
                         >
                             🖥️ Monitor
                         </button>
-                        <button
-                            onClick={() => setActiveTab('steps')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'steps' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                        >
-                            📋 Etapas
-                        </button>
                         <div className="w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
                         <button
                             onClick={() => setActiveTab('sync')}
@@ -129,8 +122,6 @@ function App() {
                 {activeTab === 'analytics' && <DashboardAnalytics />}
 
                 {activeTab === 'monitor' && <Monitor />}
-
-                {activeTab === 'steps' && <StepsView />}
 
                 {activeTab === 'sync' && (
                     <div className="flex flex-col items-center gap-8 mt-10 w-full max-w-3xl p-4 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">

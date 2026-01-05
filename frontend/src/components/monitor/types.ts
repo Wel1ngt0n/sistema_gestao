@@ -20,6 +20,12 @@ export interface Store {
     dias_em_transito: number | null;
     idle_days: number | null;
     risk_score: number;
+    risk_breakdown?: {
+        prazo: number;
+        idle: number;
+        financeiro: number;
+        qualidade: number;
+    };
     deep_sync_status: string;
     rede: string | null;
     tipo_loja: string | null;

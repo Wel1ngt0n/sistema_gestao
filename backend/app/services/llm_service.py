@@ -31,43 +31,76 @@ class LLMService:
             # Constrói o prompt com base nos dados da loja
             prompt = self._build_prompt(store_data)
             
-            response = self.model.generate_content(prompt)
+            response = self.model.generate_content(prompt) # Generation config json?
             
             # Acessa o texto da resposta do Gemini
             analysis_text = response.text
-            return {"analysis": analysis_text}
+            
+            # Tentativa de limpar markdown json se houver
+            cleaned_text = analysis_text.replace('```json', '').replace('```', '').strip()
+            
+            import json
+            try:
+                result_json = json.loads(cleaned_text)
+                return result_json
+            except:
+                # Fallback se não for JSON válido
+                return {
+                    "risk_level": "MEDIUM",
+                    "summary_network": "Erro ao parsear resposta da IA. Veja texto bruto.",
+                    "specific_blockers": ["Erro de Formato IA"],
+                    "action_plan": ["Verificar Logs"],
+                    "raw_text": analysis_text
+                }
 
         except Exception as e:
             self.logger.error(f"Erro ao chamar Google Gemini: {e}")
             error_str = str(e)
             if "429" in error_str or "Resource Exhausted" in error_str:
-                return {"analysis": "⚠️ Limite Gratuito Atingido (Google Gemini).\nAguarde alguns instantes e tente novamente (Rate Limit)."}
-            return {"error": error_str, "analysis": f"Erro ao gerar análise: {error_str}"}
+                return {
+                    "risk_level": "LOW",
+                    "summary_network": "Limite de API do Gemini atingido (429). Tente novamente mais tarde.",
+                    "specific_blockers": [],
+                    "action_plan": []
+                }
+            return {"error": error_str, "risk_level": "LOW", "summary_network": f"Erro de conexão IA: {error_str}"}
 
     def _build_prompt(self, data):
         """
         Helper para criar a string de prompt a partir dos dados da loja.
         """
         return f"""
-        Você é um analista sênior de implantação de software (CSM).
-        Analise a seguinte situação de implantação de um cliente (loja) e forneça:
-        1. Um resumo de 1 frase sobre o estado atual.
-        2. O principal risco identificado.
-        3. Uma ação sugerida para o implantador.
+        Você é um Auditor de Risco Operacional Sênior (CSM).
+        Analise os dados desta implantação e do contexto da rede para gerar um **Diagnóstico Estruturado**.
+        
+        Sua saída DEVE ser um JSON válido (sem markdown, apenas raw json) com a seguinte estrutura:
+        {{
+            "risk_level": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+            "summary_network": "Resumo de 1 frase focado no estado geral da rede/loja.",
+            "specific_blockers": ["Lista de até 3 bloqueios práticos identificados"],
+            "action_plan": ["Lista de 3 ações curtas e diretas para o implantador"],
+            "ai_tags": ["técnico", "financeiro", "relacionamento", "operação"] (Escolha as tags relevantes)
+        }}
+
+        REGRAS DE CLASSIFICAÇÃO (GOVERNANÇA):
+        - CRITICAL: Risco iminente de cancelamento, bloqueio financeiro grave (>30 dias) ou estagnação total.
+        - HIGH: Problemas técnicos reais, cliente insatisfeito/ausente ou atraso considerável.
+        - MEDIUM: Pequenos bloqueios, dúvidas de processo ou ritmo lento.
+        - LOW: Fluxo normal, apenas monitoramento de rotina.
 
         DADOS DO CLIENTE:
         - Nome: {data.get('name')}
         - Status Atual: {data.get('status')}
         - Tempo no Status: {data.get('days_in_status')} dias
-        - Tempo Total de Implantação: {data.get('total_days')} dias
-        - SLA (Contrato): {data.get('sla')} dias
-        - Dias sem movimentação (Idle): {data.get('idle_days')}
-        - Status Financeiro: {data.get('financeiro')}
+        - Tempo Total: {data.get('total_days')} dias (SLA: {data.get('sla')})
+        - Ociosidade: {data.get('idle_days')} dias
+        - Financeiro: {data.get('financeiro')}
         - ERP: {data.get('erp')}
-        - Houve Retrabalho? {data.get('retrabalho')}
+        - Retrabalho: {data.get('retrabalho')}
         
-        COMENTÁRIOS RECENTES DA EQUIPE (Contexto Importante):
+        EVIDÊNCIAS DE CONTEXTO (Comentários):
         {data.get('comments')}
 
-        Responda em tom profissional, direto e em Português do Brasil. Use markdown para formatar.
+        Analise a "Vibe" dos comentários. Se houver brigas, caps lock ou reclamações, suba o risco. Se houver silêncio total há muito tempo, suba o risco.
         """
+

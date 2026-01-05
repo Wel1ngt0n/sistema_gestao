@@ -1,3 +1,4 @@
+import { InfoTooltip } from './InfoTooltip';
 import React, { useMemo } from 'react';
 import { EChartWrapper } from './EChartWrapper';
 import { useAnalyticsData } from './useAnalyticsData';
@@ -137,6 +138,7 @@ export const RiskScatterPlot: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <span>🎯</span> Matriz de Risco vs. Tempo
+                    <InfoTooltip text="Eixo Y: Score de Risco Calculado. Eixo X: Dias parado no gargalo atual. Bolha: Valor do Contrato (MRR)." />
                 </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">

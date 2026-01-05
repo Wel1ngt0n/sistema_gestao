@@ -307,7 +307,7 @@ export default function DashboardAnalytics() {
                             {kpiData && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
                                     <KPICard label="On-Time Delivery (OTD)" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="Aderência ao prazo" tooltip="% de projetos entregues dentro do prazo." />
-                                    <KPICard label="Risco Preditivo" value={kpiData.avg_risk_score} color="red" icon="🤖" subtext="Score médio de risco" tooltip="Média do score de risco IA." />
+                                    <KPICard label="Risco Preditivo" value={kpiData.avg_risk_score} color="red" icon="🤖" subtext="Score médio de risco" tooltip="Fórmula: (Prazo x 45%) + (Ociosidade x 25%) + (Financeiro x 20%) + (Qualidade x 10%)" />
                                     <KPICard label="Lojas Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias sem updates" tooltip="Lojas sem movimentação recente em tarefas." />
                                     <KPICard label="Matriz vs Filial (WIP)" value={`${kpiData.matrix_count} / ${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Mix de complexidade" tooltip="Proporção de lojas Matriz (Complexas) vs Filiais (Simples) em andamento." />
                                 </div>

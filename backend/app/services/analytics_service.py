@@ -2,6 +2,7 @@ from app.models import db, Store, TaskStep, MetricsSnapshot, MetricsSnapshotDail
 from sqlalchemy import func, case, desc, and_, or_
 from datetime import datetime, timedelta, date
 import collections
+from app.services.scoring_service import ScoringService
 
 class AnalyticsService:
     @staticmethod
@@ -107,14 +108,17 @@ class AnalyticsService:
             Store.status_norm == 'IN_PROGRESS',
             Store.manual_finished_at.is_(None)
         ).all()
+        # 7. Risco Médio (Calculado via ScoringService)
+        in_progress_stores = query.filter(
+            Store.status_norm == 'IN_PROGRESS',
+            Store.manual_finished_at.is_(None)
+        ).all()
         avg_risk = 0
         if in_progress_stores:
             total_risk = 0
             for s in in_progress_stores:
-                score = (s.dias_em_progresso or 0) + (2 * (s.idle_days or 0))
-                if s.financeiro_status == 'Devendo': score += 15
-                if s.teve_retrabalho: score += 10
-                total_risk += score
+                risk_data = ScoringService.calculate_risk_score(s)
+                total_risk += risk_data['total']
             avg_risk = round(total_risk / len(in_progress_stores), 1)
 
         # 8. Contagem Matriz vs Filial (WIP)
@@ -347,6 +351,15 @@ class AnalyticsService:
                     if days <= contract:
                         ranking[imp]['on_time'] += 1
 
+        # Calcular Média Global de Tempo (para normalização)
+        global_avg_time = 90
+        all_done_times = []
+        for imp, data in ranking.items():
+            if data['done'] > 0:
+                all_done_times.append(data['total_days'] / data['done'])
+        if all_done_times:
+            global_avg_time = sum(all_done_times) / len(all_done_times)
+
         # Formatar lista
         final_list = []
         for imp, data in ranking.items():
@@ -360,11 +373,36 @@ class AnalyticsService:
                 otd = round((data['on_time'] / done) * 100, 1)
                 avg_time = round(data['total_days'] / done, 1)
                 rework_pct = round((data['rework_count'] / done) * 100, 1)
-                # quality_pct removido por não existir no model
                 quality_pct = 100 - rework_pct 
             
-            # Score simples (exemplo)
-            score = (otd * 0.4) + (data['done'] * 2) - (rework_pct * 0.5)
+            # Score de Performance Ponderado (Novo)
+            # Score = 0.40 * Volume + 0.30 * OTD + 0.20 * Quality + 0.10 * Time
+            
+            # Normalizar Volume (ex: quem tem mais entregas ganha 100, outros proporcional)
+            # Como não temos o max aqui fácil, vamos usar um cap razoável. 
+            # Ou, melhor, manter o Volume como peso bruto mas limitado a 100 pontos?
+            # O user pediu: 0.40 * Volume_Concluidas.
+            # Se a pessoa entregar 100 lojas, 40 pontos. Se entregar 1, 0.4.
+            # Parece pouco para baixo volume. Vamos assumir que Volume é normalizado pelo MAX do período.
+            
+            # Normalização de Tempo: Global / Individual (se individual < global -> >1 -> multiplica por 100)
+            time_score = 0
+            if avg_time > 0:
+                time_score = min(100, (global_avg_time / avg_time) * 100)
+            elif done > 0:
+                time_score = 100 # Se tempo é 0 (impossível mas ok), é 100
+
+            # Como não temos o MAX volume aqui, vamos calcular o score parcial e depois normalizar o volume na ordenação?
+            # NÃO, vamos usar um sistema de pontos simples: Cada entrega vale 1 ponto no sub-score de volume, até max 100?
+            # O user disse "0.40 * Volume_Concluidas". Vamos interpretar literalmente por enquanto, mas adicionando um fator.
+            # Melhor: Normalizar pelo maior volume da lista atual.
+            
+            raw_score_components = {
+                'volume': done,
+                'otd': otd,
+                'quality': quality_pct,
+                'time_score': time_score
+            }
             
             final_list.append({
                 "implantador": imp,
@@ -375,15 +413,42 @@ class AnalyticsService:
                 "mrr_done": data['mrr_done'],
                 "rework_percentage": rework_pct,
                 "quality_percentage": quality_pct,
-                "score": round(score, 1),
+                "_raw_components": raw_score_components, # Temp para calculo final
                 "points": round(data['points'], 1)
             })
+
+        # Calcular Max Volume para normalização
+        max_vol = 1
+        for item in final_list:
+            if item['_raw_components']['volume'] > max_vol:
+                max_vol = item['_raw_components']['volume']
+        
+        # Calcular Score Final
+        for item in final_list:
+            comps = item['_raw_components']
+            
+            # Normalizar Volume (0-100)
+            vol_norm = (comps['volume'] / max_vol) * 100
+            
+            # Fórmula Final
+            final_score = (
+                (vol_norm * 0.40) +
+                (comps['otd'] * 0.30) +
+                (comps['quality'] * 0.20) +
+                (comps['time_score'] * 0.10)
+            )
+            item['score'] = round(final_score, 1)
+            item['score'] = round(final_score, 1)
+            item['breakdown'] = raw_score_components # Expose for UI
+            # del item['_raw_components'] # Cleanup -> Now we keep it as breakdown
+
         return sorted(final_list, key=lambda x: x['score'], reverse=True)
 
     @staticmethod
     def get_implantador_details(implantador_name):
         """
-        Retorna o detalhamento de todas as lojas que compõem a pontuação do implantador.
+        Retorna o detalhamento de todas as lojas que compõem a pontuação do implantador
+        e o breakdown do Score Composto.
         """
         stores = Store.query.filter_by(implantador=implantador_name).all()
         
@@ -398,27 +463,137 @@ class AnalyticsService:
             if cfg_f: w_filial = float(cfg_f.value)
         except: pass
 
+        # Calcular Métricas Agregadas para o Score
+        stats = {
+            'wip': 0, 'done': 0, 'total_days': 0, 'on_time': 0, 
+            'rework_count': 0, 'quality_count': 0,
+            'points': 0.0
+        }
+
         details = []
         for s in stores:
             is_done = s.status_norm == 'DONE' or s.manual_finished_at is not None
             weight = w_matriz if s.tipo_loja == 'Matriz' else w_filial
             
+            # Motivos individuais
+            reasons = []
+            if s.teve_retrabalho: reasons.append("Retrabalho")
+            
+            # Tempo
+            days = 0
+            if is_done:
+                end = s.manual_finished_at or s.end_real_at or s.finished_at
+                start = s.start_real_at or s.created_at
+                if start and end:
+                    days = (end - start).days
+                    contract = s.tempo_contrato or 90
+                    if days <= contract: 
+                        reasons.append("No Prazo")
+                    else:
+                        reasons.append(f"Atraso ({days-contract}d)")
+            
+            # Add stats
+            if s.status_norm == 'IN_PROGRESS' and not s.manual_finished_at:
+                stats['wip'] += 1
+            elif is_done:
+                stats['done'] += 1
+                stats['points'] += weight
+                if s.teve_retrabalho: stats['rework_count'] += 1
+                stats['total_days'] += max(0, days)
+                contract = s.tempo_contrato or 90
+                if days <= contract: stats['on_time'] += 1
+
             details.append({
                 "id": s.id,
                 "name": s.store_name,
                 "tipo": s.tipo_loja or 'Filial',
                 "status": s.status,
                 "is_done": is_done,
-                "points": float(weight) if is_done else 0.0, # Apenas concluídas dão pontos no ranking final
+                "points": float(weight) if is_done else 0.0,
                 "potential_points": float(weight) if not is_done else 0.0,
-                "finished_at": (s.manual_finished_at or s.finished_at).strftime('%d/%m/%Y') if (s.manual_finished_at or s.finished_at) else None
+                "finished_at": (s.manual_finished_at or s.finished_at).strftime('%d/%m/%Y') if (s.manual_finished_at or s.finished_at) else None,
+                "reasons": reasons # Motivos para o frontend
             })
             
+        # Calcular Média Global de Tempo (para normalização)
+        global_avg_time = 90
+        
+        # Calcular Score Composto (Lógica Espelhada do Ranking)
+        done = stats['done']
+        otd = 0
+        avg_time = 0
+        quality_pct = 0
+        time_score = 0
+        
+        if done > 0:
+            otd = round((stats['on_time'] / done) * 100, 1)
+            avg_time = round(stats['total_days'] / done, 1)
+            rework_pct = round((stats['rework_count'] / done) * 100, 1)
+            quality_pct = 100 - rework_pct
+            
+            if avg_time > 0:
+                time_score = min(100, (global_avg_time / avg_time) * 100)
+            elif done > 0:
+                time_score = 100
+
+        # Normalizar Volume (Assumindo max 50 entregas para escala 100, ou usar pontos raw)
+        vol_score = min(100, stats['done'] * 2)
+        
+        final_score = (
+            (vol_score * 0.40) +
+            (otd * 0.30) +
+            (quality_pct * 0.20) +
+            (time_score * 0.10)
+        )
+
+        # CALCULAR IMPACTO POR LOJA (GAMIFICAÇÃO)
+        # Distribuir os pontos ganhos de volta para as lojas
+        unit_otd = 30.0 / done if done > 0 else 0
+        unit_qual = 20.0 / done if done > 0 else 0
+        unit_vol = 0.8 # 2 pts * 0.40
+        
+        # Atualizar details com o impacto calculado
+        for d in details:
+            impact = 0.0
+            impact_breakdown = []
+            
+            if d['is_done']:
+                # Volume (Sempre ganha)
+                impact += unit_vol
+                impact_breakdown.append(f"Vol: +{unit_vol:.1f}")
+                
+                # OTD (Se estiver nos motivos 'No Prazo')
+                if "No Prazo" in d['reasons']:
+                    impact += unit_otd
+                    impact_breakdown.append(f"OTD: +{unit_otd:.1f}")
+                else:
+                    impact_breakdown.append(f"OTD: -{unit_otd:.1f}") # Mostra perda
+                    
+                # Qualidade (Se NÃO tiver 'Retrabalho' nos motivos)
+                if "Retrabalho" not in d['reasons']:
+                    impact += unit_qual
+                    impact_breakdown.append(f"Qual: +{unit_qual:.1f}")
+                else:
+                    impact_breakdown.append(f"Qual: -{unit_qual:.1f}") # Mostra perda
+                    
+                d['impact_score'] = round(impact, 1)
+                d['impact_breakdown'] = ", ".join(impact_breakdown)
+            else:
+                d['impact_score'] = 0.0
+                d['impact_breakdown'] = "WIP"
+
         return {
             "implantador": implantador_name,
             "stores": details,
             "total_done_points": round(sum(d['points'] for d in details), 1),
-            "total_wip_points": round(sum(d['potential_points'] for d in details), 1)
+            "total_wip_points": round(sum(d['potential_points'] for d in details), 1),
+            "score_breakdown": {
+                "total": round(final_score, 1),
+                "volume": stats['done'],
+                "otd": otd,
+                "quality": quality_pct,
+                "time_score": round(time_score, 1)
+            }
         }
 
     @staticmethod
@@ -701,10 +876,12 @@ class AnalyticsService:
             if is_done:
                 points = w_matriz if s.tipo_loja == 'Matriz' else w_filial
 
-            # Risk Score
-            risk = (s.dias_em_progresso or 0) + (2 * (s.idle_days or 0))
-            if s.financeiro_status == 'Devendo': risk += 15
-            if s.teve_retrabalho: risk += 10
+            # Risk Score (ScoringService)
+            risk_data = ScoringService.calculate_risk_score(s)
+            risk = risk_data['total']
+            # Breakdown não cabe bem no excel simples, mantemos só o total ou adicionamos colunas?
+            # Vamos adicionar colunas de sub-score
+            r_bk = risk_data['breakdown']
 
             detailed_data.append({
                 'ID': s.custom_store_id or s.id,
@@ -721,7 +898,11 @@ class AnalyticsService:
                 'MRR': float(s.valor_mensalidade or 0),
                 'Valor Implantação': float(s.valor_implantacao or 0),
                 'Pontos': points,
+                'Pontos': points,
                 'Score Risco': risk,
+                'Risco Prazo': r_bk['prazo'],
+                'Risco Idle': r_bk['idle'],
+                'Risco Fin': r_bk['financeiro'],
                 'Dias Inativo': s.idle_days or 0,
                 'Qualidade (Entregue)': "SIM" if s.delivered_with_quality else "NÃO",
                 'Houve Retrabalho': "SIM" if s.teve_retrabalho else "NÃO"

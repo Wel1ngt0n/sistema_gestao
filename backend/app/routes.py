@@ -14,6 +14,7 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 @api_bp.route('/dashboard', methods=['GET'])
 def get_dashboard_data():
     from app.models import SystemConfig
+    from app.services.scoring_service import ScoringService
     
     # Carregar Pesos
     w_matriz = 1.0
@@ -90,16 +91,23 @@ def get_dashboard_data():
     # 3. Top 10 Risco
     risk_list = []
     for s in active_stores:
-        score = (s.dias_em_progresso or 0) + (2 * (s.idle_days or 0))
-        if s.financeiro_status == 'Devendo': score += 15
-        if s.teve_retrabalho: score += 10
+        risk_data = ScoringService.calculate_risk_score(s)
+        
+        # Buscar Etapa Ativa (Gargalo)
+        active_step_name = "N/A"
+        for step in s.steps:
+            if step.start_real_at and not step.end_real_at:
+                active_step_name = step.step_name
+                break
         
         risk_list.append({
             "id": s.id,
             "name": s.store_name,
             "implantador": s.implantador,
             "status": s.status,
-            "score": score,
+            "etapa_parada": active_step_name, # Novo Campo
+            "score": risk_data['total'],
+            "breakdown": risk_data['breakdown'], 
             "dias": s.dias_em_progresso,
             "idle": s.idle_days,
             "financeiro": s.financeiro_status
@@ -170,16 +178,15 @@ def get_stores():
     
     # Inicializar Serviço de Análise de IA
     from app.services.analysis import AnalysisService
+    from app.services.scoring_service import ScoringService
     analyzer = AnalysisService()
 
     def fmt_date(d):
-
         return d.strftime('%Y-%m-%d') if d else None
         
     for s in stores:
-        risk_score = (s.dias_em_progresso or 0) + (2 * (s.idle_days or 0))
-        if s.financeiro_status == 'Devendo': risk_score += 15
-        if s.teve_retrabalho: risk_score += 10
+        risk_data = ScoringService.calculate_risk_score(s)
+        risk_score = risk_data['total']
         
         deep_status = "NEVER"
         if s.deep_sync_state:
@@ -199,7 +206,10 @@ def get_stores():
             'data_previsao': fmt_date(s.data_previsao_implantacao),
             'dias_em_transito': s.dias_em_progresso, 
             'idle_days': s.idle_days,
+            'dias_em_transito': s.dias_em_progresso, 
+            'idle_days': s.idle_days,
             'risk_score': risk_score,
+            'risk_breakdown': risk_data['breakdown'], # Novo
             'valor_mensalidade': s.valor_mensalidade,
             'tempo_contrato': s.tempo_contrato or 90,
             'financeiro_status': s.financeiro_status,
@@ -222,6 +232,24 @@ def get_stores():
             'ai_prediction': analyzer.predict_store_completion(s.id)
         })
     return jsonify({"stores": results, "matrices": matrices})
+
+@api_bp.route('/stores/<int:id>', methods=['DELETE'])
+def delete_store(id):
+    try:
+        store = Store.query.get_or_404(id)
+        
+        # 1. Manual Cleanup of Dependencies without Cascade
+        from app.models import MetricsSnapshotDaily
+        MetricsSnapshotDaily.query.filter_by(store_id=id).delete()
+        
+        # 2. Delete Store (Cascades steps, logs, deep_sync, etc.)
+        db.session.delete(store)
+        db.session.commit()
+        
+        return jsonify({"status": "deleted", "id": id}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/store/<int:id>', methods=['PUT'])
 def update_store(id):
@@ -493,6 +521,26 @@ def get_steps():
             "assignee": s.assignee,
             "start_date": s.start_real_at.strftime('%Y-%m-%d') if s.start_real_at else None,
             "end_date": s.end_real_at.strftime('%Y-%m-%d') if s.end_real_at else None,
+            "duration": s.total_time_days,
+            "idle": s.idle_days
+        })
+    return jsonify(results)
+
+@api_bp.route('/stores/<int:store_id>/steps', methods=['GET'])
+def get_store_steps(store_id):
+    from app.models import TaskStep
+    steps = TaskStep.query.filter_by(store_id=store_id).order_by(TaskStep.start_real_at.asc()).all()
+    results = []
+    
+    for s in steps:
+        results.append({
+            "id": s.id,
+            "step_name": s.step_name,
+            "list_name": s.step_list_name,
+            "status": s.status,
+            "assignee": s.assignee,
+            "start_date": s.start_real_at.strftime('%d/%m/%Y') if s.start_real_at else None,
+            "end_date": s.end_real_at.strftime('%d/%m/%Y') if s.end_real_at else None,
             "duration": s.total_time_days,
             "idle": s.idle_days
         })

@@ -22,6 +22,18 @@ interface StoreLog {
     source: string;
 }
 
+interface TaskStep {
+    id: number;
+    step_name: string;
+    list_name: string;
+    status: string;
+    assignee: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    duration: number;
+    idle: number;
+}
+
 export default function MonitorStoreModal({
     isOpen,
     onClose,
@@ -32,9 +44,11 @@ export default function MonitorStoreModal({
     isDeepSyncing
 }: MonitorStoreModalProps) {
     const [localStore, setLocalStore] = useState<Store | null>(null);
-    const [activeTab, setActiveTab] = useState<'info' | 'history'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'history' | 'steps'>('info');
     const [logs, setLogs] = useState<StoreLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
+    const [steps, setSteps] = useState<TaskStep[]>([]);
+    const [loadingSteps, setLoadingSteps] = useState(false);
 
     useEffect(() => {
         if (store) {
@@ -49,6 +63,8 @@ export default function MonitorStoreModal({
     useEffect(() => {
         if (activeTab === 'history' && localStore?.id) {
             fetchLogs();
+        } else if (activeTab === 'steps' && localStore?.id) {
+            fetchSteps();
         }
     }, [activeTab]);
 
@@ -62,6 +78,40 @@ export default function MonitorStoreModal({
             console.error("Erro ao carregar logs", e);
         } finally {
             setLoadingLogs(false);
+        }
+    };
+
+    const fetchSteps = async () => {
+        if (!localStore?.id) return;
+        setLoadingSteps(true);
+        try {
+            const res = await axios.get(`http://localhost:5000/api/stores/${localStore.id}/steps`);
+            setSteps(res.data);
+        } catch (e) {
+            console.error("Erro ao carregar etapas", e);
+        } finally {
+            setLoadingSteps(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!localStore?.id) return;
+
+        const confirmStr = prompt(`Para excluir esta loja, digite "DELETAR" abaixo.\n\nIsso apagará permanentemente todo o histórico e métricas de:\n${localStore.name}`);
+
+        if (confirmStr !== "DELETAR") {
+            if (confirmStr !== null) alert("Exclusão cancelada. Texto incorreto.");
+            return;
+        }
+
+        try {
+            await axios.delete(`http://localhost:5000/api/stores/${localStore.id}`);
+            alert("Loja excluída com sucesso.");
+            onClose();
+            window.location.reload(); // Simples refresh para atualizar lista
+        } catch (e) {
+            console.error("Erro ao excluir loja", e);
+            alert("Erro ao excluir loja. Verifique o console.");
         }
     };
 
@@ -120,10 +170,10 @@ export default function MonitorStoreModal({
                 </div>
 
                 {/* Tabs Switcher */}
-                <div className="flex px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                <div className="flex px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('info')}
-                        className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'info'
+                        className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'info'
                             ? 'border-indigo-500 text-indigo-600'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
                             }`}
@@ -131,8 +181,17 @@ export default function MonitorStoreModal({
                         📝 Dados Gerais
                     </button>
                     <button
+                        onClick={() => setActiveTab('steps')}
+                        className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'steps'
+                            ? 'border-indigo-500 text-indigo-600'
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                            }`}
+                    >
+                        ⚡ Cronograma (Etapas)
+                    </button>
+                    <button
                         onClick={() => setActiveTab('history')}
-                        className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'history'
+                        className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'history'
                             ? 'border-indigo-500 text-indigo-600'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
                             }`}
@@ -367,6 +426,73 @@ export default function MonitorStoreModal({
                                 </div>
                             </div>
                         </div>
+                    ) : activeTab === 'steps' ? (
+                        <div className="space-y-4 max-w-5xl mx-auto">
+                            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-6">
+                                ⚡ Etapas e Status (ClickUp)
+                            </h4>
+
+                            {loadingSteps ? (
+                                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <p className="text-slate-400 text-sm font-medium">Carregando etapas...</p>
+                                </div>
+                            ) : steps.length === 0 ? (
+                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                    <span className="text-4xl mb-3 block">🏜️</span>
+                                    <p className="text-slate-500 font-medium">Nenhuma etapa encontrada nesta loja.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Verifique se a tarefa foi criada corretamente no ClickUp.</p>
+                                </div>
+                            ) : (
+                                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-100 dark:bg-slate-900/50 text-xs uppercase text-slate-500 font-bold border-b border-slate-200 dark:border-slate-700">
+                                            <tr>
+                                                <th className="px-4 py-3">Fase</th>
+                                                <th className="px-4 py-3">Tarefa</th>
+                                                <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3">Responsável</th>
+                                                <th className="px-4 py-3 text-right">Duração</th>
+                                                <th className="px-4 py-3 text-right">Idle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {steps.map(step => (
+                                                <tr key={step.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-4 py-3">
+                                                        <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded uppercase tracking-wider font-bold">
+                                                            {step.list_name}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                                                        {step.step_name}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${['complete', 'concluida', 'done'].some(s => step.status.toLowerCase().includes(s))
+                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                            }`}>
+                                                            {step.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-500 text-xs">
+                                                        {step.assignee || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                                                        {step.duration > 0 ? `${step.duration}d` : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right text-xs">
+                                                        <span className={step.idle > 5 ? 'text-red-500 font-bold' : 'text-slate-400'}>
+                                                            {step.idle > 0 ? step.idle : '-'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className="space-y-4 max-w-4xl mx-auto">
                             <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-6">
@@ -431,19 +557,27 @@ export default function MonitorStoreModal({
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 shrink-0">
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
                     <button
-                        onClick={onClose}
-                        className="px-6 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        onClick={handleDelete}
+                        className="px-4 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2"
                     >
-                        Cancelar
+                        🗑️ Excluir Loja
                     </button>
-                    <button
-                        onClick={() => onSave(localStore)}
-                        className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
-                    >
-                        Salvar Alterações
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-6 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => onSave(localStore)}
+                            className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
+                        >
+                            Salvar Alterações
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

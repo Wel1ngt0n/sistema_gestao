@@ -62,6 +62,14 @@ export default function Dashboard() {
 
     if (!data) return <div className="p-10 text-red-600 dark:text-red-400">Erro ao carregar dados.</div>;
 
+    // Helper para cor do risco
+    const getRiskColor = (score: number) => {
+        if (score >= 75) return 'text-red-500 dark:text-red-400';
+        if (score >= 50) return 'text-orange-500 dark:text-orange-400';
+        if (score >= 25) return 'text-yellow-500 dark:text-yellow-400';
+        return 'text-emerald-500 dark:text-emerald-400';
+    };
+
     const { kpis = {}, charts = {}, risk_stores = [], rankings = [] } = data || {};
 
     // Get Greeting
@@ -250,10 +258,17 @@ export default function Dashboard() {
                                 <div key={s.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center justify-between group">
                                     <div>
                                         <div className="font-bold text-slate-700 dark:text-slate-200 text-sm">{s.name}</div>
-                                        <div className="text-xs text-slate-400 mt-0.5">{s.implantador || 'Sem implantador'}</div>
+                                        <div className="text-xs text-slate-400 mt-1 flex flex-col gap-0.5">
+                                            <span className="flex items-center gap-1">
+                                                👤 {s.implantador || 'Sem implantador'}
+                                            </span>
+                                            <span className="flex items-center gap-1 truncate max-w-[200px]" title={s.etapa_parada}>
+                                                ⏳ {s.etapa_parada || 'Nenhuma etapa ativa'}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-lg font-bold text-rose-500">{s.score}</div>
+                                        <div className={`text-lg font-bold ${getRiskColor(s.score)}`}>{s.score}</div>
                                         <div className="text-[10px] text-slate-400">Score de Risco</div>
                                     </div>
                                 </div>
@@ -283,10 +298,36 @@ export default function Dashboard() {
                                         </div>
                                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{r.implantador}</span>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-sm font-bold text-slate-800 dark:text-white">{r.done} Entregas</div>
-                                        <div className={`text-[10px] font-bold ${r.pct_prazo >= 85 ? 'text-emerald-500' : 'text-orange-500'}`}>
-                                            {r.pct_prazo}% no prazo
+                                    <div className="text-right group/score relative">
+                                        <div className="text-xs text-slate-500 font-medium">Score</div>
+                                        <div className="text-lg font-bold text-slate-800 dark:text-white cursor-help border-b border-dotted border-slate-400 inline-block leading-none">{r.score}</div>
+
+                                        {/* Score Breakdown Tooltip */}
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl z-50 invisible group-hover/score:visible animate-in fade-in zoom-in-95 pointer-events-none">
+                                            <div className="font-bold text-amber-500 mb-2 border-b border-slate-600 pb-1">Composição da Nota</div>
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between">
+                                                    <span>📦 Volume (40%):</span>
+                                                    <span className="font-mono">{r.breakdown?.volume || 0} pts</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>⏱️ OTD (30%):</span>
+                                                    <span className="font-mono">{r.breakdown?.otd || 0}%</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>⭐ Qualidade (20%):</span>
+                                                    <span className="font-mono">{r.breakdown?.quality || 0}%</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>⚡ Tempo (10%):</span>
+                                                    <span className="font-mono">{r.breakdown?.time_score || 0} pts</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="text-[10px] text-slate-400 flex gap-2 justify-end mt-1">
+                                            <span title="Volume">{r.done} Entregas</span>
+                                            <span title="On Time Delivery" className={`${r.pct_prazo >= 85 ? 'text-emerald-500' : 'text-orange-500'}`}>{r.pct_prazo}% OTD</span>
                                         </div>
                                     </div>
                                 </div>

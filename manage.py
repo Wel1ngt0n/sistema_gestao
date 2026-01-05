@@ -57,8 +57,9 @@ def menu_banco():
     print("--- OPÇÕES DE BANCO DE DADOS ---")
     print("1. Fazer Backup (Dump) do Banco Docker")
     print("2. Abrir Shell SQL (psql) no Docker")
-    print("3. Resetar Banco de Dados (reset_db_v2.py) [⚠️ APAGA TUDO]")
-    print("4. Atualizar Schema (patch_db.py) [✅ SEGURO - SEM PERDA DE DADOS]")
+    print("3. [NOVO] Restaurar Banco de Dados (Importar .sql)")
+    print("4. Resetar Banco de Dados (reset_db_v2.py) [⚠️ APAGA TUDO]")
+    print("5. Atualizar Schema (patch_db.py) [✅ SEGURO - SEM PERDA DE DADOS]")
     print("5. Gerenciar Migrações (Avançado)")
     print("0. Voltar")
     print("")
@@ -130,6 +131,37 @@ def db_backup():
 def db_shell():
     print("\n🐚 Abrindo Shell SQL no Docker...")
     os.system('docker-compose exec db psql -U user -d metrics_db')
+
+def db_restore():
+    print("\n📥 Iniciando Restauração do Banco de Dados...")
+    print("Isso vai importar dados de um arquivo .sql para o Docker.")
+    
+    default_file = "backup_completo.sql"
+    file_path = input(f"Digite o caminho do arquivo (padrão: {default_file}): ") or default_file
+    
+    if not os.path.exists(file_path):
+        print(f"❌ Arquivo não encontrado: {file_path}")
+        input("\nPressione ENTER para voltar...")
+        return
+
+    print(f"\nImportando de '{file_path}'... (pode demorar)")
+    
+    # Comando para Windows (PowerShell style piping) ou Linux
+    if os.name == 'nt':
+        # cmd /c "type file | docker exec ..."
+        cmd = f'cmd /c "type {file_path} | docker-compose exec -T db psql -U user -d metrics_db"'
+    else:
+        cmd = f'cat {file_path} | docker-compose exec -T -i db psql -U user -d metrics_db'
+
+    ret = os.system(cmd)
+    
+    if ret == 0:
+        print("\n✅ Restauração concluída com sucesso!")
+    else:
+        print("\n❌ Erro na restauração.")
+    
+    input("\nPressione ENTER para voltar...")
+
 
 def db_reset():
     print("\n⚠️  ATENÇÃO: ISSO VAI APAGAR E RECRIAR AS TABELAS! ⚠️")
@@ -209,10 +241,12 @@ if __name__ == "__main__":
                 elif db_choice == '2':
                     db_shell()
                 elif db_choice == '3':
-                    db_reset()
+                    db_restore()
                 elif db_choice == '4':
-                    db_patch()
+                    db_reset()
                 elif db_choice == '5':
+                    db_patch()
+                elif db_choice == '6':
                     while True:
                         mig_choice = menu_migracoes()
                         if mig_choice == '1':
