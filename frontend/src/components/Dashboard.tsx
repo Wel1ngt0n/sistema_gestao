@@ -40,6 +40,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+
         axios.get('http://localhost:5000/api/dashboard')
             .then(res => {
                 setData(res.data);
@@ -50,6 +51,7 @@ export default function Dashboard() {
                 setLoading(false);
             });
     }, []);
+
 
     if (loading) return (
         <div className="flex items-center justify-center h-screen w-full">
@@ -154,6 +156,7 @@ export default function Dashboard() {
                         {today}
                     </p>
                 </div>
+
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wide">
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>

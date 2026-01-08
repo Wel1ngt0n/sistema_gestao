@@ -116,7 +116,7 @@ class MetricsService:
         # Idle Days Calculation (Store Level)
         if task_data.get('date_updated'):
              updated_at = datetime.fromtimestamp(int(task_data['date_updated']) / 1000)
-             delta = datetime.utcnow() - updated_at
+             delta = datetime.now() - updated_at
              store.idle_days = delta.days
         
         db.session.add(store)
@@ -147,7 +147,7 @@ class MetricsService:
             
         if task_data.get('date_updated'):
              updated_at = datetime.fromtimestamp(int(task_data['date_updated']) / 1000)
-             delta = datetime.utcnow() - updated_at
+             delta = datetime.now() - updated_at
              step.idle_days = delta.days
         
         if step.start_real_at and step.end_real_at:

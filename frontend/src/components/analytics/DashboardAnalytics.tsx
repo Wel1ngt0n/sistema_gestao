@@ -23,7 +23,10 @@ import {
     Tooltip,
     Legend,
     ArcElement,
-    Filler
+    Filler,
+    BarController,
+    LineController,
+    PieController
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 
@@ -38,7 +41,10 @@ ChartJS.register(
     Tooltip,
     Legend,
     ArcElement,
-    Filler
+    Filler,
+    BarController,
+    LineController,
+    PieController
 );
 
 function classNames(...classes: string[]) {
@@ -56,6 +62,8 @@ export default function DashboardAnalytics() {
     const availableImplantadores = useMemo(() => {
         return safePerformanceData.map(p => p.implantador).sort();
     }, [safePerformanceData]);
+
+
 
     if (loading && !kpiData) {
         return (
@@ -98,6 +106,7 @@ export default function DashboardAnalytics() {
 
     const safeTrendData = Array.isArray(trendData) ? trendData : [];
     const trendLabels = safeTrendData.map(d => d.month);
+
 
     // Configuração de Gráficos (Estilo Dashboard Executivo)
     const chartOptions = {
@@ -299,6 +308,7 @@ export default function DashboardAnalytics() {
                                     </div>
                                 </div>
                             </div>
+
                         </Tab.Panel>
 
                         {/* --- ABA 2: EFICIÊNCIA & RISCO --- */}

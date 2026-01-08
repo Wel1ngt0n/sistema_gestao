@@ -25,6 +25,7 @@ export default function Monitor() {
     const [filterLate, setFilterLate] = useState(false);
     const [filterDebt, setFilterDebt] = useState(false);
     const [filterImplantador, setFilterImplantador] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded'>('active');
 
     // Estado da Modal de Detalhes (Nova UI)
     const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
@@ -46,13 +47,15 @@ export default function Monitor() {
 
     useEffect(() => {
         fetchStores();
-    }, []);
+    }, [filterStatus]);
 
     const fetchStores = (silent = false) => {
         if (!silent) setLoading(true);
         else setIsRefreshing(true);
 
-        axios.get('http://localhost:5000/api/stores')
+        axios.get('http://localhost:5000/api/stores', {
+            params: { status: filterStatus }
+        })
             .then(res => {
                 if (Array.isArray(res.data)) {
                     setData(res.data);
@@ -218,8 +221,31 @@ export default function Monitor() {
                                 </div>
                             </div>
 
-                            {/* View Switcher */}
-                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg self-start md:self-center">
+                            {/* View Switcher & Status Filter Combined */}
+                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg self-start md:self-center gap-1">
+                                {/* Status Toggle */}
+                                <div className="flex bg-white dark:bg-slate-700 rounded-md shadow-sm mr-2 p-0.5">
+                                    <button
+                                        onClick={() => setFilterStatus('active')}
+                                        className={`px-3 py-1 rounded text-xs font-bold uppercase transition-all flex items-center gap-1 ${filterStatus === 'active'
+                                                ? 'bg-indigo-500 text-white'
+                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                            }`}
+                                    >
+                                        🚀 Ativas
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterStatus('concluded')}
+                                        className={`px-3 py-1 rounded text-xs font-bold uppercase transition-all flex items-center gap-1 ${filterStatus === 'concluded'
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                            }`}
+                                    >
+                                        ✅ Concluídas
+                                    </button>
+                                </div>
+                                <div className="w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+
                                 {[
                                     { id: 'table', icon: '📋', label: 'Lista' },
                                     { id: 'kanban', icon: '🏗️', label: 'Kanban' },
@@ -228,7 +254,7 @@ export default function Monitor() {
                                     <button
                                         key={view.id}
                                         onClick={() => setViewMode(view.id as any)}
-                                        className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${viewMode === view.id
+                                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${viewMode === view.id
                                             ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                                             : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
                                             }`}

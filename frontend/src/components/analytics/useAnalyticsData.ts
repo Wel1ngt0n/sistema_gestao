@@ -62,6 +62,11 @@ export interface ForecastData {
     total_accumulated: number;
 }
 
+export interface DistributionData {
+    steps: Record<string, number>;
+    erps: Record<string, number>;
+}
+
 const API_BASE_URL = 'http://localhost:5000';
 
 const buildParams = (filters: AnalyticsFiltersState) => {
@@ -149,8 +154,16 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         }
     });
 
-    const isLoading = kpiQuery.isLoading || trendQuery.isLoading || perfQuery.isLoading || bottleQuery.isLoading || capacityQuery.isLoading || forecastQuery.isLoading || riskQuery.isLoading;
-    const isError = kpiQuery.isError || trendQuery.isError || perfQuery.isError || bottleQuery.isError || riskQuery.isError;
+    const distQuery = useQuery({
+        queryKey: ['distribution'],
+        queryFn: async () => {
+            const res = await axios.get<DistributionData>(`${API_BASE_URL}/api/analytics/distribution`);
+            return res.data;
+        }
+    });
+
+    const isLoading = kpiQuery.isLoading || trendQuery.isLoading || perfQuery.isLoading || bottleQuery.isLoading || capacityQuery.isLoading || forecastQuery.isLoading || riskQuery.isLoading || distQuery.isLoading;
+    const isError = kpiQuery.isError || trendQuery.isError || perfQuery.isError || bottleQuery.isError || riskQuery.isError || distQuery.isError;
 
     return {
         kpiData: kpiQuery.data || null,
@@ -160,6 +173,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         capacityData: capacityQuery.data || [],
         forecastData: forecastQuery.data || [],
         riskData: riskQuery.data || [],
+        distributionData: distQuery.data || null,
         loading: isLoading,
         error: isError ? 'Erro ao carregar dados' : null
     };

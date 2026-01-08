@@ -6,7 +6,12 @@ WORKDIR /app
 # gcc required for some python packages compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    # Install tzdata for timezone configuration
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# Set Timezone to Brazil
+ENV TZ=America/Sao_Paulo
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -26,7 +31,7 @@ EXPOSE 5000
 
 # Run
 # Permissions
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 # Entrypoint
 ENTRYPOINT ["./entrypoint.sh"]

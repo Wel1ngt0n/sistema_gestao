@@ -25,7 +25,28 @@ class SystemConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(50), unique=True, nullable=False) # ex: 'weight_matriz'
     value = db.Column(db.String(255), nullable=False) # ex: '1.0'
+    value = db.Column(db.String(255), nullable=False) # ex: '1.0'
     description = db.Column(db.String(200))
+
+class StorePause(db.Model):
+    """
+    Registra períodos de pausa/congelamento da implantação.
+    Estes períodos são descontaos do cálculo de dias em progresso.
+    """
+    __tablename__ = 'store_pauses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=True) # None = Pausa em aberto
+    reason = db.Column(db.String(255), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    def __repr__(self):
+        return f'<Pause {self.start_date} - {self.end_date}>'
+
 
 class Store(db.Model):
     __tablename__ = 'stores'
@@ -86,9 +107,15 @@ class Store(db.Model):
     retrabalho_tipo = db.Column(db.String(100), nullable=True)
     delivered_with_quality = db.Column(db.Boolean, default=True)
     
+    # Controle de Datas Manual (V4)
+    is_manual_start_date = db.Column(db.Boolean, default=False)
+
+    
     # Relationships
     steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")
+    pauses = db.relationship('StorePause', backref='store', lazy=True, cascade="all, delete-orphan")
     deep_sync_state = db.relationship('StoreDeepSyncState', uselist=False, backref='store', cascade="all, delete-orphan")
+
     status_history = db.relationship('TimeInStatusCache', backref='store', lazy=True, cascade="all, delete-orphan")
     logs = db.relationship('StoreSyncLog', backref='store', lazy=True, cascade="all, delete-orphan")
 
@@ -105,15 +132,40 @@ class Store(db.Model):
         end_date = self.effective_finished_at
         start_date = self.effective_started_at
         
-        if end_date and start_date:
-            delta = end_date - start_date
-            return max(0, delta.days)
-        
-        if start_date:
-            delta = datetime.now() - start_date
-            return max(0, delta.days)
+        if not start_date:
+            return 0
             
-        return 0
+        # Data de referência final (Data de Fim ou Hoje)
+        ref_end = end_date or datetime.now()
+        
+        # Delta Total Bruto
+        delta = ref_end - start_date
+        total_days = max(0, delta.days)
+        
+        # Calcular dias pausados
+        paused_days = 0
+        for pause in self.pauses:
+            # Pausa deve estar dentro do intervalo [start_date, ref_end]
+            # Se a pausa começou depois de ref_end, ignora
+            p_start = pause.start_date
+            if p_start > ref_end:
+                continue
+                
+            # Se a pausa terminou antes do start_date, ignora (teoricamente nao deve existir)
+            p_end = pause.end_date or datetime.now()
+            if p_end < start_date:
+                continue
+                
+            # Interseção
+            eff_start = max(p_start, start_date)
+            eff_end = min(p_end, ref_end)
+            
+            if eff_end > eff_start:
+                p_delta = eff_end - eff_start
+                paused_days += p_delta.days
+                
+        # Descontar pausas
+        return max(0, total_days - paused_days)
 
     @property
     def dias_totais_implantacao(self):
@@ -143,7 +195,7 @@ class StoreSyncLog(db.Model):
     old_value = db.Column(db.Text, nullable=True)
     new_value = db.Column(db.Text, nullable=True)
     
-    changed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    changed_at = db.Column(db.DateTime, default=datetime.now)
     source = db.Column(db.String(20), default='sync') # 'sync' or 'manual'
     
     def __repr__(self):
@@ -181,7 +233,7 @@ class TimeInStatusCache(db.Model):
     # Se quisermos detalhe de intervalos depois, criar outra tabela
     # Por enquanto, agregado por status é muito útil para gargalos
     
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.now)
 
 class TaskStep(db.Model):
     __tablename__ = 'tasks_steps'
@@ -231,7 +283,7 @@ class MetricsSnapshot(db.Model):
     __tablename__ = 'metrics_snapshot'
     
     id = db.Column(db.Integer, primary_key=True)
-    reference_date = db.Column(db.DateTime, default=datetime.utcnow)
+    reference_date = db.Column(db.DateTime, default=datetime.now)
     
     total_lojas_em_progresso = db.Column(db.Integer)
     total_lojas_concluidas = db.Column(db.Integer)

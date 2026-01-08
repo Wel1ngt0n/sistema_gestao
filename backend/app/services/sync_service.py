@@ -25,9 +25,9 @@ class SyncService:
             state = SyncState(id=1)
             db.session.add(state)
         
-        state.last_shallow_sync_at = datetime.utcnow()
+        state.last_shallow_sync_at = datetime.now()
         if success:
-            state.last_successful_sync_at = datetime.utcnow()
+            state.last_successful_sync_at = datetime.now()
         state.in_progress = False
         db.session.commit()
 
@@ -137,7 +137,7 @@ class SyncService:
                 dss = StoreDeepSyncState(store_id=store_id)
                 db.session.add(dss)
             
-            dss.last_deep_sync_at = datetime.utcnow()
+            dss.last_deep_sync_at = datetime.now()
             dss.sync_status = "COMPLETE"
             dss.last_error = None
             

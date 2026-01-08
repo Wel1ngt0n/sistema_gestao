@@ -34,6 +34,16 @@ interface TaskStep {
     idle: number;
 }
 
+interface StorePause {
+    id: number;
+    start_date: string;
+    end_date: string | null;
+    reason: string;
+    duration: number;
+    is_active: boolean;
+}
+
+
 export default function MonitorStoreModal({
     isOpen,
     onClose,
@@ -44,11 +54,19 @@ export default function MonitorStoreModal({
     isDeepSyncing
 }: MonitorStoreModalProps) {
     const [localStore, setLocalStore] = useState<Store | null>(null);
-    const [activeTab, setActiveTab] = useState<'info' | 'history' | 'steps'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'history' | 'steps' | 'pauses'>('info');
     const [logs, setLogs] = useState<StoreLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
     const [steps, setSteps] = useState<TaskStep[]>([]);
     const [loadingSteps, setLoadingSteps] = useState(false);
+
+    // Pauses State
+    const [pauses, setPauses] = useState<StorePause[]>([]);
+    const [loadingPauses, setLoadingPauses] = useState(false);
+    const [newPauseReason, setNewPauseReason] = useState("");
+    const [newPauseDate, setNewPauseDate] = useState("");
+    const [showPauseForm, setShowPauseForm] = useState(false);
+
 
     useEffect(() => {
         if (store) {
@@ -65,8 +83,70 @@ export default function MonitorStoreModal({
             fetchLogs();
         } else if (activeTab === 'steps' && localStore?.id) {
             fetchSteps();
+        } else if (activeTab === 'pauses' && localStore?.id) {
+            fetchPauses();
         }
     }, [activeTab]);
+
+    const fetchPauses = async () => {
+        if (!localStore?.id) return;
+        setLoadingPauses(true);
+        try {
+            const res = await axios.get(`http://localhost:5000/api/stores/${localStore.id}/pauses`);
+            setPauses(res.data);
+        } catch (e) {
+            console.error("Erro ao carregar pausas", e);
+        } finally {
+            setLoadingPauses(false);
+        }
+    };
+
+    const handleAddPause = async () => {
+        if (!localStore?.id || !newPauseDate) return;
+        try {
+            await axios.post(`http://localhost:5000/api/stores/${localStore.id}/pauses`, {
+                start_date: newPauseDate,
+                reason: newPauseReason
+            });
+            setNewPauseReason("");
+            setNewPauseDate("");
+            setShowPauseForm(false);
+            fetchPauses();
+            // Refresh store details to update days calculation
+            // Mas o onSave atualiza o Pai? O pai passa 'store'. 
+            // Precisamos atualizar o localStore ou pedir pro pai recarregar.
+            // O ideal seria chamar uma prop onRefresh se existisse, mas vamos confiar que o usuario vai dar refresh ou o deep sync.
+            // Porem, podemos atualizar o summary:
+            alert("Pausa iniciada com sucesso!");
+        } catch (e: any) {
+            alert("Erro ao criar pausa: " + (e.response?.data?.error || e.message));
+        }
+    };
+
+    const handleClosePause = async (pauseId: number) => {
+        const endDate = prompt("Data de fim da pausa (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+        if (!endDate) return;
+
+        try {
+            await axios.put(`http://localhost:5000/api/pauses/${pauseId}/close`, {
+                end_date: endDate
+            });
+            fetchPauses();
+        } catch (e: any) {
+            alert("Erro ao fechar pausa: " + (e.response?.data?.error || e.message));
+        }
+    };
+
+    const handleDeletePause = async (pauseId: number) => {
+        if (!confirm("Tem certeza que deseja apagar este registro de pausa?")) return;
+        try {
+            await axios.delete(`http://localhost:5000/api/pauses/${pauseId}`);
+            fetchPauses();
+        } catch (e: any) {
+            alert("Erro ao apagar pausa: " + (e.response?.data?.error || e.message));
+        }
+    };
+
 
     const fetchLogs = async () => {
         if (!localStore?.id) return;
@@ -127,11 +207,12 @@ export default function MonitorStoreModal({
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-            {/* Modal Container */}
+            {/* Modal Container - Corrigido bg-white/dark (Force light mode colors if not dark) */}
             <div
-                className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300"
+                className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
+
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
@@ -198,6 +279,16 @@ export default function MonitorStoreModal({
                     >
                         🕒 Histórico de Mudanças
                     </button>
+                    <button
+                        onClick={() => setActiveTab('pauses')}
+                        className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'pauses'
+                            ? 'border-indigo-500 text-indigo-600'
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                            }`}
+                    >
+                        ⏸️ Pausas & Descontos
+                    </button>
+
                 </div>
 
                 {/* Content - Scrollable */}
@@ -212,7 +303,19 @@ export default function MonitorStoreModal({
                                         📅 Cronograma & Prazos
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <ReadOnlyField label="Data de Início" value={formatDate(localStore.data_inicio)} />
+                                        <div>
+                                            <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Data de Início</span>
+                                            <input
+                                                type="date"
+                                                className="w-full bg-transparent border-b border-indigo-200 dark:border-indigo-800 text-sm font-bold text-indigo-700 dark:text-indigo-400 outline-none focus:border-indigo-500 transition-colors py-0.5"
+                                                value={localStore.data_inicio || ''}
+                                                onChange={(e) => setLocalStore({ ...localStore, data_inicio: e.target.value })}
+                                            />
+                                            {localStore.is_manual_start_date && (
+                                                <span className="text-[9px] text-indigo-400 block mt-0.5" title="Data definida manualmente">* Manual</span>
+                                            )}
+                                        </div>
+
                                         <ReadOnlyField label="Previsão Entrega" value={formatDate(localStore.data_previsao)} />
                                         <ReadOnlyField label="Data Fim Real" value={formatDate(localStore.data_fim)} />
                                         <div>
@@ -489,6 +592,124 @@ export default function MonitorStoreModal({
                                                 </tr>
                                             ))}
                                         </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    ) : activeTab === 'pauses' ? (
+                        <div className="space-y-6 max-w-4xl mx-auto">
+                            <div className="flex justify-between items-center mb-6">
+                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                    ⏸️ Registro de Pausas e Congelamentos
+                                </h4>
+                                <button
+                                    onClick={() => setShowPauseForm(true)}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-indigo-500/30"
+                                >
+                                    + Nova Pausa
+                                </button>
+                            </div>
+
+                            {showPauseForm && (
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-indigo-200 dark:border-indigo-900/50 mb-8 animate-in slide-in-from-top-4">
+                                    <h5 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-4">Adicionar Nova Pausa</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                        <div>
+                                            <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Data Início</label>
+                                            <input
+                                                type="date"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                value={newPauseDate}
+                                                onChange={e => setNewPauseDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Motivo (Cliente, Recesso, etc)</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    placeholder="Ex: Cliente solicitou pausa para reforma"
+                                                    value={newPauseReason}
+                                                    onChange={e => setNewPauseReason(e.target.value)}
+                                                />
+                                                <button
+                                                    onClick={handleAddPause}
+                                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded font-bold"
+                                                >
+                                                    Salvar
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowPauseForm(false)}
+                                                    className="bg-slate-200 hover:bg-slate-300 text-slate-600 px-4 py-2 rounded font-bold"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {loadingPauses ? (
+                                <div className="flex justify-center py-10"><span className="animate-spin text-2xl">🔄</span></div>
+                            ) : pauses.length === 0 ? (
+                                <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-dashed border-2 border-slate-200 dark:border-slate-800">
+                                    <p className="text-slate-500">Nenhuma pausa registrada.</p>
+                                </div>
+                            ) : (
+                                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-100 dark:bg-slate-900/50 text-xs uppercase text-slate-500 font-bold border-b border-slate-200 dark:border-slate-700">
+                                            <tr>
+                                                <th className="px-6 py-3">Início</th>
+                                                <th className="px-6 py-3">Fim</th>
+                                                <th className="px-6 py-3">Motivo</th>
+                                                <th className="px-6 py-3 text-right">Dias Descontados</th>
+                                                <th className="px-6 py-3 text-right">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {pauses.map(p => (
+                                                <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                    <td className="px-6 py-3 font-mono text-slate-600 dark:text-slate-300">{formatDate(p.start_date)}</td>
+                                                    <td className="px-6 py-3 font-mono text-slate-600 dark:text-slate-300">
+                                                        {p.end_date ? formatDate(p.end_date) : <span className="text-emerald-500 font-bold uppercase text-[10px] bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded">Em Aberto</span>}
+                                                    </td>
+                                                    <td className="px-6 py-3 text-slate-700 dark:text-slate-200">{p.reason}</td>
+                                                    <td className="px-6 py-3 text-right font-bold text-indigo-600 dark:text-indigo-400">
+                                                        {p.duration > 0 ? `-${p.duration} dias` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-3 text-right flex justify-end gap-2">
+                                                        {p.is_active && (
+                                                            <button
+                                                                onClick={() => handleClosePause(p.id)}
+                                                                className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 font-bold uppercase"
+                                                                title="Encerrar Pausa"
+                                                            >
+                                                                Encerrar
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDeletePause(p.id)}
+                                                            className="text-slate-400 hover:text-red-500 transition-colors"
+                                                            title="Excluir Registro"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-3 text-right text-xs uppercase font-bold text-slate-500">Total Descontado:</td>
+                                                <td className="px-6 py-3 text-right font-bold text-indigo-700 dark:text-indigo-400 text-lg">
+                                                    -{pauses.reduce((acc, p) => acc + p.duration, 0)} dias
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             )}

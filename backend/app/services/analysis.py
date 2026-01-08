@@ -116,7 +116,7 @@ class AnalysisService:
             # Se já começou, descontamos o decorrido, mas respeitando um mínimo restante
             elapsed = 0
             if current_step and current_step.start_real_at and not current_step.end_real_at:
-                 elapsed = (datetime.utcnow() - current_step.start_real_at).days
+                 elapsed = (datetime.now() - current_step.start_real_at).days
             elif current_step and current_step.end_real_at:
                  # Já acabou, contribuição zero para o futuro
                  contribution_p50 = 0
@@ -146,8 +146,8 @@ class AnalysisService:
         total_rem_p75 = sum(d['contribution_p75'] for d in details)
         
         # Calcular Datas
-        date_p50 = datetime.utcnow() + timedelta(days=total_rem_p50)
-        date_p75 = datetime.utcnow() + timedelta(days=total_rem_p75)
+        date_p50 = datetime.now() + timedelta(days=total_rem_p50)
+        date_p75 = datetime.now() + timedelta(days=total_rem_p75)
 
         # Calcular Confiança da Previsão
         # Baseada na contagem de amostras da estatística
@@ -158,12 +158,12 @@ class AnalysisService:
         elif low_data_steps > 0: confidence = "MEDIUM"
 
         # Calcular Previsão
-        # predicted_date = datetime.utcnow() + timedelta(days=remaining_days) # Old logic
+        # predicted_date = datetime.now() + timedelta(days=remaining_days) # Old logic
         predicted_date = date_p50 # P50 is the main one
         
         # Calcular Risco contra Contrato
         contract_days = store.tempo_contrato or 90
-        start_date = store.effective_started_at or datetime.utcnow()
+        start_date = store.effective_started_at or datetime.now()
         contract_due_date = start_date + timedelta(days=contract_days)
         
         days_late = (predicted_date - contract_due_date).days

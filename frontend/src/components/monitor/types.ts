@@ -33,6 +33,7 @@ export interface Store {
     parent_name?: string | null;
 
     data_inicio: string | null;
+    is_manual_start_date?: boolean;
     data_fim: string | null;
     data_previsao: string | null;
 

@@ -16,6 +16,10 @@ def get_dashboard_data():
     from app.models import SystemConfig
     from app.services.scoring_service import ScoringService
     
+    # Filtro de Status (Query Param)
+    # Options: 'active' (default), 'concluded', 'all'
+    status_filter = request.args.get('status', 'active')
+
     # Carregar Pesos
     w_matriz = 1.0
     w_filial = 0.7
@@ -28,53 +32,77 @@ def get_dashboard_data():
     except: pass
 
     all_stores = Store.query.all()
-    active_stores = [s for s in all_stores if not s.effective_finished_at]
-    concluded_stores = [s for s in all_stores if s.effective_finished_at]
+    
+    # Global Lists for KPI Calculation
+    active_stores_global = [s for s in all_stores if not s.effective_finished_at]
+    concluded_stores_global = [s for s in all_stores if s.effective_finished_at]
+
+    # Filtered Scope for Display (Risk, MRR Lists, etc)
+    if status_filter == 'active':
+        scope_stores = active_stores_global
+    elif status_filter == 'concluded':
+        scope_stores = concluded_stores_global
+    else: # all
+        scope_stores = all_stores
     
     # 1. KPIs
-    count_wip = len(active_stores)
-    count_done = len(concluded_stores)
+    count_wip = len(active_stores_global)
+    count_done = len(concluded_stores_global)
     
-    # Calcular Pontos (WIP)
+    # Calcular Pontos (WIP) - Baseado no Global para manter consistência dos top cards fixos?
+    # O usuário pediu: "É importante o sistema desconsiderar nas demais métricas de risco lojas que já foram concluídas"
+    # Entendo que os Cards de "Lojas em Progresso" e "Entregas Totais" são contadores absolutos do sistema.
+    # Mas o MRR em implantação e MRR que deve ser cobrado (financeiro) deve respeitar o filtro?
+    # O pedido diz: "lojas em progresso ativo como padrão... mostramos a quantidade de ativos... atrasadas e em risco que de fato ainda estão em progresso"
+    # Assim, os KPIs de topo (Cards) devem refletir a Visão Geral ou o Filtro?
+    # Geralmente Cards de Topo são "Big Numbers".
+    # WIP e DONE Total são "Big Numbers".
+    # Mas Risco e Listas abaixo respeitarão o scope_stores.
+    
     total_points_wip = 0.0
-    for s in active_stores:
+    for s in active_stores_global:
         if s.tipo_loja == 'Matriz':
             total_points_wip += w_matriz
         else: # Filial
             total_points_wip += w_filial
             
-    # Calcular Pontos (DONE)
     total_points_done = 0.0
-    for s in concluded_stores:
+    for s in concluded_stores_global:
         if s.tipo_loja == 'Matriz':
             total_points_done += w_matriz
         else:
             total_points_done += w_filial
     
-    # % Prazo (Apenas concluídas)
-    on_time = sum(1 for s in concluded_stores if s.dias_totais_implantacao <= (s.tempo_contrato or 90))
+    # % Prazo (Apenas concluídas) - KPI Global
+    on_time = sum(1 for s in concluded_stores_global if s.dias_totais_implantacao <= (s.tempo_contrato or 90))
     pct_prazo = (on_time / count_done * 100) if count_done > 0 else 0
     
-    # Métricas de MRR
-    mrr_implantacao = sum(s.valor_mensalidade for s in active_stores if s.valor_mensalidade and s.status_norm != 'DONE')
-    mrr_ja_pagando = sum(s.valor_mensalidade for s in all_stores if s.financeiro_status in ['Pago', 'Em dia'] and s.valor_mensalidade)
-    mrr_devendo = sum(s.valor_mensalidade for s in all_stores if s.financeiro_status == 'Devendo' and s.valor_mensalidade)
-    current_year = datetime.now().year
-    mrr_concluidas_ano = sum(s.valor_mensalidade for s in concluded_stores if s.effective_finished_at and s.effective_finished_at.year == current_year and s.valor_mensalidade)
+    # Métricas de MRR (Respeitando o Filtro para visualização operacional?)
+    # Se filtro = active, mostramos MRR em implantação.
+    # Se filtro = concluded, mostramos MRR entregue?
+    # O Card diz "MRR em Implantação". Se eu filtrar concluídas, mostrar 0 seria estranho se o label é fixo.
+    # Então KPIs fixos continuarão globais para dar contexto.
+    # AS LISTAS (Risco, Tabelas) respeitarão o scope_stores.
 
-    # 2. Rankings (Implantador)
+    mrr_implantacao = sum(s.valor_mensalidade for s in active_stores_global if s.valor_mensalidade and s.status_norm != 'DONE')
+    mrr_ja_pagando = sum(s.valor_mensalidade for s in all_stores if s.financeiro_status in ['Pago', 'Em dia'] and s.valor_mensalidade)
+    mrr_devendo = sum(s.valor_mensalidade for s in scope_stores if s.financeiro_status == 'Devendo' and s.valor_mensalidade) # Esse ajustado ao filtro
+    
+    current_year = datetime.now().year
+    mrr_concluidas_ano = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at.year == current_year and s.valor_mensalidade)
+
+    # 2. Rankings (Implantador) - Histórico Global
     kpi_by_imp = {}
-    for s in active_stores:
+    for s in active_stores_global + concluded_stores_global:
         imp = s.implantador or 'N/A'
         if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
-        kpi_by_imp[imp]["wip"] += 1
         
-    for s in concluded_stores:
-        imp = s.implantador or 'N/A'
-        if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
-        kpi_by_imp[imp]["done"] += 1
-        if s.dias_totais_implantacao <= (s.tempo_contrato or 90):
-            kpi_by_imp[imp]["on_time"] += 1
+        if not s.effective_finished_at:
+             kpi_by_imp[imp]["wip"] += 1
+        else:
+             kpi_by_imp[imp]["done"] += 1
+             if s.dias_totais_implantacao <= (s.tempo_contrato or 90):
+                kpi_by_imp[imp]["on_time"] += 1
             
     rankings = []
     for imp, data in kpi_by_imp.items():
@@ -88,9 +116,14 @@ def get_dashboard_data():
         })
     rankings.sort(key=lambda x: x['done'], reverse=True)
 
-    # 3. Top 10 Risco
+    # 3. Top 10 Risco (Respeitando Filtro 'status')
+    # Se filtro for 'concluded', risco não faz muito sentido, mas mostraremos se houver pendências
     risk_list = []
-    for s in active_stores:
+    for s in scope_stores:
+        # Se filter=active -> pega stores abertas. Se filter=concluded -> pega fechadas.
+        if status_filter == 'active' and s.effective_finished_at: continue
+        if status_filter == 'concluded' and not s.effective_finished_at: continue
+        
         risk_data = ScoringService.calculate_risk_score(s)
         
         # Buscar Etapa Ativa (Gargalo)
@@ -105,7 +138,7 @@ def get_dashboard_data():
             "name": s.store_name,
             "implantador": s.implantador,
             "status": s.status,
-            "etapa_parada": active_step_name, # Novo Campo
+            "etapa_parada": active_step_name, 
             "score": risk_data['total'],
             "breakdown": risk_data['breakdown'], 
             "dias": s.dias_em_progresso,
@@ -124,7 +157,7 @@ def get_dashboard_data():
     # 4.2 Evolução (Últimos 6 meses OU Todos disponíveis se menos)
     from collections import defaultdict
     evo_map = defaultdict(int)
-    for s in concluded_stores:
+    for s in concluded_stores_global:
         if s.effective_finished_at:
             m_key = s.effective_finished_at.strftime('%m/%Y')
             evo_map[m_key] += 1
@@ -132,7 +165,7 @@ def get_dashboard_data():
     # Ordenar por data (Mês/Ano)
     # Por segurança, usamos chaves datetime primeiro
     date_map = defaultdict(int) 
-    for s in concluded_stores:
+    for s in concluded_stores_global:
         if s.effective_finished_at:
             # truncate to month start
             dt = s.effective_finished_at.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -169,10 +202,22 @@ def get_dashboard_data():
 
 @api_bp.route('/stores', methods=['GET'])
 def get_stores():
-    stores = Store.query.order_by(Store.created_at.desc()).all()
+    from sqlalchemy import or_
+    status_filter = request.args.get('status', 'active') # Default active
+    
+    query = Store.query
+    if status_filter == 'active':
+        # Active = Valendo None em todas as datas de fim
+        query = query.filter(Store.manual_finished_at == None, Store.end_real_at == None, Store.finished_at == None)
+    elif status_filter == 'concluded':
+        # Concluded = Pelo menos uma data de fim preenchida
+        query = query.filter(or_(Store.manual_finished_at != None, Store.end_real_at != None, Store.finished_at != None))
+        
+    stores = query.order_by(Store.created_at.desc()).all()
     
     # Helpers para o Frontend saber quem é Matriz
     matrices = [{'id': s.id, 'name': s.store_name} for s in stores if s.tipo_loja == 'Matriz']
+
     
     results = []
     
@@ -228,9 +273,13 @@ def get_stores():
             'tipo_loja': s.tipo_loja,
             'parent_id': s.parent_id,
             'parent_name': s.matriz.store_name if s.matriz else None,
+            'parent_name': s.matriz.store_name if s.matriz else None,
             'delivered_with_quality': s.delivered_with_quality,
+            'is_manual_start_date': s.is_manual_start_date,
+            'total_paused_days': sum([(p.end_date - p.start_date).days for p in s.pauses if p.end_date]) if s.pauses else 0,
             'ai_prediction': analyzer.predict_store_completion(s.id)
         })
+
     return jsonify({"stores": results, "matrices": matrices})
 
 @api_bp.route('/stores/<int:id>', methods=['DELETE'])
@@ -298,6 +347,34 @@ def update_store(id):
     if 'parent_id' in data: 
         service.log_change(store, 'matriz_id', store.parent_id, data['parent_id'], source='manual')
         store.parent_id = int(data['parent_id']) if data['parent_id'] else None
+
+    # Nova Lógica de Data Manual (V4)
+    if 'data_inicio' in data:
+        date_str = data['data_inicio']
+        old_val = store.effective_started_at.strftime('%Y-%m-%d') if store.effective_started_at else None
+        
+        # Se veio uma data, atualizamos
+        if date_str:
+            try:
+                new_date = datetime.strptime(date_str, '%Y-%m-%d')
+                if old_val != date_str:
+                     service.log_change(store, 'inicio_manual', old_val, date_str, source='manual')
+                
+                store.manual_started_at = new_date # Isso ainda nao existe no model base, usamos o campo do clickup?
+                # Como o sistema prioriza o clickup, precisamos de um campo manual real ou sobrescrever o clickup?
+                # O usuario pediu PARA SOBRESCREVER E TRAVAR.
+                # Entao vamos usar o start_real_at, mas precisamos impedir o sync de sobrescrever.
+                # Para isso serve o flag is_manual_start_date.
+                
+                store.start_real_at = new_date # Update direto
+                store.is_manual_start_date = True
+            except: pass
+        else:
+             # Limpar? Se o usuario limpar, talvez queira voltar ao sync?
+             # Vamos assumir que limpar = voltar ao automatico
+             store.is_manual_start_date = False
+             # Nao limpamos a data imediatamente, o proximo sync vai corrigir.
+
     
     if 'manual_finished_at' in data:
         date_str = data['manual_finished_at']
@@ -571,3 +648,82 @@ def update_config():
         
     db.session.commit()
     return jsonify({"status": "updated"})
+
+# --- Rotas de Pausas (V4) ---
+
+@api_bp.route('/stores/<int:id>/pauses', methods=['GET'])
+def get_store_pauses(id):
+    from app.models import StorePause
+    pauses = StorePause.query.filter_by(store_id=id).order_by(StorePause.start_date.desc()).all()
+    
+    results = []
+    for p in pauses:
+        duration = 0
+        if p.end_date:
+            duration = (p.end_date - p.start_date).days
+        else:
+            duration = (datetime.now() - p.start_date).days
+            
+        results.append({
+            'id': p.id,
+            'start_date': p.start_date.strftime('%Y-%m-%d'),
+            'end_date': p.end_date.strftime('%Y-%m-%d') if p.end_date else None,
+            'reason': p.reason,
+            'duration': duration,
+            'is_active': p.end_date is None
+        })
+    return jsonify(results)
+
+@api_bp.route('/stores/<int:id>/pauses', methods=['POST'])
+def add_store_pause(id):
+    from app.models import StorePause
+    data = request.json
+    
+    try:
+        start_date = datetime.strptime(data['start_date'], '%Y-%m-%d')
+        reason = data.get('reason', 'Motivo não informado')
+        
+        # Verificar se já existe pausa aberta
+        open_pause = StorePause.query.filter_by(store_id=id, end_date=None).first()
+        if open_pause:
+             return jsonify({'error': 'Já existe uma pausa em aberto para esta loja.'}), 400
+             
+        pause = StorePause(
+            store_id=id,
+            start_date=start_date,
+            reason=reason
+        )
+        db.session.add(pause)
+        db.session.commit()
+        return jsonify({'status': 'created', 'id': pause.id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/pauses/<int:pause_id>/close', methods=['PUT'])
+def close_pause(pause_id):
+    from app.models import StorePause
+    data = request.json
+    try:
+        end_date = datetime.strptime(data['end_date'], '%Y-%m-%d')
+        pause = StorePause.query.get_or_404(pause_id)
+        
+        if end_date < pause.start_date:
+             return jsonify({'error': 'Data de fim deve ser maior que data de início'}), 400
+             
+        pause.end_date = end_date
+        db.session.commit()
+        return jsonify({'status': 'closed'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/pauses/<int:pause_id>', methods=['DELETE'])
+def delete_pause(pause_id):
+    from app.models import StorePause
+    try:
+        pause = StorePause.query.get_or_404(pause_id)
+        db.session.delete(pause)
+        db.session.commit()
+        return jsonify({'status': 'deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
