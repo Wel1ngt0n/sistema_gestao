@@ -3,14 +3,15 @@ from app.models import db, Store, TaskStep, StatusEvent, StoreSyncLog
 from app.services.status_normalizer import StatusNormalizer
 
 class MetricsService:
-    def log_change(self, store, field_name, old_value, new_value, source='sync'):
+    def log_change(self, store, field_name, old_value, new_value, source='sync', timestamp=None):
         if str(old_value) != str(new_value):
             log = StoreSyncLog(
                 store_id=store.id,
                 field_name=field_name,
                 old_value=str(old_value) if old_value is not None else None,
                 new_value=str(new_value) if new_value is not None else None,
-                source=source
+                source=source,
+                changed_at=timestamp or datetime.now()
             )
             db.session.add(log)
 
@@ -48,6 +49,11 @@ class MetricsService:
         store.custom_store_id = custom_id
         store.clickup_url = task_data.get('url')
         
+        # Prepare Timestamp for logs (Use date_updated from ClickUp if available)
+        updated_at_ts = None
+        if task_data.get('date_updated'):
+             updated_at_ts = datetime.fromtimestamp(int(task_data['date_updated']) / 1000)
+
         # Status normalization
         raw_status = task_data.get('status', {}).get('status', 'unknown')
         store.status = raw_status 
@@ -56,7 +62,7 @@ class MetricsService:
         
         # Logs status
         if not is_new:
-            self.log_change(store, 'status', old_status, raw_status)
+            self.log_change(store, 'status', old_status, raw_status, timestamp=updated_at_ts)
 
         # Dates
         if task_data.get('date_created'):
@@ -84,7 +90,7 @@ class MetricsService:
                 store.implantador_original = current_assignee
         
         if not is_new:
-            self.log_change(store, 'implantador', old_implantador, current_assignee)
+            self.log_change(store, 'implantador', old_implantador, current_assignee, timestamp=updated_at_ts)
 
         # Custom Fields mapping
         for field in task_data.get('custom_fields', []):
@@ -97,13 +103,13 @@ class MetricsService:
             if 'mensalidade' in fname:
                 try: 
                     new_val = float(val_str)
-                    if not is_new: self.log_change(store, 'valor_mensalidade', old_mrr, new_val)
+                    if not is_new: self.log_change(store, 'valor_mensalidade', old_mrr, new_val, timestamp=updated_at_ts)
                     store.valor_mensalidade = new_val
                 except: pass
             elif 'implantação' in fname:
                 try: 
                     new_val = float(val_str)
-                    if not is_new: self.log_change(store, 'valor_implantacao', old_impl, new_val)
+                    if not is_new: self.log_change(store, 'valor_implantacao', old_impl, new_val, timestamp=updated_at_ts)
                     store.valor_implantacao = new_val
                 except: pass
             elif 'erp' in fname:
@@ -114,9 +120,8 @@ class MetricsService:
                 store.crm = val_str
         
         # Idle Days Calculation (Store Level)
-        if task_data.get('date_updated'):
-             updated_at = datetime.fromtimestamp(int(task_data['date_updated']) / 1000)
-             delta = datetime.now() - updated_at
+        if updated_at_ts:
+             delta = datetime.now() - updated_at_ts
              store.idle_days = delta.days
         
         db.session.add(store)
@@ -164,6 +169,10 @@ class MetricsService:
         training_done = False
         training_end = None
         
+        # Se houver data manual, respeitar e não aplicar regras automáticas
+        if store_db.manual_finished_at:
+            return
+        
         for s in store_db.steps:
             if s.step_list_name == "TREINAMENTO" and s.end_real_at:
                 training_done = True
@@ -173,14 +182,21 @@ class MetricsService:
         if training_done and training_end:
             # Check if store is already closed
             if not store_db.finished_at:
+                old_s = store_db.status
                 store_db.status = "Concluído (Treinamento)"
                 store_db.status_norm = "DONE" # Force Normalize
                 store_db.finished_at = training_end
                 
+                # Log this specific rule application
+                self.log_change(store_db, 'status', old_s, "Concluído (Treinamento)", source='auto_rule', timestamp=training_end)
+                
             # Recalculate Store Total Time
+            # Use effective finished_at (which is now training_end if it was null)
+            fin = store_db.finished_at
             start = store_db.start_real_at or store_db.created_at
-            if start and store_db.finished_at:
-                 delta = store_db.finished_at - start
+            
+            if start and fin:
+                 delta = fin - start
                  store_db.total_time_days = round(delta.total_seconds() / 86400, 2)
 
     def commit(self):

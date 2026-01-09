@@ -554,6 +554,7 @@ export default function MonitorStoreModal({
                                                 <th className="px-4 py-3">Fase</th>
                                                 <th className="px-4 py-3">Tarefa</th>
                                                 <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3">Conclusão</th>
                                                 <th className="px-4 py-3">Responsável</th>
                                                 <th className="px-4 py-3 text-right">Duração</th>
                                                 <th className="px-4 py-3 text-right">Idle</th>
@@ -577,6 +578,9 @@ export default function MonitorStoreModal({
                                                             }`}>
                                                             {step.status}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-400">
+                                                        {step.end_date || '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-500 text-xs">
                                                         {step.assignee || '-'}
@@ -736,9 +740,27 @@ export default function MonitorStoreModal({
                                     {logs.map((log) => (
                                         <div key={log.id} className="relative pl-10 pb-8 last:pb-0">
                                             {/* Dot */}
-                                            <div className={`absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900 z-10 shadow-sm ${log.source === 'sync' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600' : 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600'
+                                            <div className={`absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900 z-10 shadow-sm ${(() => {
+                                                    switch (log.source) {
+                                                        case 'sync': return 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600';
+                                                        case 'clickup': return 'bg-purple-100 dark:bg-purple-900 text-purple-600';
+                                                        case 'system': return 'bg-slate-200 dark:bg-slate-700 text-slate-600';
+                                                        case 'auto_rule': return 'bg-amber-100 dark:bg-amber-900 text-amber-600';
+                                                        case 'manual': return 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600';
+                                                        default: return 'bg-gray-100 text-gray-500';
+                                                    }
+                                                })()
                                                 }`}>
-                                                {log.source === 'sync' ? '🔄' : '👤'}
+                                                {(() => {
+                                                    switch (log.source) {
+                                                        case 'sync': return '🔄';
+                                                        case 'clickup': return '⚡';
+                                                        case 'system': return '⚙️';
+                                                        case 'auto_rule': return '🤖';
+                                                        case 'manual': return '👤';
+                                                        default: return '📝';
+                                                    }
+                                                })()}
                                             </div>
 
                                             {/* Card */}
@@ -765,7 +787,18 @@ export default function MonitorStoreModal({
                                                 <div className="mt-2 flex items-center gap-1.5">
                                                     <span className={`w-1.5 h-1.5 rounded-full ${log.source === 'sync' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></span>
                                                     <span className="text-[10px] font-bold uppercase text-slate-500">
-                                                        Fonte: {log.source === 'sync' ? 'Sincronização' : 'Alteração Manual'}
+                                                        Fonte: {
+                                                            (() => {
+                                                                switch (log.source) {
+                                                                    case 'sync': return 'Sincronização';
+                                                                    case 'clickup': return 'ClickUp (Automático)';
+                                                                    case 'system': return 'Sistema';
+                                                                    case 'auto_rule': return 'Regra de Negócio';
+                                                                    case 'manual': return 'Alteração Manual';
+                                                                    default: return 'Outro';
+                                                                }
+                                                            })()
+                                                        }
                                                     </span>
                                                 </div>
                                             </div>

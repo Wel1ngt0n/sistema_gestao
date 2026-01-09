@@ -58,7 +58,12 @@ class SyncService:
             }
             for future in as_completed(future_to_list):
                  res = future.result()
-                 if res: all_steps.extend(res)
+                 if res:
+                     # Inject List Name
+                     list_name = future_to_list[future]
+                     for t in res: t['step_type_name'] = list_name
+                     
+                     all_steps.extend(res)
         
         self.logger.info(f"Subtarefas (Etapas) modificadas: {len(all_steps)}")
         
@@ -203,7 +208,12 @@ class SyncService:
             for future in as_completed(future_to_list):
                 try:
                     res = future.result()
-                    if res: all_steps.extend(res)
+                    if res:
+                        # Inject List Name
+                        list_name = future_to_list[future]
+                        for t in res: t['step_type_name'] = list_name
+                        
+                        all_steps.extend(res)
                     yield f"data: 📥 Lista '{future_to_list[future]}' parcial: {len(res)} itens.\n\n"
                 except Exception as e:
                     self.logger.error(str(e))

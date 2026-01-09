@@ -490,16 +490,55 @@ def bulk_update_stores():
 @api_bp.route('/stores/<int:id>/logs', methods=['GET'])
 def get_store_logs(id):
     try:
-        from app.models import StoreSyncLog
-        logs = StoreSyncLog.query.filter_by(store_id=id).order_by(StoreSyncLog.changed_at.desc()).all()
-        return jsonify([{
-            'id': l.id,
+        from app.models import Store, StoreSyncLog, TaskStep
+        
+        # 1. Fetch Physical Logs
+        logs = StoreSyncLog.query.filter_by(store_id=id).all()
+        formatted_logs = [{
+            'id': f"log_{l.id}",
             'field': l.field_name,
             'old': l.old_value,
             'new': l.new_value,
+            'at_dt': l.changed_at,
             'at': l.changed_at.strftime('%d/%m/%Y %H:%M'),
             'source': l.source
-        } for l in logs]), 200
+        } for l in logs]
+
+        # 2. Fetch Store for Creation Date
+        store = Store.query.get(id)
+        if store and store.created_at:
+             formatted_logs.append({
+                'id': "created",
+                'field': "LIFECYCLE",
+                'old': None,
+                'new': "Loja Criada / Importada",
+                'at_dt': store.created_at,
+                'at': store.created_at.strftime('%d/%m/%Y %H:%M'),
+                'source': 'system'
+            })
+
+        # 3. Fetch Steps for Virtual Logs
+        steps = TaskStep.query.filter_by(store_id=id).all()
+        for s in steps:
+            # End Event Only (User Request: Start dates are often just creation dates)
+            if s.end_real_at:
+                 formatted_logs.append({
+                    'id': f"step_end_{s.id}",
+                    'field': "ETAPA CONCLUÍDA",
+                    'old': None,
+                    'new': s.step_name,
+                    'at_dt': s.end_real_at,
+                    'at': s.end_real_at.strftime('%d/%m/%Y %H:%M'),
+                    'source': 'clickup'
+                })
+
+        # Sort by Date Descending
+        formatted_logs.sort(key=lambda x: x['at_dt'], reverse=True)
+        
+        # Remove helper object
+        for l in formatted_logs: del l['at_dt']
+
+        return jsonify(formatted_logs), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
