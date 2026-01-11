@@ -21,11 +21,15 @@ export interface Store {
     idle_days: number | null;
     risk_score: number;
     risk_breakdown?: {
-        prazo: number;
-        idle: number;
-        financeiro: number;
-        qualidade: number;
+        prazo: { score: number; value: string };
+        idle: { score: number; value: string };
+        financeiro: { score: number; value: string };
+        qualidade: { score: number; value: string };
     };
+    risk_hints?: string[];
+    risk_level?: string;
+    ai_risk_level?: string;
+    ai_boost?: number;
     deep_sync_status: string;
     rede: string | null;
     tipo_loja: string | null;

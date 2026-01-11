@@ -331,22 +331,70 @@ export default function MonitorStoreModal({
                                     </div>
                                 </div>
 
-                                {/* Informações Técnicas & IA */}
+                                {/* Informações Técnicas & IA & Risco */}
                                 <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
                                     <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-4 flex items-center gap-2">
-                                        ⚙️ Dados Técnicos & IA
+                                        ⚙️ Dados Técnicos e Risco
                                     </h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                         <ReadOnlyField label="ERP" value={localStore.erp || ''} />
                                         <ReadOnlyField label="CNPJ" value={localStore.cnpj || ''} />
                                         <ReadOnlyField label="CRM" value={localStore.crm || ''} />
                                         <ReadOnlyField label="Status Atual" value={localStore.status} />
-
                                         <ReadOnlyField label="Dias Sem Movimento" value={localStore.idle_days || 0} />
-                                        <ReadOnlyField label="Risco (0-100)" value={localStore.risk_score || 0} />
                                         <ReadOnlyField label="Previsão IA" value={formatDate(localStore.previsao_ia)} />
                                         <ReadOnlyField label="Status Sync" value={localStore.deep_sync_status || '-'} />
+                                        <div className="md:col-span-1">
+                                            <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Risco Geral</span>
+                                            <div className="flex flex-col">
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className={`text-2xl font-bold ${localStore.risk_score > 70 ? 'text-red-500' : localStore.risk_score > 40 ? 'text-yellow-500' : 'text-green-500'}`}>
+                                                        {localStore.risk_score || 0}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400">/ 100</span>
+                                                </div>
+                                                {localStore.ai_risk_level && localStore.ai_risk_level !== 'SAUDAVEL' && (
+                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-fit mt-1 ${localStore.ai_risk_level === 'CRITICO' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+                                                        IA: {localStore.ai_risk_level} 🤖
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* Risk Breakdown Section */}
+                                    {localStore.risk_breakdown && (
+                                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                            <h5 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Composição do Risco</h5>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                                {Object.entries(localStore.risk_breakdown).map(([key, item]) => (
+                                                    <div key={key} className="flex flex-col">
+                                                        <div className="flex justify-between text-xs mb-1">
+                                                            <span className="uppercase font-bold text-slate-600 dark:text-slate-400">{key}</span>
+                                                            <span className="font-mono text-slate-500">{item.value} ({item.score.toFixed(0)} pts)</span>
+                                                        </div>
+                                                        <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${item.score > 15 ? 'bg-red-500' : item.score > 5 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                                                style={{ width: `${Math.min(item.score * 3, 100)}%` }} // Scaling for visibility
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {localStore.risk_hints && localStore.risk_hints.length > 0 && (
+                                                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+                                                    <h6 className="text-[10px] font-bold text-yellow-700 dark:text-yellow-500 uppercase mb-2">⚡ Como melhorar este score?</h6>
+                                                    <ul className="list-disc list-inside text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                                                        {localStore.risk_hints.map((hint, idx) => (
+                                                            <li key={idx}>{hint}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Configurações Editáveis (Formulário Principal) */}
@@ -741,15 +789,15 @@ export default function MonitorStoreModal({
                                         <div key={log.id} className="relative pl-10 pb-8 last:pb-0">
                                             {/* Dot */}
                                             <div className={`absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900 z-10 shadow-sm ${(() => {
-                                                    switch (log.source) {
-                                                        case 'sync': return 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600';
-                                                        case 'clickup': return 'bg-purple-100 dark:bg-purple-900 text-purple-600';
-                                                        case 'system': return 'bg-slate-200 dark:bg-slate-700 text-slate-600';
-                                                        case 'auto_rule': return 'bg-amber-100 dark:bg-amber-900 text-amber-600';
-                                                        case 'manual': return 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600';
-                                                        default: return 'bg-gray-100 text-gray-500';
-                                                    }
-                                                })()
+                                                switch (log.source) {
+                                                    case 'sync': return 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600';
+                                                    case 'clickup': return 'bg-purple-100 dark:bg-purple-900 text-purple-600';
+                                                    case 'system': return 'bg-slate-200 dark:bg-slate-700 text-slate-600';
+                                                    case 'auto_rule': return 'bg-amber-100 dark:bg-amber-900 text-amber-600';
+                                                    case 'manual': return 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600';
+                                                    default: return 'bg-gray-100 text-gray-500';
+                                                }
+                                            })()
                                                 }`}>
                                                 {(() => {
                                                     switch (log.source) {

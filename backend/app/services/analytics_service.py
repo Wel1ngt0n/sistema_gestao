@@ -516,36 +516,40 @@ class AnalyticsService:
             })
             
         # Calcular Média Global de Tempo (para normalização)
-        global_avg_time = 90
+        # Em vez de recalcular lógica diferente aqui, vamos buscar o Score Oficial do ScoringService
+        # Isso garante consistência com o widget de Ranking.
         
-        # Calcular Score Composto (Lógica Espelhada do Ranking)
-        done = stats['done']
+        official_ranking = ScoringService.get_performance_ranking()
+        implantador_stats = next((item for item in official_ranking if item['implantador'] == implantador_name), None)
+        
+        final_score = 0
         otd = 0
-        avg_time = 0
-        quality_pct = 0
         time_score = 0
+        volume_count = stats['done'] # Fallback
         
-        if done > 0:
-            otd = round((stats['on_time'] / done) * 100, 1)
-            avg_time = round(stats['total_days'] / done, 1)
-            rework_pct = round((stats['rework_count'] / done) * 100, 1)
-            quality_pct = 100 - rework_pct
+        if implantador_stats:
+            final_score = implantador_stats['score']
+            otd = implantador_stats['otd_percentage']
             
-            if avg_time > 0:
-                time_score = min(100, (global_avg_time / avg_time) * 100)
-            elif done > 0:
-                time_score = 100
+            # Tentar extrair componentes se disponíveis no breakdown
+            if 'breakdown' in implantador_stats:
+                bd = implantador_stats['breakdown']
+                # 'efficiency' -> {score, value}. Score é a pontuação (0-100 * peso?). 
+                # Se queremos exibir apenas o score bruto 0-100 de tempo, talvez seja melhor pegar avg_days?
+                # O modal espera 'time_score'.
+                if isinstance(bd.get('efficiency'), dict):
+                    time_score = bd['efficiency'].get('score', 0)
+                else:
+                    time_score = 0
+                
+                # Para volume, mantemos stats['done'] (contagem), pois o breakdown traz info ponderada complexa
+                volume_count = stats['done']
 
-        # Normalizar Volume (Assumindo max 50 entregas para escala 100, ou usar pontos raw)
-        vol_score = min(100, stats['done'] * 2)
+        # Recalcular variáveis auxiliares para Gamificação
+        done = stats['done']
+        rework_pct = round((stats['rework_count'] / done) * 100, 1) if done > 0 else 0
+        quality_pct = 100 - rework_pct
         
-        final_score = (
-            (vol_score * 0.40) +
-            (otd * 0.30) +
-            (quality_pct * 0.20) +
-            (time_score * 0.10)
-        )
-
         # CALCULAR IMPACTO POR LOJA (GAMIFICAÇÃO)
         # Distribuir os pontos ganhos de volta para as lojas
         unit_otd = 30.0 / done if done > 0 else 0
@@ -589,9 +593,9 @@ class AnalyticsService:
             "total_wip_points": round(sum(d['potential_points'] for d in details), 1),
             "score_breakdown": {
                 "total": round(final_score, 1),
-                "volume": stats['done'],
+                "volume": volume_count,
                 "otd": otd,
-                "quality": quality_pct,
+                "quality": quality_pct or 100, # Fallback
                 "time_score": round(time_score, 1)
             }
         }

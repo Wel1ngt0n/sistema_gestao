@@ -422,34 +422,49 @@ export default function DashboardAnalytics() {
                                         </h3>
                                     </div>
                                     <div className="overflow-auto flex-1 p-4 space-y-2">
-                                        {safePerformanceData.slice(0, 6).map((p, idx) => (
-                                            <div key={p.implantador} className="flex items-center justify-between p-4 bg-white dark:bg-slate-700/20 border border-slate-100 dark:border-slate-700 rounded-xl hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm shadow-sm ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-200 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'}`}>
-                                                        #{idx + 1}
-                                                    </div>
-                                                    <div>
-                                                        <button onClick={() => setSelectedImplantador(p.implantador)} className="font-bold text-sm text-slate-700 dark:text-slate-200 hover:text-indigo-600 hover:underline transition-colors text-left">
-                                                            {p.implantador}
-                                                        </button>
-                                                        <div className="flex items-center gap-3 mt-0.5">
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-[10px] font-bold text-slate-400">PONTOS:</span>
-                                                                <span className="text-xs font-bold text-indigo-600">{p.points}</span>
+                                        {safePerformanceData.slice(0, 6).map((p, idx) => {
+                                            const hasQualityIssues = (p.data_quality_flags?.missing_financial || 0) > 0 || (p.data_quality_flags?.missing_rework || 0) > 0;
+                                            return (
+                                                <div key={p.implantador} className="flex items-center justify-between p-4 bg-white dark:bg-slate-700/20 border border-slate-100 dark:border-slate-700 rounded-xl hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm shadow-sm ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-200 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'}`}>
+                                                            #{idx + 1}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => setSelectedImplantador(p.implantador)} className="font-bold text-sm text-slate-700 dark:text-slate-200 hover:text-indigo-600 hover:underline transition-colors text-left">
+                                                                    {p.implantador}
+                                                                </button>
+                                                                {hasQualityIssues && (
+                                                                    <div className="group/tooltip relative">
+                                                                        <span className="text-amber-500 cursor-help text-xs">⚠️</span>
+                                                                        <div className="absolute left-full top-0 ml-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded shadow-lg z-50 hidden group-hover/tooltip:block">
+                                                                            <p className="font-bold mb-1">Dados Faltantes:</p>
+                                                                            {p.data_quality_flags?.missing_financial ? <p>• {p.data_quality_flags.missing_financial} stores sem financeiro</p> : null}
+                                                                            {p.data_quality_flags?.missing_rework ? <p>• {p.data_quality_flags.missing_rework} stores sem flag retrabalho</p> : null}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-[10px] font-bold text-slate-400">SCORE:</span>
-                                                                <span className="text-xs font-bold text-emerald-600">{p.score}</span>
+                                                            <div className="flex items-center gap-3 mt-0.5">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-[10px] font-bold text-slate-400">PONTOS:</span>
+                                                                    <span className="text-xs font-bold text-indigo-600">{p.points.toFixed(1)}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-[10px] font-bold text-slate-400">SCORE:</span>
+                                                                    <span className="text-xs font-bold text-emerald-600">{p.score.toFixed(1)}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    <div className="text-right">
+                                                        <p className="text-lg font-bold text-slate-800 dark:text-white">{p.done}</p>
+                                                        <p className="text-[10px] font-bold text-emerald-500">{p.otd_percentage}% OTD</p>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-lg font-bold text-slate-800 dark:text-white">{p.done}</p>
-                                                    <p className="text-[10px] font-bold text-emerald-500">{p.otd_percentage}% OTD</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
 

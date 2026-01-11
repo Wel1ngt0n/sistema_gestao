@@ -254,7 +254,11 @@ def get_stores():
             'dias_em_transito': s.dias_em_progresso, 
             'idle_days': s.idle_days,
             'risk_score': risk_score,
-            'risk_breakdown': risk_data['breakdown'], # Novo
+            'risk_level': risk_data['level'],
+            'ai_risk_level': risk_data.get('ai_risk_level', risk_data['level']),
+            'ai_boost': risk_data.get('ai_boost', 0),
+            'risk_breakdown': risk_data['breakdown'],
+            'risk_hints': risk_data['hints'],
             'valor_mensalidade': s.valor_mensalidade,
             'tempo_contrato': s.tempo_contrato or 90,
             'financeiro_status': s.financeiro_status,

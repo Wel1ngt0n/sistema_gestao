@@ -35,6 +35,12 @@ export interface PerformanceData {
     avg_cycle_time: number;
     score: number;
     points: number;
+    volume_weighted: number;
+    quality_score: number;
+    data_quality_flags?: {
+        missing_financial: number;
+        missing_rework: number;
+    };
 }
 
 export interface BottleneckData {
@@ -109,7 +115,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const perfQuery = useQuery({
         queryKey: [...queryKey, 'performance'],
         queryFn: async () => {
-            const res = await axios.get<PerformanceData[]>(`${API_BASE_URL}/api/analytics/performance`, { params: buildParams(filters) });
+            const res = await axios.get<PerformanceData[]>(`${API_BASE_URL}/api/scoring/performance`, { params: buildParams(filters) });
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -122,15 +128,11 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         }
     });
 
-    // Capacity is snapshot, technically doesn't need date filters but good to keep consistent invalidation if needed
-    // Actually capacity is usually real-time, so we might not want to re-fetch on date change, but implantador filter definitely affects it if implemented.
-    // For now, let's keep it separate or just linked to implantador
     const capacityQuery = useQuery({
         queryKey: ['capacity', filters.implantador],
         queryFn: async () => {
-            // Note: Add implantador param to capacity if backend supports it. Legacy didn't, but maybe it should.
-            // Keeping it simple as before:
-            const res = await axios.get<CapacityData[]>(`${API_BASE_URL}/api/analytics/capacity`);
+            // Updated to use the new standardized scoring endpoint for capacity
+            const res = await axios.get<CapacityData[]>(`${API_BASE_URL}/api/scoring/capacity`);
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -148,7 +150,6 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         queryFn: async () => {
             const params = new URLSearchParams();
             if (filters.implantador) params.append('implantador', filters.implantador);
-            // Using logic component to fetch 
             const res = await axios.get<any[][]>(`${API_BASE_URL}/api/analytics/risk-scatter`, { params });
             return Array.isArray(res.data) ? res.data : [];
         }

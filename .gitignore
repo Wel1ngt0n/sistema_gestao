@@ -64,3 +64,4 @@ backend/debug_log.txt
 
 # Artifacts/Temp
 .gemini/
+*.sql

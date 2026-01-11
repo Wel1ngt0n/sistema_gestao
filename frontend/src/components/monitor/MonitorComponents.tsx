@@ -21,10 +21,10 @@ interface Store {
     teve_retrabalho: boolean;
     ai_prediction?: AIPrediction;
     risk_breakdown?: {
-        prazo: number;
-        idle: number;
-        financeiro: number;
-        qualidade: number;
+        prazo: { score: number; value: string };
+        idle: { score: number; value: string };
+        financeiro: { score: number; value: string };
+        qualidade: { score: number; value: string };
     };
 }
 
@@ -62,19 +62,27 @@ export const RiskTooltip: FC<{ store: Store; style: React.CSSProperties }> = ({ 
                         <div className="space-y-1">
                             <div className="flex justify-between">
                                 <span>Risco de Prazo:</span>
-                                <span className={`font-mono ${store.risk_breakdown.prazo > 50 ? 'text-red-400 font-bold' : 'text-slate-300'}`}>{store.risk_breakdown.prazo}</span>
+                                <span className={`font-mono ${store.risk_breakdown.prazo.score > 50 ? 'text-red-400 font-bold' : 'text-slate-300'}`}>
+                                    {store.risk_breakdown.prazo.score}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Risco Ociosidade:</span>
-                                <span className={`font-mono ${store.risk_breakdown.idle > 25 ? 'text-yellow-500' : 'text-slate-300'}`}>{store.risk_breakdown.idle}</span>
+                                <span className={`font-mono ${store.risk_breakdown.idle.score > 25 ? 'text-yellow-500' : 'text-slate-300'}`}>
+                                    {store.risk_breakdown.idle.score}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Risco Financeiro:</span>
-                                <span className={`font-mono ${store.risk_breakdown.financeiro > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>{store.risk_breakdown.financeiro}</span>
+                                <span className={`font-mono ${store.risk_breakdown.financeiro.score > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                                    {store.risk_breakdown.financeiro.score}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Risco Qualidade:</span>
-                                <span className={`font-mono ${store.risk_breakdown.qualidade > 0 ? 'text-rose-400' : 'text-slate-300'}`}>{store.risk_breakdown.qualidade}</span>
+                                <span className={`font-mono ${store.risk_breakdown.qualidade.score > 0 ? 'text-rose-400' : 'text-slate-300'}`}>
+                                    {store.risk_breakdown.qualidade.score}
+                                </span>
                             </div>
                         </div>
                     ) : (

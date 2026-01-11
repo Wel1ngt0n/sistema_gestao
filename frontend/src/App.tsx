@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import Dashboard from './components/Dashboard'
 import Monitor from './components/Monitor'
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
+import ScoringRulesPage from './pages/ScoringRulesPage'
 import logo from './assets/logo.png'
 
 function App() {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'sync' | 'analytics'>('dashboard')
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'sync' | 'analytics' | 'rules'>('dashboard')
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
     // Theme Toggle Logic
@@ -110,6 +111,13 @@ function App() {
                         >
                             🔄 Sync
                         </button>
+                        <button
+                            onClick={() => setActiveTab('rules')}
+                            className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'rules' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                            title="Regras de Pontuação"
+                        >
+                            📜
+                        </button>
                     </div>
                 </div>
             </nav>
@@ -122,6 +130,8 @@ function App() {
                 {activeTab === 'analytics' && <DashboardAnalytics />}
 
                 {activeTab === 'monitor' && <Monitor />}
+
+                {activeTab === 'rules' && <ScoringRulesPage />}
 
                 {activeTab === 'sync' && (
                     <div className="flex flex-col items-center gap-8 mt-10 w-full max-w-3xl p-4 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">

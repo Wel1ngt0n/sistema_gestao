@@ -25,9 +25,11 @@ def create_app():
     from app.routes import main_bp, api_bp
     from app.routes_analytics import analytics_bp
     from app.routes_ai import ai_bp
+    from app.routes_scoring import scoring_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(scoring_bp)
 
     return app
