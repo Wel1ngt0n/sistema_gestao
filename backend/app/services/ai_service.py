@@ -108,6 +108,7 @@ class GeminiService:
                 snapshot.ai_action_plan = json.dumps(result.get('action_plan'))
                 snapshot.ai_last_analysis = datetime.now()
             
+            db.session.add(store)
             db.session.commit()
         except Exception as e:
             logger.error(f"[Gemini] Failed to save analysis: {e}")
@@ -182,34 +183,86 @@ class GeminiService:
 
     def _build_prompt(self, context_data):
         return f"""
-        Você é um Gerente Sênior de Projetos de TI analisando o progresso da implantação de um sistema para uma Rede de Lojas.
-        
-        Objetivo: Analisar os dados abaixo e identificar RISCOS, GARGALOS e PLANO DE AÇÃO.
-        Foco: A análise deve ser CONJUNTA para a Rede. Se a Matriz tem problema, afeta todos.
-        
+        Você é um ENGENHEIRO DE PRODUÇÃO e SUPERVISOR SÊNIOR DE OPERAÇÕES, responsável por analisar o progresso de implantação de uma REDE DE LOJAS (Matriz + Filiais).
+
+        Seu foco NÃO é apenas tecnologia, mas:
+        - fluxo operacional
+        - dependência entre etapas
+        - gargalos recorrentes
+        - impacto sistêmico na rede como um todo
+
+        OBJETIVO DA ANÁLISE:
+        Avaliar a SAÚDE OPERACIONAL da REDE de forma CONJUNTA.
+        Se a MATRIZ estiver bloqueada ou atrasada, considere que isso impacta diretamente todas as filiais.
+
+        DADOS DE ENTRADA:
+        Você receberá um JSON contendo, para cada loja da rede:
+        - status atual
+        - dias em progresso
+        - comentários recentes das tarefas do ClickUp (Matriz e Filiais)
+        - identificação se a loja é MATRIZ ou FILIAL
+
         DADOS DA REDE (Lojas):
         {json.dumps(context_data, indent=2, ensure_ascii=False)}
-        
-        Responda ESTRITAMENTE em JSON neste formato:
+
+        CRITÉRIOS DE ANÁLISE (OBRIGATÓRIOS):
+
+        1. MATRIZ TEM PRIORIDADE
+        - Problemas na MATRIZ têm peso MAIOR que problemas em filiais isoladas.
+        - Se um bloqueio da MATRIZ se repete nas FILIAIS, trate como gargalo estrutural.
+
+        2. IDENTIFICAÇÃO DE GARGALOS
+        Analise os comentários em busca de:
+        - bloqueios técnicos (integração, erro de sistema, dependência de terceiros)
+        - bloqueios operacionais (falta de alinhamento, retrabalho, priorização)
+        - bloqueios do cliente (retorno lento, dados faltantes, validação pendente)
+
+        Liste APENAS gargalos reais, explícitos ou claramente inferidos.
+        Evite hipóteses vagas.
+
+        3. CLASSIFICAÇÃO DE RISCO DA REDE
+        Classifique o nível de risco considerando:
+        - tempo total da MATRIZ
+        - recorrência de bloqueios nas filiais
+        - sinais de estagnação ou retrabalho
+        - impacto potencial em prazo, qualidade ou ativação financeira
+
+        Use estritamente:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - CRITICAL
+
+        4. PLANO DE AÇÃO (PRÁTICO E EXECUTÁVEL)
+        Crie no máximo 3 ações.
+        Cada ação deve ser:
+        - clara
+        - objetiva
+        - acionável por um time de operações
+        Evite sugestões genéricas ou excessivamente técnicas.
+
+        FORMATO DE RESPOSTA:
+        Responda ESTRITAMENTE em JSON, no seguinte formato:
+
         {{
-            "risk_level": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
-            "summary_network": "Resumo executivo do status da rede (máx 3 linhas). Cite bloqueios específicos.",
-            "specific_blockers": ["Lista de gargalos técnicos ou operacionais identificados nos comentários"],
-            "action_plan": ["Ação 1", "Ação 2", "Ação 3"]
+            "risk_level": "CRITICAL | HIGH | MEDIUM | LOW",
+            "summary_network": "Resumo executivo da saúde da rede em até 3 linhas. Destaque se a Matriz é o principal risco.",
+            "specific_blockers": [
+                "Bloqueio 1 (ex: Integração da Matriz parada aguardando ajuste de ERP)",
+                "Bloqueio 2 (ex: Dependência recorrente de retorno do cliente nas filiais)"
+            ],
+            "action_plan": [
+                "Ação 1 clara e executável",
+                "Ação 2 clara e executável",
+                "Ação 3 clara e executável"
+            ]
         }}
+
+        REGRAS FINAIS:
+        - Seja direto e executivo.
+        - Priorize impacto sistêmico, não casos isolados.
+        - Pense como alguém responsável por prazo, qualidade e escala operacional.
+        - Não explique o raciocínio fora do JSON.
         """
 
-    def _save_analysis_to_db(self, store, result):
-        """Salva o resultado no banco (MetricsSnapshotDaily de hoje)."""
-        today = datetime.today().date()
-        snapshot = MetricsSnapshotDaily.query.filter_by(
-            store_id=store.id, 
-            snapshot_date=today
-        ).first()
-        
-        if snapshot:
-            snapshot.ai_risk_level = result.get('risk_level')
-            snapshot.ai_network_summary = result.get('summary_network')
-            snapshot.ai_action_plan = json.dumps(result.get('action_plan'))
-            snapshot.ai_last_analysis = datetime.now()
-            db.session.commit()
+
