@@ -16,7 +16,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
 
     useEffect(() => {
         if (isOpen) {
-            axios.get('http://localhost:5000/api/config')
+            axios.get('http://localhost:5003/api/config')
                 .then(res => {
                     if (res.data) {
                         setWeights(prev => ({ ...prev, ...res.data }));
@@ -28,7 +28,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
 
     const handleSave = () => {
         setLoading(true);
-        axios.post('http://localhost:5000/api/config', weights)
+        axios.post('http://localhost:5003/api/config', weights)
             .then(() => {
                 setMsg('Salvo com sucesso!');
                 setTimeout(() => setMsg(''), 2000);

@@ -110,6 +110,10 @@ class Store(db.Model):
     # Controle de Datas Manual (V4)
     is_manual_start_date = db.Column(db.Boolean, default=False)
 
+    # AI Cache
+    ai_summary = db.Column(db.Text, nullable=True)
+    ai_analyzed_at = db.Column(db.DateTime, nullable=True)
+
     
     # Relationships
     steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")

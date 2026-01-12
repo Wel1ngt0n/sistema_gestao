@@ -31,7 +31,7 @@ export default function StepsView() {
     const [sorting, setSorting] = useState<SortingState>([{ id: 'store_name', desc: false }]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/steps')
+        axios.get('http://localhost:5003/api/steps')
             .then(res => {
                 setData(res.data);
                 setLoading(false);

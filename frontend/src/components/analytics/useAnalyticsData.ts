@@ -73,7 +73,7 @@ export interface DistributionData {
     erps: Record<string, number>;
 }
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:5003';
 
 const buildParams = (filters: AnalyticsFiltersState) => {
     const params = new URLSearchParams();

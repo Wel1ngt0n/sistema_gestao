@@ -24,6 +24,7 @@ function App() {
 
     // Sync State
     const [loading, setLoading] = useState(false)
+    const [forceFull, setForceFull] = useState(false)
     const [logs, setLogs] = useState<string[]>([])
     const logsEndRef = useRef<HTMLDivElement>(null)
 
@@ -40,7 +41,8 @@ function App() {
         setLogs(['Iniciando conexão com o servidor...'])
 
         // Use EventSource for real-time logs
-        const eventSource = new EventSource('http://localhost:5000/api/sync/stream')
+        const url = `http://localhost:5003/api/sync/stream${forceFull ? '?full=true' : ''}`
+        const eventSource = new EventSource(url)
 
         eventSource.onopen = () => {
             setLogs(prev => [...prev, 'Conexão estabelecida!'])
@@ -145,6 +147,20 @@ function App() {
 
                             <div className="p-5 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-700 shadow-inner group-hover:scale-110 transition-transform duration-500">
                                 <span className={`text-5xl block ${loading ? 'animate-spin' : ''}`}>🔄</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="forceFull"
+                                    checked={forceFull}
+                                    onChange={(e) => setForceFull(e.target.checked)}
+                                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500 border-gray-300"
+                                    disabled={loading}
+                                />
+                                <label htmlFor="forceFull" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    Forçar Sincronização Completa
+                                </label>
                             </div>
 
                             <button

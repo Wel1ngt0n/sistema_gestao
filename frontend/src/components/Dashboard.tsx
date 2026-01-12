@@ -41,7 +41,7 @@ export default function Dashboard() {
 
     useEffect(() => {
 
-        axios.get('http://localhost:5000/api/dashboard')
+        axios.get('http://localhost:5003/api/dashboard')
             .then(res => {
                 setData(res.data);
                 setLoading(false);

@@ -32,10 +32,11 @@ interface FinancialForecastChartProps {
 export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ data }) => {
 
     // Preparar dados
+    // Preparar dados
     const labels = data.map(d => d.month);
-    const realizedData = data.map(d => d.is_future ? 0 : d.realized);
-    const projectedData = data.map(d => d.is_future ? d.projected : 0);
-    // Para visualização legal, podemos mostrar o previsto em cima do realizado se quisermos comparar, mas aqui é sequencial.
+    // Mostrar SEMPRE o realizado e o projetado, permitindo sobreposição no mês atual
+    const realizedData = data.map(d => d.realized);
+    const projectedData = data.map(d => d.projected);
 
     const chartData = {
         labels,
@@ -46,7 +47,8 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
                 data: realizedData,
                 backgroundColor: 'rgba(59, 130, 246, 0.8)',
                 borderRadius: 4,
-                order: 2
+                order: 1, // Draw First (Bottom)
+                stack: 'stack1'
             },
             {
                 type: 'bar' as const,
@@ -57,7 +59,8 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
                 borderWidth: 1,
                 borderDash: [5, 5], // Tracejado
                 borderRadius: 4,
-                order: 1
+                order: 2, // Draw Second (Top)
+                stack: 'stack1'
             }
         ]
     };
@@ -88,10 +91,12 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
         },
         scales: {
             y: {
+                stacked: true,
                 grid: { color: 'rgba(148, 163, 184, 0.1)' },
                 ticks: { color: '#94a3b8' }
             },
             x: {
+                stacked: true,
                 grid: { display: false },
                 ticks: { color: '#94a3b8' }
             }

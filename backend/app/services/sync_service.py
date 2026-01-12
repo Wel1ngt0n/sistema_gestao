@@ -31,13 +31,18 @@ class SyncService:
         state.in_progress = False
         db.session.commit()
 
-    def run_sync(self):
+    def run_sync(self, force_full=False):
         """
         Sync Incremental Otimizado.
+        param force_full: Ignora o último timestamp e faz scan completo.
         """
-        self.logger.info("--- INICIANDO SYNC V2.5 (INCREMENTAL) ---")
+        self.logger.info(f"--- INICIANDO SYNC V2.5 ({'COMPLETO' if force_full else 'INCREMENTAL'}) ---")
         
         last_ts = self.get_last_sync_ts()
+        if force_full:
+            last_ts = None
+            self.logger.info("Modo FORCE FULL ativado: Ignorando timestamp anterior.")
+            
         if last_ts:
             self.logger.info(f"Busca incremental a partir de: {datetime.fromtimestamp(last_ts/1000)}")
         else:
@@ -182,11 +187,15 @@ class SyncService:
                 db.session.commit()
             return {"error": str(e)}
 
-    def run_sync_stream(self):
+    def run_sync_stream(self, force_full=False):
         """Gerador para SSE com Lógica Incremental"""
-        yield "data: 🚀 Iniciando Sync V2.5 (Incremental)...\n\n"
+        yield f"data: 🚀 Iniciando Sync V2.5 ({'COMPLETO' if force_full else 'INCREMENTAL'})...\n\n"
         
         last_ts = self.get_last_sync_ts()
+        if force_full:
+            last_ts = None
+            yield "data: ⚠️ Modo Completo Forçado: Re-escaneando tudo...\n\n"
+            
         last_date_str = datetime.fromtimestamp(last_ts/1000).strftime('%d/%m %H:%M') if last_ts else "INÍCIO (Tudo)"
         yield f"data: 🕒 Filtro: desde {last_date_str}\n\n"
         

@@ -1,0 +1,1722 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict h247GgxjZ4ou8Ukpo5mWlXu0QyDQKh0kWqQjgRxE1Ie3is6WGUtVgIOCKcoE0gv
+
+-- Dumped from database version 15.15
+-- Dumped by pg_dump version 15.15
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: metrics_snapshot; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.metrics_snapshot (
+    id integer NOT NULL,
+    reference_date timestamp without time zone,
+    total_lojas_em_progresso integer,
+    total_lojas_concluidas integer,
+    mrr_em_implantacao double precision,
+    pct_no_prazo double precision
+);
+
+
+ALTER TABLE public.metrics_snapshot OWNER TO "user";
+
+--
+-- Name: metrics_snapshot_daily; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.metrics_snapshot_daily (
+    id integer NOT NULL,
+    snapshot_date date NOT NULL,
+    store_id integer NOT NULL,
+    implantador character varying(100),
+    rede character varying(100),
+    status_norm character varying(50),
+    days_in_stage integer,
+    idle_days integer,
+    wip_points double precision,
+    mrr double precision,
+    risk_score double precision,
+    ai_risk_level text,
+    ai_summary text,
+    ai_network_summary text,
+    ai_action_plan text,
+    ai_last_analysis timestamp without time zone
+);
+
+
+ALTER TABLE public.metrics_snapshot_daily OWNER TO "user";
+
+--
+-- Name: metrics_snapshot_daily_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.metrics_snapshot_daily_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.metrics_snapshot_daily_id_seq OWNER TO "user";
+
+--
+-- Name: metrics_snapshot_daily_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.metrics_snapshot_daily_id_seq OWNED BY public.metrics_snapshot_daily.id;
+
+
+--
+-- Name: metrics_snapshot_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.metrics_snapshot_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.metrics_snapshot_id_seq OWNER TO "user";
+
+--
+-- Name: metrics_snapshot_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.metrics_snapshot_id_seq OWNED BY public.metrics_snapshot.id;
+
+
+--
+-- Name: status_events; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.status_events (
+    id integer NOT NULL,
+    clickup_task_id character varying(50) NOT NULL,
+    old_status character varying(50),
+    new_status character varying(50),
+    changed_at timestamp without time zone NOT NULL,
+    changed_by character varying(100),
+    entity_type character varying(20)
+);
+
+
+ALTER TABLE public.status_events OWNER TO "user";
+
+--
+-- Name: status_events_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.status_events_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.status_events_id_seq OWNER TO "user";
+
+--
+-- Name: status_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.status_events_id_seq OWNED BY public.status_events.id;
+
+
+--
+-- Name: store_deep_sync_state; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.store_deep_sync_state (
+    store_id integer NOT NULL,
+    last_deep_sync_at timestamp without time zone,
+    sync_status character varying(20),
+    last_error text,
+    last_synced_clickup_updated_at character varying(50)
+);
+
+
+ALTER TABLE public.store_deep_sync_state OWNER TO "user";
+
+--
+-- Name: store_sync_logs; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.store_sync_logs (
+    id integer NOT NULL,
+    store_id integer NOT NULL,
+    field_name character varying(50) NOT NULL,
+    old_value text,
+    new_value text,
+    changed_at timestamp without time zone,
+    source character varying(20)
+);
+
+
+ALTER TABLE public.store_sync_logs OWNER TO "user";
+
+--
+-- Name: store_sync_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.store_sync_logs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.store_sync_logs_id_seq OWNER TO "user";
+
+--
+-- Name: store_sync_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.store_sync_logs_id_seq OWNED BY public.store_sync_logs.id;
+
+
+--
+-- Name: stores; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.stores (
+    id integer NOT NULL,
+    store_name character varying(255) NOT NULL,
+    custom_store_id character varying(50),
+    clickup_task_id character varying(50) NOT NULL,
+    clickup_url character varying(255),
+    status character varying(50),
+    status_raw character varying(50),
+    status_norm character varying(50),
+    created_at timestamp without time zone,
+    finished_at timestamp without time zone,
+    start_real_at timestamp without time zone,
+    end_real_at timestamp without time zone,
+    total_time_days double precision,
+    idle_days integer,
+    implantador character varying(100),
+    implantador_original character varying(100),
+    implantador_atual character varying(100),
+    valor_mensalidade double precision,
+    valor_implantacao double precision,
+    financeiro_status character varying(50),
+    erp character varying(100),
+    cnpj character varying(50),
+    crm character varying(50),
+    rede character varying(100),
+    tipo_loja character varying(50),
+    parent_id integer,
+    observacoes text,
+    tempo_contrato integer,
+    manual_finished_at timestamp without time zone,
+    considerar_tempo_implantacao boolean,
+    justificativa_tempo_implantacao character varying(255),
+    teve_retrabalho boolean,
+    retrabalho_tipo character varying(100),
+    delivered_with_quality boolean DEFAULT true
+);
+
+
+ALTER TABLE public.stores OWNER TO "user";
+
+--
+-- Name: stores_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.stores_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.stores_id_seq OWNER TO "user";
+
+--
+-- Name: stores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.stores_id_seq OWNED BY public.stores.id;
+
+
+--
+-- Name: sync_state; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.sync_state (
+    id integer NOT NULL,
+    last_shallow_sync_at timestamp without time zone,
+    last_successful_sync_at timestamp without time zone,
+    in_progress boolean
+);
+
+
+ALTER TABLE public.sync_state OWNER TO "user";
+
+--
+-- Name: sync_state_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.sync_state_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.sync_state_id_seq OWNER TO "user";
+
+--
+-- Name: sync_state_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.sync_state_id_seq OWNED BY public.sync_state.id;
+
+
+--
+-- Name: system_config; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.system_config (
+    id integer NOT NULL,
+    key character varying(50) NOT NULL,
+    value character varying(255) NOT NULL,
+    description character varying(200)
+);
+
+
+ALTER TABLE public.system_config OWNER TO "user";
+
+--
+-- Name: system_config_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.system_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.system_config_id_seq OWNER TO "user";
+
+--
+-- Name: system_config_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.system_config_id_seq OWNED BY public.system_config.id;
+
+
+--
+-- Name: tasks_steps; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.tasks_steps (
+    id integer NOT NULL,
+    clickup_task_id character varying(50) NOT NULL,
+    store_id integer NOT NULL,
+    step_list_name character varying(100),
+    step_name character varying(150),
+    assignee character varying(100),
+    status character varying(50),
+    created_at timestamp without time zone,
+    closed_at timestamp without time zone,
+    start_real_at timestamp without time zone,
+    end_real_at timestamp without time zone,
+    total_time_days double precision,
+    idle_days integer,
+    reopen_count integer
+);
+
+
+ALTER TABLE public.tasks_steps OWNER TO "user";
+
+--
+-- Name: tasks_steps_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.tasks_steps_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tasks_steps_id_seq OWNER TO "user";
+
+--
+-- Name: tasks_steps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.tasks_steps_id_seq OWNED BY public.tasks_steps.id;
+
+
+--
+-- Name: time_in_status_cache; Type: TABLE; Schema: public; Owner: user
+--
+
+CREATE TABLE public.time_in_status_cache (
+    id integer NOT NULL,
+    store_id integer NOT NULL,
+    status_name character varying(50) NOT NULL,
+    total_seconds integer,
+    total_days double precision,
+    updated_at timestamp without time zone
+);
+
+
+ALTER TABLE public.time_in_status_cache OWNER TO "user";
+
+--
+-- Name: time_in_status_cache_id_seq; Type: SEQUENCE; Schema: public; Owner: user
+--
+
+CREATE SEQUENCE public.time_in_status_cache_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.time_in_status_cache_id_seq OWNER TO "user";
+
+--
+-- Name: time_in_status_cache_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
+--
+
+ALTER SEQUENCE public.time_in_status_cache_id_seq OWNED BY public.time_in_status_cache.id;
+
+
+--
+-- Name: metrics_snapshot id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.metrics_snapshot ALTER COLUMN id SET DEFAULT nextval('public.metrics_snapshot_id_seq'::regclass);
+
+
+--
+-- Name: metrics_snapshot_daily id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.metrics_snapshot_daily ALTER COLUMN id SET DEFAULT nextval('public.metrics_snapshot_daily_id_seq'::regclass);
+
+
+--
+-- Name: status_events id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.status_events ALTER COLUMN id SET DEFAULT nextval('public.status_events_id_seq'::regclass);
+
+
+--
+-- Name: store_sync_logs id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.store_sync_logs ALTER COLUMN id SET DEFAULT nextval('public.store_sync_logs_id_seq'::regclass);
+
+
+--
+-- Name: stores id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.stores ALTER COLUMN id SET DEFAULT nextval('public.stores_id_seq'::regclass);
+
+
+--
+-- Name: sync_state id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.sync_state ALTER COLUMN id SET DEFAULT nextval('public.sync_state_id_seq'::regclass);
+
+
+--
+-- Name: system_config id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.system_config ALTER COLUMN id SET DEFAULT nextval('public.system_config_id_seq'::regclass);
+
+
+--
+-- Name: tasks_steps id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.tasks_steps ALTER COLUMN id SET DEFAULT nextval('public.tasks_steps_id_seq'::regclass);
+
+
+--
+-- Name: time_in_status_cache id; Type: DEFAULT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.time_in_status_cache ALTER COLUMN id SET DEFAULT nextval('public.time_in_status_cache_id_seq'::regclass);
+
+
+--
+-- Data for Name: metrics_snapshot; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.metrics_snapshot (id, reference_date, total_lojas_em_progresso, total_lojas_concluidas, mrr_em_implantacao, pct_no_prazo) FROM stdin;
+\.
+
+
+--
+-- Data for Name: metrics_snapshot_daily; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.metrics_snapshot_daily (id, snapshot_date, store_id, implantador, rede, status_norm, days_in_stage, idle_days, wip_points, mrr, risk_score, ai_risk_level, ai_summary, ai_network_summary, ai_action_plan, ai_last_analysis) FROM stdin;
+1	2026-01-03	13	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	11	0	0.7	760	11	\N	\N	\N	\N	\N
+2	2026-01-03	14	Ana Débora Diógenes Soares Lima	nidobox	IN_PROGRESS	15	4	1	600	23	\N	\N	\N	\N	\N
+3	2026-01-03	1	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+4	2026-01-03	15	Ana Débora Diógenes Soares Lima	nidobox	IN_PROGRESS	15	4	0.7	600	23	\N	\N	\N	\N	\N
+5	2026-01-03	18	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+6	2026-01-03	19	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+7	2026-01-03	20	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+8	2026-01-03	21	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+9	2026-01-03	22	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+11	2026-01-03	16	Derik Luyd	\N	IN_PROGRESS	23	21	1	1350	65	\N	\N	\N	\N	\N
+12	2026-01-03	17	Derik Luyd	\N	IN_PROGRESS	23	22	1	950	67	\N	\N	\N	\N	\N
+13	2026-01-03	23	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+14	2026-01-03	31	Derik Luyd	 Emporio Pas	IN_PROGRESS	25	14	1	650	53	\N	\N	\N	\N	\N
+15	2026-01-03	37	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	28	21	1	650	70	\N	\N	\N	\N	\N
+16	2026-01-03	33	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	28	24	0.7	650	76	\N	\N	\N	\N	\N
+17	2026-01-03	34	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	28	24	0.7	650	76	\N	\N	\N	\N	\N
+18	2026-01-03	35	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	28	24	0.7	650	76	\N	\N	\N	\N	\N
+19	2026-01-03	36	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	28	24	0.7	650	76	\N	\N	\N	\N	\N
+20	2026-01-03	38	Laissa Oliveira	 Hortisul	IN_PROGRESS	29	18	1	1100	65	\N	\N	\N	\N	\N
+21	2026-01-03	39	Laissa Oliveira	 Hortisul	IN_PROGRESS	29	17	0.7	1100	63	\N	\N	\N	\N	\N
+22	2026-01-03	42	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	0	0.7	950	30	\N	\N	\N	\N	\N
+23	2026-01-03	41	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	22	0.7	950	74	\N	\N	\N	\N	\N
+24	2026-01-03	43	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	22	0.7	950	74	\N	\N	\N	\N	\N
+25	2026-01-03	44	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	17	0.7	950	64	\N	\N	\N	\N	\N
+26	2026-01-03	45	Laissa Oliveira	ProBio Kombucha	IN_PROGRESS	36	0	1	800	36	\N	\N	\N	\N	\N
+27	2026-01-03	32	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	26	18	1	900	62	\N	\N	\N	\N	\N
+28	2026-01-03	40	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	0	1	950	30	\N	\N	\N	\N	\N
+29	2026-01-03	56	Derik Luyd	\N	IN_PROGRESS	50	14	0.7	700	78	\N	\N	\N	\N	\N
+30	2026-01-03	66	Derik Luyd	\N	IN_PROGRESS	85	18	0.7	700	121	\N	\N	\N	\N	\N
+31	2026-01-03	47	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	39	38	1	650	115	\N	\N	\N	\N	\N
+32	2026-01-03	48	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	39	38	0.7	650	115	\N	\N	\N	\N	\N
+33	2026-01-03	50	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	2	1	550	43	\N	\N	\N	\N	\N
+34	2026-01-03	51	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	2	0.7	550	43	\N	\N	\N	\N	\N
+35	2026-01-03	60	Ana Débora Diógenes Soares Lima	Araripe Supermercado	IN_PROGRESS	51	19	1	1150	89	\N	\N	\N	\N	\N
+36	2026-01-03	61	Ana Débora Diógenes Soares Lima	Araripe Supermercado	IN_PROGRESS	51	20	0.7	1150	91	\N	\N	\N	\N	\N
+37	2026-01-03	46	Laissa Oliveira	\N	IN_PROGRESS	37	2	1	950	41	\N	\N	\N	\N	\N
+38	2026-01-03	62	Derik Luyd	\N	IN_PROGRESS	53	14	1	1350	81	\N	\N	\N	\N	\N
+39	2026-01-03	63	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	59	15	1	900	89	\N	\N	\N	\N	\N
+40	2026-01-03	64	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	64	11	1	650	86	\N	\N	\N	\N	\N
+41	2026-01-03	65	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	78	16	1	1000	110	\N	\N	\N	\N	\N
+42	2026-01-03	54	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	45	12	1	1350	69	\N	\N	\N	\N	\N
+43	2026-01-03	55	Laissa Oliveira	\N	IN_PROGRESS	47	15	1	900	77	\N	\N	\N	\N	\N
+44	2026-01-03	57	Derik Luyd	\N	IN_PROGRESS	50	14	1	1100	78	\N	\N	\N	\N	\N
+45	2026-01-03	58	Laissa Oliveira	\N	IN_PROGRESS	50	16	1	760	82	\N	\N	\N	\N	\N
+46	2026-01-03	11	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	1	700	1	\N	\N	\N	\N	\N
+47	2026-01-03	2	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+48	2026-01-03	3	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+49	2026-01-03	4	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+50	2026-01-03	5	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+51	2026-01-03	6	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+52	2026-01-03	7	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+53	2026-01-03	8	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+54	2026-01-03	9	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+55	2026-01-03	10	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	1	0	0.7	700	1	\N	\N	\N	\N	\N
+56	2026-01-03	74	Laissa Oliveira	\N	IN_PROGRESS	264	36	1	950	336	\N	\N	\N	\N	\N
+57	2026-01-03	59	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	42	4	1	950	50	\N	\N	\N	\N	\N
+58	2026-01-03	68	Derik Luyd	\N	IN_PROGRESS	82	15	0.7	500	112	\N	\N	\N	\N	\N
+59	2026-01-03	29	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	1	11400	52	\N	\N	\N	\N	\N
+60	2026-01-03	24	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+61	2026-01-03	67	Derik Luyd	\N	IN_PROGRESS	99	15	1	800	129	\N	\N	\N	\N	\N
+62	2026-01-03	25	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+63	2026-01-03	26	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+64	2026-01-03	27	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+65	2026-01-03	28	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	24	14	0.7	950	52	\N	\N	\N	\N	\N
+66	2026-01-03	30	Derik Luyd	 Emporio Pas	IN_PROGRESS	25	22	0.7	650	69	\N	\N	\N	\N	\N
+67	2026-01-03	49	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	39	38	0.7	950	115	\N	\N	\N	\N	\N
+68	2026-01-03	52	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	8	0.7	550	55	\N	\N	\N	\N	\N
+69	2026-01-03	53	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	2	0.7	550	43	\N	\N	\N	\N	\N
+70	2026-01-03	69	Derik Luyd	\N	IN_PROGRESS	97	4	1	1350	105	\N	\N	\N	\N	\N
+71	2026-01-03	70	Laissa Oliveira	\N	IN_PROGRESS	108	16	1	950	140	\N	\N	\N	\N	\N
+72	2026-01-03	71	Derik Luyd	\N	IN_PROGRESS	124	24	1	950	172	\N	\N	\N	\N	\N
+73	2026-01-03	72	Derik Luyd	\N	IN_PROGRESS	155	15	1	760	185	\N	\N	\N	\N	\N
+74	2026-01-03	73	Laissa Oliveira	\N	IN_PROGRESS	202	23	1	1000	248	\N	\N	\N	\N	\N
+75	2026-01-04	13	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	11	0	0.7	760	11	\N	\N	\N	\N	\N
+85	2026-01-04	16	Derik Luyd	\N	IN_PROGRESS	23	21	1	1350	65	\N	\N	\N	\N	\N
+89	2026-01-04	37	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	29	21	1	650	71	\N	\N	\N	\N	\N
+90	2026-01-04	33	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	29	24	0.7	650	77	\N	\N	\N	\N	\N
+91	2026-01-04	34	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	29	24	0.7	650	77	\N	\N	\N	\N	\N
+92	2026-01-04	35	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	29	24	0.7	650	77	\N	\N	\N	\N	\N
+93	2026-01-04	36	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	29	24	0.7	650	77	\N	\N	\N	\N	\N
+94	2026-01-04	38	Laissa Oliveira	 Hortisul	IN_PROGRESS	29	18	1	1100	65	\N	\N	\N	\N	\N
+95	2026-01-04	39	Laissa Oliveira	 Hortisul	IN_PROGRESS	29	17	0.7	1100	63	\N	\N	\N	\N	\N
+96	2026-01-04	42	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	0	0.7	950	30	\N	\N	\N	\N	\N
+97	2026-01-04	41	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	22	0.7	950	74	\N	\N	\N	\N	\N
+98	2026-01-04	43	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	22	0.7	950	74	\N	\N	\N	\N	\N
+99	2026-01-04	44	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	17	0.7	950	64	\N	\N	\N	\N	\N
+100	2026-01-04	45	Laissa Oliveira	ProBio Kombucha	IN_PROGRESS	36	0	1	800	36	\N	\N	\N	\N	\N
+102	2026-01-04	40	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	30	0	1	950	30	\N	\N	\N	\N	\N
+103	2026-01-04	56	Derik Luyd	\N	IN_PROGRESS	50	14	0.7	700	78	\N	\N	\N	\N	\N
+105	2026-01-04	47	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	39	38	1	650	115	\N	\N	\N	\N	\N
+106	2026-01-04	48	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	39	38	0.7	650	115	\N	\N	\N	\N	\N
+107	2026-01-04	50	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	2	1	550	43	\N	\N	\N	\N	\N
+108	2026-01-04	51	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	2	0.7	550	43	\N	\N	\N	\N	\N
+109	2026-01-04	60	Ana Débora Diógenes Soares Lima	Araripe Supermercado	IN_PROGRESS	51	19	1	1150	89	\N	\N	\N	\N	\N
+110	2026-01-04	61	Ana Débora Diógenes Soares Lima	Araripe Supermercado	IN_PROGRESS	51	20	0.7	1150	91	\N	\N	\N	\N	\N
+111	2026-01-04	46	Laissa Oliveira	\N	IN_PROGRESS	37	2	1	950	41	\N	\N	\N	\N	\N
+112	2026-01-04	62	Derik Luyd	\N	IN_PROGRESS	53	14	1	1350	81	\N	\N	\N	\N	\N
+114	2026-01-04	64	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	64	11	1	650	86	\N	\N	\N	\N	\N
+116	2026-01-04	54	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	45	12	1	1350	69	\N	\N	\N	\N	\N
+76	2026-01-04	14	Ana Débora Diógenes Soares Lima	nidobox	IN_PROGRESS	16	4	1	600	24	\N	\N	\N	\N	\N
+78	2026-01-04	15	Ana Débora Diógenes Soares Lima	nidobox	IN_PROGRESS	16	4	0.7	600	24	\N	\N	\N	\N	\N
+104	2026-01-04	66	Derik Luyd	\N	IN_PROGRESS	86	18	0.7	700	122	\N	\N	\N	\N	\N
+118	2026-01-04	57	Derik Luyd	\N	IN_PROGRESS	51	14	1	1100	79	\N	\N	\N	\N	\N
+119	2026-01-04	58	Laissa Oliveira	\N	IN_PROGRESS	51	16	1	760	83	\N	\N	\N	\N	\N
+79	2026-01-04	18	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+80	2026-01-04	19	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+81	2026-01-04	20	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+82	2026-01-04	21	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+83	2026-01-04	22	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+87	2026-01-04	23	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+131	2026-01-04	59	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	42	4	1	950	50	\N	\N	\N	\N	\N
+132	2026-01-04	68	Derik Luyd	\N	IN_PROGRESS	82	15	0.7	500	112	\N	\N	\N	\N	\N
+135	2026-01-04	67	Derik Luyd	\N	IN_PROGRESS	99	15	1	800	129	\N	\N	\N	\N	\N
+141	2026-01-04	49	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	39	38	0.7	950	115	\N	\N	\N	\N	\N
+142	2026-01-04	52	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	8	0.7	550	55	\N	\N	\N	\N	\N
+143	2026-01-04	53	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	39	2	0.7	550	43	\N	\N	\N	\N	\N
+144	2026-01-04	69	Derik Luyd	\N	IN_PROGRESS	97	4	1	1350	105	\N	\N	\N	\N	\N
+145	2026-01-04	70	Laissa Oliveira	\N	IN_PROGRESS	108	16	1	950	140	\N	\N	\N	\N	\N
+146	2026-01-04	71	Derik Luyd	\N	IN_PROGRESS	124	24	1	950	172	\N	\N	\N	\N	\N
+147	2026-01-04	72	Derik Luyd	\N	IN_PROGRESS	155	15	1	760	185	\N	\N	\N	\N	\N
+77	2026-01-04	1	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+86	2026-01-04	17	Derik Luyd	\N	IN_PROGRESS	24	22	1	950	68	\N	\N	\N	\N	\N
+88	2026-01-04	31	Derik Luyd	 Emporio Pas	IN_PROGRESS	26	14	1	650	54	\N	\N	\N	\N	\N
+101	2026-01-04	32	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	27	18	1	900	63	\N	\N	\N	\N	\N
+113	2026-01-04	63	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	60	15	1	900	90	\N	\N	\N	\N	\N
+115	2026-01-04	65	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	79	16	1	1000	111	\N	\N	\N	\N	\N
+117	2026-01-04	55	Laissa Oliveira	\N	IN_PROGRESS	48	15	1	900	78	\N	\N	\N	\N	\N
+120	2026-01-04	11	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	1	700	2	\N	\N	\N	\N	\N
+121	2026-01-04	2	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+122	2026-01-04	3	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+123	2026-01-04	4	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+124	2026-01-04	5	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+125	2026-01-04	6	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+126	2026-01-04	7	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+127	2026-01-04	8	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+128	2026-01-04	9	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+129	2026-01-04	10	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	2	0	0.7	700	2	\N	\N	\N	\N	\N
+130	2026-01-04	74	Laissa Oliveira	\N	IN_PROGRESS	265	36	1	950	337	\N	\N	\N	\N	\N
+133	2026-01-04	29	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	1	11400	53	\N	\N	\N	\N	\N
+148	2026-01-04	73	Laissa Oliveira	\N	IN_PROGRESS	203	23	1	1000	249	\N	\N	\N	\N	\N
+139	2026-01-04	28	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+140	2026-01-04	30	Derik Luyd	 Emporio Pas	IN_PROGRESS	26	22	0.7	650	70	\N	\N	\N	\N	\N
+134	2026-01-04	24	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+136	2026-01-04	25	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+137	2026-01-04	26	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+138	2026-01-04	27	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	25	14	0.7	950	53	\N	\N	\N	\N	\N
+149	2026-01-05	13	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	12	0	0.7	760	12	\N	\N	\N	\N	\N
+168	2026-01-05	38	Laissa Oliveira	 Hortisul	IN_PROGRESS	31	0	1	1100	31	\N	\N	\N	\N	\N
+169	2026-01-05	39	Laissa Oliveira	 Hortisul	IN_PROGRESS	31	0	0.7	1100	31	\N	\N	\N	\N	\N
+174	2026-01-05	45	Laissa Oliveira	ProBio Kombucha	IN_PROGRESS	37	0	1	800	37	\N	\N	\N	\N	\N
+159	2026-01-05	16	Derik Luyd	\N	IN_PROGRESS	25	21	1	1350	67	\N	\N	\N	\N	\N
+150	2026-01-05	14	Ana Débora Diógenes Soares Lima	nidobox	IN_PROGRESS	17	0	1	600	17	\N	\N	\N	\N	\N
+166	2026-01-05	35	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	30	0	0.7	650	30	\N	\N	\N	\N	\N
+172	2026-01-05	43	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	32	0	0.7	950	32	\N	\N	\N	\N	\N
+167	2026-01-05	36	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	30	0	0.7	650	30	\N	\N	\N	\N	\N
+171	2026-01-05	41	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	32	0	0.7	950	32	\N	\N	\N	\N	\N
+173	2026-01-05	44	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	32	0	0.7	950	32	\N	\N	\N	\N	\N
+170	2026-01-05	42	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	32	0	0.7	950	32	\N	\N	\N	\N	\N
+163	2026-01-05	37	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	30	0	1	650	30	\N	\N	\N	\N	\N
+187	2026-01-05	63	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	61	0	1	900	61	CRITICAL	\N	O lançamento da Matriz (Super SSV) está sob risco crítico devido à alta pressão do cliente, que cancelou o sistema legado (Mercadapp) e exige a virada imediata. O projeto está bloqueado pela pendência final da integração e ajustes de produtos, impedindo o Go-Live.	["Prioridade P0: Criar for\\u00e7a-tarefa de Engenharia para fechar e obter o 'sign-off' de estabilidade da integra\\u00e7\\u00e3o do Super SSV em at\\u00e9 24 horas.", "Escalar imediatamente o ponto de 'ajuste de produtos' com @Guilherme Henrique Oliveira Sot\\u00e9rio para resolu\\u00e7\\u00e3o e testes na Qualidade antes do fim do dia (P0).", "Ap\\u00f3s valida\\u00e7\\u00e3o t\\u00e9cnica (integra\\u00e7\\u00e3o + produtos), realizar novo alinhamento (HOJE) com o lojista para confirmar a data de lan\\u00e7amento (m\\u00e1ximo: in\\u00edcio da pr\\u00f3xima semana), mitigando o risco de atrito e operacional do cliente.", "Garantir que a equipe de Migra\\u00e7\\u00e3o/Lan\\u00e7amento (SUBIR APP) esteja em estado de prontid\\u00e3o (on-call) para executar a virada assim que os bloqueios t\\u00e9cnicos e de Qualidade forem sanados."]	2026-01-05 20:53:47.647363
+191	2026-01-05	55	Laissa Oliveira	\N	IN_PROGRESS	49	0	1	900	49	\N	\N	\N	\N	\N
+186	2026-01-05	62	Derik Luyd	\N	IN_PROGRESS	55	14	1	1350	83	\N	\N	\N	\N	\N
+185	2026-01-05	46	Laissa Oliveira	\N	IN_PROGRESS	39	0	1	950	39	\N	\N	\N	\N	\N
+193	2026-01-05	58	Laissa Oliveira	\N	IN_PROGRESS	52	0	1	760	52	\N	\N	\N	\N	\N
+204	2026-01-05	74	Laissa Oliveira	\N	IN_PROGRESS	266	0	1	950	266	\N	\N	\N	\N	\N
+205	2026-01-05	59	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	42	4	1	950	50	\N	\N	\N	\N	\N
+206	2026-01-05	68	Derik Luyd	\N	IN_PROGRESS	82	15	0.7	500	112	\N	\N	\N	\N	\N
+218	2026-01-05	69	Derik Luyd	\N	IN_PROGRESS	97	4	1	1350	105	\N	\N	\N	\N	\N
+192	2026-01-05	57	Derik Luyd	\N	IN_PROGRESS	52	14	1	1100	80	\N	\N	\N	\N	\N
+176	2026-01-05	40	Ana Débora Diógenes Soares Lima	Supermercado Lagoa	IN_PROGRESS	32	0	1	950	32	\N	\N	\N	\N	\N
+180	2026-01-05	48	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	41	0	0.7	650	41	\N	\N	\N	\N	\N
+182	2026-01-05	51	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	41	0	0.7	550	41	\N	\N	\N	\N	\N
+189	2026-01-05	65	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	80	0	1	1000	80	\N	\N	\N	\N	\N
+183	2026-01-05	60	Ana Débora Diógenes Soares Lima	Araripe Supermercado	IN_PROGRESS	53	19	1	1150	91	\N	\N	\N	\N	\N
+184	2026-01-05	61	Ana Débora Diógenes Soares Lima	Araripe Supermercado	IN_PROGRESS	53	20	0.7	1150	93	\N	\N	\N	\N	\N
+188	2026-01-05	64	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	66	11	1	650	88	\N	\N	\N	\N	\N
+190	2026-01-05	54	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	47	12	1	1350	71	\N	\N	\N	\N	\N
+177	2026-01-05	56	Derik Luyd	\N	IN_PROGRESS	52	14	1	700	80	\N	\N	\N	\N	\N
+179	2026-01-05	47	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	41	0	1	650	41	\N	\N	\N	\N	\N
+181	2026-01-05	50	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	41	0	1	550	41	\N	\N	\N	\N	\N
+209	2026-01-05	67	Derik Luyd	\N	IN_PROGRESS	101	15	1	800	131	\N	\N	\N	\N	\N
+219	2026-01-05	70	Laissa Oliveira	\N	IN_PROGRESS	110	16	1	950	142	\N	\N	\N	\N	\N
+221	2026-01-05	72	Derik Luyd	\N	IN_PROGRESS	157	15	1	760	187	\N	\N	\N	\N	\N
+215	2026-01-05	49	Ana Débora Diógenes Soares Lima	Ana Risorlange	IN_PROGRESS	41	0	0.7	950	41	\N	\N	\N	\N	\N
+216	2026-01-05	52	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	41	0	0.7	550	41	\N	\N	\N	\N	\N
+217	2026-01-05	53	Ana Débora Diógenes Soares Lima	Êxito Supermercados	IN_PROGRESS	41	0	0.7	550	41	\N	\N	\N	\N	\N
+157	2026-01-05	22	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+151	2026-01-05	1	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	HIGH	\N	O status de implantação da Rede é de Risco Alto. 100% das 11 unidades, incluindo a Matriz, estão simultaneamente em status 'IN_PROGRESS' após 2 dias, indicando que não há um ambiente estável de referência (Matriz) para as filiais. A falta de comentários detalhados sugere baixa visibilidade ou um início de projeto uniforme, mas arriscado. A dependência da migração VTEX (Loja 2) é um ponto focal de instabilidade técnica.	["Prioriza\\u00e7\\u00e3o e Estabiliza\\u00e7\\u00e3o da Matriz: Imediatamente focar todos os recursos seniores para concluir e homologar a 'RedeMIX - Loja 1' (Matriz) em D+3. Este deve ser o \\u00fanico marco de sucesso nas pr\\u00f3ximas 24 horas.", "Auditoria e Estrutura de Relat\\u00f3rios: Instituir Stand-ups di\\u00e1rios obrigat\\u00f3rios (Scrum) com o time t\\u00e9cnico e operacional para for\\u00e7ar a comunica\\u00e7\\u00e3o de bloqueios e iniciar um log estruturado de riscos/problemas, substituindo a aus\\u00eancia de coment\\u00e1rios.", "An\\u00e1lise de Depend\\u00eancia e Recursos (VTEX): Alocar o SME (Specialist Matter Expert) de e-commerce para validar o progresso da migra\\u00e7\\u00e3o VTEX da Loja 2 e garantir que n\\u00e3o haja impacto no estoque/pricing central.", "Revis\\u00e3o da Estrat\\u00e9gia de Rollout: Pausar a ativa\\u00e7\\u00e3o ou progresso adicional em 80% das filiais at\\u00e9 que a Matriz esteja 100% estabilizada e testada (Go/No-Go decisivo para o restante da rede)."]	2026-01-05 00:56:50.805193
+175	2026-01-05	32	Ana Débora Diógenes Soares Lima	\N	IN_PROGRESS	28	18	1	900	64	\N	\N	\N	\N	\N
+220	2026-01-05	71	Derik Luyd	\N	IN_PROGRESS	126	24	1	950	174	HIGH	\N	A implantação da Matriz (Franin Supermercado), crucial para o rollout da rede, está em alto risco após 125 dias. O projeto está bloqueado por atividades fundamentais incompletas ('CARD PAI') e uma dependência crítica na verificação de Qualidade/Integração.\nO risco é agravado pela ausência programada do responsável pela entrega final durante o período de 26/12 a 05/01, criando um gargalo operacional na transição de ano.	["Reuni\\u00e3o imediata (em at\\u00e9 4 horas) com @Cayke Prudente para priorizar e finalizar 100% das atividades pendentes no 'CARD PAI' e mitigar a depend\\u00eancia fundamental.", "Estabelecer um plano de handover de Qualidade/Integra\\u00e7\\u00e3o entre o respons\\u00e1vel ausente e @Welington, garantindo que a verifica\\u00e7\\u00e3o cr\\u00edtica ocorra antes de 26/12 ou que @Welington esteja apto a execut\\u00e1-la no per\\u00edodo de recesso.", "Criar um Ponto de Controle (POC) di\\u00e1rio focado no status da 'Integra\\u00e7\\u00e3o da Matriz' e no avan\\u00e7o do onboarding, reportando o status \\u00e0 ger\\u00eancia executiva at\\u00e9 que o marco de Qualidade seja atingido."]	2026-01-05 01:51:33.520247
+194	2026-01-05	11	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	1	700	3	\N	\N	\N	\N	\N
+195	2026-01-05	2	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+152	2026-01-05	15	Ana Débora Diógenes Soares Lima	nidobox	IN_PROGRESS	17	0	0.7	600	17	\N	\N	\N	\N	\N
+160	2026-01-05	17	Derik Luyd	\N	IN_PROGRESS	25	0	1	950	25	\N	\N	\N	\N	\N
+162	2026-01-05	31	Derik Luyd	 Emporio Pas	IN_PROGRESS	27	0	1	650	27	\N	\N	\N	\N	\N
+153	2026-01-05	18	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+154	2026-01-05	19	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+155	2026-01-05	20	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+156	2026-01-05	21	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+161	2026-01-05	23	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+178	2026-01-05	66	Derik Luyd	\N	IN_PROGRESS	87	0	1	700	87	CRITICAL	\N	O projeto da Filial 'Mix Bahia Vilas' está criticamente atrasado (86 dias) e bloqueado na fase de Qualidade devido à ausência de dados operacionais e técnicos essenciais. O setup não-padrão (APP próprio) adiciona complexidade. Os principais bloqueios são a indefinição do domínio e a falta de cadastro dos locais de entrega e horários de agendamento.	["Reuni\\u00e3o de emerg\\u00eancia com o stakeholder respons\\u00e1vel (@Derik Luyd) para obter imediatamente o dom\\u00ednio, locais de entrega e hor\\u00e1rios de agendamento, estabelecendo um prazo limite de 24h para entrega dos dados.", "Alocar um recurso de configura\\u00e7\\u00e3o s\\u00eanior para focar exclusivamente na resolu\\u00e7\\u00e3o do setup da loja, dado o tempo decorrido e a complexidade do APP pr\\u00f3prio.", "Definir e executar o plano de testes de QA imediatamente ap\\u00f3s a inser\\u00e7\\u00e3o dos dados cr\\u00edticos para garantir que as configura\\u00e7\\u00f5es operacionais (agendamento e entrega) estejam funcionais antes de iniciar o deploy."]	2026-01-05 00:57:27.262514
+196	2026-01-05	3	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+197	2026-01-05	4	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+198	2026-01-05	5	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+199	2026-01-05	6	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+200	2026-01-05	7	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+201	2026-01-05	8	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+202	2026-01-05	9	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+203	2026-01-05	10	Ana Débora Diógenes Soares Lima	redemix	IN_PROGRESS	3	0	0.7	700	3	\N	\N	\N	\N	\N
+214	2026-01-05	30	Derik Luyd	 Emporio Pas	IN_PROGRESS	27	22	0.7	650	71	\N	\N	\N	\N	\N
+164	2026-01-05	33	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	30	0	0.7	650	30	\N	\N	\N	\N	\N
+165	2026-01-05	34	Derik Luyd	Emporio Natural Mix	IN_PROGRESS	30	0	0.7	650	30	\N	\N	\N	\N	\N
+208	2026-01-05	24	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+207	2026-01-05	29	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	1	11400	26	\N	\N	\N	\N	\N
+210	2026-01-05	25	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+211	2026-01-05	26	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+212	2026-01-05	27	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+213	2026-01-05	28	Laissa Oliveira	Supermarket Torre	IN_PROGRESS	26	0	0.7	950	26	\N	\N	\N	\N	\N
+222	2026-01-05	73	Laissa Oliveira	\N	IN_PROGRESS	204	0	1	1000	204	\N	\N	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: status_events; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.status_events (id, clickup_task_id, old_status, new_status, changed_at, changed_by, entity_type) FROM stdin;
+\.
+
+
+--
+-- Data for Name: store_deep_sync_state; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.store_deep_sync_state (store_id, last_deep_sync_at, sync_status, last_error, last_synced_clickup_updated_at) FROM stdin;
+28	2026-01-02 23:56:11.758513	COMPLETE	\N	\N
+3	2026-01-04 01:43:45.444796	COMPLETE	\N	\N
+1	2026-01-05 20:55:13.561863	COMPLETE	\N	\N
+\.
+
+
+--
+-- Data for Name: store_sync_logs; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.store_sync_logs (id, store_id, field_name, old_value, new_value, changed_at, source) FROM stdin;
+1	66	tipo_loja	Filial	Matriz	2026-01-05 00:59:01.969032	manual
+2	56	tipo_loja	Filial	Matriz	2026-01-05 01:00:08.339236	manual
+3	33	status	cadastro omie	criação de loja	2026-01-05 14:35:57.417842	sync
+4	34	status	cadastro omie	criação de loja	2026-01-05 14:35:57.424986	sync
+5	35	status	cadastro omie	criação de loja	2026-01-05 14:35:57.429683	sync
+6	37	status	cadastro omie	criação de loja	2026-01-05 14:35:57.4388	sync
+7	65	status	cadastro de produtos	controle de qualidade	2026-01-05 14:35:57.484086	sync
+8	11	observacoes	\N	I. Beepagem de Caixas (15/03/26): Inclusão do número de caixas por\ncompra no admin e obrigatoriedade de conferência (beepagem) pelo entregador\nno carregamento.\n\nII. Pausar Separação (15/05/26): Permissão para interromper a separação\nde pedidos e retomada no dia seguinte.\n\nIII. Link de Pagamento (15/05/26): Geração de link para pagamentos online\nem pedidos criados via administrador.\n\nIV. Gestão de Validade (15/07/26): Registro de data de validade na\nseparação e alertas para produtos próximos ao vencimento.\n\nV. Integração iFood (15/08/26): Desenvolvimento de integração completa\ncom a plataforma iFood.\n\nVI. Checklist de Entrega (15/09/26): Implementação de confirmação de\nentrega por parte do entregador.\n\nVII. Avaria/Devoluções/Trocas (Análise 4º Trimestre): Funcionalidade para\nalteração de status de compras entregues em casos de avaria ou trocas, com\nprazo final sujeito a análise técnica no último trimestre de 2026.	2026-01-05 20:10:18.779619	manual
+9	40	tempo_contrato	90	45	2026-01-05 20:41:12.657378	manual
+10	41	tempo_contrato	90	45	2026-01-05 20:41:31.80113	manual
+11	42	tempo_contrato	90	45	2026-01-05 20:41:35.488407	manual
+12	43	tempo_contrato	90	45	2026-01-05 20:41:41.936676	manual
+13	44	tempo_contrato	90	45	2026-01-05 20:41:45.354652	manual
+14	45	tempo_contrato	90	60	2026-01-05 20:42:27.823238	manual
+15	63	status	integração erp	treinamento	2026-01-05 20:49:39.040423	sync
+16	66	status	controle de qualidade	treinamento	2026-01-05 20:49:39.046156	sync
+\.
+
+
+--
+-- Data for Name: stores; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.stores (id, store_name, custom_store_id, clickup_task_id, clickup_url, status, status_raw, status_norm, created_at, finished_at, start_real_at, end_real_at, total_time_days, idle_days, implantador, implantador_original, implantador_atual, valor_mensalidade, valor_implantacao, financeiro_status, erp, cnpj, crm, rede, tipo_loja, parent_id, observacoes, tempo_contrato, manual_finished_at, considerar_tempo_implantacao, justificativa_tempo_implantacao, teve_retrabalho, retrabalho_tipo, delivered_with_quality) FROM stdin;
+13	Fazenda Orgânica	F0H-603	86ae3mafz	https://app.clickup.com/t/86ae3mafz	cadastro omie	cadastro omie	IN_PROGRESS	2025-12-23 21:24:42.281	\N	2025-12-23 21:24:42.281	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	760	0	Não paga mensalidade	verificar	37.953.335/0001-34	\N	\N	Filial	\N	\N	90	\N	t	\N	f	\N	t
+22	Supermarket Torre Maracanã	F0H-593	86adv4pzy	https://app.clickup.com/t/86adv4pzy	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:16:57.429	\N	2025-12-10 14:16:57.429	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+1	RedeMIX - Loja 11	F0H-615	86ae70fyc	https://app.clickup.com/t/86ae70fyc	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 13:01:34.076	\N	2026-01-02 13:01:34.076	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+16	Atacadão São Roque	F0H-599	86adw8w5f	https://app.clickup.com/t/86adw8w5f	cadastro omie	cadastro omie	IN_PROGRESS	2025-12-11 18:05:53.327	\N	2025-12-11 18:05:53.327	\N	0	21	Derik Luyd	Derik Luyd	Derik Luyd	1350	0	Não paga mensalidade	Winthor/Socin	03.703.630.0001-50	\N	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+14	Nidobox Supermercados Fortaleza (Migração Mercadapp)	F0H-601	86ae1harr	https://app.clickup.com/t/86ae1harr	cadastro omie	cadastro omie	IN_PROGRESS	2025-12-19 13:57:01.691	\N	2025-12-19 13:57:01.691	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	600	0	Não paga mensalidade	Consinco	08.178.375.0008-24	Mercafácil 	nidobox	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+15	Nidobox Supermercados Maracanaú (Migração Mercadapp)	F0H-600	86ae1h6u8	https://app.clickup.com/t/86ae1h6u8	cadastro omie	cadastro omie	IN_PROGRESS	2025-12-19 13:52:20.577	\N	2025-12-19 13:52:20.577	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	600	0	Não paga mensalidade	Consinco	08.178.375.0005-81	Mercafácil	nidobox	Filial	14	\N	90	\N	t	\N	f	\N	t
+17	Supermercado Batista	F0H-598	86advxnu2	https://app.clickup.com/t/86advxnu2	cadastro omie	cadastro omie	IN_PROGRESS	2025-12-11 12:27:53.528	\N	2025-12-11 12:27:53.528	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	950	0	Não paga mensalidade	avanço	09.620.803/0001-13	Não 	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+18	Supermarket Torre Jardim Primavera	F0H-597	86adv4r1n	https://app.clickup.com/t/86adv4r1n	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:17:55.67	\N	2025-12-10 14:17:55.67	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+19	Supermarket Torre Nova iguaçu Calçadão	F0H-596	86adv4qtt	https://app.clickup.com/t/86adv4qtt	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:17:42.512	\N	2025-12-10 14:17:42.512	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+20	Supermarket Torre Nova iguaçu	F0H-595	86adv4qjv	https://app.clickup.com/t/86adv4qjv	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:17:29.855	\N	2025-12-10 14:17:29.855	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+21	Supermarket Torre Itanhangá	F0H-594	86adv4qak	https://app.clickup.com/t/86adv4qak	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:17:16.195	\N	2025-12-10 14:17:16.195	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+38	Hortisul - Sion	F0H-575	86adrajnu	https://app.clickup.com/t/86adrajnu	integração erp	integração erp	IN_PROGRESS	2025-12-05 19:37:55.873	\N	2025-12-05 19:37:55.873	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	1100	0	Não paga mensalidade	Linear	19.232.016/0030-92	\N	 Hortisul	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+35	Emporio Natural Mix - Loja 3 - Campo Grande	F0H-578	86adrgwzm	https://app.clickup.com/t/86adrgwzm	criação de loja	criação de loja	IN_PROGRESS	2025-12-06 00:10:10.404	\N	2025-12-06 00:10:10.404	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	Varejo Facil	40.831.339/0001-54	\N	Emporio Natural Mix	Filial	37	\N	90	\N	t	\N	f	\N	t
+45	ProBio Kombucha	F0H-566	86adjt1m0	https://app.clickup.com/t/86adjt1m0	integração erp	integração erp	IN_PROGRESS	2025-11-28 21:20:25.597	\N	2025-11-28 21:20:25.597	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	800	0	Não paga mensalidade	Bling	39.251.826/0001-69	Não	ProBio Kombucha	Matriz	\N	\N	60	\N	t	\N	f	\N	t
+36	Emporio Natural Mix - Loja 2 - Bangu	F0H-577	86adrgwh1	https://app.clickup.com/t/86adrgwh1	cadastro omie	cadastro omie	IN_PROGRESS	2025-12-06 00:07:17.383	\N	2025-12-06 00:07:17.383	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	Varejo Facil	09.306.670/0001-05	\N	Emporio Natural Mix	Filial	37	\N	90	\N	t	\N	f	\N	t
+43	Supermercado Lagoa - Juazeiro do Norte	F0H-569	86adq5vjp	https://app.clickup.com/t/86adq5vjp	integração erp	integração erp	IN_PROGRESS	2025-12-04 15:48:26.858	\N	2025-12-04 15:48:26.858	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	CONSINCO 	04601165000331	Rock	Supermercado Lagoa	Filial	40	\N	45	\N	t	\N	f	\N	t
+39	Hortisul - Nova Lima	F0H-574	86adra0q8	https://app.clickup.com/t/86adra0q8	integração erp	integração erp	IN_PROGRESS	2025-12-05 19:21:44.745	\N	2025-12-05 19:21:44.745	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	1100	0	Não paga mensalidade	Linear	19.232.016/0029-59	Não	 Hortisul	Filial	38	\N	90	\N	t	\N	f	\N	t
+40	Supermercado Lagoa - Parangaba [Migração Mercadapp]	F0H-572	86adq6duv	https://app.clickup.com/t/86adq6duv	integração erp	integração erp	IN_PROGRESS	2025-12-04 16:07:37.111	\N	2025-12-04 16:07:37.111	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	Consinco	04.601.165/0015- 75	Rock	Supermercado Lagoa	Matriz	\N	\N	45	\N	t	\N	f	\N	t
+23	Supermarket Torre São Conrado	F0H-592	86adv4pqw	https://app.clickup.com/t/86adv4pqw	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:16:46.459	\N	2025-12-10 14:16:46.459	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+41	Supermercado Lagoa - Sobral Parque da Cidade [MIGRAÇÃO MERCADAPP]	F0H-571	86adq67b9	https://app.clickup.com/t/86adq67b9	integração erp	integração erp	IN_PROGRESS	2025-12-04 16:02:18.667	\N	2025-12-04 16:02:18.667	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	Consinco	04.601.165/0004-12	Rock	Supermercado Lagoa	Filial	40	\N	45	\N	t	\N	f	\N	t
+37	Emporio Natural Mix - Loja Madureira 	F0H-576	86adrgvra	https://app.clickup.com/t/86adrgvra	criação de loja	criação de loja	IN_PROGRESS	2025-12-06 00:04:12.093	\N	2025-12-06 00:04:12.093	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	Varejo Facil	03.372.147/0001-09	\N	Emporio Natural Mix	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+42	Supermercado Lagoa - Lago Jacarey	F0H-570	86adq60n7	https://app.clickup.com/t/86adq60n7	integração erp	integração erp	IN_PROGRESS	2025-12-04 15:54:24.346	\N	2025-12-04 15:54:24.346	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	Consinco	04.601.165/0018- 18	Rock	Supermercado Lagoa	Filial	40	\N	45	\N	t	\N	f	\N	t
+44	Supermercado Lagoa - Santos Dumont [Migração Mercadapp]	F0H-568	86adq5qty	https://app.clickup.com/t/86adq5qty	integração erp	integração erp	IN_PROGRESS	2025-12-04 15:43:41.212	\N	2025-12-04 15:43:41.212	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	CONSINCO	04.601.165/0019-07	Rock	Supermercado Lagoa	Filial	40	\N	45	\N	t	\N	f	\N	t
+32	Supermercado Bem Vindo [Migração Mercadapp]	F0H-581	86adt2mv0	https://app.clickup.com/t/86adt2mv0	integração erp	integração erp	IN_PROGRESS	2025-12-08 11:23:54.913	\N	2025-12-08 11:23:54.913	\N	0	18	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	900	0	Não paga mensalidade	Intersolid 	41.403.240/0001-14	Não tem, a intenção de orçar com a Mercafácil	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+31	Emporio Pas - Loja 2  - Mirandopolis	F0H-582	86adu28g1	https://app.clickup.com/t/86adu28g1	onboarding	onboarding	IN_PROGRESS	2025-12-09 13:13:17.468	\N	2025-12-09 13:13:17.468	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	Intersolid	52.397.650/0002‐05	\N	 Emporio Pas	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+33	Emporio Natural Mix - Loja 5 	F0H-580	86adrgy99	https://app.clickup.com/t/86adrgy99	criação de loja	criação de loja	IN_PROGRESS	2025-12-06 00:16:21.436	\N	2025-12-06 00:16:21.436	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	Varejo Facil	57.170.207/0001-21	\N	Emporio Natural Mix	Filial	37	\N	90	\N	t	\N	f	\N	t
+34	Emporio Natural Mix - Loja 4 - Tijucas	F0H-579	86adrgxkz	https://app.clickup.com/t/86adrgxkz	criação de loja	criação de loja	IN_PROGRESS	2025-12-06 00:12:57.778	\N	2025-12-06 00:12:57.778	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	Varejo Facil	60.827.528/0001-60	\N	Emporio Natural Mix	Filial	37	\N	90	\N	t	\N	f	\N	t
+48	Ana Risorlange Bonsucesso (Migração Mercadapp)	F0H-563	86adg3vuw	https://app.clickup.com/t/86adg3vuw	cadastro omie	cadastro omie	IN_PROGRESS	2025-11-25 18:54:40.241	\N	2025-11-25 18:54:40.241	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	650	0	Não paga mensalidade	RPINFO	01.755.101/0003-05	\N	Ana Risorlange	Filial	47	\N	90	\N	t	\N	f	\N	t
+51	Êxito Supermercados Monte Castelo (Migração Mercadapp)	F0H-560	86adg364c	https://app.clickup.com/t/86adg364c	integração erp	integração erp	IN_PROGRESS	2025-11-25 18:35:42.17	\N	2025-11-25 18:35:42.17	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	550	0	Não paga mensalidade	Consinco	72.120.199/0002-83	Sim, mercafácil	Êxito Supermercados	Filial	50	\N	90	\N	t	\N	f	\N	t
+65	Novo Prático Supermercados	F0H-542	86ackwj8r	https://app.clickup.com/t/86ackwj8r	controle de qualidade	controle de qualidade	IN_PROGRESS	2025-10-17 12:59:11.441	\N	2025-10-17 12:59:11.441	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	1000	3750	Não paga mensalidade	hipcom	52.337.252/0001-04	Não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+60	Araripe Supermercado Bom Jardim (Migração Mercadapp)	F0H-550	86ad7wmvk	https://app.clickup.com/t/86ad7wmvk	integração erp	integração erp	IN_PROGRESS	2025-11-13 17:53:45.208	\N	2025-11-13 17:53:45.208	\N	0	19	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	1150	0	Não paga mensalidade	RMS (PDV Consinco)	09.238.322/0001-48	\N	Araripe Supermercado	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+61	Araripe Supermercado Eusébio (Migração Mercadapp)	F0H-549	86ad7vw0k	https://app.clickup.com/t/86ad7vw0k	integração erp	integração erp	IN_PROGRESS	2025-11-13 17:31:20.333	\N	2025-11-13 17:31:20.333	\N	0	20	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	1150	0	Não paga mensalidade	RMS (PDV CONSINCO)	09.238.322/0003-00	\N	Araripe Supermercado	Filial	60	\N	90	\N	t	\N	f	\N	t
+55	Mais Cerveja	F0H-555	86ad9q0t8	https://app.clickup.com/t/86ad9q0t8	integração erp	integração erp	IN_PROGRESS	2025-11-17 13:05:06.596	\N	2025-11-17 13:05:06.596	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	900	0	Não paga mensalidade	SD sistemas	30.588.070/0001-73	.	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+62	Rota da Economia	F0H-548	86ad69xpe	https://app.clickup.com/t/86ad69xpe	integração erp	integração erp	IN_PROGRESS	2025-11-11 20:37:48.333	\N	2025-11-11 20:37:48.333	\N	0	14	Derik Luyd	Derik Luyd	Derik Luyd	1350	0	Não paga mensalidade	concretize	28.856.022/0001-77	Não 	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+46	Almeida Supermercado	F0H-565	86adhz220	https://app.clickup.com/t/86adhz220	integração erp	integração erp	IN_PROGRESS	2025-11-27 20:42:10.667	\N	2025-11-27 20:42:10.667	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	0	Não paga mensalidade	viva sistemas	09.112.850/0001-56	Não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+64	SuperDó	F0H-546	86acyrzm4	https://app.clickup.com/t/86acyrzm4	cadastro de produtos	cadastro de produtos	IN_PROGRESS	2025-10-31 17:48:12.837	\N	2025-10-31 17:48:12.837	\N	0	11	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	650	3500	Não paga mensalidade	Mac Sistemas	01.010.801/0001-09	Não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+58	Descontão Cecílio Mota	F0H-552	86ad8dxjr	https://app.clickup.com/t/86ad8dxjr	integração erp	integração erp	IN_PROGRESS	2025-11-14 13:17:32.162	\N	2025-11-14 13:17:32.162	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	760	0	Não paga mensalidade	ciss	09.506.050/0002-09	Nao	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+54	Castelinho Supermercado (Migração Mercadapp)	F0H-556	86adcbv13	https://app.clickup.com/t/86adcbv13	integração erp	integração erp	IN_PROGRESS	2025-11-19 19:37:16.291	\N	2025-11-19 19:37:16.291	\N	0	12	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	1350	0	Não paga mensalidade	.	02.072.439/0001-55	Mercafácil	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+66	Mix Bahia Vilas	F0H-539	86acev1vx	https://app.clickup.com/t/86acev1vx	treinamento	treinamento	IN_PROGRESS	2025-10-10 13:56:01.488	\N	2025-10-10 13:56:01.488	\N	0	0	Derik Luyd	Derik Luyd	Derik Luyd	700	2500	Não paga mensalidade	Consinco	42.087.841/0002-09	CONSINCO	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+57	Mercado Macedo	F0H-553	86ad8e6et	https://app.clickup.com/t/86ad8e6et	integração erp	integração erp	IN_PROGRESS	2025-11-14 13:26:49.324	\N	2025-11-14 13:26:49.324	\N	0	14	Derik Luyd	Derik Luyd	Derik Luyd	1100	0	Não paga mensalidade	Mobne	20.703.490/0001-08	Não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+56	Supermercado Tatais	F0H-554	86ad8qttj	https://app.clickup.com/t/86ad8qttj	integração erp	integração erp	IN_PROGRESS	2025-11-14 18:35:46.662	\N	2025-11-14 18:35:46.662	\N	0	14	Derik Luyd	Derik Luyd	Derik Luyd	700	0	Não paga mensalidade	SD	37.893.563/0001-66	CRESCE VENDAS	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+47	Ana Risorlange Bernardo Manuel (Migração Mercadapp)	F0H-564	86adg43rz	https://app.clickup.com/t/86adg43rz	cadastro omie	cadastro omie	IN_PROGRESS	2025-11-25 19:02:00.667	\N	2025-11-25 19:02:00.667	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	650	0	Não paga mensalidade	RPINFO	01.755.101/0004-88	\N	Ana Risorlange	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+50	Êxito Supermercados WS (Migração Mercadapp)	F0H-561	86adg3b0r	https://app.clickup.com/t/86adg3b0r	integração erp	integração erp	IN_PROGRESS	2025-11-25 18:39:58.272	\N	2025-11-25 18:39:58.272	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	550	0	Não paga mensalidade	Consinco	72.120.199/0004-45	Sim, mercafácil	Êxito Supermercados	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+63	Super SSV	F0H-547	86ad1uezn	https://app.clickup.com/t/86ad1uezn	treinamento	treinamento	IN_PROGRESS	2025-11-05 13:08:34.587	\N	2025-11-05 13:08:34.587	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	900	0	Não paga mensalidade	CISSPODER	00.679.751/0001-86	Não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+2	RedeMIX - Loja 10	F0H-614	86ae70dz7	https://app.clickup.com/t/86ae70dz7	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:59:43.769	\N	2026-01-02 12:59:43.769	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+3	RedeMIX - Loja 09	F0H-613	86ae70cac	https://app.clickup.com/t/86ae70cac	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:57:54.532	\N	2026-01-02 12:57:54.532	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+4	RedeMIX - Loja 08	F0H-612	86ae70ax5	https://app.clickup.com/t/86ae70ax5	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:56:04.975	\N	2026-01-02 12:56:04.975	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+5	RedeMIX - Loja 7	F0H-611	86ae709hn	https://app.clickup.com/t/86ae709hn	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:54:10.499	\N	2026-01-02 12:54:10.499	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+6	RedeMIX - Loja 06	F0H-610	86ae707zp	https://app.clickup.com/t/86ae707zp	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:52:13.653	\N	2026-01-02 12:52:13.653	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+7	RedeMIX - Loja 5	F0H-609	86ae705wc	https://app.clickup.com/t/86ae705wc	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:50:20.214	\N	2026-01-02 12:50:20.214	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+8	RedeMIX - Loja 04	F0H-608	86ae7040b	https://app.clickup.com/t/86ae7040b	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:47:36.116	\N	2026-01-02 12:47:36.116	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	Totvs	06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+9	RedeMIX - Loja 3	F0H-607	86ae702vz	https://app.clickup.com/t/86ae702vz	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:45:34.479	\N	2026-01-02 12:45:34.479	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	TOTVS	 06.337.087/0006-88	\N	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+10	RedeMIX - Loja 2 (Migração VTEX)	F0H-606	86ae700nk	https://app.clickup.com/t/86ae700nk	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:41:14.6	\N	2026-01-02 12:41:14.6	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	0	Não paga mensalidade	totvs	06.337.087/0006-88	Sim, BNEX	redemix	Filial	11	\N	90	\N	t	\N	f	\N	t
+59	Super Esperança (Migração Mercadapp)	F0H-551	86ad813mb	https://app.clickup.com/t/86ad813mb	loja entregue	loja entregue	IN_PROGRESS	2025-11-13 19:51:04.625	\N	2025-11-13 19:51:04.625	\N	0	4	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	VR	12.044.435/0001-17	Não	\N	Matriz	\N	\N	90	2025-12-26 00:00:00	t	\N	f	\N	t
+68	Camilo Supermercados - Marialva	F0H-534	86ac4aqnn	https://app.clickup.com/t/86ac4aqnn	loja entregue	loja entregue	IN_PROGRESS	2025-09-26 18:20:19.82	\N	2025-09-26 18:20:19.82	\N	0	15	Derik Luyd	Derik Luyd	Derik Luyd	500	0	Não paga mensalidade	RPinfo	77.698.017/0020-51	ROCK ECANTECH 	\N	Filial	\N	\N	90	2025-12-18 00:00:00	t	\N	f	\N	t
+67	Supermercado SuperTreis	F0H-535	86ac4f4e3	https://app.clickup.com/t/86ac4f4e3	treinamento	treinamento	IN_PROGRESS	2025-09-26 19:58:23.935	\N	2025-09-26 19:58:23.935	\N	0	15	Derik Luyd	Derik Luyd	Derik Luyd	800	3500	Não paga mensalidade	Sysmo	80.113.939/0001-00	Sim, sysmo. 	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+11	RedeMIX - Loja 1 	F0H-605	86ae6zwcz	https://app.clickup.com/t/86ae6zwcz	cadastro omie	cadastro omie	IN_PROGRESS	2026-01-02 12:34:17.217	\N	2026-01-02 12:34:17.217	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	700	11000	Não paga mensalidade	Bluesoft	 06.337.087/0006-88	\N	redemix	Matriz	\N	I. Beepagem de Caixas (15/03/26): Inclusão do número de caixas por\ncompra no admin e obrigatoriedade de conferência (beepagem) pelo entregador\nno carregamento.\n\nII. Pausar Separação (15/05/26): Permissão para interromper a separação\nde pedidos e retomada no dia seguinte.\n\nIII. Link de Pagamento (15/05/26): Geração de link para pagamentos online\nem pedidos criados via administrador.\n\nIV. Gestão de Validade (15/07/26): Registro de data de validade na\nseparação e alertas para produtos próximos ao vencimento.\n\nV. Integração iFood (15/08/26): Desenvolvimento de integração completa\ncom a plataforma iFood.\n\nVI. Checklist de Entrega (15/09/26): Implementação de confirmação de\nentrega por parte do entregador.\n\nVII. Avaria/Devoluções/Trocas (Análise 4º Trimestre): Funcionalidade para\nalteração de status de compras entregues em casos de avaria ou trocas, com\nprazo final sujeito a análise técnica no último trimestre de 2026.	90	\N	t	\N	f	\N	t
+24	Supermarket Torre Maria da Graça	F0H-591	86adv4pew	https://app.clickup.com/t/86adv4pew	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:16:33.286	\N	2025-12-10 14:16:33.286	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+29	Supermarket - BarraBlue	F0H-584	86adv1x6n	https://app.clickup.com/t/86adv1x6n	integração erp	integração erp	IN_PROGRESS	2025-12-10 12:43:08.744	\N	2025-12-10 12:43:08.744	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	11400	20400	Não paga mensalidade	consinco	07.760.885/0001-76	Não	Supermarket Torre	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+74	Supermercado São Francisco	F0H-473	86a7yr40g	https://app.clickup.com/t/86a7yr40g	controle de qualidade	controle de qualidade	IN_PROGRESS	2025-04-14 13:09:42.884	\N	2025-04-14 13:09:42.884	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	0	Não paga mensalidade	ShopControl	17.729.516/0001-74	Sim, interno	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+30	Empório Pas - Loja 04 - Andradina	F0H-583	86adu2f99	https://app.clickup.com/t/86adu2f99	onboarding	onboarding	IN_PROGRESS	2025-12-09 13:18:44.837	\N	2025-12-09 13:18:44.837	\N	0	22	Derik Luyd	Derik Luyd	Derik Luyd	650	0	Não paga mensalidade	ROCK	52.397.650/0004‐69	\N	 Emporio Pas	Filial	31	\N	90	\N	t	\N	f	\N	t
+69	Brilhante Supermercado	F0H-533	86ac03z24	https://app.clickup.com/t/86ac03z24	loja entregue	loja entregue	IN_PROGRESS	2025-09-22 14:47:02.061	\N	2025-09-22 14:47:02.061	\N	0	4	Derik Luyd	Derik Luyd	Derik Luyd	1350	2500	Não paga mensalidade	intersolid	53.559.901/0001-84	não	\N	Matriz	\N	\N	90	2025-12-29 00:00:00	t	\N	f	\N	t
+70	Vilton Supermercados	F0H-530	86abwk7gx	https://app.clickup.com/t/86abwk7gx	cadastro de produtos	cadastro de produtos	IN_PROGRESS	2025-09-17 15:10:27.689	\N	2025-09-17 15:10:27.689	\N	0	16	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	5000	Não paga mensalidade	RMS	02.114.945/0001-60	Sim,mercafacil	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+71	Franin Supermercado	F0H-528	86abeq4jq	https://app.clickup.com/t/86abeq4jq	controle de qualidade	controle de qualidade	IN_PROGRESS	2025-09-01 21:10:09.177	\N	2025-09-01 21:10:09.177	\N	0	24	Derik Luyd	Derik Luyd	Derik Luyd	950	0	Não paga mensalidade	linear	54.099.675/0001-69	NAO	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+72	Supermercado Favorito	F0H-513	86aap4zdg	https://app.clickup.com/t/86aap4zdg	treinamento	treinamento	IN_PROGRESS	2025-08-01 18:55:13.914	\N	2025-08-01 18:55:13.914	\N	0	15	Derik Luyd	Derik Luyd	Derik Luyd	760	0	Não paga mensalidade	linear	27.890.811/0001-61	não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+49	Ana Risorlange Bom Jardim (Migração Mercadapp)	F0H-562	86adg3n7b	https://app.clickup.com/t/86adg3n7b	cadastro omie	cadastro omie	IN_PROGRESS	2025-11-25 18:48:53.68	\N	2025-11-25 18:48:53.68	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	950	0	Não paga mensalidade	RPINFO	01.755.101/0001-35	\N	Ana Risorlange	Filial	47	\N	90	\N	t	\N	f	\N	t
+52	Êxito Supermercados Potira (Migração Mercadapp)	F0H-559	86adg32n2	https://app.clickup.com/t/86adg32n2	integração erp	integração erp	IN_PROGRESS	2025-11-25 18:32:19.093	\N	2025-11-25 18:32:19.093	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	550	0	Não paga mensalidade	Consinco	10.962.083/0002-34	Sim, mercafácil	Êxito Supermercados	Filial	50	\N	90	\N	t	\N	f	\N	t
+53	Êxito Supermercados Dom Almeida (Migração Mercadapp)	F0H-558	86adg2y51	https://app.clickup.com/t/86adg2y51	integração erp	integração erp	IN_PROGRESS	2025-11-25 18:28:23.24	\N	2025-11-25 18:28:23.24	\N	0	0	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	Ana Débora Diógenes Soares Lima	550	0	Não paga mensalidade	Consinco	10.962.083/0001-53	Sim, mercafácil	Êxito Supermercados	Filial	50	\N	90	\N	t	\N	f	\N	t
+25	Supermarket Torre Campo Grande	F0H-590	86adv4nx8	https://app.clickup.com/t/86adv4nx8	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:16:09.137	\N	2025-12-10 14:16:09.137	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+26	Supermarket Torre Freguesia	F0H-589	86adv4n8u	https://app.clickup.com/t/86adv4n8u	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:15:40.34	\N	2025-12-10 14:15:40.34	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+27	Supermarket Torre Praça Seca	F0H-588	86adv4he3	https://app.clickup.com/t/86adv4he3	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:12:50.607	\N	2025-12-10 14:12:50.607	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+28	Supermarket torre Taquara	F0H-587	86adv4fxg	https://app.clickup.com/t/86adv4fxg	integração erp	integração erp	IN_PROGRESS	2025-12-10 14:11:31.754	\N	2025-12-10 14:11:31.754	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	950	1700	Não paga mensalidade	consinco	07.760.885/0001-76	\N	Supermarket Torre	Filial	29	\N	90	\N	t	\N	f	\N	t
+73	Supermercado Perola - Compre Facil	F0H-502	86a9fp72t	https://app.clickup.com/t/86a9fp72t	treinamento	treinamento	IN_PROGRESS	2025-06-15 11:17:42.853	\N	2025-06-15 11:17:42.853	\N	0	0	Laissa Oliveira	Laissa Oliveira	Laissa Oliveira	1000	6500	Não paga mensalidade	whinthor	06.204.131/0020-30	Não	\N	Matriz	\N	\N	90	\N	t	\N	f	\N	t
+\.
+
+
+--
+-- Data for Name: sync_state; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.sync_state (id, last_shallow_sync_at, last_successful_sync_at, in_progress) FROM stdin;
+1	2026-01-05 20:55:31.074349	2026-01-05 20:55:31.074361	f
+\.
+
+
+--
+-- Data for Name: system_config; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.system_config (id, key, value, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tasks_steps; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.tasks_steps (id, clickup_task_id, store_id, step_list_name, step_name, assignee, status, created_at, closed_at, start_real_at, end_real_at, total_time_days, idle_days, reopen_count) FROM stdin;
+1	86ae70g0j	1	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 11	\N	ag cadastro	2026-01-02 13:01:38.973	\N	2026-01-02 13:01:38.973	\N	0	0	0
+2	86ae70g1b	1	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 11	\N	finalizado	2026-01-02 13:01:40.303	2026-01-02 19:26:23.101	2026-01-02 13:01:40.303	2026-01-02 19:26:23.101	0.27	0	0
+3	86ae70g10	1	UNKNOWN	[ONBOARDING] RedeMIX - Loja 11	\N	finalizado	2026-01-02 13:01:39.782	2026-01-02 19:26:08.252	2026-01-02 13:01:39.782	2026-01-02 19:26:08.252	0.27	0	0
+4	86ae70e2j	2	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 10	\N	ag cadastro	2026-01-02 12:59:48.453	\N	2026-01-02 12:59:48.453	\N	0	0	0
+5	86ae70eqn	2	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 10	\N	finalizado	2026-01-02 13:00:24.611	2026-01-02 19:25:47.54	2026-01-02 13:00:24.611	2026-01-02 19:25:47.54	0.27	0	0
+6	86ae70epj	2	UNKNOWN	[ONBOARDING] RedeMIX - Loja 10	\N	finalizado	2026-01-02 13:00:23.85	2026-01-02 19:25:33.946	2026-01-02 13:00:23.85	2026-01-02 19:25:33.946	0.27	0	0
+7	86ae70ccp	3	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 09	\N	ag cadastro	2026-01-02 12:57:59.22	\N	2026-01-02 12:57:59.22	\N	0	0	0
+8	86ae70cdd	3	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 09	\N	finalizado	2026-01-02 12:58:00.455	2026-01-02 19:25:06.251	2026-01-02 12:58:00.455	2026-01-02 19:25:06.251	0.27	0	0
+9	86ae70cd7	3	UNKNOWN	[ONBOARDING] RedeMIX - Loja 09	\N	finalizado	2026-01-02 12:57:59.915	2026-01-02 19:24:45.753	2026-01-02 12:57:59.915	2026-01-02 19:24:45.753	0.27	0	0
+10	86ae70azb	4	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 08	\N	ag cadastro	2026-01-02 12:56:09.441	\N	2026-01-02 12:56:09.441	\N	0	0	0
+11	86ae70azu	4	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 08	\N	finalizado	2026-01-02 12:56:10.53	2026-01-02 19:24:22.017	2026-01-02 12:56:10.53	2026-01-02 19:24:22.017	0.27	0	0
+12	86ae70azp	4	UNKNOWN	[ONBOARDING] RedeMIX - Loja 08	\N	finalizado	2026-01-02 12:56:10.088	2026-01-02 19:23:56.493	2026-01-02 12:56:10.088	2026-01-02 19:23:56.493	0.27	0	0
+13	86ae709k5	5	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 7	\N	ag cadastro	2026-01-02 12:54:15.092	\N	2026-01-02 12:54:15.092	\N	0	0	0
+14	86ae709kt	5	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 7	\N	finalizado	2026-01-02 12:54:16.257	2026-01-02 19:23:32.984	2026-01-02 12:54:16.257	2026-01-02 19:23:32.984	0.27	0	0
+15	86ae709km	5	UNKNOWN	[ONBOARDING] RedeMIX - Loja 7	\N	finalizado	2026-01-02 12:54:15.799	2026-01-02 19:23:04.483	2026-01-02 12:54:15.799	2026-01-02 19:23:04.483	0.27	0	0
+16	86ae7082a	6	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 06	\N	ag cadastro	2026-01-02 12:52:18.047	\N	2026-01-02 12:52:18.047	\N	0	0	0
+17	86ae70848	6	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 06	\N	finalizado	2026-01-02 12:52:19.605	2026-01-02 19:22:29.412	2026-01-02 12:52:19.605	2026-01-02 19:22:29.412	0.27	0	0
+18	86ae70838	6	UNKNOWN	[ONBOARDING] RedeMIX - Loja 06	\N	finalizado	2026-01-02 12:52:18.869	2026-01-02 19:22:19.475	2026-01-02 12:52:18.869	2026-01-02 19:22:19.475	0.27	0	0
+19	86ae705y1	7	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 5	\N	ag cadastro	2026-01-02 12:50:24.502	\N	2026-01-02 12:50:24.502	\N	0	0	0
+20	86ae705yz	7	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 5	\N	finalizado	2026-01-02 12:50:25.678	2026-01-02 19:21:46.96	2026-01-02 12:50:25.678	2026-01-02 19:21:46.96	0.27	0	0
+21	86ae705ym	7	UNKNOWN	[ONBOARDING] RedeMIX - Loja 5	\N	finalizado	2026-01-02 12:50:25.185	2026-01-02 19:21:31.162	2026-01-02 12:50:25.185	2026-01-02 19:21:31.162	0.27	0	0
+22	86ae7042r	8	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 04	\N	ag cadastro	2026-01-02 12:47:40.441	\N	2026-01-02 12:47:40.441	\N	0	0	0
+23	86ae7043r	8	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 04	\N	finalizado	2026-01-02 12:47:41.949	2026-01-02 19:20:50.684	2026-01-02 12:47:41.949	2026-01-02 19:20:50.684	0.27	0	0
+24	86ae70436	8	UNKNOWN	[ONBOARDING] RedeMIX - Loja 04	\N	finalizado	2026-01-02 12:47:41.155	2026-01-02 19:20:32.816	2026-01-02 12:47:41.155	2026-01-02 19:20:32.816	0.27	0	0
+25	86ae702xa	9	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 3	\N	ag cadastro	2026-01-02 12:45:39.746	\N	2026-01-02 12:45:39.746	\N	0	0	0
+26	86ae702xk	9	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 3	\N	finalizado	2026-01-02 12:45:40.893	2026-01-02 19:18:12.222	2026-01-02 12:45:40.893	2026-01-02 19:18:12.222	0.27	0	0
+27	86ae702xg	9	UNKNOWN	[ONBOARDING] RedeMIX - Loja 3	\N	finalizado	2026-01-02 12:45:40.366	2026-01-02 19:19:39.299	2026-01-02 12:45:40.366	2026-01-02 19:19:39.299	0.27	0	0
+28	86ae700px	10	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 2 (Migração VTEX)	\N	ag cadastro	2026-01-02 12:41:19.15	\N	2026-01-02 12:41:19.15	\N	0	0	0
+29	86ae700qb	10	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 2 (Migração VTEX)	\N	finalizado	2026-01-02 12:41:20.437	2026-01-02 19:17:34.155	2026-01-02 12:41:20.437	2026-01-02 19:17:34.155	0.28	0	0
+30	86ae700q4	10	UNKNOWN	[ONBOARDING] RedeMIX - Loja 2 (Migração VTEX)	\N	finalizado	2026-01-02 12:41:19.88	2026-01-02 19:17:15.399	2026-01-02 12:41:19.88	2026-01-02 19:17:15.399	0.27	0	0
+31	86ae6zwdz	11	UNKNOWN	[CADASTRO OMIE] RedeMIX - Loja 1 	\N	ag cadastro	2026-01-02 12:34:21.972	\N	2026-01-02 12:34:21.972	\N	0	0	0
+32	86ae6zwef	11	UNKNOWN	[CRIAR LOJA] RedeMIX - Loja 1 	\N	finalizado	2026-01-02 12:34:23.237	2026-01-02 19:16:57.675	2026-01-02 12:34:23.237	2026-01-02 19:16:57.675	0.28	0	0
+33	86ae6zwe6	11	UNKNOWN	[ONBOARDING] RedeMIX - Loja 1 	\N	finalizado	2026-01-02 12:34:22.722	2026-01-02 19:15:50.587	2026-01-02 12:34:22.722	2026-01-02 19:15:50.587	0.28	0	0
+37	86ae3magy	13	UNKNOWN	[CADASTRO OMIE] Fazenda Orgânica	\N	ag cadastro	2025-12-23 21:24:46.864	\N	2025-12-23 21:24:46.864	\N	0	10	0
+38	86ae3mah4	13	UNKNOWN	[CRIAR LOJA] Fazenda Orgânica	\N	to do	2025-12-23 21:24:48.088	\N	2025-12-23 21:24:48.088	\N	0	10	0
+39	86ae3mah1	13	UNKNOWN	[ONBOARDING] Fazenda Orgânica	\N	to do	2025-12-23 21:24:47.652	\N	2025-12-23 21:24:47.652	\N	0	10	0
+40	86ae1haug	14	UNKNOWN	[CADASTRO OMIE] Nidobox Supermercados Fortaleza (Migração Mercadapp)	\N	ag cadastro	2025-12-19 13:57:06.417	\N	2025-12-19 13:57:06.417	\N	0	14	0
+41	86ae1hav8	14	UNKNOWN	[CRIAR LOJA] Nidobox Supermercados Fortaleza (Migração Mercadapp)	\N	finalizado	2025-12-19 13:57:07.698	2025-12-29 13:28:23.719	2025-12-19 13:57:07.698	2025-12-29 13:28:23.719	9.98	4	0
+42	86ae1hauu	14	UNKNOWN	[ONBOARDING] Nidobox Supermercados Fortaleza (Migração Mercadapp)	\N	finalizado	2025-12-19 13:57:07.136	2025-12-22 19:52:48.717	2025-12-19 13:57:07.136	2025-12-22 19:52:48.717	3.25	11	0
+43	86ae1h6w2	15	UNKNOWN	[CADASTRO OMIE] Nidobox Supermercados Maracanaú (Migração Mercadapp)	\N	ag cadastro	2025-12-19 13:52:25.642	\N	2025-12-19 13:52:25.642	\N	0	14	0
+44	86ae1h6x2	15	UNKNOWN	[CRIAR LOJA] Nidobox Supermercados Maracanaú (Migração Mercadapp)	\N	finalizado	2025-12-19 13:52:27.545	2025-12-29 13:28:14.548	2025-12-19 13:52:27.545	2025-12-29 13:28:14.548	9.98	4	0
+45	86ae1h6wn	15	UNKNOWN	[ONBOARDING] Nidobox Supermercados Maracanaú (Migração Mercadapp)	\N	finalizado	2025-12-19 13:52:26.632	2025-12-22 19:52:02.104	2025-12-19 13:52:26.632	2025-12-22 19:52:02.104	3.25	11	0
+46	86adw8wav	16	UNKNOWN	[CADASTRO OMIE] Atacadão São Roque	\N	finalizado	2025-12-11 18:05:57.983	2025-12-15 17:01:09.922	2025-12-11 18:05:57.983	2025-12-15 17:01:09.922	3.95	18	0
+47	86ady723f	16	UNKNOWN	[SUBIR APP] Atacadão São Roque	\N	backlog	2025-12-15 17:01:09.521	\N	2025-12-15 17:01:09.521	\N	0	15	0
+48	86adw8wd4	16	UNKNOWN	[CRIAR LOJA] Atacadão São Roque	\N	to do	2025-12-11 18:06:00.813	\N	2025-12-11 18:06:00.813	\N	0	22	0
+49	86adw8wct	16	UNKNOWN	[ONBOARDING] Atacadão São Roque	\N	to do	2025-12-11 18:06:00.301	\N	2025-12-11 18:06:00.301	\N	0	22	0
+50	86ady723m	16	UNKNOWN	[INTEGRACAO] Atacadão São Roque	\N	backlog	2025-12-15 17:01:09.576	\N	2025-12-15 17:01:09.576	\N	0	18	0
+51	86ady723g	16	UNKNOWN	[ATIVAR RECORRENCIA] Atacadão São Roque	\N	todo	2025-12-15 17:01:09.535	\N	2025-12-15 17:01:09.535	\N	0	18	0
+52	86ady723k	16	UNKNOWN	[TREINAMENTO] Atacadão São Roque	\N	to do	2025-12-15 17:01:09.597	\N	2025-12-15 17:01:09.597	\N	0	18	0
+53	86ady723n	16	UNKNOWN	[CADASTRO PRODUTOS] Atacadão São Roque	\N	to do	2025-12-15 17:01:09.617	\N	2025-12-15 17:01:09.617	\N	0	18	0
+54	86ady7242	16	UNKNOWN	[QUALIDADE] Atacadão São Roque	\N	to do	2025-12-15 17:01:10.083	\N	2025-12-15 17:01:10.083	\N	0	18	0
+55	86advxnw6	17	UNKNOWN	[CADASTRO OMIE] Supermercado Batista	\N	finalizado	2025-12-11 12:27:58.346	2025-12-12 19:08:06.24	2025-12-11 12:27:58.346	2025-12-12 19:08:06.24	1.28	21	0
+56	86adx5cb1	17	UNKNOWN	[SUBIR APP] Supermercado Batista	\N	backlog	2025-12-12 19:08:05.764	\N	2025-12-12 19:08:05.764	\N	0	15	0
+59	86adx5cb0	17	UNKNOWN	[INTEGRACAO] Supermercado Batista	\N	backlog	2025-12-12 19:08:05.658	\N	2025-12-12 19:08:05.658	\N	0	21	0
+60	86adx5cb3	17	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Batista	\N	todo	2025-12-12 19:08:05.8	\N	2025-12-12 19:08:05.8	\N	0	21	0
+61	86adx5cax	17	UNKNOWN	[TREINAMENTO] Supermercado Batista	\N	to do	2025-12-12 19:08:05.562	\N	2025-12-12 19:08:05.562	\N	0	21	0
+62	86adx5cay	17	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Batista	\N	to do	2025-12-12 19:08:05.563	\N	2025-12-12 19:08:05.563	\N	0	21	0
+63	86adx5cb7	17	UNKNOWN	[QUALIDADE] Supermercado Batista	\N	to do	2025-12-12 19:08:05.979	\N	2025-12-12 19:08:05.979	\N	0	21	0
+64	86adv4r4a	18	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Caxias	\N	finalizado	2025-12-10 14:18:00.236	2025-12-19 12:51:12.807	2025-12-10 14:18:00.236	2025-12-19 12:51:12.807	8.94	14	0
+65	86ae1fy6p	18	UNKNOWN	[SUBIR APP] Supermarket Torre Caxias	\N	backlog	2025-12-19 12:51:12.259	\N	2025-12-19 12:51:12.259	\N	0	14	0
+66	86adv4r54	18	UNKNOWN	[CRIAR LOJA] Supermarket Torre Caxias	\N	finalizado	2025-12-10 14:18:01.889	2025-12-12 21:13:43.002	2025-12-10 14:18:01.889	2025-12-12 21:13:43.002	2.29	21	0
+67	86adv4r4w	18	UNKNOWN	[ONBOARDING] Supermarket Torre Caxias	\N	finalizado	2025-12-10 14:18:01.126	2025-12-12 21:13:34.886	2025-12-10 14:18:01.126	2025-12-12 21:13:34.886	2.29	21	0
+68	86ae1fy6q	18	UNKNOWN	[INTEGRACAO] Supermarket Torre Caxias	\N	backlog	2025-12-19 12:51:12.338	\N	2025-12-19 12:51:12.338	\N	0	14	0
+69	86ae1fy6m	18	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Caxias	\N	todo	2025-12-19 12:51:12.261	\N	2025-12-19 12:51:12.261	\N	0	14	0
+70	86ae1fy6x	18	UNKNOWN	[TREINAMENTO] Supermarket Torre Caxias	\N	to do	2025-12-19 12:51:12.895	\N	2025-12-19 12:51:12.895	\N	0	14	0
+71	86ae1fy6n	18	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Caxias	\N	to do	2025-12-19 12:51:12.263	\N	2025-12-19 12:51:12.263	\N	0	14	0
+72	86ae1fy6t	18	UNKNOWN	[QUALIDADE] Supermarket Torre Caxias	\N	to do	2025-12-19 12:51:12.72	\N	2025-12-19 12:51:12.72	\N	0	14	0
+73	86adv4qwh	19	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Nova iguaçu Calçadão	\N	finalizado	2025-12-10 14:17:46.992	2025-12-19 12:52:15.155	2025-12-10 14:17:46.992	2025-12-19 12:52:15.155	8.94	14	0
+74	86ae1fz03	19	UNKNOWN	[SUBIR APP] Supermarket Torre Nova iguaçu Calçadão	\N	backlog	2025-12-19 12:52:14.774	\N	2025-12-19 12:52:14.774	\N	0	14	0
+75	86adv4qxe	19	UNKNOWN	[CRIAR LOJA] Supermarket Torre Nova iguaçu Calçadão	\N	finalizado	2025-12-10 14:17:48.45	2025-12-12 20:55:35.136	2025-12-10 14:17:48.45	2025-12-12 20:55:35.136	2.28	21	0
+76	86adv4qwy	19	UNKNOWN	[ONBOARDING] Supermarket Torre Nova iguaçu Calçadão	\N	finalizado	2025-12-10 14:17:47.744	2025-12-12 20:55:27.855	2025-12-10 14:17:47.744	2025-12-12 20:55:27.855	2.28	21	0
+77	86ae1fz02	19	UNKNOWN	[INTEGRACAO] Supermarket Torre Nova iguaçu Calçadão	\N	backlog	2025-12-19 12:52:14.77	\N	2025-12-19 12:52:14.77	\N	0	14	0
+78	86ae1fz01	19	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Nova iguaçu Calçadão	\N	todo	2025-12-19 12:52:14.788	\N	2025-12-19 12:52:14.788	\N	0	14	0
+79	86ae1fz00	19	UNKNOWN	[TREINAMENTO] Supermarket Torre Nova iguaçu Calçadão	\N	to do	2025-12-19 12:52:14.789	\N	2025-12-19 12:52:14.789	\N	0	14	0
+80	86ae1fyzz	19	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Nova iguaçu Calçadão	\N	to do	2025-12-19 12:52:14.616	\N	2025-12-19 12:52:14.616	\N	0	14	0
+81	86ae1fz07	19	UNKNOWN	[QUALIDADE] Supermarket Torre Nova iguaçu Calçadão	\N	to do	2025-12-19 12:52:15.08	\N	2025-12-19 12:52:15.08	\N	0	14	0
+82	86adv4qnb	20	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Nova iguaçu	\N	finalizado	2025-12-10 14:17:34.343	2025-12-19 12:52:22.383	2025-12-10 14:17:34.343	2025-12-19 12:52:22.383	8.94	14	0
+83	86ae1fz2d	20	UNKNOWN	[SUBIR APP] Supermarket Torre Nova iguaçu	\N	backlog	2025-12-19 12:52:21.761	\N	2025-12-19 12:52:21.761	\N	0	14	0
+84	86adv4qnw	20	UNKNOWN	[CRIAR LOJA] Supermarket Torre Nova iguaçu	\N	finalizado	2025-12-10 14:17:35.488	2025-12-12 20:37:27.246	2025-12-10 14:17:35.488	2025-12-12 20:37:27.246	2.26	21	0
+85	86adv4qnm	20	UNKNOWN	[ONBOARDING] Supermarket Torre Nova iguaçu	\N	finalizado	2025-12-10 14:17:35.021	2025-12-12 20:37:19.275	2025-12-10 14:17:35.021	2025-12-12 20:37:19.275	2.26	21	0
+86	86ae1fz2h	20	UNKNOWN	[INTEGRACAO] Supermarket Torre Nova iguaçu	\N	backlog	2025-12-19 12:52:22.097	\N	2025-12-19 12:52:22.097	\N	0	14	0
+87	86ae1fz2e	20	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Nova iguaçu	\N	todo	2025-12-19 12:52:22.024	\N	2025-12-19 12:52:22.024	\N	0	14	0
+88	86ae1fz2c	20	UNKNOWN	[TREINAMENTO] Supermarket Torre Nova iguaçu	\N	to do	2025-12-19 12:52:21.796	\N	2025-12-19 12:52:21.796	\N	0	14	0
+89	86ae1fz2f	20	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Nova iguaçu	\N	to do	2025-12-19 12:52:22.025	\N	2025-12-19 12:52:22.025	\N	0	14	0
+90	86ae1fz2j	20	UNKNOWN	[QUALIDADE] Supermarket Torre Nova iguaçu	\N	to do	2025-12-19 12:52:22.15	\N	2025-12-19 12:52:22.15	\N	0	14	0
+91	86adv4qd8	21	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Itanhangá	\N	finalizado	2025-12-10 14:17:20.688	2025-12-19 12:52:34.673	2025-12-10 14:17:20.688	2025-12-19 12:52:34.673	8.94	14	0
+92	86ae1fz5u	21	UNKNOWN	[SUBIR APP] Supermarket Torre Itanhangá	\N	backlog	2025-12-19 12:52:34.351	\N	2025-12-19 12:52:34.351	\N	0	14	0
+93	86adv4qdu	21	UNKNOWN	[CRIAR LOJA] Supermarket Torre Itanhangá	\N	finalizado	2025-12-10 14:17:21.829	2025-12-11 18:21:19.286	2025-12-10 14:17:21.829	2025-12-11 18:21:19.286	1.17	22	0
+94	86adv4qdm	21	UNKNOWN	[ONBOARDING] Supermarket Torre Itanhangá	\N	finalizado	2025-12-10 14:17:21.391	2025-12-11 18:20:58.787	2025-12-10 14:17:21.391	2025-12-11 18:20:58.787	1.17	22	0
+95	86ae1fz5w	21	UNKNOWN	[INTEGRACAO] Supermarket Torre Itanhangá	\N	backlog	2025-12-19 12:52:34.416	\N	2025-12-19 12:52:34.416	\N	0	14	0
+96	86ae1fz5t	21	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Itanhangá	\N	todo	2025-12-19 12:52:34.338	\N	2025-12-19 12:52:34.338	\N	0	14	0
+97	86ae1fz5v	21	UNKNOWN	[TREINAMENTO] Supermarket Torre Itanhangá	\N	to do	2025-12-19 12:52:34.384	\N	2025-12-19 12:52:34.384	\N	0	14	0
+98	86ae1fz5x	21	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Itanhangá	\N	to do	2025-12-19 12:52:34.448	\N	2025-12-19 12:52:34.448	\N	0	14	0
+99	86ae1fz62	21	UNKNOWN	[QUALIDADE] Supermarket Torre Itanhangá	\N	to do	2025-12-19 12:52:34.831	\N	2025-12-19 12:52:34.831	\N	0	14	0
+100	86adv4q2f	22	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Tijuca	\N	finalizado	2025-12-10 14:17:02.041	2025-12-19 12:52:50.75	2025-12-10 14:17:02.041	2025-12-19 12:52:50.75	8.94	14	0
+101	86ae1fzbx	22	UNKNOWN	[SUBIR APP] Supermarket Torre Tijuca	\N	backlog	2025-12-19 12:52:50.494	\N	2025-12-19 12:52:50.494	\N	0	14	0
+102	86adv4q2z	22	UNKNOWN	[CRIAR LOJA] Supermarket Torre Tijuca	\N	finalizado	2025-12-10 14:17:03.247	2025-12-12 18:32:34.455	2025-12-10 14:17:03.247	2025-12-12 18:32:34.455	2.18	21	0
+103	86adv4q2t	22	UNKNOWN	[ONBOARDING] Supermarket Torre Tijuca	\N	finalizado	2025-12-10 14:17:02.774	2025-12-12 18:32:13.475	2025-12-10 14:17:02.774	2025-12-12 18:32:13.475	2.18	21	0
+104	86ae1fzby	22	UNKNOWN	[INTEGRACAO] Supermarket Torre Tijuca	\N	backlog	2025-12-19 12:52:50.561	\N	2025-12-19 12:52:50.561	\N	0	14	0
+57	86advxnwv	17	UNKNOWN	[CRIAR LOJA] Supermercado Batista	\N	finalizado	2025-12-11 12:27:59.573	2026-01-05 17:29:47.861	2025-12-11 12:27:59.573	2026-01-05 17:29:47.861	25.21	0	0
+105	86ae1fzbt	22	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Tijuca	\N	todo	2025-12-19 12:52:50.496	\N	2025-12-19 12:52:50.496	\N	0	14	0
+106	86ae1fzbw	22	UNKNOWN	[TREINAMENTO] Supermarket Torre Tijuca	\N	to do	2025-12-19 12:52:50.531	\N	2025-12-19 12:52:50.531	\N	0	14	0
+107	86ae1fzbh	22	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Tijuca	\N	to do	2025-12-19 12:52:50.052	\N	2025-12-19 12:52:50.052	\N	0	14	0
+108	86ae1fzbu	22	UNKNOWN	[QUALIDADE] Supermarket Torre Tijuca	\N	to do	2025-12-19 12:52:50.475	\N	2025-12-19 12:52:50.475	\N	0	14	0
+109	86adv4pw7	23	UNKNOWN	[CADASTRO OMIE] Supermarket Torre São Conrado	\N	finalizado	2025-12-10 14:16:51.187	2025-12-19 12:53:07.27	2025-12-10 14:16:51.187	2025-12-19 12:53:07.27	8.94	14	0
+110	86ae1fzjy	23	UNKNOWN	[SUBIR APP] Supermarket Torre São Conrado	\N	backlog	2025-12-19 12:53:07.141	\N	2025-12-19 12:53:07.141	\N	0	14	0
+111	86adv4pwn	23	UNKNOWN	[CRIAR LOJA] Supermarket Torre São Conrado	\N	finalizado	2025-12-10 14:16:52.293	2025-12-12 18:13:06.589	2025-12-10 14:16:52.293	2025-12-12 18:13:06.589	2.16	21	0
+112	86adv4pwe	23	UNKNOWN	[ONBOARDING] Supermarket Torre São Conrado	\N	finalizado	2025-12-10 14:16:51.813	2025-12-12 18:12:54.129	2025-12-10 14:16:51.813	2025-12-12 18:12:54.129	2.16	21	0
+113	86ae1fzk0	23	UNKNOWN	[INTEGRACAO] Supermarket Torre São Conrado	\N	backlog	2025-12-19 12:53:07.165	\N	2025-12-19 12:53:07.165	\N	0	14	0
+114	86ae1fzjm	23	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre São Conrado	\N	todo	2025-12-19 12:53:06.966	\N	2025-12-19 12:53:06.966	\N	0	14	0
+115	86ae1fzk7	23	UNKNOWN	[TREINAMENTO] Supermarket Torre São Conrado	\N	to do	2025-12-19 12:53:07.502	\N	2025-12-19 12:53:07.502	\N	0	14	0
+116	86ae1fzjp	23	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre São Conrado	\N	to do	2025-12-19 12:53:06.959	\N	2025-12-19 12:53:06.959	\N	0	14	0
+117	86ae1fzk6	23	UNKNOWN	[QUALIDADE] Supermarket Torre São Conrado	\N	to do	2025-12-19 12:53:07.3	\N	2025-12-19 12:53:07.3	\N	0	14	0
+118	86adv4phq	24	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Maria da Graça	\N	finalizado	2025-12-10 14:16:37.873	2025-12-19 12:53:21.923	2025-12-10 14:16:37.873	2025-12-19 12:53:21.923	8.94	14	0
+119	86ae1fzvr	24	UNKNOWN	[SUBIR APP] Supermarket Torre Maria da Graça	\N	backlog	2025-12-19 12:53:21.616	\N	2025-12-19 12:53:21.616	\N	0	14	0
+120	86adv4pjz	24	UNKNOWN	[CRIAR LOJA] Supermarket Torre Maria da Graça	\N	finalizado	2025-12-10 14:16:39.098	2025-12-12 20:19:19.248	2025-12-10 14:16:39.098	2025-12-12 20:19:19.248	2.25	21	0
+121	86adv4pjh	24	UNKNOWN	[ONBOARDING] Supermarket Torre Maria da Graça	\N	finalizado	2025-12-10 14:16:38.545	2025-12-12 20:19:11.02	2025-12-10 14:16:38.545	2025-12-12 20:19:11.02	2.25	21	0
+122	86ae1fzvt	24	UNKNOWN	[INTEGRACAO] Supermarket Torre Maria da Graça	\N	backlog	2025-12-19 12:53:21.677	\N	2025-12-19 12:53:21.677	\N	0	14	0
+123	86ae1fzvp	24	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Maria da Graça	\N	todo	2025-12-19 12:53:21.591	\N	2025-12-19 12:53:21.591	\N	0	14	0
+124	86ae1fzvm	24	UNKNOWN	[TREINAMENTO] Supermarket Torre Maria da Graça	\N	to do	2025-12-19 12:53:21.565	\N	2025-12-19 12:53:21.565	\N	0	14	0
+125	86ae1fzvh	24	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Maria da Graça	\N	to do	2025-12-19 12:53:21.479	\N	2025-12-19 12:53:21.479	\N	0	14	0
+126	86ae1fzvx	24	UNKNOWN	[QUALIDADE] Supermarket Torre Maria da Graça	\N	to do	2025-12-19 12:53:21.931	\N	2025-12-19 12:53:21.931	\N	0	14	0
+127	86adv4nzh	25	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Campo Grande	\N	finalizado	2025-12-10 14:16:13.513	2025-12-19 12:53:32.605	2025-12-10 14:16:13.513	2025-12-19 12:53:32.605	8.94	14	0
+128	86ae1g005	25	UNKNOWN	[SUBIR APP] Supermarket Torre Campo Grande	\N	backlog	2025-12-19 12:53:32.179	\N	2025-12-19 12:53:32.179	\N	0	14	0
+129	86adv4p0n	25	UNKNOWN	[CRIAR LOJA] Supermarket Torre Campo Grande	\N	finalizado	2025-12-10 14:16:14.73	2025-12-12 17:44:09.422	2025-12-10 14:16:14.73	2025-12-12 17:44:09.422	2.14	21	0
+130	86adv4p05	25	UNKNOWN	[ONBOARDING] Supermarket Torre Campo Grande	\N	finalizado	2025-12-10 14:16:14.209	2025-12-12 17:44:01.474	2025-12-10 14:16:14.209	2025-12-12 17:44:01.474	2.14	21	0
+131	86ae1g008	25	UNKNOWN	[INTEGRACAO] Supermarket Torre Campo Grande	\N	backlog	2025-12-19 12:53:32.304	\N	2025-12-19 12:53:32.304	\N	0	14	0
+132	86ae1g004	25	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Campo Grande	\N	todo	2025-12-19 12:53:32.214	\N	2025-12-19 12:53:32.214	\N	0	14	0
+133	86ae1g00a	25	UNKNOWN	[TREINAMENTO] Supermarket Torre Campo Grande	\N	to do	2025-12-19 12:53:32.371	\N	2025-12-19 12:53:32.371	\N	0	14	0
+134	86ae1g006	25	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Campo Grande	\N	to do	2025-12-19 12:53:32.192	\N	2025-12-19 12:53:32.192	\N	0	14	0
+135	86ae1g00j	25	UNKNOWN	[QUALIDADE] Supermarket Torre Campo Grande	\N	to do	2025-12-19 12:53:32.705	\N	2025-12-19 12:53:32.705	\N	0	14	0
+136	86adv4nbp	26	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Freguesia	\N	finalizado	2025-12-10 14:15:44.311	2025-12-19 12:53:41.276	2025-12-10 14:15:44.311	2025-12-19 12:53:41.276	8.94	14	0
+137	86ae1g030	26	UNKNOWN	[SUBIR APP] Supermarket Torre Freguesia	\N	backlog	2025-12-19 12:53:40.906	\N	2025-12-19 12:53:40.906	\N	0	14	0
+138	86adv4nck	26	UNKNOWN	[CRIAR LOJA] Supermarket Torre Freguesia	\N	finalizado	2025-12-10 14:15:45.493	2025-12-11 20:14:09.422	2025-12-10 14:15:45.493	2025-12-11 20:14:09.422	1.25	22	0
+139	86adv4nc7	26	UNKNOWN	[ONBOARDING] Supermarket Torre Freguesia	\N	finalizado	2025-12-10 14:15:44.987	2025-12-11 20:14:01.072	2025-12-10 14:15:44.987	2025-12-11 20:14:01.072	1.25	22	0
+140	86ae1g039	26	UNKNOWN	[INTEGRACAO] Supermarket Torre Freguesia	\N	backlog	2025-12-19 12:53:41.327	\N	2025-12-19 12:53:41.327	\N	0	14	0
+141	86ae1g033	26	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Freguesia	\N	todo	2025-12-19 12:53:40.972	\N	2025-12-19 12:53:40.972	\N	0	14	0
+142	86ae1g034	26	UNKNOWN	[TREINAMENTO] Supermarket Torre Freguesia	\N	to do	2025-12-19 12:53:41.236	\N	2025-12-19 12:53:41.236	\N	0	14	0
+143	86ae1g038	26	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Freguesia	\N	to do	2025-12-19 12:53:41.263	\N	2025-12-19 12:53:41.263	\N	0	14	0
+144	86ae1g03e	26	UNKNOWN	[QUALIDADE] Supermarket Torre Freguesia	\N	to do	2025-12-19 12:53:41.722	\N	2025-12-19 12:53:41.722	\N	0	14	0
+145	86adv4hhd	27	UNKNOWN	[CADASTRO OMIE] Supermarket Torre Praça Seca	\N	finalizado	2025-12-10 14:12:54.81	2025-12-19 12:53:52.751	2025-12-10 14:12:54.81	2025-12-19 12:53:52.751	8.95	14	0
+146	86ae1g06g	27	UNKNOWN	[SUBIR APP] Supermarket Torre Praça Seca	\N	backlog	2025-12-19 12:53:52.407	\N	2025-12-19 12:53:52.407	\N	0	14	0
+147	86adv4hj8	27	UNKNOWN	[CRIAR LOJA] Supermarket Torre Praça Seca	\N	finalizado	2025-12-10 14:12:55.885	2025-12-11 19:04:34.242	2025-12-10 14:12:55.885	2025-12-11 19:04:34.242	1.2	22	0
+148	86adv4hhy	27	UNKNOWN	[ONBOARDING] Supermarket Torre Praça Seca	\N	finalizado	2025-12-10 14:12:55.413	2025-12-11 19:04:13.289	2025-12-10 14:12:55.413	2025-12-11 19:04:13.289	1.2	22	0
+149	86ae1g06m	27	UNKNOWN	[INTEGRACAO] Supermarket Torre Praça Seca	\N	backlog	2025-12-19 12:53:52.537	\N	2025-12-19 12:53:52.537	\N	0	14	0
+150	86ae1g06e	27	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket Torre Praça Seca	\N	todo	2025-12-19 12:53:52.366	\N	2025-12-19 12:53:52.366	\N	0	14	0
+151	86ae1g06c	27	UNKNOWN	[TREINAMENTO] Supermarket Torre Praça Seca	\N	to do	2025-12-19 12:53:52.281	\N	2025-12-19 12:53:52.281	\N	0	14	0
+152	86ae1g06k	27	UNKNOWN	[CADASTRO PRODUTOS] Supermarket Torre Praça Seca	\N	to do	2025-12-19 12:53:52.497	\N	2025-12-19 12:53:52.497	\N	0	14	0
+153	86ae1g06p	27	UNKNOWN	[QUALIDADE] Supermarket Torre Praça Seca	\N	to do	2025-12-19 12:53:53.077	\N	2025-12-19 12:53:53.077	\N	0	14	0
+154	86adv4g0b	28	UNKNOWN	[CADASTRO OMIE] Supermarket torre Taquara	\N	finalizado	2025-12-10 14:11:36.224	2025-12-19 12:54:03.459	2025-12-10 14:11:36.224	2025-12-19 12:54:03.459	8.95	14	0
+155	86ae1g0ag	28	UNKNOWN	[SUBIR APP] Supermarket torre Taquara	\N	backlog	2025-12-19 12:54:03.012	\N	2025-12-19 12:54:03.012	\N	0	14	0
+401	86ada5m7k	55	UNKNOWN	[INTEGRACAO] Mais Cerveja	\N	revisão	2025-11-17 18:28:49.624	\N	2025-11-17 18:28:49.624	\N	0	18	0
+156	86adv4g16	28	UNKNOWN	[CRIAR LOJA] Supermarket torre Taquara	\N	finalizado	2025-12-10 14:11:37.51	2025-12-12 17:23:27.303	2025-12-10 14:11:37.51	2025-12-12 17:23:27.303	2.13	21	0
+157	86adv4g0x	28	UNKNOWN	[ONBOARDING] Supermarket torre Taquara	\N	finalizado	2025-12-10 14:11:37.054	2025-12-12 17:23:17.449	2025-12-10 14:11:37.054	2025-12-12 17:23:17.449	2.13	21	0
+158	86ae1g0at	28	UNKNOWN	[INTEGRACAO] Supermarket torre Taquara	\N	backlog	2025-12-19 12:54:03.627	\N	2025-12-19 12:54:03.627	\N	0	14	0
+159	86ae1g0ah	28	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket torre Taquara	\N	todo	2025-12-19 12:54:03.072	\N	2025-12-19 12:54:03.072	\N	0	14	0
+160	86ae1g0ap	28	UNKNOWN	[TREINAMENTO] Supermarket torre Taquara	\N	to do	2025-12-19 12:54:03.43	\N	2025-12-19 12:54:03.43	\N	0	14	0
+161	86ae1g0b2	28	UNKNOWN	[CADASTRO PRODUTOS] Supermarket torre Taquara	\N	to do	2025-12-19 12:54:04.793	\N	2025-12-19 12:54:04.793	\N	0	14	0
+162	86ae1g0aw	28	UNKNOWN	[QUALIDADE] Supermarket torre Taquara	\N	to do	2025-12-19 12:54:04.219	\N	2025-12-19 12:54:04.219	\N	0	14	0
+163	86adv1x82	29	UNKNOWN	[CADASTRO OMIE] Supermarket torre	\N	finalizado	2025-12-10 12:43:13.046	2025-12-19 12:54:18.245	2025-12-10 12:43:13.046	2025-12-19 12:54:18.245	9.01	14	0
+164	86ae1g0eu	29	UNKNOWN	[SUBIR APP] Supermarket torre	\N	backlog	2025-12-19 12:54:17.877	\N	2025-12-19 12:54:17.877	\N	0	14	0
+165	86adv1x8v	29	UNKNOWN	[CRIAR LOJA] Supermarket torre	\N	finalizado	2025-12-10 12:43:14.364	2025-12-10 20:34:33.147	2025-12-10 12:43:14.364	2025-12-10 20:34:33.147	0.33	23	0
+166	86adv1x8n	29	UNKNOWN	[ONBOARDING] Supermarket torre	\N	finalizado	2025-12-10 12:43:13.86	2025-12-10 20:34:14.106	2025-12-10 12:43:13.86	2025-12-10 20:34:14.106	0.33	23	0
+168	86ae1g0eq	29	UNKNOWN	[ATIVAR RECORRENCIA] Supermarket torre	\N	todo	2025-12-19 12:54:17.884	\N	2025-12-19 12:54:17.884	\N	0	14	0
+169	86ae1g0ey	29	UNKNOWN	[TREINAMENTO] Supermarket torre	\N	to do	2025-12-19 12:54:18.085	\N	2025-12-19 12:54:18.085	\N	0	14	0
+170	86ae1g0ep	29	UNKNOWN	[CADASTRO PRODUTOS] Supermarket torre	\N	to do	2025-12-19 12:54:17.83	\N	2025-12-19 12:54:17.83	\N	0	14	0
+171	86ae1g0f2	29	UNKNOWN	[QUALIDADE] Supermarket torre	\N	to do	2025-12-19 12:54:18.458	\N	2025-12-19 12:54:18.458	\N	0	14	0
+172	86adu2fbk	30	UNKNOWN	[CADASTRO OMIE] Empório Pas - Loja 04 - Andradina	\N	finalizado	2025-12-09 13:18:49.058	2025-12-10 20:56:41.964	2025-12-09 13:18:49.058	2025-12-10 20:56:41.964	1.32	23	0
+173	86advjuwz	30	UNKNOWN	[SUBIR APP] Empório Pas - Loja 04 - Andradina	\N	backlog	2025-12-10 20:56:41.488	\N	2025-12-10 20:56:41.488	\N	0	15	0
+174	86adu2fc7	30	UNKNOWN	[CRIAR LOJA] Empório Pas - Loja 04 - Andradina	\N	to do	2025-12-09 13:18:50.241	\N	2025-12-09 13:18:50.241	\N	0	24	0
+175	86adu2fby	30	UNKNOWN	[ONBOARDING] Empório Pas - Loja 04 - Andradina	\N	agendado	2025-12-09 13:18:49.74	\N	2025-12-09 13:18:49.74	\N	0	22	0
+176	86advjux5	30	UNKNOWN	[INTEGRACAO] Empório Pas - Loja 04 - Andradina	\N	backlog	2025-12-10 20:56:41.727	\N	2025-12-10 20:56:41.727	\N	0	23	0
+177	86advjux1	30	UNKNOWN	[ATIVAR RECORRENCIA] Empório Pas - Loja 04 - Andradina	\N	todo	2025-12-10 20:56:41.528	\N	2025-12-10 20:56:41.528	\N	0	23	0
+178	86advjux2	30	UNKNOWN	[TREINAMENTO] Empório Pas - Loja 04 - Andradina	\N	to do	2025-12-10 20:56:41.693	\N	2025-12-10 20:56:41.693	\N	0	23	0
+179	86advjux3	30	UNKNOWN	[CADASTRO PRODUTOS] Empório Pas - Loja 04 - Andradina	\N	to do	2025-12-10 20:56:41.666	\N	2025-12-10 20:56:41.666	\N	0	23	0
+180	86advjuxb	30	UNKNOWN	[QUALIDADE] Empório Pas - Loja 04 - Andradina	\N	to do	2025-12-10 20:56:42.097	\N	2025-12-10 20:56:42.097	\N	0	23	0
+181	86adu28k3	31	UNKNOWN	[CADASTRO OMIE] Emporio Pas - Loja 2  - Mirandopolis	\N	finalizado	2025-12-09 13:13:21.8	2025-12-10 20:56:29.43	2025-12-09 13:13:21.8	2025-12-10 20:56:29.43	1.32	23	0
+182	86advjuq1	31	UNKNOWN	[SUBIR APP] Emporio Pas - Loja 2  - Mirandopolis	\N	backlog	2025-12-10 20:56:29.144	\N	2025-12-10 20:56:29.144	\N	0	15	0
+183	86adu28m2	31	UNKNOWN	[CRIAR LOJA] Emporio Pas - Loja 2  - Mirandopolis	\N	to do	2025-12-09 13:13:23.137	\N	2025-12-09 13:13:23.137	\N	0	24	0
+184	86adu28kf	31	UNKNOWN	[ONBOARDING] Emporio Pas - Loja 2  - Mirandopolis	\N	agendado	2025-12-09 13:13:22.457	\N	2025-12-09 13:13:22.457	\N	0	22	0
+185	86advjuq4	31	UNKNOWN	[INTEGRACAO] Emporio Pas - Loja 2  - Mirandopolis	\N	backlog	2025-12-10 20:56:29.201	\N	2025-12-10 20:56:29.201	\N	0	23	0
+186	86advjupw	31	UNKNOWN	[ATIVAR RECORRENCIA] Emporio Pas - Loja 2  - Mirandopolis	\N	todo	2025-12-10 20:56:29.106	\N	2025-12-10 20:56:29.106	\N	0	23	0
+187	86advjupv	31	UNKNOWN	[TREINAMENTO] Emporio Pas - Loja 2  - Mirandopolis	\N	to do	2025-12-10 20:56:29.09	\N	2025-12-10 20:56:29.09	\N	0	23	0
+188	86advjuq5	31	UNKNOWN	[CADASTRO PRODUTOS] Emporio Pas - Loja 2  - Mirandopolis	\N	to do	2025-12-10 20:56:29.206	\N	2025-12-10 20:56:29.206	\N	0	23	0
+189	86advjuq8	31	UNKNOWN	[QUALIDADE] Emporio Pas - Loja 2  - Mirandopolis	\N	to do	2025-12-10 20:56:29.491	\N	2025-12-10 20:56:29.491	\N	0	23	0
+190	86adt2mwd	32	UNKNOWN	[CADASTRO OMIE] Supermercado Bem Vindo [Migração Mercadapp]	\N	finalizado	2025-12-08 11:23:59.286	2025-12-10 20:17:00.611	2025-12-08 11:23:59.286	2025-12-10 20:17:00.611	2.37	23	0
+191	86advhj3j	32	UNKNOWN	[SUBIR APP] Supermercado Bem Vindo [Migração Mercadapp]	\N	backlog	2025-12-10 20:17:00.197	\N	2025-12-10 20:17:00.197	\N	0	15	0
+192	86adt2mwv	32	UNKNOWN	[CRIAR LOJA] Supermercado Bem Vindo [Migração Mercadapp]	\N	finalizado	2025-12-08 11:24:01.361	2025-12-11 21:08:24.931	2025-12-08 11:24:01.361	2025-12-11 21:08:24.931	3.41	22	0
+193	86adt2mwg	32	UNKNOWN	[ONBOARDING] Supermercado Bem Vindo [Migração Mercadapp]	\N	finalizado	2025-12-08 11:24:00.023	2025-12-12 18:11:34.791	2025-12-08 11:24:00.023	2025-12-12 18:11:34.791	4.28	21	0
+194	86advhj3v	32	UNKNOWN	[INTEGRACAO] Supermercado Bem Vindo [Migração Mercadapp]	\N	backlog	2025-12-10 20:17:00.592	\N	2025-12-10 20:17:00.592	\N	0	23	0
+195	86advhj3k	32	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Bem Vindo [Migração Mercadapp]	\N	todo	2025-12-10 20:17:00.261	\N	2025-12-10 20:17:00.261	\N	0	23	0
+196	86advhj3t	32	UNKNOWN	[TREINAMENTO] Supermercado Bem Vindo [Migração Mercadapp]	\N	to do	2025-12-10 20:17:00.601	\N	2025-12-10 20:17:00.601	\N	0	23	0
+197	86advhj3r	32	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Bem Vindo [Migração Mercadapp]	\N	to do	2025-12-10 20:17:00.536	\N	2025-12-10 20:17:00.536	\N	0	23	0
+198	86advhj40	32	UNKNOWN	[QUALIDADE] Supermercado Bem Vindo [Migração Mercadapp]	\N	to do	2025-12-10 20:17:01	\N	2025-12-10 20:17:01	\N	0	23	0
+199	86adrgy9n	33	UNKNOWN	[CADASTRO OMIE] Emporio Natural Mix - Loja 5 	\N	finalizado	2025-12-06 00:16:26.015	2025-12-09 13:00:15.467	2025-12-06 00:16:26.015	2025-12-09 13:00:15.467	3.53	24	0
+200	86adu1pjg	33	UNKNOWN	[SUBIR APP] Emporio Natural Mix - Loja 5 	\N	backlog	2025-12-09 13:00:15.126	\N	2025-12-09 13:00:15.126	\N	0	15	0
+201	86adrgy9r	33	UNKNOWN	[CRIAR LOJA] Emporio Natural Mix - Loja 5 	\N	to do	2025-12-06 00:16:27.059	\N	2025-12-06 00:16:27.059	\N	0	27	0
+203	86adu1pjf	33	UNKNOWN	[INTEGRACAO] Emporio Natural Mix - Loja 5 	\N	backlog	2025-12-09 13:00:15.083	\N	2025-12-09 13:00:15.083	\N	0	24	0
+204	86adu1pje	33	UNKNOWN	[ATIVAR RECORRENCIA] Emporio Natural Mix - Loja 5 	\N	todo	2025-12-09 13:00:15.084	\N	2025-12-09 13:00:15.084	\N	0	24	0
+205	86adu1pjm	33	UNKNOWN	[TREINAMENTO] Emporio Natural Mix - Loja 5 	\N	to do	2025-12-09 13:00:15.266	\N	2025-12-09 13:00:15.266	\N	0	24	0
+206	86adu1pjb	33	UNKNOWN	[CADASTRO PRODUTOS] Emporio Natural Mix - Loja 5 	\N	to do	2025-12-09 13:00:14.988	\N	2025-12-09 13:00:14.988	\N	0	24	0
+167	86ae1g0ez	29	UNKNOWN	[INTEGRACAO] Supermarket torre	\N	backlog	2025-12-19 12:54:18.06	\N	2025-12-19 12:54:18.06	\N	0	0	0
+207	86adu1pk1	33	UNKNOWN	[QUALIDADE] Emporio Natural Mix - Loja 5 	\N	to do	2025-12-09 13:00:15.532	\N	2025-12-09 13:00:15.532	\N	0	24	0
+208	86adrgxm9	34	UNKNOWN	[CADASTRO OMIE] Emporio Natural Mix - Loja 4 - Tijucas	\N	finalizado	2025-12-06 00:13:02.504	2025-12-09 12:59:59.776	2025-12-06 00:13:02.504	2025-12-09 12:59:59.776	3.53	24	0
+209	86adu1p4w	34	UNKNOWN	[SUBIR APP] Emporio Natural Mix - Loja 4 - Tijucas	\N	backlog	2025-12-09 12:59:59.576	\N	2025-12-09 12:59:59.576	\N	0	15	0
+210	86adrgxmc	34	UNKNOWN	[CRIAR LOJA] Emporio Natural Mix - Loja 4 - Tijucas	\N	to do	2025-12-06 00:13:03.467	\N	2025-12-06 00:13:03.467	\N	0	27	0
+212	86adu1p4y	34	UNKNOWN	[INTEGRACAO] Emporio Natural Mix - Loja 4 - Tijucas	\N	backlog	2025-12-09 12:59:59.588	\N	2025-12-09 12:59:59.588	\N	0	24	0
+213	86adu1p4q	34	UNKNOWN	[ATIVAR RECORRENCIA] Emporio Natural Mix - Loja 4 - Tijucas	\N	todo	2025-12-09 12:59:59.466	\N	2025-12-09 12:59:59.466	\N	0	24	0
+214	86adu1p4v	34	UNKNOWN	[TREINAMENTO] Emporio Natural Mix - Loja 4 - Tijucas	\N	to do	2025-12-09 12:59:59.573	\N	2025-12-09 12:59:59.573	\N	0	24	0
+215	86adu1p4x	34	UNKNOWN	[CADASTRO PRODUTOS] Emporio Natural Mix - Loja 4 - Tijucas	\N	to do	2025-12-09 12:59:59.569	\N	2025-12-09 12:59:59.569	\N	0	24	0
+216	86adu1p56	34	UNKNOWN	[QUALIDADE] Emporio Natural Mix - Loja 4 - Tijucas	\N	to do	2025-12-09 12:59:59.978	\N	2025-12-09 12:59:59.978	\N	0	24	0
+217	86adrgx0b	35	UNKNOWN	[CADASTRO OMIE] Emporio Natural Mix - Loja 3 - Campo Grande	\N	finalizado	2025-12-06 00:10:15.371	2025-12-09 12:59:50.448	2025-12-06 00:10:15.371	2025-12-09 12:59:50.448	3.53	24	0
+218	86adu1nwt	35	UNKNOWN	[SUBIR APP] Emporio Natural Mix - Loja 3 - Campo Grande	\N	backlog	2025-12-09 12:59:49.628	\N	2025-12-09 12:59:49.628	\N	0	15	0
+219	86adrgx14	35	UNKNOWN	[CRIAR LOJA] Emporio Natural Mix - Loja 3 - Campo Grande	\N	to do	2025-12-06 00:10:16.706	\N	2025-12-06 00:10:16.706	\N	0	27	0
+221	86adu1nwu	35	UNKNOWN	[INTEGRACAO] Emporio Natural Mix - Loja 3 - Campo Grande	\N	backlog	2025-12-09 12:59:49.612	\N	2025-12-09 12:59:49.612	\N	0	24	0
+222	86adu1nx7	35	UNKNOWN	[ATIVAR RECORRENCIA] Emporio Natural Mix - Loja 3 - Campo Grande	\N	todo	2025-12-09 12:59:50.132	\N	2025-12-09 12:59:50.132	\N	0	24	0
+223	86adu1nwy	35	UNKNOWN	[TREINAMENTO] Emporio Natural Mix - Loja 3 - Campo Grande	\N	to do	2025-12-09 12:59:49.757	\N	2025-12-09 12:59:49.757	\N	0	24	0
+224	86adu1nwz	35	UNKNOWN	[CADASTRO PRODUTOS] Emporio Natural Mix - Loja 3 - Campo Grande	\N	to do	2025-12-09 12:59:49.739	\N	2025-12-09 12:59:49.739	\N	0	24	0
+225	86adu1nx8	35	UNKNOWN	[QUALIDADE] Emporio Natural Mix - Loja 3 - Campo Grande	\N	to do	2025-12-09 12:59:50.093	\N	2025-12-09 12:59:50.093	\N	0	24	0
+226	86adrgwhe	36	UNKNOWN	[CADASTRO OMIE] Emporio Natural Mix - Loja 2 - Bangu	\N	finalizado	2025-12-06 00:07:22.205	2025-12-09 12:59:31.702	2025-12-06 00:07:22.205	2025-12-09 12:59:31.702	3.54	24	0
+227	86adu1nfw	36	UNKNOWN	[SUBIR APP] Emporio Natural Mix - Loja 2 - Bangu	\N	backlog	2025-12-09 12:59:31.344	\N	2025-12-09 12:59:31.344	\N	0	15	0
+228	86adrgwhq	36	UNKNOWN	[CRIAR LOJA] Emporio Natural Mix - Loja 2 - Bangu	\N	to do	2025-12-06 00:07:23.701	\N	2025-12-06 00:07:23.701	\N	0	27	0
+230	86adu1nfz	36	UNKNOWN	[INTEGRACAO] Emporio Natural Mix - Loja 2 - Bangu	\N	backlog	2025-12-09 12:59:31.367	\N	2025-12-09 12:59:31.367	\N	0	24	0
+231	86adu1nfv	36	UNKNOWN	[ATIVAR RECORRENCIA] Emporio Natural Mix - Loja 2 - Bangu	\N	todo	2025-12-09 12:59:31.305	\N	2025-12-09 12:59:31.305	\N	0	24	0
+232	86adu1nfx	36	UNKNOWN	[TREINAMENTO] Emporio Natural Mix - Loja 2 - Bangu	\N	to do	2025-12-09 12:59:31.356	\N	2025-12-09 12:59:31.356	\N	0	24	0
+233	86adu1ng2	36	UNKNOWN	[CADASTRO PRODUTOS] Emporio Natural Mix - Loja 2 - Bangu	\N	to do	2025-12-09 12:59:31.523	\N	2025-12-09 12:59:31.523	\N	0	24	0
+234	86adu1ng7	36	UNKNOWN	[QUALIDADE] Emporio Natural Mix - Loja 2 - Bangu	\N	to do	2025-12-09 12:59:31.665	\N	2025-12-09 12:59:31.665	\N	0	24	0
+235	86adrgvt2	37	UNKNOWN	[CADASTRO OMIE] Emporio Natural Mix - Loja Madureira 	\N	finalizado	2025-12-06 00:04:16.243	2025-12-09 12:59:05.232	2025-12-06 00:04:16.243	2025-12-09 12:59:05.232	3.54	24	0
+236	86adu1mzf	37	UNKNOWN	[SUBIR APP] Emporio Natural Mix - Loja Madureira 	\N	backlog	2025-12-09 12:59:04.892	\N	2025-12-09 12:59:04.892	\N	0	15	0
+237	86adrgvta	37	UNKNOWN	[CRIAR LOJA] Emporio Natural Mix - Loja Madureira 	\N	to do	2025-12-06 00:04:17.428	\N	2025-12-06 00:04:17.428	\N	0	27	0
+239	86adu1mzh	37	UNKNOWN	[INTEGRACAO] Emporio Natural Mix - Loja Madureira 	\N	backlog	2025-12-09 12:59:04.891	\N	2025-12-09 12:59:04.891	\N	0	24	0
+240	86adu1mzj	37	UNKNOWN	[ATIVAR RECORRENCIA] Emporio Natural Mix - Loja Madureira 	\N	todo	2025-12-09 12:59:04.921	\N	2025-12-09 12:59:04.921	\N	0	24	0
+241	86adu1mzg	37	UNKNOWN	[TREINAMENTO] Emporio Natural Mix - Loja Madureira 	\N	to do	2025-12-09 12:59:04.909	\N	2025-12-09 12:59:04.909	\N	0	24	0
+242	86adu1mzk	37	UNKNOWN	[CADASTRO PRODUTOS] Emporio Natural Mix - Loja Madureira 	\N	to do	2025-12-09 12:59:04.91	\N	2025-12-09 12:59:04.91	\N	0	24	0
+243	86adu1mzt	37	UNKNOWN	[QUALIDADE] Emporio Natural Mix - Loja Madureira 	\N	to do	2025-12-09 12:59:05.156	\N	2025-12-09 12:59:05.156	\N	0	24	0
+244	86adrajrb	38	UNKNOWN	[CADASTRO OMIE] Hortisul - Sion	\N	finalizado	2025-12-05 19:38:00.467	2025-12-09 12:59:17.101	2025-12-05 19:38:00.467	2025-12-09 12:59:17.101	3.72	24	0
+245	86adu1n7d	38	UNKNOWN	[SUBIR APP] Hortisul - Sion	\N	backlog	2025-12-09 12:59:17.09	\N	2025-12-09 12:59:17.09	\N	0	15	0
+246	86adrajru	38	UNKNOWN	[CRIAR LOJA] Hortisul - Sion	\N	finalizado	2025-12-05 19:38:01.586	2025-12-15 12:53:21.744	2025-12-05 19:38:01.586	2025-12-15 12:53:21.744	9.72	18	0
+247	86adrajrm	38	UNKNOWN	[ONBOARDING] Hortisul - Sion	\N	finalizado	2025-12-05 19:38:01.122	2025-12-15 12:53:10.543	2025-12-05 19:38:01.122	2025-12-15 12:53:10.543	9.72	18	0
+249	86adu1n74	38	UNKNOWN	[ATIVAR RECORRENCIA] Hortisul - Sion	\N	todo	2025-12-09 12:59:16.731	\N	2025-12-09 12:59:16.731	\N	0	24	0
+250	86adu1n78	38	UNKNOWN	[TREINAMENTO] Hortisul - Sion	\N	to do	2025-12-09 12:59:16.92	\N	2025-12-09 12:59:16.92	\N	0	24	0
+251	86adu1n79	38	UNKNOWN	[CADASTRO PRODUTOS] Hortisul - Sion	\N	to do	2025-12-09 12:59:16.935	\N	2025-12-09 12:59:16.935	\N	0	24	0
+252	86adu1n7j	38	UNKNOWN	[QUALIDADE] Hortisul - Sion	\N	to do	2025-12-09 12:59:17.363	\N	2025-12-09 12:59:17.363	\N	0	24	0
+253	86adra0tz	39	UNKNOWN	[CADASTRO OMIE] Hortisul - Nova Lima	\N	finalizado	2025-12-05 19:21:49.604	2025-12-09 12:56:50.521	2025-12-05 19:21:49.604	2025-12-09 12:56:50.521	3.73	24	0
+254	86adu1jem	39	UNKNOWN	[SUBIR APP] Hortisul - Nova Lima	\N	backlog	2025-12-09 12:56:50.269	\N	2025-12-09 12:56:50.269	\N	0	15	0
+255	86adra0ut	39	UNKNOWN	[CRIAR LOJA] Hortisul - Nova Lima	\N	finalizado	2025-12-05 19:21:50.913	2025-12-11 14:01:32.163	2025-12-05 19:21:50.913	2025-12-11 14:01:32.163	5.78	22	0
+256	86adra0ub	39	UNKNOWN	[ONBOARDING] Hortisul - Nova Lima	\N	finalizado	2025-12-05 19:21:50.263	2025-12-11 14:01:17.387	2025-12-05 19:21:50.263	2025-12-11 14:01:17.387	5.78	22	0
+220	86adrgx0w	35	UNKNOWN	[ONBOARDING] Emporio Natural Mix - Loja 3 - Campo Grande	\N	finalizado	2025-12-06 00:10:16.121	2026-01-05 13:06:56.116	2025-12-06 00:10:16.121	2026-01-05 13:06:56.116	30.54	0	0
+229	86adrgwhm	36	UNKNOWN	[ONBOARDING] Emporio Natural Mix - Loja 2 - Bangu	\N	finalizado	2025-12-06 00:07:23.218	2026-01-05 13:06:44.903	2025-12-06 00:07:23.218	2026-01-05 13:06:44.903	30.54	0	0
+238	86adrgvt6	37	UNKNOWN	[ONBOARDING] Emporio Natural Mix - Loja Madureira 	\N	finalizado	2025-12-06 00:04:16.944	2026-01-05 13:06:24.99	2025-12-06 00:04:16.944	2026-01-05 13:06:24.99	30.54	0	0
+248	86adu1n75	38	UNKNOWN	[INTEGRACAO] Hortisul - Sion	\N	contato/comunicação	2025-12-09 12:59:16.711	\N	2025-12-09 12:59:16.711	\N	0	0	0
+257	86adu1jeh	39	UNKNOWN	[INTEGRACAO] Hortisul - Nova Lima	\N	contato/comunicação	2025-12-09 12:56:50.206	\N	2025-12-09 12:56:50.206	\N	0	0	0
+258	86adu1jej	39	UNKNOWN	[ATIVAR RECORRENCIA] Hortisul - Nova Lima	\N	todo	2025-12-09 12:56:50.243	\N	2025-12-09 12:56:50.243	\N	0	21	0
+259	86adu1jet	39	UNKNOWN	[TREINAMENTO] Hortisul - Nova Lima	\N	to do	2025-12-09 12:56:50.475	\N	2025-12-09 12:56:50.475	\N	0	24	0
+260	86adu1jer	39	UNKNOWN	[CADASTRO PRODUTOS] Hortisul - Nova Lima	\N	to do	2025-12-09 12:56:50.448	\N	2025-12-09 12:56:50.448	\N	0	24	0
+261	86adu1jf0	39	UNKNOWN	[QUALIDADE] Hortisul - Nova Lima	\N	to do	2025-12-09 12:56:50.786	\N	2025-12-09 12:56:50.786	\N	0	24	0
+262	86adq6dz3	40	UNKNOWN	[CADASTRO OMIE] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	finalizado	2025-12-04 16:07:43.827	2025-12-05 18:49:37.042	2025-12-04 16:07:43.827	2025-12-05 18:49:37.042	1.11	22	0
+263	86adr928f	40	UNKNOWN	[SUBIR APP] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	backlog	2025-12-05 18:49:36.691	\N	2025-12-05 18:49:36.691	\N	0	15	0
+264	86adq6dzq	40	UNKNOWN	[CRIAR LOJA] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	finalizado	2025-12-04 16:07:44.938	2025-12-11 20:27:54.995	2025-12-04 16:07:44.938	2025-12-11 20:27:54.995	7.18	22	0
+265	86adq6dz9	40	UNKNOWN	[ONBOARDING] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	finalizado	2025-12-04 16:07:44.434	2025-12-05 19:08:08.574	2025-12-04 16:07:44.434	2025-12-05 19:08:08.574	1.13	22	0
+266	86adr928v	40	UNKNOWN	[INTEGRACAO] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	backlog	2025-12-05 18:49:37.186	\N	2025-12-05 18:49:37.186	\N	0	22	0
+267	86adr928d	40	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	todo	2025-12-05 18:49:36.681	\N	2025-12-05 18:49:36.681	\N	0	22	0
+268	86adr928p	40	UNKNOWN	[TREINAMENTO] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	to do	2025-12-05 18:49:37.066	\N	2025-12-05 18:49:37.066	\N	0	22	0
+269	86adr928t	40	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	to do	2025-12-05 18:49:37.109	\N	2025-12-05 18:49:37.109	\N	0	22	0
+270	86adr9298	40	UNKNOWN	[QUALIDADE] Supermercado Lagoa - Parangaba [Migração Mercadapp]	\N	to do	2025-12-05 18:49:37.601	\N	2025-12-05 18:49:37.601	\N	0	22	0
+271	86adq67cx	41	UNKNOWN	[CADASTRO OMIE] Supermercado Lagoa - Sobral Parque da Cidade	\N	finalizado	2025-12-04 16:02:23.583	2025-12-05 18:49:21.344	2025-12-04 16:02:23.583	2025-12-05 18:49:21.344	1.12	28	0
+272	86adr91yq	41	UNKNOWN	[SUBIR APP] Supermercado Lagoa - Sobral Parque da Cidade	\N	backlog	2025-12-05 18:49:20.942	\N	2025-12-05 18:49:20.942	\N	0	15	0
+273	86adq67dc	41	UNKNOWN	[CRIAR LOJA] Supermercado Lagoa - Sobral Parque da Cidade	\N	finalizado	2025-12-04 16:02:24.868	2025-12-11 19:51:36.145	2025-12-04 16:02:24.868	2025-12-11 19:51:36.145	7.16	22	0
+274	86adq67d7	41	UNKNOWN	[ONBOARDING] Supermercado Lagoa - Sobral Parque da Cidade	\N	finalizado	2025-12-04 16:02:24.3	2025-12-05 19:07:46.307	2025-12-04 16:02:24.3	2025-12-05 19:07:46.307	1.13	28	0
+275	86adr91yy	41	UNKNOWN	[INTEGRACAO] Supermercado Lagoa - Sobral Parque da Cidade	\N	backlog	2025-12-05 18:49:21.066	\N	2025-12-05 18:49:21.066	\N	0	28	0
+276	86adr91yn	41	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Lagoa - Sobral Parque da Cidade	\N	todo	2025-12-05 18:49:20.919	\N	2025-12-05 18:49:20.919	\N	0	28	0
+277	86adr91ym	41	UNKNOWN	[TREINAMENTO] Supermercado Lagoa - Sobral Parque da Cidade	\N	to do	2025-12-05 18:49:20.823	\N	2025-12-05 18:49:20.823	\N	0	28	0
+278	86adr91yk	41	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Lagoa - Sobral Parque da Cidade	\N	to do	2025-12-05 18:49:20.764	\N	2025-12-05 18:49:20.764	\N	0	28	0
+279	86adr91z0	41	UNKNOWN	[QUALIDADE] Supermercado Lagoa - Sobral Parque da Cidade	\N	to do	2025-12-05 18:49:21.147	\N	2025-12-05 18:49:21.147	\N	0	28	0
+280	86adq60qf	42	UNKNOWN	[CADASTRO OMIE] Supermercado Lagoa - Lago Jacarey	\N	finalizado	2025-12-04 15:54:29.262	2025-12-05 18:47:56.83	2025-12-04 15:54:29.262	2025-12-05 18:47:56.83	1.12	28	0
+281	86adr90cb	42	UNKNOWN	[SUBIR APP] Supermercado Lagoa - Lago Jacarey	\N	backlog	2025-12-05 18:47:56.481	\N	2025-12-05 18:47:56.481	\N	0	15	0
+282	86adq60qz	42	UNKNOWN	[CRIAR LOJA] Supermercado Lagoa - Lago Jacarey	\N	finalizado	2025-12-04 15:54:30.329	2025-12-11 19:41:36.209	2025-12-04 15:54:30.329	2025-12-11 19:41:36.209	7.16	22	0
+283	86adq60qr	42	UNKNOWN	[ONBOARDING] Supermercado Lagoa - Lago Jacarey	\N	finalizado	2025-12-04 15:54:29.894	2025-12-05 19:07:30.689	2025-12-04 15:54:29.894	2025-12-05 19:07:30.689	1.13	28	0
+284	86adr90ca	42	UNKNOWN	[INTEGRACAO] Supermercado Lagoa - Lago Jacarey	\N	backlog	2025-12-05 18:47:56.444	\N	2025-12-05 18:47:56.444	\N	0	28	0
+285	86adr90ce	42	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Lagoa - Lago Jacarey	\N	todo	2025-12-05 18:47:56.538	\N	2025-12-05 18:47:56.538	\N	0	28	0
+286	86adr90c8	42	UNKNOWN	[TREINAMENTO] Supermercado Lagoa - Lago Jacarey	\N	to do	2025-12-05 18:47:56.438	\N	2025-12-05 18:47:56.438	\N	0	28	0
+287	86adr90c9	42	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Lagoa - Lago Jacarey	\N	to do	2025-12-05 18:47:56.43	\N	2025-12-05 18:47:56.43	\N	0	28	0
+288	86adr90ch	42	UNKNOWN	[QUALIDADE] Supermercado Lagoa - Lago Jacarey	\N	to do	2025-12-05 18:47:56.705	\N	2025-12-05 18:47:56.705	\N	0	28	0
+289	86adq5vmh	43	UNKNOWN	[CADASTRO OMIE] Supermercado Lagoa - Juazeiro do Norte	\N	finalizado	2025-12-04 15:48:31.862	2025-12-05 18:49:03.824	2025-12-04 15:48:31.862	2025-12-05 18:49:03.824	1.13	28	0
+290	86adr91jb	43	UNKNOWN	[SUBIR APP] Supermercado Lagoa - Juazeiro do Norte	\N	backlog	2025-12-05 18:49:03.311	\N	2025-12-05 18:49:03.311	\N	0	15	0
+291	86adq5vn4	43	UNKNOWN	[CRIAR LOJA] Supermercado Lagoa - Juazeiro do Norte	\N	finalizado	2025-12-04 15:48:33.017	2025-12-11 19:26:07.163	2025-12-04 15:48:33.017	2025-12-11 19:26:07.163	7.15	22	0
+292	86adq5vmt	43	UNKNOWN	[ONBOARDING] Supermercado Lagoa - Juazeiro do Norte	\N	finalizado	2025-12-04 15:48:32.503	2025-12-05 19:07:13.905	2025-12-04 15:48:32.503	2025-12-05 19:07:13.905	1.14	28	0
+293	86adr91jc	43	UNKNOWN	[INTEGRACAO] Supermercado Lagoa - Juazeiro do Norte	\N	backlog	2025-12-05 18:49:03.289	\N	2025-12-05 18:49:03.289	\N	0	28	0
+294	86adr91j3	43	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Lagoa - Juazeiro do Norte	\N	todo	2025-12-05 18:49:03.226	\N	2025-12-05 18:49:03.226	\N	0	28	0
+295	86adr91hw	43	UNKNOWN	[TREINAMENTO] Supermercado Lagoa - Juazeiro do Norte	\N	to do	2025-12-05 18:49:03.182	\N	2025-12-05 18:49:03.182	\N	0	28	0
+296	86adr91ja	43	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Lagoa - Juazeiro do Norte	\N	to do	2025-12-05 18:49:03.286	\N	2025-12-05 18:49:03.286	\N	0	28	0
+297	86adr91jm	43	UNKNOWN	[QUALIDADE] Supermercado Lagoa - Juazeiro do Norte	\N	to do	2025-12-05 18:49:03.71	\N	2025-12-05 18:49:03.71	\N	0	28	0
+298	86adq5qvg	44	UNKNOWN	[CADASTRO OMIE] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	finalizado	2025-12-04 15:43:45.657	2025-12-05 18:48:43.65	2025-12-04 15:43:45.657	2025-12-05 18:48:43.65	1.13	28	0
+299	86adr916p	44	UNKNOWN	[SUBIR APP] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	backlog	2025-12-05 18:48:43.335	\N	2025-12-05 18:48:43.335	\N	0	15	0
+300	86adq5qwp	44	UNKNOWN	[CRIAR LOJA] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	finalizado	2025-12-04 15:43:48.083	2025-12-11 13:25:47.912	2025-12-04 15:43:48.083	2025-12-11 13:25:47.912	6.9	22	0
+301	86adq5qwc	44	UNKNOWN	[ONBOARDING] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	finalizado	2025-12-04 15:43:47.648	2025-12-05 19:06:49.963	2025-12-04 15:43:47.648	2025-12-05 19:06:49.963	1.14	28	0
+302	86adr916r	44	UNKNOWN	[INTEGRACAO] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	backlog	2025-12-05 18:48:43.37	\N	2025-12-05 18:48:43.37	\N	0	28	0
+303	86adr916j	44	UNKNOWN	[ATIVAR RECORRENCIA] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	todo	2025-12-05 18:48:43.289	\N	2025-12-05 18:48:43.289	\N	0	28	0
+304	86adr916g	44	UNKNOWN	[TREINAMENTO] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	to do	2025-12-05 18:48:43.255	\N	2025-12-05 18:48:43.255	\N	0	28	0
+403	86ada5m84	55	UNKNOWN	[TREINAMENTO] Mais Cerveja	\N	to do	2025-11-17 18:28:49.874	\N	2025-11-17 18:28:49.874	\N	0	46	0
+305	86adr916q	44	UNKNOWN	[CADASTRO PRODUTOS] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	to do	2025-12-05 18:48:43.319	\N	2025-12-05 18:48:43.319	\N	0	28	0
+306	86adr9175	44	UNKNOWN	[QUALIDADE] SUPERMERCADO LAGOA - SANTOS DUMONT [MIGRAÇÃO MERCADAPP]	\N	to do	2025-12-05 18:48:43.824	\N	2025-12-05 18:48:43.824	\N	0	28	0
+307	86adjt1px	45	UNKNOWN	[CADASTRO OMIE] ProBio Kombucha	\N	finalizado	2025-11-28 21:20:30.164	2025-12-01 21:29:48.805	2025-11-28 21:20:30.164	2025-12-01 21:29:48.805	3.01	32	0
+308	86admn2ux	45	UNKNOWN	[SUBIR APP] ProBio Kombucha	\N	backlog	2025-12-01 21:29:48.511	\N	2025-12-01 21:29:48.511	\N	0	15	0
+309	86adjt1qk	45	UNKNOWN	[CRIAR LOJA] ProBio Kombucha	\N	finalizado	2025-11-28 21:20:31.204	2025-12-04 15:22:04.511	2025-11-28 21:20:31.204	2025-12-04 15:22:04.511	5.75	29	0
+310	86adjt1q7	45	UNKNOWN	[ONBOARDING] ProBio Kombucha	\N	finalizado	2025-11-28 21:20:30.783	2025-12-04 14:58:30.452	2025-11-28 21:20:30.783	2025-12-04 14:58:30.452	5.73	29	0
+312	86admn2uv	45	UNKNOWN	[ATIVAR RECORRENCIA] ProBio Kombucha	\N	todo	2025-12-01 21:29:48.469	\N	2025-12-01 21:29:48.469	\N	0	32	0
+313	86admn2ur	45	UNKNOWN	[TREINAMENTO] ProBio Kombucha	\N	to do	2025-12-01 21:29:48.407	\N	2025-12-01 21:29:48.407	\N	0	32	0
+314	86admn2uu	45	UNKNOWN	[CADASTRO PRODUTOS] ProBio Kombucha	\N	to do	2025-12-01 21:29:48.397	\N	2025-12-01 21:29:48.397	\N	0	32	0
+315	86admn2v1	45	UNKNOWN	[QUALIDADE] ProBio Kombucha	\N	to do	2025-12-01 21:29:48.669	\N	2025-12-01 21:29:48.669	\N	0	32	0
+316	86adhz257	46	UNKNOWN	[CADASTRO OMIE] Almeida Supermercado	\N	finalizado	2025-11-27 20:42:15.212	2025-12-03 18:38:41.427	2025-11-27 20:42:15.212	2025-12-03 18:38:41.427	5.91	30	0
+317	86adpbfd6	46	UNKNOWN	[SUBIR APP] Almeida Supermercado	\N	backlog	2025-12-03 18:38:41.097	\N	2025-12-03 18:38:41.097	\N	0	15	0
+318	86adhz25u	46	UNKNOWN	[CRIAR LOJA] Almeida Supermercado	\N	finalizado	2025-11-27 20:42:16.284	2025-12-03 19:58:28.487	2025-11-27 20:42:16.284	2025-12-03 19:58:28.487	5.97	30	0
+319	86adhz25e	46	UNKNOWN	[ONBOARDING] Almeida Supermercado	\N	finalizado	2025-11-27 20:42:15.849	2025-12-03 18:35:55.871	2025-11-27 20:42:15.849	2025-12-03 18:35:55.871	5.91	30	0
+321	86adpbfd5	46	UNKNOWN	[ATIVAR RECORRENCIA] Almeida Supermercado	\N	todo	2025-12-03 18:38:41.096	\N	2025-12-03 18:38:41.096	\N	0	30	0
+322	86adpbfd2	46	UNKNOWN	[TREINAMENTO] Almeida Supermercado	\N	to do	2025-12-03 18:38:41.02	\N	2025-12-03 18:38:41.02	\N	0	30	0
+323	86adpbfd4	46	UNKNOWN	[CADASTRO PRODUTOS] Almeida Supermercado	\N	to do	2025-12-03 18:38:41.037	\N	2025-12-03 18:38:41.037	\N	0	30	0
+324	86adpbfdh	46	UNKNOWN	[QUALIDADE] Almeida Supermercado	\N	to do	2025-12-03 18:38:41.382	\N	2025-12-03 18:38:41.382	\N	0	30	0
+325	86adg43w0	47	UNKNOWN	[CADASTRO OMIE] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	finalizado	2025-11-25 19:02:05.687	2025-11-26 21:16:12.62	2025-11-25 19:02:05.687	2025-11-26 21:16:12.62	1.09	37	0
+326	86adh6988	47	UNKNOWN	[SUBIR APP] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	backlog	2025-11-26 21:16:12.251	\N	2025-11-26 21:16:12.251	\N	0	15	0
+327	86adg43wr	47	UNKNOWN	[CRIAR LOJA] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	to do	2025-11-25 19:02:06.783	\N	2025-11-25 19:02:06.783	\N	0	38	0
+328	86adg43wd	47	UNKNOWN	[ONBOARDING] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	to do	2025-11-25 19:02:06.323	\N	2025-11-25 19:02:06.323	\N	0	38	0
+329	86adh6989	47	UNKNOWN	[INTEGRACAO] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	backlog	2025-11-26 21:16:12.251	\N	2025-11-26 21:16:12.251	\N	0	37	0
+330	86adh6987	47	UNKNOWN	[ATIVAR RECORRENCIA] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	todo	2025-11-26 21:16:12.236	\N	2025-11-26 21:16:12.236	\N	0	37	0
+331	86adh6986	47	UNKNOWN	[TREINAMENTO] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	to do	2025-11-26 21:16:12.194	\N	2025-11-26 21:16:12.194	\N	0	37	0
+332	86adh6985	47	UNKNOWN	[CADASTRO PRODUTOS] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	to do	2025-11-26 21:16:12.142	\N	2025-11-26 21:16:12.142	\N	0	37	0
+333	86adh698b	47	UNKNOWN	[QUALIDADE] Ana Risorlange Bernardo Manuel (Migração Mercadapp)	\N	to do	2025-11-26 21:16:12.454	\N	2025-11-26 21:16:12.454	\N	0	37	0
+334	86adg3vyd	48	UNKNOWN	[CADASTRO OMIE] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	finalizado	2025-11-25 18:54:45.14	2025-11-26 21:15:49.043	2025-11-25 18:54:45.14	2025-11-26 21:15:49.043	1.1	37	0
+335	86adh690g	48	UNKNOWN	[SUBIR APP] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	backlog	2025-11-26 21:15:48.597	\N	2025-11-26 21:15:48.597	\N	0	15	0
+336	86adg3vz1	48	UNKNOWN	[CRIAR LOJA] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	to do	2025-11-25 18:54:46.193	\N	2025-11-25 18:54:46.193	\N	0	38	0
+337	86adg3vyp	48	UNKNOWN	[ONBOARDING] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	to do	2025-11-25 18:54:45.728	\N	2025-11-25 18:54:45.728	\N	0	38	0
+338	86adh690q	48	UNKNOWN	[INTEGRACAO] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	backlog	2025-11-26 21:15:48.789	\N	2025-11-26 21:15:48.789	\N	0	37	0
+339	86adh690p	48	UNKNOWN	[ATIVAR RECORRENCIA] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	todo	2025-11-26 21:15:48.784	\N	2025-11-26 21:15:48.784	\N	0	37	0
+340	86adh690n	48	UNKNOWN	[TREINAMENTO] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	to do	2025-11-26 21:15:48.753	\N	2025-11-26 21:15:48.753	\N	0	37	0
+341	86adh690h	48	UNKNOWN	[CADASTRO PRODUTOS] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	to do	2025-11-26 21:15:48.58	\N	2025-11-26 21:15:48.58	\N	0	37	0
+342	86adh6913	48	UNKNOWN	[QUALIDADE] Ana Risorlange Bonsucesso (Migração Mercadapp)	\N	to do	2025-11-26 21:15:49.247	\N	2025-11-26 21:15:49.247	\N	0	37	0
+343	86adg3n9w	49	UNKNOWN	[CADASTRO OMIE] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	finalizado	2025-11-25 18:48:58.415	2025-11-26 21:14:01.142	2025-11-25 18:48:58.415	2025-11-26 21:14:01.142	1.1	37	0
+344	86adh67wd	49	UNKNOWN	[SUBIR APP] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	backlog	2025-11-26 21:14:00.715	\N	2025-11-26 21:14:00.715	\N	0	15	0
+345	86adg3naq	49	UNKNOWN	[CRIAR LOJA] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	to do	2025-11-25 18:48:59.662	\N	2025-11-25 18:48:59.662	\N	0	38	0
+346	86adg3nah	49	UNKNOWN	[ONBOARDING] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	to do	2025-11-25 18:48:59.212	\N	2025-11-25 18:48:59.212	\N	0	38	0
+347	86adh67wb	49	UNKNOWN	[INTEGRACAO] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	backlog	2025-11-26 21:14:00.618	\N	2025-11-26 21:14:00.618	\N	0	37	0
+348	86adh67wg	49	UNKNOWN	[ATIVAR RECORRENCIA] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	todo	2025-11-26 21:14:00.806	\N	2025-11-26 21:14:00.806	\N	0	37	0
+349	86adh67wc	49	UNKNOWN	[TREINAMENTO] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	to do	2025-11-26 21:14:00.669	\N	2025-11-26 21:14:00.669	\N	0	37	0
+350	86adh67wh	49	UNKNOWN	[CADASTRO PRODUTOS] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	to do	2025-11-26 21:14:00.882	\N	2025-11-26 21:14:00.882	\N	0	37	0
+351	86adh67wv	49	UNKNOWN	[QUALIDADE] Ana Risorlange Bom Jardim (Migração Mercadapp)	\N	to do	2025-11-26 21:14:01.252	\N	2025-11-26 21:14:01.252	\N	0	37	0
+352	86adg3b2r	50	UNKNOWN	[CADASTRO OMIE] Êxito Supermercados WS (Migração Mercadapp)	\N	finalizado	2025-11-25 18:40:02.513	2025-11-26 21:11:01.388	2025-11-25 18:40:02.513	2025-11-26 21:11:01.388	1.1	37	0
+353	86adh66br	50	UNKNOWN	[SUBIR APP] Êxito Supermercados WS (Migração Mercadapp)	\N	backlog	2025-11-26 21:11:01.095	\N	2025-11-26 21:11:01.095	\N	0	15	0
+402	86ada5m81	55	UNKNOWN	[ATIVAR RECORRENCIA] Mais Cerveja	\N	todo	2025-11-17 18:28:49.823	\N	2025-11-17 18:28:49.823	\N	0	46	0
+320	86adpbfdb	46	UNKNOWN	[INTEGRACAO] Almeida Supermercado	\N	backlog	2025-12-03 18:38:41.099	\N	2025-12-03 18:38:41.099	\N	0	0	0
+354	86adg3b3e	50	UNKNOWN	[CRIAR LOJA] Êxito Supermercados WS (Migração Mercadapp)	\N	finalizado	2025-11-25 18:40:03.567	2025-11-26 13:20:55.46	2025-11-25 18:40:03.567	2025-11-26 13:20:55.46	0.78	37	0
+355	86adg3b37	50	UNKNOWN	[ONBOARDING] Êxito Supermercados WS (Migração Mercadapp)	\N	finalizado	2025-11-25 18:40:03.107	2025-12-01 19:02:46.8	2025-11-25 18:40:03.107	2025-12-01 19:02:46.8	6.02	32	0
+356	86adh66bv	50	UNKNOWN	[INTEGRACAO] Êxito Supermercados WS (Migração Mercadapp)	\N	backlog	2025-11-26 21:11:01.223	\N	2025-11-26 21:11:01.223	\N	0	37	0
+357	86adh66bt	50	UNKNOWN	[ATIVAR RECORRENCIA] Êxito Supermercados WS (Migração Mercadapp)	\N	todo	2025-11-26 21:11:01.098	\N	2025-11-26 21:11:01.098	\N	0	36	0
+358	86adh66bu	50	UNKNOWN	[TREINAMENTO] Êxito Supermercados WS (Migração Mercadapp)	\N	to do	2025-11-26 21:11:01.215	\N	2025-11-26 21:11:01.215	\N	0	37	0
+359	86adh66bw	50	UNKNOWN	[CADASTRO PRODUTOS] Êxito Supermercados WS (Migração Mercadapp)	\N	to do	2025-11-26 21:11:01.291	\N	2025-11-26 21:11:01.291	\N	0	37	0
+360	86adh66bz	50	UNKNOWN	[QUALIDADE] Êxito Supermercados WS (Migração Mercadapp)	\N	to do	2025-11-26 21:11:01.753	\N	2025-11-26 21:11:01.753	\N	0	37	0
+361	86adg369b	51	UNKNOWN	[CADASTRO OMIE] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	finalizado	2025-11-25 18:35:47.664	2025-11-26 21:10:43.643	2025-11-25 18:35:47.664	2025-11-26 21:10:43.643	1.11	37	0
+362	86adh665q	51	UNKNOWN	[SUBIR APP] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	backlog	2025-11-26 21:10:43.217	\N	2025-11-26 21:10:43.217	\N	0	15	0
+363	86adg369r	51	UNKNOWN	[CRIAR LOJA] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	finalizado	2025-11-25 18:35:48.811	2025-11-26 12:49:27.324	2025-11-25 18:35:48.811	2025-11-26 12:49:27.324	0.76	37	0
+364	86adg369m	51	UNKNOWN	[ONBOARDING] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	finalizado	2025-11-25 18:35:48.332	2025-12-01 13:37:05.461	2025-11-25 18:35:48.332	2025-12-01 13:37:05.461	5.79	32	0
+365	86adh665w	51	UNKNOWN	[INTEGRACAO] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	backlog	2025-11-26 21:10:43.258	\N	2025-11-26 21:10:43.258	\N	0	37	0
+366	86adh665r	51	UNKNOWN	[ATIVAR RECORRENCIA] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	todo	2025-11-26 21:10:43.244	\N	2025-11-26 21:10:43.244	\N	0	36	0
+367	86adh665v	51	UNKNOWN	[TREINAMENTO] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	to do	2025-11-26 21:10:43.264	\N	2025-11-26 21:10:43.264	\N	0	37	0
+368	86adh665x	51	UNKNOWN	[CADASTRO PRODUTOS] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	to do	2025-11-26 21:10:43.283	\N	2025-11-26 21:10:43.283	\N	0	37	0
+369	86adh6660	51	UNKNOWN	[QUALIDADE] Êxito Supermercados Monte Castelo (Migração Mercadapp)	\N	to do	2025-11-26 21:10:43.683	\N	2025-11-26 21:10:43.683	\N	0	37	0
+370	86adg32rf	52	UNKNOWN	[CADASTRO OMIE] Êxito Supermercados Potira (Migração Mercadapp)	\N	finalizado	2025-11-25 18:32:23.648	2025-11-26 21:04:24.51	2025-11-25 18:32:23.648	2025-11-26 21:04:24.51	1.11	37	0
+371	86adh61pr	52	UNKNOWN	[SUBIR APP] Êxito Supermercados Potira (Migração Mercadapp)	\N	backlog	2025-11-26 21:04:24.171	\N	2025-11-26 21:04:24.171	\N	0	15	0
+372	86adg32t5	52	UNKNOWN	[CRIAR LOJA] Êxito Supermercados Potira (Migração Mercadapp)	\N	finalizado	2025-11-25 18:32:24.783	2025-11-26 12:33:51.359	2025-11-25 18:32:24.783	2025-11-26 12:33:51.359	0.75	37	0
+373	86adg32rt	52	UNKNOWN	[ONBOARDING] Êxito Supermercados Potira (Migração Mercadapp)	\N	finalizado	2025-11-25 18:32:24.323	2025-12-01 13:36:54.854	2025-11-25 18:32:24.323	2025-12-01 13:36:54.854	5.79	32	0
+374	86adh61pv	52	UNKNOWN	[INTEGRACAO] Êxito Supermercados Potira (Migração Mercadapp)	\N	backlog	2025-11-26 21:04:24.228	\N	2025-11-26 21:04:24.228	\N	0	37	0
+375	86adh61pp	52	UNKNOWN	[ATIVAR RECORRENCIA] Êxito Supermercados Potira (Migração Mercadapp)	\N	todo	2025-11-26 21:04:24.162	\N	2025-11-26 21:04:24.162	\N	0	36	0
+376	86adh61pt	52	UNKNOWN	[TREINAMENTO] Êxito Supermercados Potira (Migração Mercadapp)	\N	to do	2025-11-26 21:04:24.181	\N	2025-11-26 21:04:24.181	\N	0	37	0
+377	86adh61pq	52	UNKNOWN	[CADASTRO PRODUTOS] Êxito Supermercados Potira (Migração Mercadapp)	\N	to do	2025-11-26 21:04:24.138	\N	2025-11-26 21:04:24.138	\N	0	37	0
+378	86adh61q1	52	UNKNOWN	[QUALIDADE] Êxito Supermercados Potira (Migração Mercadapp)	\N	to do	2025-11-26 21:04:24.573	\N	2025-11-26 21:04:24.573	\N	0	37	0
+379	86adg2y74	53	UNKNOWN	[CADASTRO OMIE] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	finalizado	2025-11-25 18:28:28.083	2025-11-26 21:10:29.258	2025-11-25 18:28:28.083	2025-11-26 21:10:29.258	1.11	37	0
+380	86adh65yy	53	UNKNOWN	[SUBIR APP] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	backlog	2025-11-26 21:10:28.959	\N	2025-11-26 21:10:28.959	\N	0	15	0
+381	86adg2y7w	53	UNKNOWN	[CRIAR LOJA] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	finalizado	2025-11-25 18:28:29.242	2025-11-26 12:06:12.442	2025-11-25 18:28:29.242	2025-11-26 12:06:12.442	0.73	37	0
+382	86adg2y7k	53	UNKNOWN	[ONBOARDING] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	finalizado	2025-11-25 18:28:28.751	2025-12-01 13:36:45.326	2025-11-25 18:28:28.751	2025-12-01 13:36:45.326	5.8	32	0
+383	86adh65z3	53	UNKNOWN	[INTEGRACAO] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	backlog	2025-11-26 21:10:28.998	\N	2025-11-26 21:10:28.998	\N	0	37	0
+384	86adh65yz	53	UNKNOWN	[ATIVAR RECORRENCIA] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	todo	2025-11-26 21:10:28.981	\N	2025-11-26 21:10:28.981	\N	0	36	0
+385	86adh65z0	53	UNKNOWN	[TREINAMENTO] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	to do	2025-11-26 21:10:29.02	\N	2025-11-26 21:10:29.02	\N	0	37	0
+386	86adh65z2	53	UNKNOWN	[CADASTRO PRODUTOS] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	to do	2025-11-26 21:10:28.992	\N	2025-11-26 21:10:28.992	\N	0	37	0
+387	86adh65z6	53	UNKNOWN	[QUALIDADE] Êxito Supermercados Dom Almeida (Migração Mercadapp)	\N	to do	2025-11-26 21:10:29.298	\N	2025-11-26 21:10:29.298	\N	0	37	0
+388	86adcbv44	54	UNKNOWN	[CADASTRO OMIE] Castelinho Supermercado	\N	finalizado	2025-11-19 19:37:20.822	2025-11-25 13:00:38.987	2025-11-19 19:37:20.822	2025-11-25 13:00:38.987	5.72	38	0
+389	86adfqgwz	54	UNKNOWN	[SUBIR APP] Castelinho Supermercado	\N	backlog	2025-11-25 13:00:38.651	\N	2025-11-25 13:00:38.651	\N	0	15	0
+390	86adcbv4x	54	UNKNOWN	[CRIAR LOJA] Castelinho Supermercado	\N	finalizado	2025-11-19 19:37:22.101	2025-11-21 16:57:24.59	2025-11-19 19:37:22.101	2025-11-21 16:57:24.59	1.89	42	0
+391	86adcbv4k	54	UNKNOWN	[ONBOARDING] Castelinho Supermercado	\N	finalizado	2025-11-19 19:37:21.594	2025-11-25 12:24:23.339	2025-11-19 19:37:21.594	2025-11-25 12:24:23.339	5.7	38	0
+393	86adfqgx1	54	UNKNOWN	[ATIVAR RECORRENCIA] Castelinho Supermercado	\N	todo	2025-11-25 13:00:38.672	\N	2025-11-25 13:00:38.672	\N	0	36	0
+394	86adfqgwr	54	UNKNOWN	[TREINAMENTO] Castelinho Supermercado	\N	to do	2025-11-25 13:00:38.395	\N	2025-11-25 13:00:38.395	\N	0	38	0
+395	86adfqgwu	54	UNKNOWN	[CADASTRO PRODUTOS] Castelinho Supermercado	\N	to do	2025-11-25 13:00:38.387	\N	2025-11-25 13:00:38.387	\N	0	38	0
+396	86adfqgx4	54	UNKNOWN	[QUALIDADE] Castelinho Supermercado	\N	to do	2025-11-25 13:00:38.992	\N	2025-11-25 13:00:38.992	\N	0	38	0
+397	86ad9q0v7	55	UNKNOWN	[CADASTRO OMIE] Mais Cerveja	\N	finalizado	2025-11-17 13:05:10.819	2025-11-17 18:28:50.166	2025-11-17 13:05:10.819	2025-11-17 18:28:50.166	0.22	46	0
+398	86ada5m7j	55	UNKNOWN	[SUBIR APP] Mais Cerveja	\N	arquivado	2025-11-17 18:28:49.627	2025-12-15 19:30:42.935	2025-11-17 18:28:49.627	2025-12-15 19:30:42.935	28.04	18	0
+399	86ad9q0vt	55	UNKNOWN	[CRIAR LOJA] Mais Cerveja	\N	finalizado	2025-11-17 13:05:12.032	2025-11-19 13:48:50.755	2025-11-17 13:05:12.032	2025-11-19 13:48:50.755	2.03	44	0
+400	86ad9q0vf	55	UNKNOWN	[ONBOARDING] Mais Cerveja	\N	finalizado	2025-11-17 13:05:11.495	2025-11-18 20:52:47.518	2025-11-17 13:05:11.495	2025-11-18 20:52:47.518	1.32	45	0
+404	86ada5m83	55	UNKNOWN	[CADASTRO PRODUTOS] Mais Cerveja	\N	to do	2025-11-17 18:28:49.802	\N	2025-11-17 18:28:49.802	\N	0	44	0
+405	86ada5m93	55	UNKNOWN	[QUALIDADE] Mais Cerveja	\N	to do	2025-11-17 18:28:50.433	\N	2025-11-17 18:28:50.433	\N	0	46	0
+406	86ad8qtvy	56	UNKNOWN	[CADASTRO OMIE] Supermercado Tatais	\N	finalizado	2025-11-14 18:35:51.366	2025-11-17 18:14:59.651	2025-11-14 18:35:51.366	2025-11-17 18:14:59.651	2.99	46	0
+407	86ada51t5	56	UNKNOWN	[SUBIR APP] Supermercado Tatais	\N	backlog	2025-11-17 18:15:00.467	\N	2025-11-17 18:15:00.467	\N	0	15	0
+408	86ad8qtwm	56	UNKNOWN	[CRIAR LOJA] Supermercado Tatais	\N	finalizado	2025-11-14 18:35:52.428	2025-11-18 14:11:25.129	2025-11-14 18:35:52.428	2025-11-18 14:11:25.129	3.82	45	0
+409	86ad8qtwc	56	UNKNOWN	[ONBOARDING] Supermercado Tatais	\N	finalizado	2025-11-14 18:35:51.989	2025-11-17 17:25:36.089	2025-11-14 18:35:51.989	2025-11-17 17:25:36.089	2.95	46	0
+411	86ada51t4	56	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Tatais	\N	todo	2025-11-17 18:15:00.451	\N	2025-11-17 18:15:00.451	\N	0	46	0
+412	86ada51r6	56	UNKNOWN	[TREINAMENTO] Supermercado Tatais	\N	to do	2025-11-17 18:14:59.376	\N	2025-11-17 18:14:59.376	\N	0	46	0
+413	86ada51r8	56	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Tatais	\N	to do	2025-11-17 18:14:59.418	\N	2025-11-17 18:14:59.418	\N	0	46	0
+414	86ada51th	56	UNKNOWN	[QUALIDADE] Supermercado Tatais	\N	to do	2025-11-17 18:15:00.915	\N	2025-11-17 18:15:00.915	\N	0	46	0
+415	86ad8e6h8	57	UNKNOWN	[CADASTRO OMIE] Mercado Macedo	\N	finalizado	2025-11-14 13:26:53.561	2025-11-27 18:52:22.114	2025-11-14 13:26:53.561	2025-11-27 18:52:22.114	13.23	36	0
+416	86adhuqex	57	UNKNOWN	[SUBIR APP] Mercado Macedo	\N	backlog	2025-11-27 18:52:22	\N	2025-11-27 18:52:22	\N	0	15	0
+417	86ad8e6j1	57	UNKNOWN	[CRIAR LOJA] Mercado Macedo	\N	finalizado	2025-11-14 13:26:54.657	2025-11-24 13:32:52.997	2025-11-14 13:26:54.657	2025-11-24 13:32:52.997	10	39	0
+418	86ad8e6hu	57	UNKNOWN	[ONBOARDING] Mercado Macedo	\N	finalizado	2025-11-14 13:26:54.243	2025-11-19 18:49:58.341	2025-11-14 13:26:54.243	2025-11-19 18:49:58.341	5.22	44	0
+420	86adhuqer	57	UNKNOWN	[ATIVAR RECORRENCIA] Mercado Macedo	\N	todo	2025-11-27 18:52:21.87	\N	2025-11-27 18:52:21.87	\N	0	36	0
+421	86adhuqeq	57	UNKNOWN	[TREINAMENTO] Mercado Macedo	\N	to do	2025-11-27 18:52:21.836	\N	2025-11-27 18:52:21.836	\N	0	36	0
+422	86adhuqf6	57	UNKNOWN	[CADASTRO PRODUTOS] Mercado Macedo	\N	to do	2025-11-27 18:52:22.184	\N	2025-11-27 18:52:22.184	\N	0	36	0
+423	86adhuqfe	57	UNKNOWN	[QUALIDADE] Mercado Macedo	\N	to do	2025-11-27 18:52:22.384	\N	2025-11-27 18:52:22.384	\N	0	36	0
+424	86ad8dxmq	58	UNKNOWN	[CADASTRO OMIE] Descontão Cecílio Mota	\N	finalizado	2025-11-14 13:17:36.995	2025-11-27 18:44:02.632	2025-11-14 13:17:36.995	2025-11-27 18:44:02.632	13.23	36	0
+425	86adhub0k	58	UNKNOWN	[SUBIR APP] Descontão Cecílio Mota	\N	backlog	2025-11-27 18:44:02.437	\N	2025-11-27 18:44:02.437	\N	0	15	0
+426	86ad8dxn2	58	UNKNOWN	[CRIAR LOJA] Descontão Cecílio Mota	\N	finalizado	2025-11-14 13:17:38.099	2025-11-26 14:05:26.959	2025-11-14 13:17:38.099	2025-11-26 14:05:26.959	12.03	37	0
+427	86ad8dxmw	58	UNKNOWN	[ONBOARDING] Descontão Cecílio Mota	\N	finalizado	2025-11-14 13:17:37.672	2025-11-19 17:48:18.831	2025-11-14 13:17:37.672	2025-11-19 17:48:18.831	5.19	44	0
+429	86adhub07	58	UNKNOWN	[ATIVAR RECORRENCIA] Descontão Cecílio Mota	\N	todo	2025-11-27 18:44:02.304	\N	2025-11-27 18:44:02.304	\N	0	36	0
+430	86adhub0c	58	UNKNOWN	[TREINAMENTO] Descontão Cecílio Mota	\N	to do	2025-11-27 18:44:02.37	\N	2025-11-27 18:44:02.37	\N	0	36	0
+431	86adhub0m	58	UNKNOWN	[CADASTRO PRODUTOS] Descontão Cecílio Mota	\N	to do	2025-11-27 18:44:02.415	\N	2025-11-27 18:44:02.415	\N	0	36	0
+432	86adhub19	58	UNKNOWN	[QUALIDADE] Descontão Cecílio Mota	\N	to do	2025-11-27 18:44:02.74	\N	2025-11-27 18:44:02.74	\N	0	36	0
+433	86ad813t9	59	UNKNOWN	[CADASTRO OMIE] Super Esperança	\N	finalizado	2025-11-13 19:51:09.012	2025-11-13 20:51:27.926	2025-11-13 19:51:09.012	2025-11-13 20:51:27.926	0.04	50	0
+434	86ad83hyb	59	UNKNOWN	[SUBIR APP] Super Esperança	\N	todo	2025-11-13 20:51:27.338	\N	2025-11-13 20:51:27.338	\N	0	15	0
+435	86ad813ug	59	UNKNOWN	[CRIAR LOJA] Super Esperança	\N	finalizado	2025-11-13 19:51:10.171	2025-11-13 20:29:08.825	2025-11-13 19:51:10.171	2025-11-13 20:29:08.825	0.03	50	0
+436	86ad813tz	59	UNKNOWN	[ONBOARDING] Super Esperança	\N	finalizado	2025-11-13 19:51:09.724	2025-11-17 17:13:17.797	2025-11-13 19:51:09.724	2025-11-17 17:13:17.797	3.89	46	0
+437	86ad83hyc	59	UNKNOWN	[INTEGRACAO] Super Esperança	\N	implantado	2025-11-13 20:51:27.363	2025-12-02 17:03:03.434	2025-11-13 20:51:27.363	2025-12-02 17:03:03.434	18.84	31	0
+438	86ad83hye	59	UNKNOWN	[ATIVAR RECORRENCIA] Super Esperança	\N	todo	2025-11-13 20:51:27.414	\N	2025-11-13 20:51:27.414	\N	0	50	0
+439	86ad83hyd	59	UNKNOWN	[TREINAMENTO] Super Esperança	\N	finalizado	2025-11-13 20:51:27.398	2025-12-29 11:58:44.85	2025-11-13 20:51:27.398	2025-12-29 11:58:44.85	45.63	4	0
+440	86ad83hyg	59	UNKNOWN	[CADASTRO PRODUTOS] Super Esperança	\N	finalizado	2025-11-13 20:51:27.41	2025-12-11 11:42:53.191	2025-11-13 20:51:27.41	2025-12-11 11:42:53.191	27.62	22	0
+441	86ad83hyr	59	UNKNOWN	[QUALIDADE] Super Esperança	\N	finalizado	2025-11-13 20:51:27.656	2025-12-17 20:50:38.915	2025-11-13 20:51:27.656	2025-12-17 20:50:38.915	34	16	0
+442	86ad7wmy1	60	UNKNOWN	[CADASTRO OMIE] Araripe Supermercado Bom Jardim	\N	finalizado	2025-11-13 17:53:49.804	2025-11-13 20:45:14.199	2025-11-13 17:53:49.804	2025-11-13 20:45:14.199	0.12	50	0
+443	86ad839nu	60	UNKNOWN	[SUBIR APP] Araripe Supermercado Bom Jardim	\N	arquivado	2025-11-13 20:45:14.082	2025-11-19 13:00:02.629	2025-11-13 20:45:14.082	2025-11-19 13:00:02.629	5.68	44	0
+444	86ad7wmyy	60	UNKNOWN	[CRIAR LOJA] Araripe Supermercado Bom Jardim	\N	finalizado	2025-11-13 17:53:50.976	2025-11-14 13:02:35.416	2025-11-13 17:53:50.976	2025-11-14 13:02:35.416	0.8	49	0
+445	86ad7wmyr	60	UNKNOWN	[ONBOARDING] Araripe Supermercado Bom Jardim	\N	finalizado	2025-11-13 17:53:50.486	2025-11-17 16:38:05.445	2025-11-13 17:53:50.486	2025-11-17 16:38:05.445	3.95	46	0
+447	86ad839nn	60	UNKNOWN	[ATIVAR RECORRENCIA] Araripe Supermercado Bom Jardim	\N	todo	2025-11-13 20:45:13.868	\N	2025-11-13 20:45:13.868	\N	0	50	0
+448	86ad839nz	60	UNKNOWN	[TREINAMENTO] Araripe Supermercado Bom Jardim	\N	to do	2025-11-13 20:45:14.151	\N	2025-11-13 20:45:14.151	\N	0	50	0
+449	86ad839p1	60	UNKNOWN	[CADASTRO PRODUTOS] Araripe Supermercado Bom Jardim	\N	to do	2025-11-13 20:45:14.13	\N	2025-11-13 20:45:14.13	\N	0	50	0
+450	86ad839p7	60	UNKNOWN	[QUALIDADE] Araripe Supermercado Bom Jardim	\N	to do	2025-11-13 20:45:14.333	\N	2025-11-13 20:45:14.333	\N	0	50	0
+451	86ad7vw4p	61	UNKNOWN	[CADASTRO OMIE] Araripe Supermercado 	\N	finalizado	2025-11-13 17:31:24.798	2025-11-17 19:40:29.902	2025-11-13 17:31:24.798	2025-11-17 19:40:29.902	4.09	46	0
+452	86ada8dx9	61	UNKNOWN	[SUBIR APP] Araripe Supermercado 	\N	backlog	2025-11-17 19:21:08.363	\N	2025-11-17 19:21:08.363	\N	0	15	0
+453	86ad7vw5a	61	UNKNOWN	[CRIAR LOJA] Araripe Supermercado 	\N	finalizado	2025-11-13 17:31:26.039	2025-11-14 13:01:24.403	2025-11-13 17:31:26.039	2025-11-14 13:01:24.403	0.81	49	0
+454	86ad7vw51	61	UNKNOWN	[ONBOARDING] Araripe Supermercado 	\N	finalizado	2025-11-13 17:31:25.584	2025-11-17 16:37:51.686	2025-11-13 17:31:25.584	2025-11-17 16:37:51.686	3.96	46	0
+455	86ada9m7x	61	UNKNOWN	[INTEGRACAO] Araripe Supermercado 	\N	bloqueado	2025-11-17 19:40:29.627	\N	2025-11-17 19:40:29.627	\N	0	21	0
+456	86ada8dxa	61	UNKNOWN	[INTEGRACAO] Araripe Supermercado 	\N	bloqueado	2025-11-17 19:21:08.357	\N	2025-11-17 19:21:08.357	\N	0	21	0
+457	86ada8dx6	61	UNKNOWN	[ATIVAR RECORRENCIA] Araripe Supermercado 	\N	todo	2025-11-17 19:21:08.338	\N	2025-11-17 19:21:08.338	\N	0	46	0
+410	86ada51t6	56	UNKNOWN	[INTEGRACAO] Supermercado Tatais	\N	em progresso	2025-11-17 18:15:00.509	\N	2025-11-17 18:15:00.509	\N	0	0	0
+446	86ad839np	60	UNKNOWN	[INTEGRACAO] Araripe Supermercado Bom Jardim	\N	bloqueado	2025-11-13 20:45:13.878	\N	2025-11-13 20:45:13.878	\N	0	0	0
+458	86ada8dxc	61	UNKNOWN	[TREINAMENTO] Araripe Supermercado 	\N	to do	2025-11-17 19:21:08.522	\N	2025-11-17 19:21:08.522	\N	0	46	0
+459	86ada8dxd	61	UNKNOWN	[CADASTRO PRODUTOS] Araripe Supermercado 	\N	to do	2025-11-17 19:21:08.467	\N	2025-11-17 19:21:08.467	\N	0	46	0
+460	86ada8dxm	61	UNKNOWN	[QUALIDADE] Araripe Supermercado 	\N	to do	2025-11-17 19:21:08.809	\N	2025-11-17 19:21:08.809	\N	0	46	0
+461	86ad69xuv	62	UNKNOWN	[CADASTRO OMIE] Rota da Economia	\N	finalizado	2025-11-11 20:37:52.868	2025-11-27 18:41:44.445	2025-11-11 20:37:52.868	2025-11-27 18:41:44.445	15.92	36	0
+462	86adhu7r9	62	UNKNOWN	[SUBIR APP] Rota da Economia	\N	backlog	2025-11-27 18:41:44.202	\N	2025-11-27 18:41:44.202	\N	0	15	0
+463	86ad69xvr	62	UNKNOWN	[CRIAR LOJA] Rota da Economia	\N	finalizado	2025-11-11 20:37:53.981	2025-11-24 13:57:54.366	2025-11-11 20:37:53.981	2025-11-24 13:57:54.366	12.72	39	0
+464	86ad69xvb	62	UNKNOWN	[ONBOARDING] Rota da Economia	\N	finalizado	2025-11-11 20:37:53.45	2025-11-19 15:08:10.489	2025-11-11 20:37:53.45	2025-11-19 15:08:10.489	7.77	44	0
+465	86adhu7rq	62	UNKNOWN	[INTEGRACAO] Rota da Economia	\N	backlog	2025-11-27 18:41:44.402	\N	2025-11-27 18:41:44.402	\N	0	36	0
+466	86adhu7r8	62	UNKNOWN	[ATIVAR RECORRENCIA] Rota da Economia	\N	todo	2025-11-27 18:41:44.097	\N	2025-11-27 18:41:44.097	\N	0	36	0
+467	86adhu7rh	62	UNKNOWN	[TREINAMENTO] Rota da Economia	\N	to do	2025-11-27 18:41:44.339	\N	2025-11-27 18:41:44.339	\N	0	36	0
+468	86adhu7rk	62	UNKNOWN	[CADASTRO PRODUTOS] Rota da Economia	\N	to do	2025-11-27 18:41:44.364	\N	2025-11-27 18:41:44.364	\N	0	36	0
+469	86adhu7rx	62	UNKNOWN	[QUALIDADE] Rota da Economia	\N	to do	2025-11-27 18:41:44.789	\N	2025-11-27 18:41:44.789	\N	0	36	0
+470	86ad1uf1t	63	UNKNOWN	[CADASTRO OMIE] Super SSV	\N	finalizado	2025-11-05 13:08:39.278	2025-11-06 12:45:12.152	2025-11-05 13:08:39.278	2025-11-06 12:45:12.152	0.98	57	0
+471	86ad2qpfa	63	UNKNOWN	[SUBIR APP] Super SSV	\N	arquivado	2025-11-06 12:45:11.822	2025-12-18 14:24:48.405	2025-11-06 12:45:11.822	2025-12-18 14:24:48.405	42.07	15	0
+472	86ad1uf2u	63	UNKNOWN	[CRIAR LOJA] Super SSV	\N	finalizado	2025-11-05 13:08:40.639	2025-11-05 19:05:28.726	2025-11-05 13:08:40.639	2025-11-05 19:05:28.726	0.25	58	0
+473	86ad1uf2b	63	UNKNOWN	[ONBOARDING] Super SSV	\N	finalizado	2025-11-05 13:08:40.091	2025-11-05 19:05:10.391	2025-11-05 13:08:40.091	2025-11-05 19:05:10.391	0.25	58	0
+475	86ad2qpf9	63	UNKNOWN	[ATIVAR RECORRENCIA] Super SSV	\N	todo	2025-11-06 12:45:11.814	\N	2025-11-06 12:45:11.814	\N	0	57	0
+476	86ad2qpf8	63	UNKNOWN	[TREINAMENTO] Super SSV	\N	to do	2025-11-06 12:45:11.767	\N	2025-11-06 12:45:11.767	\N	0	57	0
+477	86ad2qpf7	63	UNKNOWN	[CADASTRO PRODUTOS] Super SSV	\N	finalizado	2025-11-06 12:45:11.707	2025-11-17 20:30:26.336	2025-11-06 12:45:11.707	2025-11-17 20:30:26.336	11.32	46	0
+478	86ad2qpfm	63	UNKNOWN	[QUALIDADE] Super SSV	\N	finalizado	2025-11-06 12:45:12.161	2025-12-18 20:42:53.669	2025-11-06 12:45:12.161	2025-12-18 20:42:53.669	42.33	14	0
+479	86acyrzqm	64	UNKNOWN	[CADASTRO OMIE] SuperDó	\N	finalizado	2025-10-31 17:48:17.965	2025-11-12 14:32:15.572	2025-10-31 17:48:17.965	2025-11-12 14:32:15.572	11.86	51	0
+480	86ad6rtyd	64	UNKNOWN	[SUBIR APP] SuperDó	\N	backlog	2025-11-12 14:32:15.158	\N	2025-11-12 14:32:15.158	\N	0	15	0
+481	86acyrzr2	64	UNKNOWN	[CRIAR LOJA] SuperDó	\N	finalizado	2025-10-31 17:48:18.89	2025-11-03 14:50:49.848	2025-10-31 17:48:18.89	2025-11-03 14:50:49.848	2.88	60	0
+482	86acyrzqx	64	UNKNOWN	[ONBOARDING] SuperDó	\N	finalizado	2025-10-31 17:48:18.522	2025-11-03 17:37:30.26	2025-10-31 17:48:18.522	2025-11-03 17:37:30.26	2.99	60	0
+483	86ad6rtyj	64	UNKNOWN	[INTEGRACAO] SuperDó	\N	implantado	2025-11-12 14:32:15.173	2025-12-18 18:59:01.942	2025-11-12 14:32:15.173	2025-12-18 18:59:01.942	36.19	15	0
+484	86ad6rtyg	64	UNKNOWN	[ATIVAR RECORRENCIA] SuperDó	\N	todo	2025-11-12 14:32:15.221	\N	2025-11-12 14:32:15.221	\N	0	51	0
+485	86ad6rtym	64	UNKNOWN	[TREINAMENTO] SuperDó	\N	to do	2025-11-12 14:32:15.308	\N	2025-11-12 14:32:15.308	\N	0	51	0
+486	86ad6rtyp	64	UNKNOWN	[CADASTRO PRODUTOS] SuperDó	\N	em progresso	2025-11-12 14:32:15.343	\N	2025-11-12 14:32:15.343	\N	0	11	0
+487	86ad6rtz2	64	UNKNOWN	[QUALIDADE] SuperDó	\N	to do	2025-11-12 14:32:15.571	\N	2025-11-12 14:32:15.571	\N	0	51	0
+488	86ackwj9w	65	UNKNOWN	[CADASTRO OMIE] Novo Prático Supermercados	\N	finalizado	2025-10-17 12:59:15.796	2025-10-21 21:29:19.355	2025-10-17 12:59:15.796	2025-10-21 21:29:19.355	4.35	73	0
+489	86acpz26y	65	UNKNOWN	[SUBIR APP] Novo Prático Supermercados	\N	arquivado	2025-10-21 21:29:18.845	2025-11-19 13:00:09.022	2025-10-21 21:29:18.845	2025-11-19 13:00:09.022	28.65	44	0
+490	86ackwjah	65	UNKNOWN	[CRIAR LOJA] Novo Prático Supermercados	\N	finalizado	2025-10-17 12:59:17.582	2025-10-22 20:14:16.058	2025-10-17 12:59:17.582	2025-10-22 20:14:16.058	5.3	72	0
+491	86ackwjac	65	UNKNOWN	[ONBOARDING] Novo Prático Supermercados	\N	finalizado	2025-10-17 12:59:17.085	2025-10-20 18:37:20.963	2025-10-17 12:59:17.085	2025-10-20 18:37:20.963	3.23	74	0
+492	86acpz272	65	UNKNOWN	[INTEGRACAO] Novo Prático Supermercados	\N	implantado	2025-10-21 21:29:19.051	2025-12-17 20:05:24.965	2025-10-21 21:29:19.051	2025-12-17 20:05:24.965	56.94	16	0
+493	86acpz270	65	UNKNOWN	[ATIVAR RECORRENCIA] Novo Prático Supermercados	\N	todo	2025-10-21 21:29:18.925	\N	2025-10-21 21:29:18.925	\N	0	73	0
+494	86acpz271	65	UNKNOWN	[TREINAMENTO] Novo Prático Supermercados	\N	to do	2025-10-21 21:29:19.016	\N	2025-10-21 21:29:19.016	\N	0	73	0
+496	86acpz277	65	UNKNOWN	[QUALIDADE] Novo Prático Supermercados	\N	to do	2025-10-21 21:29:19.404	\N	2025-10-21 21:29:19.404	\N	0	35	0
+497	86acev1xm	66	UNKNOWN	[CADASTRO OMIE] Mix Bahia Vilas	\N	finalizado	2025-10-10 13:56:05.742	2025-10-16 20:59:52.076	2025-10-10 13:56:05.742	2025-10-16 20:59:52.076	6.29	78	0
+498	86ackjqn2	66	UNKNOWN	[SUBIR APP] Mix Bahia Vilas	\N	arquivado	2025-10-16 20:59:51.632	2025-12-15 19:30:44.418	2025-10-16 20:59:51.632	2025-12-15 19:30:44.418	59.94	18	0
+499	86acev1yh	66	UNKNOWN	[CRIAR LOJA] Mix Bahia Vilas	\N	finalizado	2025-10-10 13:56:07.601	2025-10-13 14:39:28.705	2025-10-10 13:56:07.601	2025-10-13 14:39:28.705	3.03	81	0
+500	86acev1yc	66	UNKNOWN	[ONBOARDING] Mix Bahia Vilas	\N	finalizado	2025-10-10 13:56:07.082	2025-10-20 12:51:05.779	2025-10-10 13:56:07.082	2025-10-20 12:51:05.779	9.95	74	0
+501	86ackjqng	66	UNKNOWN	[INTEGRACAO] Mix Bahia Vilas	\N	implantado	2025-10-16 20:59:51.913	2025-11-10 21:04:44.447	2025-10-16 20:59:51.913	2025-11-10 21:04:44.447	25	53	0
+502	86ackjqn6	66	UNKNOWN	[ATIVAR RECORRENCIA] Mix Bahia Vilas	\N	todo	2025-10-16 20:59:51.647	\N	2025-10-16 20:59:51.647	\N	0	78	0
+503	86ackjqnc	66	UNKNOWN	[TREINAMENTO] Mix Bahia Vilas	\N	to do	2025-10-16 20:59:51.799	\N	2025-10-16 20:59:51.799	\N	0	78	0
+504	86ackjqnd	66	UNKNOWN	[CADASTRO PRODUTOS] Mix Bahia Vilas	\N	finalizado	2025-10-16 20:59:51.867	2025-11-24 13:04:12.486	2025-10-16 20:59:51.867	2025-11-24 13:04:12.486	38.67	39	0
+506	86ac4f4ky	67	UNKNOWN	[CADASTRO OMIE] Supermercado SuperTreis	\N	finalizado	2025-09-26 19:58:28.981	2025-10-03 13:38:46.131	2025-09-26 19:58:28.981	2025-10-03 13:38:46.131	6.74	91	0
+507	86ac9fwr2	67	UNKNOWN	[SUBIR APP] Supermercado SuperTreis	\N	arquivado	2025-10-03 13:38:45.928	2025-12-08 14:37:53.139	2025-10-03 13:38:45.928	2025-12-08 14:37:53.139	66.04	25	0
+508	86ac4f4pp	67	UNKNOWN	[CRIAR LOJA] Supermercado SuperTreis	\N	finalizado	2025-09-26 19:58:31.169	2025-10-08 11:41:01.694	2025-09-26 19:58:31.169	2025-10-08 11:41:01.694	11.65	86	0
+509	86ac4f4nn	67	UNKNOWN	[ONBOARDING] Supermercado SuperTreis	\N	finalizado	2025-09-26 19:58:30.413	2025-10-03 14:00:32.535	2025-09-26 19:58:30.413	2025-10-03 14:00:32.535	6.75	91	0
+510	86ac9fwr1	67	UNKNOWN	[INTEGRACAO] Supermercado SuperTreis	\N	implantado	2025-10-03 13:38:45.877	2025-11-17 17:54:08.59	2025-10-03 13:38:45.877	2025-11-17 17:54:08.59	45.18	46	0
+511	86ac9fwr0	67	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado SuperTreis	\N	todo	2025-10-03 13:38:45.884	\N	2025-10-03 13:38:45.884	\N	0	91	0
+474	86ad2qpfd	63	UNKNOWN	[INTEGRACAO] Super SSV	\N	implantado	2025-11-06 12:45:11.914	2026-01-05 18:02:12.537	2025-11-06 12:45:11.914	2026-01-05 18:02:12.537	60.22	0	0
+505	86ackjqnu	66	UNKNOWN	[QUALIDADE] Mix Bahia Vilas	\N	finalizado	2025-10-16 20:59:52.277	2026-01-05 19:08:01.796	2025-10-16 20:59:52.277	2026-01-05 19:08:01.796	80.92	0	0
+512	86ac9fwqr	67	UNKNOWN	[TREINAMENTO] Supermercado SuperTreis	\N	to do	2025-10-03 13:38:45.743	\N	2025-10-03 13:38:45.743	\N	0	91	0
+513	86ac9fwqx	67	UNKNOWN	[CADASTRO PRODUTOS] Supermercado SuperTreis	\N	finalizado	2025-10-03 13:38:45.772	2025-12-03 18:25:22.092	2025-10-03 13:38:45.772	2025-12-03 18:25:22.092	61.2	30	0
+514	86ac9fwr6	67	UNKNOWN	[QUALIDADE] Supermercado SuperTreis	\N	finalizado	2025-10-03 13:38:46.08	2025-12-18 17:44:12.426	2025-10-03 13:38:46.08	2025-12-18 17:44:12.426	76.17	15	0
+515	86ac4aqtp	68	UNKNOWN	[CADASTRO OMIE] Camilo Supermercados - Marialva	\N	finalizado	2025-09-26 18:20:24.075	2025-10-06 17:28:29.818	2025-09-26 18:20:24.075	2025-10-06 17:28:29.818	9.96	88	0
+516	86acb6xw9	68	UNKNOWN	[SUBIR APP] Camilo Supermercados - Marialva	\N	arquivado	2025-10-06 17:28:29.475	2025-12-04 17:09:34.666	2025-10-06 17:28:29.475	2025-12-04 17:09:34.666	58.99	29	0
+517	86ac4aqvc	68	UNKNOWN	[CRIAR LOJA] Camilo Supermercados - Marialva	\N	finalizado	2025-09-26 18:20:26.036	2025-10-08 12:16:10.567	2025-09-26 18:20:26.036	2025-10-08 12:16:10.567	11.75	86	0
+518	86ac4aqut	68	UNKNOWN	[ONBOARDING] Camilo Supermercados - Marialva	\N	finalizado	2025-09-26 18:20:25.395	2025-10-08 12:16:22.956	2025-09-26 18:20:25.395	2025-10-08 12:16:22.956	11.75	86	0
+519	86acb6xwc	68	UNKNOWN	[INTEGRACAO] Camilo Supermercados - Marialva	\N	implantado	2025-10-06 17:28:29.474	2025-12-09 19:25:27.928	2025-10-06 17:28:29.474	2025-12-09 19:25:27.928	64.08	24	0
+520	86acb6xw8	68	UNKNOWN	[ATIVAR RECORRENCIA] Camilo Supermercados - Marialva	\N	todo	2025-10-06 17:28:29.454	\N	2025-10-06 17:28:29.454	\N	0	88	0
+521	86acb6xw3	68	UNKNOWN	[TREINAMENTO] Camilo Supermercados - Marialva	\N	finalizado	2025-10-06 17:28:29.319	2025-12-18 20:13:59.048	2025-10-06 17:28:29.319	2025-12-18 20:13:59.048	73.11	15	0
+522	86acb6xw4	68	UNKNOWN	[CADASTRO PRODUTOS] Camilo Supermercados - Marialva	\N	finalizado	2025-10-06 17:28:29.314	2025-12-04 17:10:02.977	2025-10-06 17:28:29.314	2025-12-04 17:10:02.977	58.99	29	0
+523	86acb6xwk	68	UNKNOWN	[QUALIDADE] Camilo Supermercados - Marialva	\N	finalizado	2025-10-06 17:28:29.851	2025-12-10 14:30:53.791	2025-10-06 17:28:29.851	2025-12-10 14:30:53.791	64.88	23	0
+524	86ac03z49	69	UNKNOWN	[CADASTRO OMIE] Brilhante Supermercado	\N	finalizado	2025-09-22 14:47:06.466	2025-10-29 15:24:29.878	2025-09-22 14:47:06.466	2025-10-29 15:24:29.878	37.03	65	0
+525	86acwpdgy	69	UNKNOWN	[SUBIR APP] Brilhante Supermercado	\N	arquivado	2025-10-29 15:24:29.551	2025-12-15 19:30:45.161	2025-10-29 15:24:29.551	2025-12-15 19:30:45.161	47.17	18	0
+526	86ac03z53	69	UNKNOWN	[CRIAR LOJA] Brilhante Supermercado	\N	finalizado	2025-09-22 14:47:07.806	2025-10-01 14:45:22.399	2025-09-22 14:47:07.806	2025-10-01 14:45:22.399	9	93	0
+527	86ac03z4x	69	UNKNOWN	[ONBOARDING] Brilhante Supermercado	\N	finalizado	2025-09-22 14:47:07.442	2025-09-25 17:09:20.789	2025-09-22 14:47:07.442	2025-09-25 17:09:20.789	3.1	99	0
+528	86acwpdgz	69	UNKNOWN	[INTEGRACAO] Brilhante Supermercado	\N	implantado	2025-10-29 15:24:29.535	2025-11-21 20:29:56.749	2025-10-29 15:24:29.535	2025-11-21 20:29:56.749	23.21	42	0
+529	86acwpdh0	69	UNKNOWN	[ATIVAR RECORRENCIA] Brilhante Supermercado	\N	todo	2025-10-29 15:24:29.565	\N	2025-10-29 15:24:29.565	\N	0	65	0
+530	86acwpdh8	69	UNKNOWN	[TREINAMENTO] Brilhante Supermercado	\N	finalizado	2025-10-29 15:24:30.119	2025-12-29 12:16:27.1	2025-10-29 15:24:30.119	2025-12-29 12:16:27.1	60.87	4	0
+531	86acwpdhf	69	UNKNOWN	[CADASTRO PRODUTOS] Brilhante Supermercado	\N	finalizado	2025-10-29 15:24:30.451	2025-11-24 17:50:19.877	2025-10-29 15:24:30.451	2025-11-24 17:50:19.877	26.1	39	0
+532	86acwpdhq	69	UNKNOWN	[QUALIDADE] Brilhante Supermercado	\N	finalizado	2025-10-29 15:24:30.895	2025-12-28 12:43:28.86	2025-10-29 15:24:30.895	2025-12-28 12:43:28.86	59.89	5	0
+533	86abwk7mf	70	UNKNOWN	[CADASTRO OMIE] Vilton Supermercados	\N	finalizado	2025-09-17 15:10:31.872	2025-09-30 19:19:20.685	2025-09-17 15:10:31.872	2025-09-30 19:19:20.685	13.17	94	0
+534	86ac6y5e0	70	UNKNOWN	[SUBIR APP] Vilton Supermercados	\N	todo	2025-09-30 19:19:20.364	\N	2025-09-30 19:19:20.364	\N	0	15	0
+535	86abwk7nc	70	UNKNOWN	[CRIAR LOJA] Vilton Supermercados	\N	finalizado	2025-09-17 15:10:33.435	2025-09-26 13:56:45.97	2025-09-17 15:10:33.435	2025-09-26 13:56:45.97	8.95	98	0
+536	86abwk7n7	70	UNKNOWN	[ONBOARDING] Vilton Supermercados	\N	finalizado	2025-09-17 15:10:33.078	2025-09-24 14:47:19.677	2025-09-17 15:10:33.078	2025-09-24 14:47:19.677	6.98	100	0
+537	86ac6y5dz	70	UNKNOWN	[INTEGRACAO] Vilton Supermercados	\N	implantado	2025-09-30 19:19:20.334	2025-11-25 21:26:50.063	2025-09-30 19:19:20.334	2025-11-25 21:26:50.063	56.09	38	0
+538	86ac6y5dx	70	UNKNOWN	[ATIVAR RECORRENCIA] Vilton Supermercados	\N	todo	2025-09-30 19:19:20.26	\N	2025-09-30 19:19:20.26	\N	0	94	0
+539	86ac6y5dv	70	UNKNOWN	[TREINAMENTO] Vilton Supermercados	\N	to do	2025-09-30 19:19:20.242	\N	2025-09-30 19:19:20.242	\N	0	94	0
+540	86ac6y5e4	70	UNKNOWN	[CADASTRO PRODUTOS] Vilton Supermercados	\N	to do	2025-09-30 19:19:20.434	\N	2025-09-30 19:19:20.434	\N	0	63	0
+541	86ac6y5ed	70	UNKNOWN	[QUALIDADE] Vilton Supermercados	\N	to do	2025-09-30 19:19:20.732	\N	2025-09-30 19:19:20.732	\N	0	94	0
+542	86abeq4ne	71	UNKNOWN	[CADASTRO OMIE] Franin Supermercado	\N	finalizado	2025-09-01 21:10:13.927	2025-09-22 17:13:55.068	2025-09-01 21:10:13.927	2025-09-22 17:13:55.068	20.84	102	0
+543	86ac09tgh	71	UNKNOWN	[SUBIR APP] Franin Supermercado	\N	arquivado	2025-09-22 17:13:54.87	2025-10-28 05:22:50.879	2025-09-22 17:13:54.87	2025-10-28 05:22:50.879	35.51	66	0
+544	86abeq4p9	71	UNKNOWN	[CRIAR LOJA] Franin Supermercado	\N	finalizado	2025-09-01 21:10:15.409	2025-09-11 17:49:27.587	2025-09-01 21:10:15.409	2025-09-11 17:49:27.587	9.86	113	0
+545	86abeq4p0	71	UNKNOWN	[ONBOARDING] Franin Supermercado	\N	finalizado	2025-09-01 21:10:15	2025-09-10 12:55:32.79	2025-09-01 21:10:15	2025-09-10 12:55:32.79	8.66	114	0
+546	86abpjbqf	71	UNKNOWN	[INTEGRACAO] Franin Supermercado	\N	implantado	2025-09-10 13:00:24.797	2025-10-07 17:31:03.315	2025-09-10 13:00:24.797	2025-10-07 17:31:03.315	27.19	87	0
+547	86abpjbqb	71	UNKNOWN	[ATIVAR RECORRENCIA] Franin Supermercado	\N	concluído	2025-09-10 13:00:24.776	2025-09-22 22:23:53.295	2025-09-10 13:00:24.776	2025-09-22 22:23:53.295	12.39	102	0
+548	86abpjbqd	71	UNKNOWN	[TREINAMENTO] Franin Supermercado	\N	to do	2025-09-10 13:00:24.799	\N	2025-09-10 13:00:24.799	\N	0	114	0
+549	86abpjbqh	71	UNKNOWN	[CADASTRO PRODUTOS] Franin Supermercado	\N	finalizado	2025-09-10 13:00:24.852	2025-10-15 18:00:36.323	2025-09-10 13:00:24.852	2025-10-15 18:00:36.323	35.21	79	0
+550	86ac09tgp	71	UNKNOWN	[QUALIDADE] Franin Supermercado	\N	em progresso	2025-09-22 17:13:55.304	\N	2025-09-22 17:13:55.304	\N	0	15	0
+551	86aap4zge	72	UNKNOWN	[CADASTRO OMIE] Supermercado Favorito	\N	finalizado	2025-08-01 18:55:18.425	2025-09-01 13:19:44.063	2025-08-01 18:55:18.425	2025-09-01 13:19:44.063	30.77	123	0
+552	86aap4zhh	72	UNKNOWN	[CRIAR LOJA] Supermercado Favorito	\N	finalizado	2025-08-01 18:55:19.842	2025-08-13 13:24:11.976	2025-08-01 18:55:19.842	2025-08-13 13:24:11.976	11.77	142	0
+553	86aap4zh5	72	UNKNOWN	[ONBOARDING] Supermercado Favorito	\N	finalizado	2025-08-01 18:55:19.43	2025-08-13 13:34:41.688	2025-08-01 18:55:19.43	2025-08-13 13:34:41.688	11.78	142	0
+554	86abe41mj	72	UNKNOWN	[INTEGRACAO] Supermercado Favorito	\N	implantado	2025-09-01 13:19:43.749	2025-10-01 15:18:22.604	2025-09-01 13:19:43.749	2025-10-01 15:18:22.604	30.08	93	0
+555	86abe41mh	72	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Favorito	\N	todo	2025-09-01 13:19:43.714	\N	2025-09-01 13:19:43.714	\N	0	123	0
+556	86abe41ma	72	UNKNOWN	[TREINAMENTO] Supermercado Favorito	\N	to do	2025-09-01 13:19:43.494	\N	2025-09-01 13:19:43.494	\N	0	123	0
+557	86abe41md	72	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Favorito	\N	finalizado	2025-09-01 13:19:43.505	2025-12-04 18:02:11.724	2025-09-01 13:19:43.505	2025-12-04 18:02:11.724	94.2	29	0
+558	86abe41me	72	UNKNOWN	[QUALIDADE] Supermercado Favorito	\N	finalizado	2025-09-01 13:19:43.556	2025-12-18 20:20:34.856	2025-09-01 13:19:43.556	2025-12-18 20:20:34.856	108.29	15	0
+559	86a9fp730	73	UNKNOWN	[CADASTRO OMIE] Supermercado Perola - Compre Facil	\N	finalizado	2025-06-15 11:17:47.963	2025-07-02 14:42:41.823	2025-06-15 11:17:47.963	2025-07-02 14:42:41.823	17.14	184	0
+560	86a9xmxyf	73	UNKNOWN	[SUBIR APP] Supermercado Perola - Compre Facil	\N	arquivado	2025-07-02 14:42:41.787	2025-09-09 00:38:47.949	2025-07-02 14:42:41.787	2025-09-09 00:38:47.949	68.41	115	0
+561	86a9fp734	73	UNKNOWN	[CRIAR LOJA] Supermercado Perola - Compre Facil	\N	finalizado	2025-06-15 11:17:49.52	2025-06-26 18:29:24.18	2025-06-15 11:17:49.52	2025-06-26 18:29:24.18	11.3	190	0
+562	86a9fp733	73	UNKNOWN	[ONBOARDING] Supermercado Perola - Compre Facil	\N	finalizado	2025-06-15 11:17:49.074	2025-06-26 14:57:47.972	2025-06-15 11:17:49.074	2025-06-26 14:57:47.972	11.15	190	0
+563	86a9xmxya	73	UNKNOWN	[INTEGRACAO] Supermercado Perola - Compre Facil	\N	implantado	2025-07-02 14:42:41.642	2025-08-26 00:16:49.28	2025-07-02 14:42:41.642	2025-08-26 00:16:49.28	54.4	59	0
+564	86a9xmxy8	73	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado Perola - Compre Facil	\N	todo	2025-07-02 14:42:41.535	\N	2025-07-02 14:42:41.535	\N	0	184	0
+565	86a9xmxyg	73	UNKNOWN	[TREINAMENTO] Supermercado Perola - Compre Facil	\N	to do	2025-07-02 14:42:41.831	\N	2025-07-02 14:42:41.831	\N	0	184	0
+566	86a9xmxyc	73	UNKNOWN	[CADASTRO PRODUTOS] Supermercado Perola - Compre Facil	\N	finalizado	2025-07-02 14:42:41.585	2025-09-01 14:25:44.984	2025-07-02 14:42:41.585	2025-09-01 14:25:44.984	60.99	108	0
+567	86a7yr43u	74	UNKNOWN	[CADASTRO OMIE] Supermercado São Francisco	\N	finalizado	2025-04-14 13:09:47.494	2025-04-15 17:25:49.336	2025-04-14 13:09:47.494	2025-04-15 17:25:49.336	1.18	262	0
+568	86a7zx7y3	74	UNKNOWN	[SUBIR APP] Supermercado São Francisco	\N	arquivado	2025-04-15 17:25:49.105	2025-11-19 13:00:04.715	2025-04-15 17:25:49.105	2025-11-19 13:00:04.715	217.82	36	0
+569	86a7yr458	74	UNKNOWN	[CRIAR LOJA] Supermercado São Francisco	\N	finalizado	2025-04-14 13:09:49.583	2025-05-07 13:31:39.781	2025-04-14 13:09:49.583	2025-05-07 13:31:39.781	23.02	240	0
+570	86a7yr44y	74	UNKNOWN	[ONBOARDING] Supermercado São Francisco	\N	finalizado	2025-04-14 13:09:49.192	2025-05-05 19:24:47.931	2025-04-14 13:09:49.192	2025-05-05 19:24:47.931	21.26	242	0
+571	86a7zx7xx	74	UNKNOWN	[INTEGRACAO] Supermercado São Francisco	\N	implantado	2025-04-15 17:25:49.059	2025-10-22 10:28:31.389	2025-04-15 17:25:49.059	2025-10-22 10:28:31.389	189.71	72	0
+572	86a7zx7y0	74	UNKNOWN	[ATIVAR RECORRENCIA] Supermercado São Francisco	\N	todo	2025-04-15 17:25:49.088	\N	2025-04-15 17:25:49.088	\N	0	191	0
+573	86a7zx7y1	74	UNKNOWN	[TREINAMENTO] Supermercado São Francisco	\N	to do	2025-04-15 17:25:49.096	\N	2025-04-15 17:25:49.096	\N	0	262	0
+574	86a7zx7xz	74	UNKNOWN	[CADASTRO PRODUTOS] Supermercado São Francisco	\N	finalizado	2025-04-15 17:25:49.068	2025-11-14 19:29:18.187	2025-04-15 17:25:49.068	2025-11-14 19:29:18.187	213.09	49	0
+575	86a7zx7ye	74	UNKNOWN	[QUALIDADE] Supermercado São Francisco	\N	em progresso	2025-04-15 17:25:49.299	\N	2025-04-15 17:25:49.299	\N	0	24	0
+58	86advxnwk	17	UNKNOWN	[ONBOARDING] Supermercado Batista	\N	finalizado	2025-12-11 12:27:59.104	2026-01-05 13:50:55.025	2025-12-11 12:27:59.104	2026-01-05 13:50:55.025	25.06	0	0
+202	86adrgy9p	33	UNKNOWN	[ONBOARDING] Emporio Natural Mix - Loja 5 	\N	finalizado	2025-12-06 00:16:26.596	2026-01-05 13:07:17.741	2025-12-06 00:16:26.596	2026-01-05 13:07:17.741	30.54	0	0
+211	86adrgxmb	34	UNKNOWN	[ONBOARDING] Emporio Natural Mix - Loja 4 - Tijucas	\N	finalizado	2025-12-06 00:13:03.079	2026-01-05 13:07:08.705	2025-12-06 00:13:03.079	2026-01-05 13:07:08.705	30.54	0	0
+311	86admn2uw	45	UNKNOWN	[INTEGRACAO] ProBio Kombucha	\N	bloqueado	2025-12-01 21:29:48.441	\N	2025-12-01 21:29:48.441	\N	0	0	0
+495	86acpz273	65	UNKNOWN	[CADASTRO PRODUTOS] Novo Prático Supermercados	\N	finalizado	2025-10-21 21:29:19.059	2026-01-05 13:02:14.372	2025-10-21 21:29:19.059	2026-01-05 13:02:14.372	75.65	0	0
+419	86adhuqev	57	UNKNOWN	[INTEGRACAO] Mercado Macedo	\N	em progresso	2025-11-27 18:52:21.954	\N	2025-11-27 18:52:21.954	\N	0	0	0
+428	86adhub0d	58	UNKNOWN	[INTEGRACAO] Descontão Cecílio Mota	\N	contato/comunicação	2025-11-27 18:44:02.336	\N	2025-11-27 18:44:02.336	\N	0	0	0
+392	86adfqgwy	54	UNKNOWN	[INTEGRACAO] Castelinho Supermercado	\N	contato/comunicação	2025-11-25 13:00:38.526	\N	2025-11-25 13:00:38.526	\N	0	0	0
+\.
+
+
+--
+-- Data for Name: time_in_status_cache; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.time_in_status_cache (id, store_id, status_name, total_seconds, total_days, updated_at) FROM stdin;
+1	28	cadastro omie	775440	8.97	2026-01-02 23:56:11.771424
+2	28	integração erp	1245300	14.41	2026-01-02 23:56:11.771426
+3	28	cadastro de produtos	1440	0.02	2026-01-02 23:56:11.771426
+4	3	cadastro omie	132300	1.53	2026-01-04 01:43:45.455007
+5	1	cadastro omie	287580	3.33	2026-01-05 20:55:13.566236
+\.
+
+
+--
+-- Name: metrics_snapshot_daily_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.metrics_snapshot_daily_id_seq', 222, true);
+
+
+--
+-- Name: metrics_snapshot_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.metrics_snapshot_id_seq', 1, false);
+
+
+--
+-- Name: status_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.status_events_id_seq', 1, false);
+
+
+--
+-- Name: store_sync_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.store_sync_logs_id_seq', 16, true);
+
+
+--
+-- Name: stores_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.stores_id_seq', 74, true);
+
+
+--
+-- Name: sync_state_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.sync_state_id_seq', 1, false);
+
+
+--
+-- Name: system_config_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.system_config_id_seq', 1, false);
+
+
+--
+-- Name: tasks_steps_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.tasks_steps_id_seq', 575, true);
+
+
+--
+-- Name: time_in_status_cache_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.time_in_status_cache_id_seq', 5, true);
+
+
+--
+-- Name: metrics_snapshot_daily metrics_snapshot_daily_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.metrics_snapshot_daily
+    ADD CONSTRAINT metrics_snapshot_daily_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_snapshot metrics_snapshot_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.metrics_snapshot
+    ADD CONSTRAINT metrics_snapshot_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: status_events status_events_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.status_events
+    ADD CONSTRAINT status_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_deep_sync_state store_deep_sync_state_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.store_deep_sync_state
+    ADD CONSTRAINT store_deep_sync_state_pkey PRIMARY KEY (store_id);
+
+
+--
+-- Name: store_sync_logs store_sync_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.store_sync_logs
+    ADD CONSTRAINT store_sync_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stores stores_clickup_task_id_key; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT stores_clickup_task_id_key UNIQUE (clickup_task_id);
+
+
+--
+-- Name: stores stores_custom_store_id_key; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT stores_custom_store_id_key UNIQUE (custom_store_id);
+
+
+--
+-- Name: stores stores_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT stores_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sync_state sync_state_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.sync_state
+    ADD CONSTRAINT sync_state_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: system_config system_config_key_key; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.system_config
+    ADD CONSTRAINT system_config_key_key UNIQUE (key);
+
+
+--
+-- Name: system_config system_config_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.system_config
+    ADD CONSTRAINT system_config_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tasks_steps tasks_steps_clickup_task_id_key; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.tasks_steps
+    ADD CONSTRAINT tasks_steps_clickup_task_id_key UNIQUE (clickup_task_id);
+
+
+--
+-- Name: tasks_steps tasks_steps_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.tasks_steps
+    ADD CONSTRAINT tasks_steps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: time_in_status_cache time_in_status_cache_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.time_in_status_cache
+    ADD CONSTRAINT time_in_status_cache_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_snapshot_daily uix_snapshot_date_store; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.metrics_snapshot_daily
+    ADD CONSTRAINT uix_snapshot_date_store UNIQUE (snapshot_date, store_id);
+
+
+--
+-- Name: ix_metrics_snapshot_daily_implantador; Type: INDEX; Schema: public; Owner: user
+--
+
+CREATE INDEX ix_metrics_snapshot_daily_implantador ON public.metrics_snapshot_daily USING btree (implantador);
+
+
+--
+-- Name: ix_metrics_snapshot_daily_snapshot_date; Type: INDEX; Schema: public; Owner: user
+--
+
+CREATE INDEX ix_metrics_snapshot_daily_snapshot_date ON public.metrics_snapshot_daily USING btree (snapshot_date);
+
+
+--
+-- Name: ix_metrics_snapshot_daily_store_id; Type: INDEX; Schema: public; Owner: user
+--
+
+CREATE INDEX ix_metrics_snapshot_daily_store_id ON public.metrics_snapshot_daily USING btree (store_id);
+
+
+--
+-- Name: ix_status_events_clickup_task_id; Type: INDEX; Schema: public; Owner: user
+--
+
+CREATE INDEX ix_status_events_clickup_task_id ON public.status_events USING btree (clickup_task_id);
+
+
+--
+-- Name: metrics_snapshot_daily metrics_snapshot_daily_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.metrics_snapshot_daily
+    ADD CONSTRAINT metrics_snapshot_daily_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: store_deep_sync_state store_deep_sync_state_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.store_deep_sync_state
+    ADD CONSTRAINT store_deep_sync_state_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: store_sync_logs store_sync_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.store_sync_logs
+    ADD CONSTRAINT store_sync_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: stores stores_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT stores_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: tasks_steps tasks_steps_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.tasks_steps
+    ADD CONSTRAINT tasks_steps_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: time_in_status_cache time_in_status_cache_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.time_in_status_cache
+    ADD CONSTRAINT time_in_status_cache_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict h247GgxjZ4ou8Ukpo5mWlXu0QyDQKh0kWqQjgRxE1Ie3is6WGUtVgIOCKcoE0gv
+

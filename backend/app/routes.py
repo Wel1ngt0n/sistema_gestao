@@ -400,8 +400,9 @@ def update_store(id):
 
 @api_bp.route('/sync', methods=['POST'])
 def sync_clickup():
+    full = request.args.get('full', 'false').lower() == 'true'
     service = SyncService()
-    result = service.run_sync()
+    result = service.run_sync(force_full=full)
     return jsonify(result)
 
 @api_bp.route('/stores/bulk-link', methods=['POST'])
@@ -556,18 +557,32 @@ def deep_sync_store(id):
 
 @api_bp.route('/sync/stream', methods=['GET'])
 def sync_stream():
+    full = request.args.get('full', 'false').lower() == 'true'
     service = SyncService()
-    return Response(stream_with_context(service.run_sync_stream()), mimetype='text/event-stream')
+    return Response(stream_with_context(service.run_sync_stream(force_full=full)), mimetype='text/event-stream')
 
 @api_bp.route('/analyze/store/<int:id>', methods=['POST'])
 def analyze_store(id):
     from app.services.llm_service import LLMService
     from app.models import Store
     from app.services.clickup import ClickUpService
+    import json
     
     store = Store.query.get_or_404(id)
-    
-    # Fetch Comments from ClickUp
+    force = request.args.get('force', 'false').lower() == 'true'
+
+    # 1. Check Cache
+    if not force and store.ai_summary:
+        try:
+            cached_data = json.loads(store.ai_summary)
+            # Add metadata to say it's cached
+            cached_data['_cached'] = True
+            cached_data['_analyzed_at'] = store.ai_analyzed_at.strftime('%d/%m/%Y %H:%M') if store.ai_analyzed_at else None
+            return jsonify(cached_data)
+        except:
+             pass # Failed to parse cache, regenerate
+
+    # 2. Fetch Comments from ClickUp
     clickup = ClickUpService()
     comments_list = []
     if store.clickup_task_id:
@@ -622,6 +637,18 @@ def analyze_store(id):
 
     service = LLMService()
     result = service.analyze_store_risks(data_context)
+    
+    # 3. Save to Cache
+    try:
+        store.ai_summary = json.dumps(result)
+        store.ai_analyzed_at = datetime.now()
+        db.session.commit()
+    except Exception as e:
+        print(f"Error saving AI cache: {e}")
+        db.session.rollback()
+
+    result['_cached'] = False
+    result['_analyzed_at'] = datetime.now().strftime('%d/%m/%Y %H:%M')
     
     return jsonify(result)
 

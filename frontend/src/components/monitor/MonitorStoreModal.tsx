@@ -92,7 +92,7 @@ export default function MonitorStoreModal({
         if (!localStore?.id) return;
         setLoadingPauses(true);
         try {
-            const res = await axios.get(`http://localhost:5000/api/stores/${localStore.id}/pauses`);
+            const res = await axios.get(`http://localhost:5003/api/stores/${localStore.id}/pauses`);
             setPauses(res.data);
         } catch (e) {
             console.error("Erro ao carregar pausas", e);
@@ -104,7 +104,7 @@ export default function MonitorStoreModal({
     const handleAddPause = async () => {
         if (!localStore?.id || !newPauseDate) return;
         try {
-            await axios.post(`http://localhost:5000/api/stores/${localStore.id}/pauses`, {
+            await axios.post(`http://localhost:5003/api/stores/${localStore.id}/pauses`, {
                 start_date: newPauseDate,
                 reason: newPauseReason
             });
@@ -128,7 +128,7 @@ export default function MonitorStoreModal({
         if (!endDate) return;
 
         try {
-            await axios.put(`http://localhost:5000/api/pauses/${pauseId}/close`, {
+            await axios.put(`http://localhost:5003/api/pauses/${pauseId}/close`, {
                 end_date: endDate
             });
             fetchPauses();
@@ -140,7 +140,7 @@ export default function MonitorStoreModal({
     const handleDeletePause = async (pauseId: number) => {
         if (!confirm("Tem certeza que deseja apagar este registro de pausa?")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/pauses/${pauseId}`);
+            await axios.delete(`http://localhost:5003/api/pauses/${pauseId}`);
             fetchPauses();
         } catch (e: any) {
             alert("Erro ao apagar pausa: " + (e.response?.data?.error || e.message));
@@ -152,7 +152,7 @@ export default function MonitorStoreModal({
         if (!localStore?.id) return;
         setLoadingLogs(true);
         try {
-            const res = await axios.get(`http://localhost:5000/api/stores/${localStore.id}/logs`);
+            const res = await axios.get(`http://localhost:5003/api/stores/${localStore.id}/logs`);
             setLogs(res.data);
         } catch (e) {
             console.error("Erro ao carregar logs", e);
@@ -165,7 +165,7 @@ export default function MonitorStoreModal({
         if (!localStore?.id) return;
         setLoadingSteps(true);
         try {
-            const res = await axios.get(`http://localhost:5000/api/stores/${localStore.id}/steps`);
+            const res = await axios.get(`http://localhost:5003/api/stores/${localStore.id}/steps`);
             setSteps(res.data);
         } catch (e) {
             console.error("Erro ao carregar etapas", e);
@@ -185,7 +185,7 @@ export default function MonitorStoreModal({
         }
 
         try {
-            await axios.delete(`http://localhost:5000/api/stores/${localStore.id}`);
+            await axios.delete(`http://localhost:5003/api/stores/${localStore.id}`);
             alert("Loja excluída com sucesso.");
             onClose();
             window.location.reload(); // Simples refresh para atualizar lista

@@ -40,6 +40,10 @@ def patch_database():
             check_and_add_column('stores', 'parent_id', 'INTEGER REFERENCES stores(id)')
             check_and_add_column('stores', 'delivered_with_quality', 'BOOLEAN DEFAULT TRUE')
             check_and_add_column('stores', 'is_manual_start_date', 'BOOLEAN DEFAULT FALSE')
+            
+            # Colunas para Cache de IA
+            check_and_add_column('stores', 'ai_summary', 'TEXT')
+            check_and_add_column('stores', 'ai_analyzed_at', 'TIMESTAMP WITHOUT TIME ZONE')
 
             
             ctx.commit()

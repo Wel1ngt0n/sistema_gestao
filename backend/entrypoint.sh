@@ -7,4 +7,4 @@ echo ">>> [Entrypoint] Running Daily Snapshot Job..."
 python jobs/run_daily_snapshot.py
 
 echo ">>> [Entrypoint] Starting Flask..."
-exec flask run --host=0.0.0.0
+exec flask run --host=0.0.0.0 --port=5003

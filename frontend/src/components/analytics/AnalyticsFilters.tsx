@@ -14,7 +14,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
     const [isOpen, setIsOpen] = useState(false);
 
     const handleExportCSV = () => {
-        const API_BASE_URL = 'http://localhost:5000';
+        const API_BASE_URL = 'http://localhost:5003';
         const params = new URLSearchParams();
         if (filters.startDate) params.append('start_date', filters.startDate.toISOString().split('T')[0]);
         if (filters.endDate) params.append('end_date', filters.endDate.toISOString().split('T')[0]);

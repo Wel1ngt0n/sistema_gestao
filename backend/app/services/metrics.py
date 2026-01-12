@@ -34,6 +34,8 @@ class MetricsService:
         is_new = False
         if not store:
             store = Store(clickup_task_id=clickup_id)
+            store.store_name = store_name
+            store.custom_store_id = custom_id
             is_new = True
             db.session.add(store)
             db.session.flush() # Para pegar o ID

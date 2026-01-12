@@ -102,7 +102,7 @@ export default function MonitorTableView({
         if (!confirm(`Deseja aplicar em ${ids.length} lojas: ${actionMsg}?`)) return;
 
         try {
-            await axios.post('http://localhost:5000/api/stores/bulk-update', {
+            await axios.post('http://localhost:5003/api/stores/bulk-update', {
                 store_ids: ids,
                 parent_id: bulkMatrizId ? parseInt(bulkMatrizId) : null,
                 tipo_loja: bulkTipoLoja || null

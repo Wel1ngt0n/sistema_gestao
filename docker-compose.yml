@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: metrics_db
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +23,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "5000:5000"
+      - "5003:5003"
     volumes:
       - ./backend:/app
     environment:
@@ -38,7 +38,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "5173:5173"
+      - "5177:5177"
     volumes:
       - ./frontend:/app
       - /app/node_modules # Avoid overwriting container node_modules

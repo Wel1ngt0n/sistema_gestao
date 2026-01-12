@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from app.services.ai_service import GeminiService
 
 ai_bp = Blueprint('ai', __name__)
@@ -9,8 +9,10 @@ def analyze_network(store_id):
     """
     Gatilho manual para analisar uma rede de lojas.
     Identifica a rede baseada no store_id e roda a análise.
+    Accepts ?force=true to bypass cache.
     """
-    result = ai_service.analyze_network_context(store_id)
+    force = request.args.get('force', 'false').lower() == 'true'
+    result = ai_service.analyze_network_context(store_id, force=force)
     if not result:
         return jsonify({"error": "Failed to analyze"}), 500
     if "error" in result:

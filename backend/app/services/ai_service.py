@@ -24,7 +24,7 @@ class GeminiService:
         
         self.clickup = ClickUpService()
         
-    def analyze_network_context(self, store_id):
+    def analyze_network_context(self, store_id, force=False):
         """
         Analisa o contexto da REDE (Matriz + Filiais) da loja fornecida.
         Coleta dados do banco e comentários do ClickUp.
@@ -32,12 +32,21 @@ class GeminiService:
         if not self.client:
             return {"error": "AI not configured"}
 
-        start_time = datetime.now()
-        
-        # 1. Identificar Rede de Lojas
         target_store = Store.query.get(store_id)
         if not target_store:
             return {"error": "Store not found"}
+
+        # 1. Check Cache
+        if not force and target_store.ai_summary:
+            try:
+                cached_data = json.loads(target_store.ai_summary)
+                cached_data['_cached'] = True
+                cached_data['_analyzed_at'] = target_store.ai_analyzed_at.strftime('%d/%m/%Y %H:%M') if target_store.ai_analyzed_at else None
+                return cached_data
+            except Exception as e:
+                logger.warning(f"[Gemini] Cache corrupted: {e}")
+
+        start_time = datetime.now()
             
         network_stores = self._get_network_stores(target_store)
         logger.info(f"[Gemini] Analisando rede com {len(network_stores)} lojas (Base: {target_store.store_name})")
@@ -67,11 +76,42 @@ class GeminiService:
             self._save_analysis_to_db(target_store, result)
             
             logger.info(f"[Gemini] Análise concluída em {(datetime.now() - start_time).seconds}s")
+            
+            # Return with metadata
+            result['_cached'] = False
+            result['_analyzed_at'] = datetime.now().strftime('%d/%m/%Y %H:%M')
             return result
             
         except Exception as e:
             logger.error(f"[Gemini] Erro na análise: {e}")
             return {"error": str(e)}
+
+    # ... methods ...
+
+    def _save_analysis_to_db(self, store, result):
+        """Salva o resultado no banco (Store e MetricsSnapshotDaily)."""
+        try:
+            # 1. Save to Store (Persistent Cache)
+            store.ai_summary = json.dumps(result)
+            store.ai_analyzed_at = datetime.now()
+            
+            # 2. Try to save to Daily Snapshot (Historical)
+            today = datetime.today().date()
+            snapshot = MetricsSnapshotDaily.query.filter_by(
+                store_id=store.id, 
+                snapshot_date=today
+            ).first()
+            
+            if snapshot:
+                snapshot.ai_risk_level = result.get('risk_level')
+                snapshot.ai_network_summary = result.get('summary_network')
+                snapshot.ai_action_plan = json.dumps(result.get('action_plan'))
+                snapshot.ai_last_analysis = datetime.now()
+            
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"[Gemini] Failed to save analysis: {e}")
+            db.session.rollback()
 
     def _get_network_stores(self, store):
         """Retorna lista com a loja, sua matriz (se houver) e suas filiais (se houver)."""

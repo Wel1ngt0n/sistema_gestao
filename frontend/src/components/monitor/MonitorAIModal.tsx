@@ -16,6 +16,8 @@ interface AIAnalysisResult {
     specific_blockers: string[];
     action_plan: string[];
     ai_tags?: string[];
+    _cached?: boolean;
+    _analyzed_at?: string;
 }
 
 export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModalProps) {
@@ -35,13 +37,14 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
         }
     }, [isOpen, store]);
 
-    const fetchAnalysis = async (storeId: number) => {
+    const fetchAnalysis = async (storeId: number, force = false) => {
         setLoading(true);
-        setAnalysis(null);
+        if (!force) setAnalysis(null); // Clear only if fresh load, keep old data while regenerating? No, clear to show loading.
         setError(null);
         try {
             // New endpoint for network-aware analysis
-            const res = await axios.post(`http://localhost:5000/api/ai/analyze-network/${storeId}`);
+            const url = `http://localhost:5003/api/ai/analyze-network/${storeId}${force ? '?force=true' : ''}`;
+            const res = await axios.post(url);
             setAnalysis(res.data);
         } catch (e) {
             console.error(e);
@@ -120,6 +123,9 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 <div className="h-4 bg-slate-800 rounded w-4/6"></div>
                                             </div>
                                             <div className="h-32 bg-slate-800 rounded-xl"></div>
+                                            <div className="text-center text-slate-500 text-sm mt-4">
+                                                Analisando dados da rede e gerando insights...
+                                            </div>
                                         </div>
                                     ) : error ? (
                                         <div className="text-center py-10">
@@ -127,7 +133,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                             <h3 className="text-lg font-bold text-slate-300">Ops, algo deu errado.</h3>
                                             <p className="text-slate-500 mt-2 max-w-md mx-auto">{error}</p>
                                             <button
-                                                onClick={() => store && fetchAnalysis(store.id)}
+                                                onClick={() => store && fetchAnalysis(store.id, true)}
                                                 className="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold transition-colors"
                                             >
                                                 Tentar Novamente
@@ -143,7 +149,12 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-xs text-slate-500">Loja Analisada</span>
-                                                    <p className="font-bold text-white">{store?.name}</p>
+                                                    <p className="font-bold text-white mb-1">{store?.name}</p>
+                                                    {analysis._cached && (
+                                                        <span className="text-[10px] bg-slate-700 px-2 py-1 rounded text-slate-300" title="Análise recuperada do cache">
+                                                            📅 {analysis._analyzed_at} (Salvo)
+                                                        </span>
+                                                    )}
                                                     <div className="flex gap-1 justify-end mt-1">
                                                         {analysis.ai_tags?.map(tag => (
                                                             <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 uppercase tracking-wider">
@@ -198,12 +209,12 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 </div>
                                             </div>
 
-                                            <div className="flex justify-end pt-4">
+                                            <div className="flex justify-end pt-4 border-t border-slate-800/50">
                                                 <button
-                                                    onClick={() => store && fetchAnalysis(store.id)}
-                                                    className="text-xs text-slate-500 hover:text-indigo-400 underline"
+                                                    onClick={() => store && fetchAnalysis(store.id, true)}
+                                                    className="px-4 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-600/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                                                 >
-                                                    Regerar análise
+                                                    ✨ Gerar Nova Análise
                                                 </button>
                                             </div>
                                         </div>

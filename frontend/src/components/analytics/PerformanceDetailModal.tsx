@@ -43,7 +43,7 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/analytics/implantador-detail/${encodeURIComponent(implantadorName)}`);
+                const res = await axios.get(`http://localhost:5003/api/analytics/implantador-detail/${encodeURIComponent(implantadorName)}`);
                 setData(res.data);
             } catch (err) {
                 console.error('Erro ao buscar detalhes:', err);

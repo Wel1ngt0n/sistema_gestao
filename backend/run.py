@@ -1,5 +1,6 @@
 import sys
-from app import create_app
+import argparse
+from app import create_app, db
 from app.services.sync_service import SyncService
 
 app = create_app()
@@ -41,4 +42,4 @@ if __name__ == '__main__':
     if args.test:
         run_test_sync()
     else:
-        app.run(debug=True, host='0.0.0.0')
+        app.run(debug=True, host='0.0.0.0', port=5003)

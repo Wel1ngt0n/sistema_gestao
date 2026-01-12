@@ -53,7 +53,7 @@ export default function Monitor() {
         if (!silent) setLoading(true);
         else setIsRefreshing(true);
 
-        axios.get('http://localhost:5000/api/stores', {
+        axios.get('http://localhost:5003/api/stores', {
             params: { status: filterStatus }
         })
             .then(res => {
@@ -104,7 +104,7 @@ export default function Monitor() {
     const handleRunDeepSync = async (storeId: number) => {
         setDeepSyncLoading(true);
         try {
-            await axios.post(`http://localhost:5000/api/deep-sync/store/${storeId}`);
+            await axios.post(`http://localhost:5003/api/deep-sync/store/${storeId}`);
             alert("Deep Sync finalizado com sucesso! Histórico atualizado.");
             fetchStores(true); // Soft refresh
             setDeepSyncLoading(false);
@@ -120,7 +120,7 @@ export default function Monitor() {
             return;
         }
 
-        const url = `http://localhost:5000/api/store/${storeToSave.id}`;
+        const url = `http://localhost:5003/api/store/${storeToSave.id}`;
 
         try {
             await axios.put(url, storeToSave);
@@ -146,7 +146,7 @@ export default function Monitor() {
 
         try {
             // Usa o mesmo endpoint de edição
-            await axios.put(`http://localhost:5000/api/store/${storeId}`, updatedStore);
+            await axios.put(`http://localhost:5003/api/store/${storeId}`, updatedStore);
         } catch (e) {
             console.error("Rollback status change", e);
             // Rollback em caso de erro
