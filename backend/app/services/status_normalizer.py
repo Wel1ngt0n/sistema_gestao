@@ -6,7 +6,7 @@ class StatusNormalizer:
     
     DONE_STATUSES = [
         "concluído", "concluido", "complete", "finished", "closed", 
-        "arquivado", "finalizado", "encerrado", "done"
+        "arquivado", "finalizado", "encerrado", "done", "entregue"
     ]
     
     BLOCKED_STATUSES = [

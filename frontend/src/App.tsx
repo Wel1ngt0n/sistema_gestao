@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import Dashboard from './components/Dashboard'
 import Monitor from './components/Monitor'
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
+import ForecastPage from './features/forecast/ForecastPage'
 import ScoringRulesPage from './pages/ScoringRulesPage'
 import logo from './assets/logo.png'
 
 function App() {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'sync' | 'analytics' | 'rules'>('dashboard')
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'sync' | 'analytics' | 'rules' | 'forecast'>('dashboard')
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+
 
     // Theme Toggle Logic
     useEffect(() => {
@@ -101,6 +103,12 @@ function App() {
                             📈 Analytics
                         </button>
                         <button
+                            onClick={() => setActiveTab('forecast')}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'forecast' ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                        >
+                            🔮 Forecast
+                        </button>
+                        <button
                             onClick={() => setActiveTab('monitor')}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'monitor' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
                         >
@@ -130,6 +138,8 @@ function App() {
                 {activeTab === 'dashboard' && <Dashboard />}
 
                 {activeTab === 'analytics' && <DashboardAnalytics />}
+
+                {activeTab === 'forecast' && <ForecastPage />}
 
                 {activeTab === 'monitor' && <Monitor />}
 

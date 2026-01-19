@@ -53,7 +53,7 @@ function classNames(...classes: string[]) {
 
 export default function DashboardAnalytics() {
     const { filters } = useDashboardUrlParams();
-    const { kpiData, trendData, performanceData, bottleneckData, capacityData, forecastData, loading } = useAnalyticsData(filters);
+    const { kpiData, trendData, performanceData, bottleneckData, capacityData, forecastData, loading, refetch } = useAnalyticsData(filters);
     const [selectedImplantador, setSelectedImplantador] = useState<string | null>(null);
 
     // Preparar dados dos gráficos
@@ -222,7 +222,11 @@ export default function DashboardAnalytics() {
                             <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Análise de Dados</h1>
                         </div>
                         <div className="flex-none">
-                            <AnalyticsFilters availableImplantadores={availableImplantadores} />
+                            <AnalyticsFilters
+                                availableImplantadores={availableImplantadores}
+                                onRefresh={refetch}
+                                isRefreshing={loading}
+                            />
                         </div>
                     </div>
                 </div>

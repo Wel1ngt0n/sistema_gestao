@@ -1,13 +1,15 @@
 from flask import Blueprint, jsonify, request, Response, stream_with_context
-from app.models import db, Store
+from app.models import db, Store, StoreSyncLog
 from app.services.metrics import MetricsService
 from app.services.sync_service import SyncService
 from datetime import datetime
 from sqlalchemy import func, case
 
 # Blueprint principal mantido para health checks e estrutura futura
+# Blueprint principal mantido para health checks e estrutura futura
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+from app.routes_forecast import forecast_bp
 
 # --- Rotas da API (Backend React V2.5) ---
 
@@ -281,7 +283,15 @@ def get_stores():
             'delivered_with_quality': s.delivered_with_quality,
             'is_manual_start_date': s.is_manual_start_date,
             'total_paused_days': sum([(p.end_date - p.start_date).days for p in s.pauses if p.end_date]) if s.pauses else 0,
-            'ai_prediction': analyzer.predict_store_completion(s.id)
+            'ai_prediction': analyzer.predict_store_completion(s.id),
+            'dias_na_etapa': (datetime.now() - (
+                StoreSyncLog.query.filter_by(store_id=s.id, field_name='status')
+                .order_by(StoreSyncLog.changed_at.desc())
+                .with_entities(StoreSyncLog.changed_at)
+                .first()[0] 
+                if StoreSyncLog.query.filter_by(store_id=s.id, field_name='status').first() 
+                else s.effective_started_at or datetime.now()
+            )).days if s.effective_started_at else 0
         })
 
     return jsonify({"stores": results, "matrices": matrices})
@@ -794,6 +804,18 @@ def delete_pause(pause_id):
         db.session.delete(pause)
         db.session.commit()
         return jsonify({'status': 'deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/admin/backup', methods=['POST'])
+def manual_backup():
+    try:
+        from backup_manager import BackupManager
+        success = BackupManager.run_backup()
+        if success:
+            return jsonify({'status': 'backup_created'}), 200
+        else:
+            return jsonify({'error': 'Backup failed. Check server logs.'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

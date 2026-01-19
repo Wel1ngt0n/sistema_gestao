@@ -172,6 +172,11 @@ class SyncService:
                     db.session.add(cache)
                 
             db.session.commit()
+            
+            # FORCE RE-EVALUATE COMPLETION RULES
+            self.metrics.apply_training_completion_rule(store)
+            db.session.commit()
+            
             self.logger.info(f"Deep Sync finalizado para {store.store_name}")
             return {"status": "success", "history_items": len(status_history)}
             

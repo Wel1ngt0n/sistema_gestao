@@ -42,4 +42,11 @@ if __name__ == '__main__':
     if args.test:
         run_test_sync()
     else:
+        # Run Backup Check (Startup)
+        try:
+            from backup_manager import BackupManager
+            BackupManager.check_and_run_backup()
+        except Exception as e:
+            print(f"FAILED TO RUN STARTUP BACKUP: {e}")
+
         app.run(debug=True, host='0.0.0.0', port=5003)

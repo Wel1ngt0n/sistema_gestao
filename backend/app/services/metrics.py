@@ -166,39 +166,56 @@ class MetricsService:
 
     def apply_training_completion_rule(self, store_db):
         """
-        Rule: If Training is done, the Store implementation is effectively done.
+        Rule: If Training is done OR Manual Date is set, the Store implementation is effectively done.
+        Priority: Manual Date > Training Date.
         """
-        training_done = False
-        training_end = None
-        
-        # Se houver data manual, respeitar e não aplicar regras automáticas
+        # 1. Check for Manual Finish Date (Highest Priority)
         if store_db.manual_finished_at:
-            return
-        
-        for s in store_db.steps:
-            if s.step_list_name == "TREINAMENTO" and s.end_real_at:
-                training_done = True
-                training_end = s.end_real_at
-                break
-        
-        if training_done and training_end:
-            # Check if store is already closed
-            if not store_db.finished_at:
+            # Enforce DONE status if not already
+            if store_db.status_norm != 'DONE' or store_db.status != "Concluído (Manual)":
                 old_s = store_db.status
-                store_db.status = "Concluído (Treinamento)"
-                store_db.status_norm = "DONE" # Force Normalize
-                store_db.finished_at = training_end
-                
-                # Log this specific rule application
-                self.log_change(store_db, 'status', old_s, "Concluído (Treinamento)", source='auto_rule', timestamp=training_end)
-                
-            # Recalculate Store Total Time
-            # Use effective finished_at (which is now training_end if it was null)
-            fin = store_db.finished_at
-            start = store_db.start_real_at or store_db.created_at
+                store_db.status = "Concluído (Manual)"
+                store_db.status_norm = "DONE"
+                store_db.finished_at = store_db.manual_finished_at
+                self.log_change(store_db, 'status', old_s, "Concluído (Manual)", source='manual_rule', timestamp=store_db.manual_finished_at)
             
-            if start and fin:
-                 delta = fin - start
+            # Ensure finished_at matches manual date
+            if store_db.finished_at != store_db.manual_finished_at:
+                store_db.finished_at = store_db.manual_finished_at
+
+        else:
+            # 2. Check for Training Completion
+            training_done = False
+            training_end = None
+            
+            for s in store_db.steps:
+                if s.step_list_name == "TREINAMENTO" and s.end_real_at:
+                    training_done = True
+                    training_end = s.end_real_at
+                    break
+            
+            if training_done and training_end:
+                # If store is not DONE or date is missing, update it
+                # We allow overwriting if the current status is NOT 'DONE', or if we want to enforce Training completion as the 'Done' trigger.
+                # To be safe: Only update if NOT already DONE, OR if currently 'DONE' but missing a date.
+                
+                # Logic: If Training is done, Store IS Done.
+                if store_db.status_norm != 'DONE':
+                     old_s = store_db.status
+                     store_db.status = "Concluído (Treinamento)"
+                     store_db.status_norm = "DONE"
+                     store_db.finished_at = training_end
+                     self.log_change(store_db, 'status', old_s, "Concluído (Treinamento)", source='auto_rule', timestamp=training_end)
+                
+                # If it is DONE but has no date, fill it
+                if not store_db.finished_at:
+                    store_db.finished_at = training_end
+
+        # 3. Recalculate Store Total Time (if finished)
+        if store_db.finished_at:
+             start = store_db.start_real_at or store_db.created_at
+             if start:
+                 delta = store_db.finished_at - start
                  store_db.total_time_days = round(delta.total_seconds() / 86400, 2)
 
     def commit(self):

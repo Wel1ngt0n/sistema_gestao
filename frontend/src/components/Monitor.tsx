@@ -9,6 +9,8 @@ import MonitorStoreModal from './monitor/MonitorStoreModal';
 import MonitorAIModal from './monitor/MonitorAIModal';
 import { Store } from './monitor/types';
 
+import { MonitorFilterPanel, FilterState } from './monitor/MonitorFilterPanel';
+
 export default function Monitor() {
     const [data, setData] = useState<Store[]>([]);
     const [loading, setLoading] = useState(true);
@@ -19,12 +21,21 @@ export default function Monitor() {
 
     // UI State
     const [globalFilter, setGlobalFilter] = useState('');
+    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
-    // V2.5 Filtros Melhorados (Active Filters)
-    const [filterRisk, setFilterRisk] = useState(false);
-    const [filterLate, setFilterLate] = useState(false);
-    const [filterDebt, setFilterDebt] = useState(false);
-    const [filterImplantador, setFilterImplantador] = useState('');
+    // Advanced Filters State
+    const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
+        startDate: '',
+        endDate: '',
+        finishStartDate: '',
+        finishEndDate: '',
+        status: [],
+        assignee: '',
+        financialStatus: '',
+        isHighRisk: false,
+        isLate: false,
+    });
+
     const [filterStatus, setFilterStatus] = useState<'active' | 'concluded'>('active');
 
     // Estado da Modal de Detalhes (Nova UI)
@@ -76,25 +87,45 @@ export default function Monitor() {
     // Extrair Lista Única de Implantadores
     const uniqueImplantadores = useMemo(() => {
         const owners = data.map(s => s.implantador).filter(Boolean);
-        return Array.from(new Set(owners)).sort();
+        return Array.from(new Set(owners)).sort() as string[];
     }, [data]);
 
-    // Lógica de Filtro
+    const uniqueStatuses = useMemo(() => Array.from(new Set(data.map(d => d.status))).sort(), [data]);
+
+
+    // Lógica de Filtro Unificada
     const filteredData = useMemo(() => {
         let res = data;
-        if (filterRisk) res = res.filter(s => s.risk_score > 20); // Limite arbitrário para "Alto Risco"
-        if (filterLate) res = res.filter(s => (s.dias_em_transito || 0) > s.tempo_contrato);
-        if (filterDebt) res = res.filter(s => s.financeiro_status === 'Devendo');
-        if (filterImplantador) res = res.filter(s => s.implantador === filterImplantador);
 
-        // Filtro Global simples para Kanban e Cards
-        if ((viewMode === 'kanban' || viewMode === 'cards') && globalFilter) {
+        // 1. Text Search (Global) - Only applies if View is NOT Table (Table has internal)
+        // OR apply it everywhere if we want unified behavior? User said "search bar only in others".
+        // BUT logic wise, if we type in search bar in Kanban, it filters.
+        if (globalFilter && viewMode !== 'table') {
             const lowerFilter = globalFilter.toLowerCase();
             res = res.filter(s => s.name.toLowerCase().includes(lowerFilter) || String(s.id).includes(lowerFilter));
         }
 
+        // 2. Advanced Filters
+        if (advancedFilters.isHighRisk) res = res.filter(s => s.risk_score > 20);
+        if (advancedFilters.isLate) res = res.filter(s => (s.dias_em_transito || 0) > s.tempo_contrato);
+        if (advancedFilters.financialStatus) res = res.filter(s => s.financeiro_status === advancedFilters.financialStatus);
+
+        if (advancedFilters.assignee) {
+            res = res.filter(s => (s.implantador || 'Sem Responsável') === advancedFilters.assignee);
+        }
+
+        if (advancedFilters.status.length > 0) {
+            res = res.filter(s => advancedFilters.status.includes(s.status));
+        }
+
+        // Date Ranges
+        if (advancedFilters.startDate) res = res.filter(s => s.data_inicio && s.data_inicio >= advancedFilters.startDate);
+        if (advancedFilters.endDate) res = res.filter(s => s.data_inicio && s.data_inicio <= advancedFilters.endDate);
+        if (advancedFilters.finishStartDate) res = res.filter(s => s.data_fim && s.data_fim >= advancedFilters.finishStartDate);
+        if (advancedFilters.finishEndDate) res = res.filter(s => s.data_fim && s.data_fim <= advancedFilters.finishEndDate);
+
         return res;
-    }, [data, filterRisk, filterLate, filterDebt, filterImplantador, globalFilter, viewMode]);
+    }, [data, advancedFilters, globalFilter, viewMode]);
 
     const handleEditClick = (store: Store) => {
         setEditingStore({ ...store });
@@ -177,6 +208,16 @@ export default function Monitor() {
                 store={selectedStoreForAi}
             />
 
+            {/* Global Filter Panel */}
+            <MonitorFilterPanel
+                isOpen={isFilterPanelOpen}
+                onClose={() => setIsFilterPanelOpen(false)}
+                filters={advancedFilters}
+                setFilters={setAdvancedFilters}
+                uniqueAssignees={uniqueImplantadores}
+                uniqueStatuses={uniqueStatuses}
+            />
+
             <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
                 {/* Modern Header */}
                 <header className="flex-none bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0">
@@ -221,123 +262,83 @@ export default function Monitor() {
                                 </div>
                             </div>
 
-                            {/* View Switcher & Status Filter Combined */}
-                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg self-start md:self-center gap-1">
-                                {/* Status Toggle */}
-                                <div className="flex bg-white dark:bg-slate-700 rounded-md shadow-sm mr-2 p-0.5">
+                            {/* Actions Group (View Switcher + Filter Button + Status Toggle) */}
+                            <div className="flex items-center gap-2 self-start md:self-center">
+                                {/* Search Bar (Only for non-table views) */}
+                                {viewMode !== 'table' && (
+                                    <div className="relative group w-48 transition-all focus-within:w-64">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar Global..."
+                                            value={globalFilter}
+                                            onChange={(e) => setGlobalFilter(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Status Toggle Combined */}
+                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg gap-1">
                                     <button
                                         onClick={() => setFilterStatus('active')}
                                         className={`px-3 py-1 rounded text-xs font-bold uppercase transition-all flex items-center gap-1 ${filterStatus === 'active'
-                                                ? 'bg-indigo-500 text-white'
-                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                            ? 'bg-indigo-500 text-white shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                             }`}
                                     >
-                                        🚀 Ativas
+                                        Ativas
                                     </button>
                                     <button
                                         onClick={() => setFilterStatus('concluded')}
                                         className={`px-3 py-1 rounded text-xs font-bold uppercase transition-all flex items-center gap-1 ${filterStatus === 'concluded'
-                                                ? 'bg-emerald-500 text-white'
-                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                            ? 'bg-emerald-500 text-white shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                             }`}
                                     >
-                                        ✅ Concluídas
+                                        Concluídas
                                     </button>
                                 </div>
-                                <div className="w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
-                                {[
-                                    { id: 'table', icon: '📋', label: 'Lista' },
-                                    { id: 'kanban', icon: '🏗️', label: 'Kanban' },
-                                    { id: 'cards', icon: '🏙️', label: 'Cards' }
-                                ].map((view) => (
-                                    <button
-                                        key={view.id}
-                                        onClick={() => setViewMode(view.id as any)}
-                                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${viewMode === view.id
-                                            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
-                                            : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
-                                            }`}
-                                    >
-                                        <span>{view.icon}</span>
-                                        <span className="hidden sm:inline">{view.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Filter Bar (Integrated) */}
-                        <div className="mt-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                            {/* Quick Filters (Chips) */}
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">Filtros:</span>
-
+                                {/* Filter Button */}
                                 <button
-                                    onClick={() => { setFilterRisk(!filterRisk); }}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${filterRisk
-                                        ? 'bg-rose-500 border-rose-600 text-white shadow-md shadow-rose-500/20'
-                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-rose-300 hover:text-rose-500'
+                                    onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                                    className={`h-full px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all ${isFilterPanelOpen || Object.values(advancedFilters).some(v => Array.isArray(v) ? v.length > 0 : !!v)
+                                        ? 'bg-violet-600 text-white border-violet-600 shadow-md ring-2 ring-violet-500/20'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-violet-400'
                                         }`}
                                 >
-                                    🔥 Alto Risco
+                                    <span>⚡ Filtros</span>
+                                    {(Object.values(advancedFilters).some(v => Array.isArray(v) ? v.length > 0 : !!v)) && (
+                                        <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                                    )}
                                 </button>
 
-                                <button
-                                    onClick={() => { setFilterLate(!filterLate); }}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${filterLate
-                                        ? 'bg-orange-500 border-orange-600 text-white shadow-md shadow-orange-500/20'
-                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-orange-300 hover:text-orange-500'
-                                        }`}
-                                >
-                                    ⚠️ Atrasados
-                                </button>
-
-                                <button
-                                    onClick={() => { setFilterDebt(!filterDebt); }}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${filterDebt
-                                        ? 'bg-yellow-500 border-yellow-600 text-white shadow-md shadow-yellow-500/20'
-                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-yellow-300 hover:text-yellow-500'
-                                        }`}
-                                >
-                                    💰 Inadimplentes
-                                </button>
-
-                                {(filterRisk || filterLate || filterDebt || filterImplantador) && (
-                                    <button
-                                        onClick={() => { setFilterRisk(false); setFilterLate(false); setFilterDebt(false); setFilterImplantador(''); setGlobalFilter(''); }}
-                                        className="text-xs text-slate-400 hover:text-slate-600 underline ml-2 transition-colors"
-                                    >
-                                        Limpar todos
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Search & Select */}
-                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                                <div className="relative group w-full sm:w-64">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar por nome ou ID..."
-                                        value={globalFilter}
-                                        onChange={(e) => setGlobalFilter(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                                    />
-                                </div>
-                                <select
-                                    value={filterImplantador || ''}
-                                    onChange={(e) => setFilterImplantador(e.target.value)}
-                                    className="w-full sm:w-48 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="">👤 Todos Resp.</option>
-                                    {uniqueImplantadores.map(imp => (
-                                        <option key={imp} value={imp || ''}>{imp}</option>
+                                {/* View Switcher */}
+                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg gap-1">
+                                    {[
+                                        { id: 'table', icon: '📋', label: 'Lista' },
+                                        { id: 'kanban', icon: '🏗️', label: 'Kanban' },
+                                        { id: 'cards', icon: '🏙️', label: 'Cards' }
+                                    ].map((view) => (
+                                        <button
+                                            key={view.id}
+                                            onClick={() => setViewMode(view.id as any)}
+                                            className={`p-1.5 sm:px-3 sm:py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${viewMode === view.id
+                                                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                                                : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+                                                }`}
+                                            title={view.label}
+                                        >
+                                            <span>{view.icon}</span>
+                                            <span className="hidden xl:inline">{view.label}</span>
+                                        </button>
                                     ))}
-                                </select>
+                                </div>
                             </div>
                         </div>
                     </div>

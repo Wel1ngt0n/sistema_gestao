@@ -114,6 +114,18 @@ class Store(db.Model):
     ai_summary = db.Column(db.Text, nullable=True)
     ai_analyzed_at = db.Column(db.DateTime, nullable=True)
 
+    # Forecast & CS Fields (V5)
+    address = db.Column(db.Text, nullable=True)
+    state_uf = db.Column(db.String(2), nullable=True)
+    had_ecommerce = db.Column(db.Boolean, default=False)
+    previous_platform = db.Column(db.String(100), nullable=True)
+    deployment_type = db.Column(db.String(50), default='MIGRAÇÃO') # NOVA or MIGRAÇÃO
+    projected_orders = db.Column(db.Integer, default=0)
+    order_rate = db.Column(db.Float, default=0.0) # Taxa %
+    manual_go_live_date = db.Column(db.DateTime, nullable=True)
+    forecast_obs = db.Column(db.Text, nullable=True)
+    include_in_forecast = db.Column(db.Boolean, default=True)
+
     
     # Relationships
     steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")

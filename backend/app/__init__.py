@@ -31,5 +31,8 @@ def create_app():
     app.register_blueprint(analytics_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(scoring_bp)
+    
+    from app.routes_forecast import forecast_bp
+    app.register_blueprint(forecast_bp)
 
     return app

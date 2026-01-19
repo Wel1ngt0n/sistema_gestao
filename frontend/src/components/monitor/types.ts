@@ -18,6 +18,7 @@ export interface Store {
     status_norm: string;
     implantador: string | null;
     dias_em_transito: number | null;
+    dias_na_etapa?: number | null;
     idle_days: number | null;
     risk_score: number;
     risk_breakdown?: {

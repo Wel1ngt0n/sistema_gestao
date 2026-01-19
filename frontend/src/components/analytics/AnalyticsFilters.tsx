@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
 import { Select } from '../../components/ui/Select';
 import { DatePicker } from '../../components/ui/DatePicker';
-import { Download, ListFilter, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { Download, ListFilter, X, RefreshCw } from 'lucide-react';
 
 interface AnalyticsFiltersProps {
     availableImplantadores: string[];
+    onRefresh: () => void;
+    isRefreshing: boolean;
 }
 
-export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImplantadores }) => {
+export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImplantadores, onRefresh, isRefreshing }) => {
     const { filters, updateFilter } = useDashboardUrlParams();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -38,134 +39,116 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
         ...availableImplantadores.map(imp => ({ value: imp, label: imp }))
     ];
 
-    // Helper para texto de resumo dos filtros ativos
-    const getActiveFiltersSummary = () => {
-        const parts = [];
-        if (filters.startDate || filters.endDate) {
-            const start = filters.startDate ? format(filters.startDate, 'dd/MM/yy') : 'Início';
-            const end = filters.endDate ? format(filters.endDate, 'dd/MM/yy') : 'Hoje';
-            parts.push(`${start} até ${end}`);
-        }
-        if (filters.implantador) {
-            parts.push(filters.implantador);
-        }
-
-        if (parts.length === 0) return 'Exibindo todos os dados';
-        return parts.join(' • ');
-    };
-
     const hasActiveFilters = !!(filters.startDate || filters.endDate || filters.implantador);
 
     return (
-        <div className="w-full flex flex-col gap-4 mb-2">
+        <div className="flex items-center gap-2 relative">
+            {/* Refresh Button */}
+            <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className={`h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isRefreshing ? 'animate-spin cursor-not-allowed opacity-70' : ''}`}
+                title="Atualizar Dados"
+            >
+                <RefreshCw className="w-4 h-4" />
+            </button>
 
-            {/* Barra Principal (Minimalista) */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-2 pl-4 pr-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            {/* Filter Toggle Button (Monitor Style) */}
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={`h-9 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all ${isOpen || hasActiveFilters
+                    ? 'bg-violet-600 text-white border-violet-600 shadow-md ring-2 ring-violet-500/20'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-violet-400'
+                    }`}
+            >
+                <ListFilter className="w-4 h-4" />
+                <span>Filtros</span>
+                {hasActiveFilters && (
+                    <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                )}
+            </button>
 
-                {/* Esquerda: Botão Toggle + Resumo */}
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isOpen || hasActiveFilters
-                            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
-                            : 'hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-700 dark:text-slate-300'
-                            }`}
-                    >
-                        <ListFilter className="w-4 h-4" />
-                        <span>Filtros</span>
-                        {isOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                    </button>
+            {/* Export Button */}
+            <button
+                onClick={handleExportCSV}
+                className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                title="Exportar Excel"
+            >
+                <Download className="w-4 h-4" />
+            </button>
 
-                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block"></div>
-
-                    <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block truncate max-w-[200px] md:max-w-[400px]">
-                        {getActiveFiltersSummary()}
-                    </span>
-
-                    {/* Botão limpar rápido se houver filtros e estiver fechado */}
-                    {hasActiveFilters && !isOpen && (
-                        <button
-                            onClick={() => {
-                                updateFilter('startDate', null);
-                                updateFilter('endDate', null);
-                                updateFilter('implantador', null);
-                            }}
-                            className="ml-2 p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                            title="Limpar todos os filtros"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Direita: Exportar */}
-                <button
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95"
-                >
-                    <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Exportar Excel</span>
-                </button>
-            </div>
-
-            {/* Painel Expansível (Inputs) */}
+            {/* Popup Panel */}
             {isOpen && (
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2 fade-in duration-200">
-                    <div className="flex flex-wrap items-end gap-4">
+                <>
+                    {/* Backdrop transparent to close on click outside (optional but good UX) */}
+                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
-                        <div className="w-48">
-                            <Select
-                                label="Base Temporal"
-                                options={baseTemporalOptions}
-                                value={filters.baseTemporal}
-                                onChange={(val) => updateFilter('baseTemporal', val)}
-                            />
-                        </div>
-
-                        <div className="w-40">
-                            <DatePicker
-                                label="Data Início"
-                                date={filters.startDate}
-                                onChange={(d) => handleDateChange(d, 'startDate')}
-                                placeholder="--/--/----"
-                            />
-                        </div>
-
-                        <div className="w-40">
-                            <DatePicker
-                                label="Data Fim"
-                                date={filters.endDate}
-                                onChange={(d) => handleDateChange(d, 'endDate')}
-                                placeholder="--/--/----"
-                            />
-                        </div>
-
-                        <div className="w-56">
-                            <Select
-                                label="Implantador"
-                                options={implantadorOptions}
-                                value={filters.implantador || ''}
-                                onChange={(val) => updateFilter('implantador', val || null)}
-                                placeholder="Todos"
-                            />
-                        </div>
-
-                        <div className="flex-1"></div>
-
-                        {hasActiveFilters && (
-                            <button
-                                onClick={() => {
-                                    updateFilter('startDate', null);
-                                    updateFilter('endDate', null);
-                                    updateFilter('implantador', null);
-                                }}
-                                className="mb-0.5 px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 rounded-lg transition-colors"
-                            >
-                                Limpar Filtros
+                    <div className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl w-80 p-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100 dark:border-slate-700">
+                            <h3 className="font-bold text-slate-800 dark:text-white text-sm">Filtros de Analytics</h3>
+                            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <X className="w-4 h-4" />
                             </button>
-                        )}
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Base Temporal</label>
+                                <Select
+                                    label=""
+                                    options={baseTemporalOptions}
+                                    value={filters.baseTemporal}
+                                    onChange={(val) => updateFilter('baseTemporal', val)}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Início</label>
+                                    <DatePicker
+                                        label=""
+                                        date={filters.startDate}
+                                        onChange={(d) => handleDateChange(d, 'startDate')}
+                                        placeholder="--/--"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Fim</label>
+                                    <DatePicker
+                                        label=""
+                                        date={filters.endDate}
+                                        onChange={(d) => handleDateChange(d, 'endDate')}
+                                        placeholder="--/--"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Implantador</label>
+                                <Select
+                                    label=""
+                                    options={implantadorOptions}
+                                    value={filters.implantador || ''}
+                                    onChange={(val) => updateFilter('implantador', val || null)}
+                                    placeholder="Todos"
+                                />
+                            </div>
+
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={() => {
+                                        updateFilter('startDate', null);
+                                        updateFilter('endDate', null);
+                                        updateFilter('implantador', null);
+                                    }}
+                                    className="w-full mt-2 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 rounded-lg transition-colors border border-rose-100 dark:border-rose-900/30"
+                                >
+                                    Limpar Filtros
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );

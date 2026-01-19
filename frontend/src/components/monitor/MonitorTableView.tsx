@@ -123,7 +123,7 @@ export default function MonitorTableView({
         const headers = [
             "Score Risco", "ID Custom", "ClickUp ID", "Loja", "Rede", "Tipo de Loja", "Matriz Vinculada",
             "Status", "Implantador", "Data Início", "Data Previsão", "Data Fim Real", "Data Fim Manual",
-            "IA: Previsão", "IA: Atraso Previsto", "Tempo Contrato", "Dias Transito", "Dias Idle",
+            "IA: Previsão", "IA: Atraso Previsto", "Tempo Contrato", "Dias na Etapa", "Dias Transito", "Dias Idle",
             "Status Financeiro", "Mensalidade", "Valor Impl.", "ERP", "CNPJ", "CRM",
             "Retrabalho", "Qualidade", "Considerar Tempo", "Justificativa", "Obs"
         ];
@@ -146,6 +146,7 @@ export default function MonitorTableView({
                 formatDate(item.previsao_ia),
                 Math.round(item.days_late_predicted || 0),
                 item.tempo_contrato,
+                item.dias_na_etapa || 0,
                 item.dias_em_transito,
                 item.idle_days,
                 item.financeiro_status,
@@ -417,6 +418,9 @@ export default function MonitorTableView({
         })
     ], [onEdit, onAiAnalyze]);
 
+
+
+    // Use passed 'data' directly (it is already filtered by parent)
     const table = useReactTable({
         data,
         columns,
@@ -447,6 +451,7 @@ export default function MonitorTableView({
         getPaginationRowModel: getPaginationRowModel(),
     });
 
+    // ... (Keep existing helpers like getPinningStyle, drag handlers) ...
     const getPinningStyle = (column: Column<Store>): CSSProperties => {
         const isPinned = column.getIsPinned();
         const isLastLeft = isPinned === 'left' && column.getIsLastColumn('left');
@@ -513,7 +518,9 @@ export default function MonitorTableView({
     };
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 shadow-xl overflow-hidden flex flex-col min-h-[600px]">
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 shadow-xl overflow-hidden flex flex-col min-h-[600px] relative">
+
+
 
             {/* Action Bar (Bulk Link) */}
             {Object.keys(rowSelection).length > 0 && (
@@ -575,6 +582,9 @@ export default function MonitorTableView({
                     <div className="px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-400 font-mono">
                         {table.getFilteredRowModel().rows.length} lojas filtradas
                     </div>
+
+
+
                     <div className="relative">
                         <button
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}

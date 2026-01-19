@@ -166,6 +166,19 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const isLoading = kpiQuery.isLoading || trendQuery.isLoading || perfQuery.isLoading || bottleQuery.isLoading || capacityQuery.isLoading || forecastQuery.isLoading || riskQuery.isLoading || distQuery.isLoading;
     const isError = kpiQuery.isError || trendQuery.isError || perfQuery.isError || bottleQuery.isError || riskQuery.isError || distQuery.isError;
 
+    const refetchAll = async () => {
+        await Promise.all([
+            kpiQuery.refetch(),
+            trendQuery.refetch(),
+            perfQuery.refetch(),
+            bottleQuery.refetch(),
+            capacityQuery.refetch(),
+            forecastQuery.refetch(),
+            riskQuery.refetch(),
+            distQuery.refetch()
+        ]);
+    };
+
     return {
         kpiData: kpiQuery.data || null,
         trendData: trendQuery.data || [],
@@ -176,6 +189,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         riskData: riskQuery.data || [],
         distributionData: distQuery.data || null,
         loading: isLoading,
-        error: isError ? 'Erro ao carregar dados' : null
+        error: isError ? 'Erro ao carregar dados' : null,
+        refetch: refetchAll
     };
 };
