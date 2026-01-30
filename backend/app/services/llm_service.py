@@ -1,27 +1,29 @@
-import os
+from google import genai
 import logging
-import google.generativeai as genai
+import os
+import json
 
 class LLMService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         # Load from env
-        self.api_key = os.getenv('GOOGLE_API_KEY')
+        self.api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
         
         if self.api_key:
-            # Configura a chave de API
-            genai.configure(api_key=self.api_key)
-            # Usa o modelo Gemini Flash mais recente disponível
-            self.model = genai.GenerativeModel('gemini-flash-latest')
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+            except Exception as e:
+                self.logger.error(f"Erro ao inicializar cliente Gemini: {e}")
+                self.client = None
         else:
             self.logger.warning("GOOGLE_API_KEY não encontrada nas variáveis de ambiente.")
-            self.model = None
+            self.client = None
 
     def analyze_store_risks(self, store_data):
         """
-        Gera uma análise de risco qualitativa para uma loja usando o Google Gemini 1.5 Flash.
+        Gera uma análise de risco qualitativa para uma loja usando o Google Gemini.
         """
-        if not self.model:
+        if not self.client:
             return {
                 "error": "Google API Key not configured.",
                 "analysis": "Sistema de IA não configurado. Adicione a chave de API do Google."
@@ -31,7 +33,10 @@ class LLMService:
             # Constrói o prompt com base nos dados da loja
             prompt = self._build_prompt(store_data)
             
-            response = self.model.generate_content(prompt) # Generation config json?
+            response = self.client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt
+            ) 
             
             # Acessa o texto da resposta do Gemini
             analysis_text = response.text
@@ -39,7 +44,6 @@ class LLMService:
             # Tentativa de limpar markdown json se houver
             cleaned_text = analysis_text.replace('```json', '').replace('```', '').strip()
             
-            import json
             try:
                 result_json = json.loads(cleaned_text)
                 return result_json
@@ -56,13 +60,6 @@ class LLMService:
         except Exception as e:
             self.logger.error(f"Erro ao chamar Google Gemini: {e}")
             error_str = str(e)
-            if "429" in error_str or "Resource Exhausted" in error_str:
-                return {
-                    "risk_level": "LOW",
-                    "summary_network": "Limite de API do Gemini atingido (429). Tente novamente mais tarde.",
-                    "specific_blockers": [],
-                    "action_plan": []
-                }
             return {"error": error_str, "risk_level": "LOW", "summary_network": f"Erro de conexão IA: {error_str}"}
 
     def _build_prompt(self, data):
@@ -104,3 +101,88 @@ class LLMService:
         Analise a "Vibe" dos comentários. Se houver brigas, caps lock ou reclamações, suba o risco. Se houver silêncio total há muito tempo, suba o risco.
         """
 
+    def generate_monthly_report_summary(self, context_data, format_type='simple'):
+        """
+        Gera um resumo executivo do mês para o gestor.
+        Formats: 'simple' (Slack) or 'email' (Complete)
+        """
+        if not self.client:
+            return "Erro: API Key não configurada."
+
+        try:
+            # Extrair dados
+            month_str = context_data.get('month')
+            total_stores = context_data.get('total_stores')
+            total_mrr = context_data.get('total_mrr')
+            avg_time = context_data.get('avg_time')
+            median_time = context_data.get('median_time')
+            stores_list = context_data.get('stores', []) # Lista de dicts {name, mrr, implantador}
+
+            if format_type == 'simple':
+                # Construir lista de lojas formatada
+                stores_text = ""
+                for s in stores_list:
+                    mrr_formatted = f"R$ {s.get('mrr', 0):.2f}".replace('.', ',')
+                    stores_text += f"{s.get('name')} - {mrr_formatted}\n"
+                
+                if not stores_text:
+                    stores_text = "Nenhuma loja finalizada."
+
+                prompt = f"""
+                Você é um assistente administrativo. Gere uma mensagem de atualização para o Slack Exatamente neste formato:
+
+                Fechamento {month_str}
+
+                Lojas finalizadas e mensalidade:
+                {stores_text}
+
+                Resumo:
+                Total de lojas: {total_stores}
+                Total de recorrência (MRR): R$ {total_mrr}
+                Média de dias (implantação): {avg_time}
+                Mediana de dias: {median_time}
+
+                Destaque do mês da implantação:
+                [Analise a lista de lojas abaixo e escolha UM implantador destaque baseado no maior MRR ou complexidade. Cite o nome dele e crie 1 ponto positivo curto sobre a entrega].
+
+                DADOS DAS LOJAS (Para análise do destaque):
+                {json.dumps(stores_list, ensure_ascii=False)}
+
+                REGRAS:
+                - Mantenha a estrutura exata acima.
+                - Não adicione saudações ou introduções.
+                - No destaque, seja direto: "Nome - Motivo".
+                """
+            
+            else:
+                # Prompt Completo (Email)
+                prompt = f"""
+                Você é um Gerente de Operações de Implantação e deve escrever um relatório mensal para a Diretoria.
+                Escreva uma mensagem de texto (estilo Email corporativo) com os resultados do mês.
+
+                DADOS DO MÊS ({month_str}):
+                - Lojas Finalizadas: {total_stores}
+                - MRR Adicionado: R$ {total_mrr}
+                - Tempo Médio de Implantação: {avg_time} dias
+                - Mediana de Tempo: {median_time} dias
+                - Pontuação Total de Entregas: {context_data.get('total_points')}
+
+                LISTA DE ENTREGAS:
+                {json.dumps(stores_list, ensure_ascii=False)}
+
+                INSTRUÇÕES DE ESTILO:
+                - Tom profissional, objetivo e orientado a resultados.
+                - Use emojis moderados (📈, 🚀, ✅).
+                - Destaque o MRR total e a quantidade de lojas.
+                - Mencione se o tempo médio está bom (bom < 60 dias, ruim > 90 dias).
+                - Faça uma análise breve sobre quem foi o destaque do mês (quem trouxe mais MRR ou entregou mais rápido).
+                """
+            
+            response = self.client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            self.logger.error(f"Erro ao gerar relatório mensal IA: {e}")
+            return f"Erro ao gerar relatório: {str(e)}"

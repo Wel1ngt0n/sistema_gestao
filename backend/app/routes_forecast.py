@@ -40,19 +40,29 @@ def update_store_forecast(store_id):
     """
     data = request.json
     store = Store.query.get_or_404(store_id)
+    from app.services.audit_service import AuditService
     
     # Update fields if present
     if 'manual_go_live_date' in data:
         val = data['manual_go_live_date'] 
-        store.manual_go_live_date = datetime.strptime(val, '%Y-%m-%d') if val else None
+        new_dt = datetime.strptime(val, '%Y-%m-%d') if val else None
+        AuditService.log_forecast_change(store.id, 'manual_go_live_date', store.manual_go_live_date, new_dt)
+        store.manual_go_live_date = new_dt
         
     if 'had_ecommerce' in data: store.had_ecommerce = bool(data['had_ecommerce'])
     if 'previous_platform' in data: store.previous_platform = data['previous_platform']
     if 'deployment_type' in data: store.deployment_type = data['deployment_type']
     if 'projected_orders' in data: store.projected_orders = int(data['projected_orders'])
     if 'order_rate' in data: store.order_rate = float(data['order_rate'])
-    if 'forecast_obs' in data: store.forecast_obs = data['forecast_obs']
-    if 'include_in_forecast' in data: store.include_in_forecast = bool(data['include_in_forecast'])
+    
+    if 'forecast_obs' in data: 
+        AuditService.log_forecast_change(store.id, 'forecast_obs', store.forecast_obs, data['forecast_obs'])
+        store.forecast_obs = data['forecast_obs']
+        
+    if 'include_in_forecast' in data: 
+        new_val = bool(data['include_in_forecast'])
+        AuditService.log_forecast_change(store.id, 'include_in_forecast', store.include_in_forecast, new_val)
+        store.include_in_forecast = new_val
     
     # Auto-parse UF if address changed (optional logic)
     

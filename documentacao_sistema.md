@@ -9,8 +9,8 @@ O sistema é dividido em abas principais, acessíveis pelo menu superior:
 
 1.  **📊 Dashboard:** Visão executiva geral.
 2.  **📈 Analytics:** Análises detalhadas de performance e tendências.
-3.  **🖥️ Monitor:** Gestão operacional dia-a-dia (Lista, Kanban, Cards).
-4.  **📋 Etapas:** Visualização detalhada do progresso por etapas.
+3.  **� Forecast:** Previsão de entregas e financeiro (CS/Financeiro).
+4.  **�🖥️ Monitor:** Gestão operacional dia-a-dia (Lista, Kanban, Cards).
 5.  **🔄 Sync:** Área para sincronização manual de dados com o ClickUp.
 
 ---
@@ -51,102 +51,95 @@ Localizados no topo, cards coloridos que mostram:
     *   **Previsão Financeira (Forecast):** Projeção de quando o MRR em pipeline será ativado.
     *   **Capacidade da Equipe:** Carga horária estimada vs. real de cada membro.
     *   **Dispersão de Risco:** Gráfico XY cruzando "Tempo de Casa" vs. "Atraso", identificando casos críticos visualmente.
+*   **🔄 Force Sync:** Botão de atalho para atualizar os dados diretamente da tela de análise.
 
 ---
 
-## 3. 🖥️ Monitor (Gestão Operacional)
+## 3. � Forecast (Previsão de Entregas) [NOVO]
+**Objetivo:** Ferramenta para CS (Customer Success), Operações e Financeiro planejarem o mês.
+
+*   **Tabela de Previsão:**
+    *   Lista todas as lojas em implantação.
+    *   **Data Prevista (Editável):** Permite que o gestor defina manualmente quando a loja deve entregar.
+    *   **Previsão IA:** Sugestão automática baseada no ritmo histórico da equipe.
+    *   **Considerar no Forecast:** Checkbox para incluir/excluir a loja da soma financeira do mês.
+    *   **Observações:** Campo de texto livre para alinhar status entre as equipes.
+*   **Filtros:** Ano, Mês e Status (Ativo/Concluído).
+*   **Cards de Resumo:** MRR Previsto para o mês selecionado vs. Quantidade de Lojas.
+*   **Exportar Excel:** Botão para baixar a planilha detalhada.
+
+---
+
+## 4. �🖥️ Monitor (Gestão Operacional)
 **Objetivo:** A "Mesa de Trabalho" do implantador. Onde as coisas acontecem.
 
 ### **Modos de Visualização**
 Você pode alternar entre 3 modos no canto superior direito:
-1.  **📋 Lista (Tabela):** Visão clássica, ideal para ver muitos dados e ordenar colunas.
-2.  **🏗️ Kanban:** Visão por colunas de status (Novo, Iniciado, Em Homologação, etc). Arraste e solte para mover!
+1.  **📋 Lista (Tabela):** Visão clássica, ideal para ver muitos dados.
+2.  **🏗️ Kanban:** Visão por colunas de status. Arraste e solte para mover!
 3.  **🏙️ Cards:** Visão visual com cards detalhados por loja.
 
-### **Filtros Rápidos (Chips)**
-Botões no topo para filtrar rapidamente:
-*   **🔥 Alto Risco:** Lojas com problemas críticos.
-*   **⚠️ Atrasados:** Lojas que já estouraram o prazo de contrato.
-*   **💰 Inadimplentes:** Lojas com pendências financeiras.
-*   **👤 Seletor de Implantador:** Filtra a visão para um dono específico.
+### **Colunas Importantes (Tabela)**
+*   **Dias na Etapa:** Conta há quantos dias a loja está parada no status atual (Zera ao mudar de status).
+*   **Dias Transito:** Tempo total de vida da implantação.
+*   **Previsão IA:** Data estimada de conclusão calculada pelo sistema.
+
+### **Filtros Avançados**
+O painel lateral (ícone de filtro) permite refinar a busca por múltiplas dimensões:
+*   **Status múltiplos:** Selecione "Fase 1" e "Fase 2" ao mesmo tempo.
+*   **Etapas:** Filtre apenas lojas que estão em "Treinamento".
+*   **Implantador:** Selecione um ou mais responsáveis.
+*   **Alertas:** Filtre por lojas com "Risco Alto", "Atrasadas" ou "Paradas".
 
 ### **Recursos Especiais**
-*   **🤖 Botão "Análise IA":**
-    *   Disponível na tabela ou nos cards.
-    *   Usa o Google Gemini 1.5 Flash para ler o histórico da loja e gerar um relatório automático com riscos, resumo e plano de ação.
-*   **✏️ Edição Rápida:**
-    *   Clique em "Editar" para abrir a modal de detalhes da loja.
-    *   Permite mudar status, implantador, datas e forçar sincronização profunda (Deep Sync).
+*   **🤖 Botão "Análise IA":** Usa o Google Gemini para ler o histórico da loja e gerar um relatório de riscos e plano de ação.
+*   **✏️ Edição Rápida:** Clique em "Editar" para abrir a modal de detalhes da loja.
+*   **📥 Exportar CSV:** Baixa todos os dados visíveis na tabela.
 
 ---
 
-## 4. 🔄 Sync (Sincronização)
+## 5. 🔄 Sync (Sincronização)
 **Objetivo:** Manter o sistema atualizado com o ClickUp.
 
-*   **Botão "Iniciar Sync Agora":** Dispara o processo de varredura.
-*   **Log em Tempo Real:** Uma janela estilo terminal mostra o que está acontecendo (ex: "Atualizando loja X...", "Baixando comentários...").
-*   **O que ele faz?**
-    1.  Busca todas as tarefas da lista do ClickUp.
-    2.  Atualiza status, datas e valores personalizados.
-    3.  Calcula métricas de atraso localmente.
+*   **Botão "Iniciar Sync Agora":** Dispara a sincronização inteligente (Incremental).
+*   **Checkbox "Forçar Sincronização Completa":** Se marcado, o sistema varre TODAS as tarefas desde o início (mais lento, mas garante correção total).
+*   **Log em Tempo Real:** Terminal que mostra o progresso da atualização passo a passo.
+
+---
+
+## 🛡️ Sistema de Backup (Segurança) [NOVO]
+
+O sistema possui uma rotina de segurança para proteger seus dados:
+
+1.  **Backup Automático na Inicialização:**
+    *   Sempre que o sistema (ou container Docker) é reiniciado, ele verifica a data do último backup.
+    *   Se o último backup tiver mais de 24h, um novo é criado antes do sistema subir.
+2.  **Pasta de Destino:** Os arquivos ficam salvos em `backend/backups/`.
+3.  **Rotação Automática:** O sistema mantém apenas os backups dos últimos **15 dias**, apagando os mais antigos automaticamente para economizar espaço.
+4.  **Backup Manual (Admin):** Via API (`/api/admin/backup`) é possível forçar a criação de um backup a qualquer momento.
 
 ---
 
 ## ⚙️ Menu Admin (Gerenciador)
-Acessível via `python manage.py` (Terminal) ou botão de engrenagem no Monitor (se habilitado).
+Acessível via `python manage.py` (Terminal) para operações avançadas:
 
-*   **Backup/Restore:** Para salvar e recuperar dados.
-*   **Docker Reset:** Para reiniciar o sistema em caso de travamento.
-*   **Configurações de Banco:** Resetar, migrar ou corrigir schema.
+*   **1. Rodar Localmente:** Inicia backend e frontend.
+*   **2. Rodar Docker:** Sobe todo o ambiente via container.
+*   **3. Banco de Dados:**
+    *   Backup/Restore de dumps SQL.
+    *   Resetar banco (Cuidado!).
+    *   Patch DB (Atualizar colunas novas).
+*   **5. Restart Docker:** Reinicia os containers forçando atualização (Rebuild).
 
 ---
 
 ## 🧠 Como funcionam as Pontuações e Inteligência (IA)
 
-O sistema utiliza três modelos diferentes para avaliar a saúde das lojas. Entenda cada um:
+### 1. Score de Risco 🧮
+Cálculo matemático: `Dias Corridos` + (`Dias Parado` x 2) + `Penalidades` (Financeiro/Retrabalho).
 
-### 1. Score de Risco (Cálculo Matemático) 🧮
-É um número "frio" calculado automaticamente toda vez que você abre o Dashboard ou Monitor. Quanto maior, pior.
-*   **Onde aparece?** No widget "Atenção Necessária" (Dashboard) e na coluna "Score" do Monitor.
-*   **Fórmula:**
-    > `Dias Corridos` + (`Dias Parado` x 2) + `Penalidades`
-    *   **Penalidades:**
-        *   +15 pontos se Financeiro = "Devendo"
-        *   +10 pontos se Teve Retrabalho = "Sim"
+### 2. Avaliação da IA (Gemini V2) 🤖
+Análise contextual que lê os comentários do ClickUp para entender se o cliente está insatisfeito ou se há bloqueios técnicos reais.
 
-### 2. Avaliação da IA (Gemini V2 - Rede) 🤖
-É uma análise "subjetiva" e contextual feita pelo Google Gemini.
-*   **Diferencial:** Analisa o contexto da **REDE** inteira (Matriz + Filiais). Se uma filial está travada, a IA alerta a Matriz.
-*   **Onde aparece?** Ao clicar no botão "🤖 Análise" no Monitor.
-*   **Níveis:**
-    *   🟢 **LOW:** Tudo certo, fluxo normal.
-    *   🟡 **MEDIUM:** Pequenos bloqueios ou dúvidas.
-    *   🟠 **HIGH:** Problemas técnicos reais ou cliente insatisfeito.
-    *   🔴 **CRITICAL:** Risco de cancelamento, bloqueio financeiro grave ou estagnação total.
-
-### 3. Previsão de Entrega (Analytics) 🔮
-É um cálculo estatístico baseada na média histórica da equipe.
-*   **Onde aparece?** Na tabela de lojas (coluna oculta "Previsão IA") e relatórios.
-*   **Como funciona?** O sistema pega a média de dias que a equipe leva em cada etapa (ex: Treinamento leva 5 dias em média). Se a loja ainda não fez o Treinamento, ele soma +5 dias na data de hoje para estimar o fim.
-*   **Classificação:**
-    *   Se a previsão estourar o contrato em > 30 dias = **CRÍTICO**.
-
-### 4. Ranking de Implantadores (Performance) 🏆
-Define a ordem da lista "Top Performance" no Dashboard.
-*   **Critério Principal:** Quantidade absoluta de lojas **Concluídas**. Quem entrega mais, fica em cima.
-*   **Critério Secundário (Visual):** % de Entregas no Prazo.
-    *   Verde: >= 85% no prazo.
-    *   Laranja: < 85% no prazo.
-*   **Medalhas:**
-    *   🥇 1º Lugar: Maior volume de entregas.
-    *   🥈 2º Lugar
-    *   � 1º Lugar: Maior volume de entregas.
-    *   🥈 2º Lugar
-    *   �🥉 3º Lugar
-
-### 5. Previsão Financeira (Forecast) 💰
-*   **Onde aparece?** Analytics > Forecast Financeiro.
-*   **Lógica:** Projeta quanto de MRR será ativado nos próximos meses.
-    *   Baseia-se na `Data Prevista de Conclusão` de cada loja em andamento.
-    *   Se a loja não tem data prevista manual, o sistema usa a **Previsão Estatística** (item 3) para alocar o valor no mês provável.
-
+### 3. Ranking de Implantadores 🏆
+Baseado no volume absoluto de entregas e percentual de cumprimento do prazo (SLA).

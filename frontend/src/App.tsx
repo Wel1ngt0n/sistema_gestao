@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import Dashboard from './components/Dashboard'
+
+import DashboardV2 from './components/DashboardV2'
 import Monitor from './components/Monitor'
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import ForecastPage from './features/forecast/ForecastPage'
-import ScoringRulesPage from './pages/ScoringRulesPage'
+import SyncHealthPanel from './features/sync/SyncHealthPanel'
+import MetricsDictionaryModal from './components/MetricsDictionaryModal'
+
+import { HelpCircle, LayoutDashboard, LayoutList, RefreshCw, TrendingUp, BarChart, FileText } from 'lucide-react'
+import MonthlyReport from './components/reports/MonthlyReport';
 import logo from './assets/logo.png'
 
 function App() {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'monitor' | 'sync' | 'analytics' | 'rules' | 'forecast'>('dashboard')
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'dashboard-v2' | 'monitor' | 'sync' | 'analytics' | 'forecast' | 'reports'>('dashboard')
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+    const [showDictionary, setShowDictionary] = useState(false)
 
 
     // Theme Toggle Logic
@@ -89,45 +95,85 @@ function App() {
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
 
+                    {/* Help Button */}
+                    <button
+                        onClick={() => setShowDictionary(true)}
+                        className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                        title="Dicionário de Métricas"
+                    >
+                        <HelpCircle size={20} />
+                    </button>
+
                     <div className="flex gap-1 bg-slate-100 dark:bg-slate-950/50 p-1 rounded-lg border border-slate-200 dark:border-slate-700/50">
-                        <button
-                            onClick={() => setActiveTab('dashboard')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                        >
-                            📊 Dashboard
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('analytics')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'analytics' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                        >
-                            📈 Analytics
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('forecast')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'forecast' ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                        >
-                            🔮 Forecast
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('monitor')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'monitor' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                        >
-                            🖥️ Monitor
-                        </button>
-                        <div className="w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                        <button
-                            onClick={() => setActiveTab('sync')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'sync' ? 'bg-orange-50 dark:bg-orange-600/20 text-orange-600 dark:text-orange-300 shadow border border-orange-200 dark:border-orange-500/30' : 'text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-white hover:bg-orange-100 dark:hover:bg-slate-800'}`}
-                        >
-                            🔄 Sync
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('rules')}
-                            className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'rules' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow border border-slate-200 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                            title="Regras de Pontuação"
-                        >
-                            📜
-                        </button>
+                        <nav className="-mb-px flex space-x-8">
+                            <button
+                                onClick={() => setActiveTab('dashboard')}
+                                className={`${activeTab === 'dashboard'
+                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                            >
+                                <LayoutDashboard className="w-4 h-4 mr-2" />
+                                Dashboard
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('analytics')}
+                                className={`${activeTab === 'analytics'
+                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                            >
+                                <BarChart className="w-4 h-4 mr-2" />
+                                Analytics
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('monitor')}
+                                className={`${activeTab === 'monitor'
+                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                            >
+                                <LayoutList className="w-4 h-4 mr-2" />
+                                Monitoramento
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('reports')}
+                                className={`${activeTab === 'reports'
+                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                            >
+                                <FileText className="w-4 h-4 mr-2" />
+                                Relatórios
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('sync')}
+                                className={`${activeTab === 'sync'
+                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Sincronização
+                            </button>
+
+
+
+                            <button
+                                onClick={() => setActiveTab('forecast')}
+                                className={`${activeTab === 'forecast'
+                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                            >
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Forecast
+                            </button>
+                        </nav>
                     </div>
                 </div>
             </nav>
@@ -135,7 +181,9 @@ function App() {
             {/* Content Area */}
             <main className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900 overflow-x-hidden transition-colors duration-300">
 
-                {activeTab === 'dashboard' && <Dashboard />}
+                {activeTab === 'dashboard' && <DashboardV2 />}
+
+                {/* {activeTab === 'dashboard-v2' && <DashboardV2 />} */}
 
                 {activeTab === 'analytics' && <DashboardAnalytics />}
 
@@ -143,10 +191,17 @@ function App() {
 
                 {activeTab === 'monitor' && <Monitor />}
 
-                {activeTab === 'rules' && <ScoringRulesPage />}
+                {activeTab === 'reports' && <MonthlyReport />}
+
+
 
                 {activeTab === 'sync' && (
                     <div className="flex flex-col items-center gap-8 mt-10 w-full max-w-3xl p-4 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Health Panel V2.5 */}
+                        <div className="w-full">
+                            <SyncHealthPanel />
+                        </div>
+
                         <div className="text-center space-y-2">
                             <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Sincronização de Dados</h2>
                             <p className="text-slate-600 dark:text-slate-400 text-lg">Busque os dados mais recentes do ClickUp para atualizar o sistema.</p>
@@ -215,6 +270,11 @@ function App() {
                 )}
 
             </main>
+
+            <MetricsDictionaryModal
+                isOpen={showDictionary}
+                onClose={() => setShowDictionary(false)}
+            />
         </div>
     )
 }

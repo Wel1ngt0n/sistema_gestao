@@ -4,15 +4,16 @@ import { InfoTooltip } from './InfoTooltip';
 
 interface TeamCapacityWidgetProps {
     data: CapacityData[];
+    className?: string;
 }
 
-export const TeamCapacityWidget: React.FC<TeamCapacityWidgetProps> = ({ data }) => {
+export const TeamCapacityWidget: React.FC<TeamCapacityWidgetProps> = ({ data, className = '' }) => {
     // Ordenar por utilização e pegar top 12
     const sortedData = [...data].sort((a, b) => b.utilization_pct - a.utilization_pct).slice(0, 12);
     const limit = data.length > 0 ? data[0].max_points : 30;
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className={`bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ${className}`}>
             <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                 ⚡ Gestão de Capacidade
                 <InfoTooltip

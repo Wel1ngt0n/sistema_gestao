@@ -27,9 +27,10 @@ ChartJS.register(
 
 interface FinancialForecastChartProps {
     data: ForecastData[];
+    className?: string;
 }
 
-export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ data }) => {
+export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ data, className = '' }) => {
 
     // Preparar dados
     // Preparar dados
@@ -104,7 +105,7 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className={`bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ${className}`}>
             <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                 🔮 Forecast de Ativação (MRR)
                 <InfoTooltip

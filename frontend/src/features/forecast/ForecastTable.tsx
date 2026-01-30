@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getSortedRowModel, getFilteredRowModel } from '@tanstack/react-table';
-import { Edit2, Check, X } from 'lucide-react';
+import { Edit2, Check, X, History } from 'lucide-react';
+import ForecastHistoryModal from './ForecastHistoryModal';
 import axios from 'axios';
 import { format } from 'date-fns';
 
@@ -33,6 +34,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editValues, setEditValues] = useState<Partial<ForecastData>>({});
     const [saving, setSaving] = useState(false);
+    const [historyStore, setHistoryStore] = useState<{ id: number, name: string } | null>(null);
 
     // Helper para iniciar edição
     const startEdit = (row: ForecastData) => {
@@ -242,13 +244,22 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                 }
 
                 return (
-                    <button
-                        onClick={() => startEdit(info.row.original)}
-                        className="p-1 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
-                        title="Editar Previsão"
-                    >
-                        <Edit2 size={14} />
-                    </button>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => startEdit(info.row.original)}
+                            className="p-1 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                            title="Editar Previsão"
+                        >
+                            <Edit2 size={14} />
+                        </button>
+                        <button
+                            onClick={() => setHistoryStore({ id: info.row.original.id, name: info.row.original.store_name })}
+                            className="p-1 text-slate-400 hover:text-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                            title="Ver Histórico"
+                        >
+                            <History size={14} />
+                        </button>
+                    </div>
                 )
             }
         })
@@ -296,6 +307,15 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                     )}
                 </tbody>
             </table>
+
+            {historyStore && (
+                <ForecastHistoryModal
+                    storeId={historyStore.id}
+                    storeName={historyStore.name}
+                    isOpen={!!historyStore}
+                    onClose={() => setHistoryStore(null)}
+                />
+            )}
         </div>
     );
 }

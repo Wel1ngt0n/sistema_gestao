@@ -10,9 +10,10 @@ interface KPICardProps {
     trend?: 'up' | 'down' | 'neutral';
     color?: 'indigo' | 'green' | 'red' | 'yellow' | 'blue' | 'purple' | 'slate' | 'orange' | 'emerald';
     tooltip?: string;
+    className?: string;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtext, icon, trend, color = 'indigo', tooltip }) => {
+export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtext, icon, trend, color = 'indigo', tooltip, className = '' }) => {
 
     const colorClasses = {
         indigo: 'text-indigo-600 dark:text-indigo-400',
@@ -39,7 +40,7 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtex
     };
 
     return (
-        <div className={`relative bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between transition-all duration-300 group ${borderClasses[color]}`}>
+        <div className={`relative bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between transition-all duration-300 group ${borderClasses[color]} ${className}`}>
             {/* Ícone de Fundo (Efeito Visual) */}
             {icon && (
                 <div className="absolute top-4 right-4 text-4xl opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all filter grayscale group-hover:grayscale-0">

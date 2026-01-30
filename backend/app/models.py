@@ -349,3 +349,37 @@ class MetricsSnapshotDaily(db.Model):
 
     def __repr__(self):
         return f'<SnapshotDaily {self.snapshot_date} Store={self.store_id}>'
+
+# --- V2.5 Models (Governance & Audit) ---
+
+class SyncRun(db.Model):
+    __tablename__ = 'sync_runs'
+    id = db.Column(db.Integer, primary_key=True)
+    started_at = db.Column(db.DateTime, default=datetime.now)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default="RUNNING") # RUNNING, SUCCESS, ERROR
+    items_processed = db.Column(db.Integer, default=0)
+    items_updated = db.Column(db.Integer, default=0)
+    error_summary = db.Column(db.Text, nullable=True)
+
+class SyncError(db.Model):
+    __tablename__ = 'sync_errors'
+    id = db.Column(db.Integer, primary_key=True)
+    sync_run_id = db.Column(db.Integer, db.ForeignKey('sync_runs.id'), nullable=False)
+    store_id = db.Column(db.Integer, nullable=True)
+    task_id = db.Column(db.String(50), nullable=True)
+    error_msg = db.Column(db.Text)
+    traceback = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class ForecastAuditLog(db.Model):
+    __tablename__ = 'forecast_audit_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    field_name = db.Column(db.String(50), nullable=False)
+    old_value = db.Column(db.Text, nullable=True)
+    new_value = db.Column(db.Text, nullable=True)
+    changed_at = db.Column(db.DateTime, default=datetime.now)
+    actor = db.Column(db.String(50), default='local_user')
+    
+    store = db.relationship('Store', backref='forecast_audits')

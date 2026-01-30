@@ -662,6 +662,101 @@ def analyze_store(id):
     
     return jsonify(result)
 
+@api_bp.route('/reports/monthly-implantation', methods=['GET'])
+def get_monthly_implantation_report():
+    from collections import defaultdict
+    import statistics
+    
+    # Busca todas as lojas concluídas (effective_finished_at is not None)
+    all_stores = Store.query.all()
+    finished_stores = [s for s in all_stores if s.effective_finished_at]
+    
+    # Agrupar por Mês (YYYY-MM)
+    grouped = defaultdict(list)
+    
+    # Configurações de Peso (para cálculo de pontos)
+    # Reutilizando lógica do dashboard
+    # Matriz = 1.0, Filial = 0.7
+    w_matriz = 1.0
+    w_filial = 0.7
+    
+    for s in finished_stores:
+        key = s.effective_finished_at.strftime('%Y-%m')
+        
+        # Calcular Pontos
+        points = w_matriz if s.tipo_loja == 'Matriz' else w_filial
+        
+        # Calcular Tempo (dias)
+        days = s.dias_totais_implantacao or 0
+        
+        grouped[key].append({
+            "id": s.id,
+            "name": s.store_name,
+            "implantador": s.implantador or "N/A",
+            "finished_at": s.effective_finished_at.strftime('%Y-%m-%d'),
+            "mrr": s.valor_mensalidade or 0.0,
+            "days": days,
+            "points": points,
+            "tipo": s.tipo_loja
+        })
+        
+    # Ordenar chaves (meses) decrescente
+    sorted_months = sorted(grouped.keys(), reverse=True)
+    
+    results = []
+    
+    for month in sorted_months:
+        stores = grouped[month]
+        
+        # Calcular Totais e Stats
+        total_mrr = sum(s['mrr'] for s in stores)
+        total_stores = len(stores)
+        total_points = sum(s['points'] for s in stores)
+        
+        days_list = [s['days'] for s in stores]
+        avg_days = statistics.mean(days_list) if days_list else 0
+        median_days = statistics.median(days_list) if days_list else 0
+        
+        results.append({
+            "month": month,
+            "stats": {
+                "total_stores": total_stores,
+                "total_mrr": total_mrr,
+                "total_points": total_points,
+                "avg_days": round(avg_days, 1),
+                "median_days": round(median_days, 1)
+            },
+            "stores": stores
+        })
+        
+    return jsonify(results)
+
+@api_bp.route('/reports/generate-summary', methods=['POST'])
+def generate_monthly_summary():
+    from app.services.llm_service import LLMService
+    data = request.json
+    
+    # Espera receber o objeto 'stats' e 'month' e talvez top stores?
+    # Vamos montar o context_data
+    
+    context = {
+        "month": data.get('month', 'N/A'),
+        "total_stores": data.get('stats', {}).get('total_stores', 0),
+        "total_mrr": f"{data.get('stats', {}).get('total_mrr', 0):.2f}",
+        "avg_time": data.get('stats', {}).get('avg_days', 0),
+        "median_time": data.get('stats', {}).get('median_days', 0),
+        "total_points": data.get('stats', {}).get('total_points', 0),
+        "highlights": data.get('highlights', 'Nenhum destaque enviado.'),
+        "stores": data.get('stores', [])
+    }
+    
+    report_format = data.get('format', 'simple')
+    
+    service = LLMService()
+    summary = service.generate_monthly_report_summary(context, format_type=report_format)
+    
+    return jsonify({"summary": summary})
+
 @api_bp.route('/steps', methods=['GET'])
 def get_steps():
     from app.models import TaskStep
