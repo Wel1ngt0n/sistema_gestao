@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+__pycache__/
+venv/
+env/
+.env
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+
+# System
+thumbs.db
+desktop.ini
+
+# Logs
+*.log
+backend_logs.txt
+
+# Build
+dist/
+build/

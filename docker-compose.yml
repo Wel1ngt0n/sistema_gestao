@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # 1. Banco de Dados SQL (V3.0)
+  db_v3:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sistema_gestao3
+    ports:
+      - "5436:5432" # Porta Diferente da V2.5 (5435)
+    volumes:
+      - postgres_data_v3:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d sistema_gestao3" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Backend API (V3.0)
+  backend_v3:
+    build: ./backend
+    ports:
+      - "5004:5000" # Porta Diferente da V2.5 (5003)
+    volumes:
+      - ./backend:/app
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://user:password@db_v3:5432/sistema_gestao3
+      - CLICKUP_API_KEY=${CLICKUP_API_KEY}
+      - CLICKUP_INTEGRATION_LIST_ID=${CLICKUP_INTEGRATION_LIST_ID}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      db_v3:
+        condition: service_healthy
+
+  # 3. Frontend (V3.0)
+  frontend_v3:
+    build: ./frontend
+    ports:
+      - "5178:5173" # Porta Diferente da V2.5 (5177) - Note: Vite pode usar 5173 internamente
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend_v3
+
+volumes:
+  postgres_data_v3:
