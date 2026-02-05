@@ -1,0 +1,22 @@
+LISTAS ENCONTRADAS:
+- ATIVAR_RECORRENCIA
+- CRIAR_LOJAS
+- QUALIDADE
+- CADASTRO_PRODUTOS
+- TREINAMENTO
+- SUBIR_APPS
+- ONBOARDING
+- INTEGRACAO
+- CADASTRO_OMIE
+
+STEPS COM 'INTEGRA' NO NOME:
+List: INTEGRACAO | Step: [INTEGRACAO] Atacadão São Roque
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre Nova iguaçu
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre Caxias
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre Itanhangá
+List: INTEGRACAO | Step: [INTEGRACAO] Supermercado Batista
+List: INTEGRACAO | Step: [INTEGRACAO] VARIEDADES SUPERMERCADOS [MIGRAÇÃO MERCADAPP]
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre Campo Grande
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre Maria da Graça
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre São Conrado
+List: INTEGRACAO | Step: [INTEGRACAO] Supermarket Torre Freguesia

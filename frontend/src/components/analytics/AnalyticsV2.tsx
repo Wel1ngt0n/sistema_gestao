@@ -8,6 +8,7 @@ import { KPICard } from './KPICard';
 import { TeamCapacityWidget } from './TeamCapacityWidget';
 import { FinancialForecastChart } from './FinancialForecastChart';
 import { RiskScatterPlot } from './RiskScatterPlot';
+import { TeamPerformanceMatrix } from './TeamPerformanceMatrix';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -50,6 +51,7 @@ function classNames(...classes: string[]) {
 export default function AnalyticsV2() {
     const { filters } = useDashboardUrlParams();
     const { kpiData, trendData, performanceData, bottleneckData, capacityData, forecastData, loading, refetch } = useAnalyticsData(filters);
+    const [performanceViewMode, setPerformanceViewMode] = useState<'cards' | 'matrix'>('matrix');
     const [selectedImplantador, setSelectedImplantador] = useState<string | null>(null);
 
     // Preparar dados dos gráficos
@@ -345,62 +347,102 @@ export default function AnalyticsV2() {
                             </div>
                         </Tab.Panel>
 
+
+
                         {/* --- ABA 3: TIME & PERFORMANCE --- */}
-                        <Tab.Panel className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 focus:outline-none">
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                {capacityData && <TeamCapacityWidget data={capacityData} className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm" />}
+                        <Tab.Panel className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 focus:outline-none">
 
-                                <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
-                                        <Trophy size={18} className="text-yellow-500" />
-                                        Performance do Time
-                                    </h3>
-                                    <div className="h-[400px]">
-                                        <Chart type='bar' data={performanceChartData} options={{ ...chartOptions, indexAxis: 'y' as const }} />
-                                    </div>
+                            {/* View Switcher Controls */}
+                            <div className="flex justify-end mb-4">
+                                <div className="bg-slate-200 dark:bg-zinc-800 p-1 rounded-lg flex items-center gap-1">
+                                    <button
+                                        onClick={() => setPerformanceViewMode('cards')}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${performanceViewMode === 'cards'
+                                            ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-sm'
+                                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700'
+                                            }`}
+                                    >
+                                        🧩 Cards
+                                    </button>
+                                    <button
+                                        onClick={() => setPerformanceViewMode('matrix')}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${performanceViewMode === 'matrix'
+                                            ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-sm'
+                                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700'
+                                            }`}
+                                    >
+                                        📅 Matriz
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                                <div className="xl:col-span-1 bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm flex flex-col overflow-hidden">
-                                    <div className="p-6 border-b border-slate-100 dark:border-zinc-700/50 bg-slate-50/50 dark:bg-zinc-900/30">
-                                        <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2 uppercase tracking-wide">
-                                            🏆 Top Ranking
-                                        </h3>
-                                    </div>
-                                    <div className="overflow-auto flex-1 p-4 space-y-2 custom-scrollbar">
-                                        {safePerformanceData.slice(0, 6).map((p, idx) => (
-                                            <div key={p.implantador} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-700/20 border border-slate-100 dark:border-zinc-700/30 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-700/40 transition-all cursor-pointer group" onClick={() => setSelectedImplantador(p.implantador)}>
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`flex items-center justify-center w-8 h-8 rounded-xl font-bold text-sm shadow-sm ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500 dark:text-black' : 'bg-slate-200 text-slate-600 dark:bg-zinc-600 dark:text-zinc-300'}`}>
-                                                        #{idx + 1}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-sm text-slate-700 dark:text-zinc-200 group-hover:text-orange-500 transition-colors">
-                                                            {p.implantador}
-                                                        </div>
-                                                        <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500 dark:text-zinc-500">
-                                                            <span>Score: <b className="text-emerald-500">{p.score.toFixed(1)}</b></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-lg font-black text-slate-800 dark:text-white">{p.done}</p>
-                                                </div>
+                            {performanceViewMode === 'cards' ? (
+                                <>
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                        {capacityData && <TeamCapacityWidget data={capacityData} className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm" />}
+
+                                        <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm">
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                                                <Trophy size={18} className="text-yellow-500" />
+                                                Performance do Time
+                                            </h3>
+                                            <div className="h-[400px]">
+                                                <Chart type='bar' data={performanceChartData} options={{ ...chartOptions, indexAxis: 'y' as const }} />
                                             </div>
-                                        ))}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="xl:col-span-2 bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
-                                        Histórico de Pontuação
-                                    </h3>
-                                    <div className="h-[350px]">
-                                        <Chart type='bar' data={pointsChartData} options={chartOptions} />
+                                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                                        <div className="xl:col-span-1 bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm flex flex-col overflow-hidden">
+                                            <div className="p-6 border-b border-slate-100 dark:border-zinc-700/50 bg-slate-50/50 dark:bg-zinc-900/30">
+                                                <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2 uppercase tracking-wide">
+                                                    🏆 Top Ranking
+                                                </h3>
+                                            </div>
+                                            <div className="overflow-auto flex-1 p-4 space-y-2 custom-scrollbar">
+                                                {safePerformanceData.slice(0, 6).map((p, idx) => (
+                                                    <div key={p.implantador} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-700/20 border border-slate-100 dark:border-zinc-700/30 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-700/40 transition-all cursor-pointer group" onClick={() => setSelectedImplantador(p.implantador)}>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`flex items-center justify-center w-8 h-8 rounded-xl font-bold text-sm shadow-sm ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500 dark:text-black' : 'bg-slate-200 text-slate-600 dark:bg-zinc-600 dark:text-zinc-300'}`}>
+                                                                #{idx + 1}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-sm text-slate-700 dark:text-zinc-200 group-hover:text-orange-500 transition-colors">
+                                                                    {p.implantador}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500 dark:text-zinc-500">
+                                                                    <span>Score: <b className="text-emerald-500">{p.score.toFixed(1)}</b></span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-lg font-black text-slate-800 dark:text-white">{p.done}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="xl:col-span-2 bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm">
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                                                Histórico de Pontuação
+                                            </h3>
+                                            <div className="h-[350px]">
+                                                <Chart type='bar' data={pointsChartData} options={chartOptions} />
+                                            </div>
+                                        </div>
                                     </div>
+                                </>
+                            ) : (
+                                <div className="space-y-8 animate-in fade-in duration-300">
+                                    {capacityData && safePerformanceData && (
+                                        <TeamPerformanceMatrix
+                                            capacityData={capacityData}
+                                            performanceData={safePerformanceData}
+                                        />
+                                    )}
                                 </div>
-                            </div>
+                            )}
                         </Tab.Panel>
                     </Tab.Panels>
                 </Tab.Group>

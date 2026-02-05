@@ -42,58 +42,60 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
     const hasActiveFilters = !!(filters.startDate || filters.endDate || filters.implantador);
 
     return (
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-2 relative z-20">
             {/* Refresh Button */}
             <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className={`h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isRefreshing ? 'animate-spin cursor-not-allowed opacity-70' : ''}`}
+                className={`h-9 w-9 flex items-center justify-center bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors shadow-sm ${isRefreshing ? 'animate-spin cursor-not-allowed opacity-70' : ''}`}
                 title="Atualizar Dados"
             >
                 <RefreshCw className="w-4 h-4" />
             </button>
 
-            {/* Filter Toggle Button (Monitor Style) */}
+            {/* Filter Toggle Button (Glass Style) */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`h-9 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all ${isOpen || hasActiveFilters
-                    ? 'bg-violet-600 text-white border-violet-600 shadow-md ring-2 ring-violet-500/20'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-violet-400'
+                className={`h-9 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all shadow-sm ${isOpen || hasActiveFilters
+                    ? 'bg-orange-600 text-white border-orange-600 shadow-orange-500/20 ring-2 ring-orange-500/20'
+                    : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-orange-400/50 hover:text-orange-600 dark:hover:text-orange-400'
                     }`}
             >
                 <ListFilter className="w-4 h-4" />
                 <span>Filtros</span>
                 {hasActiveFilters && (
-                    <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-orange-200 animate-pulse" />
                 )}
             </button>
 
             {/* Export Button */}
             <button
                 onClick={handleExportCSV}
-                className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                className="h-9 w-9 flex items-center justify-center bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors shadow-sm hover:text-orange-600 dark:hover:text-orange-400"
                 title="Exportar Excel"
             >
                 <Download className="w-4 h-4" />
             </button>
 
-            {/* Popup Panel */}
+            {/* Popup Panel (Glassmorphism) */}
             {isOpen && (
                 <>
-                    {/* Backdrop transparent to close on click outside (optional but good UX) */}
-                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+                    <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" onClick={() => setIsOpen(false)} />
 
-                    <div className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl w-80 p-4 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100 dark:border-slate-700">
-                            <h3 className="font-bold text-slate-800 dark:text-white text-sm">Filtros de Analytics</h3>
-                            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                    <div className="absolute right-0 top-full mt-2 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-80 p-5 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                        <div className="flex justify-between items-center mb-5 pb-3 border-b border-zinc-100 dark:border-zinc-800/50">
+                            <h3 className="font-bold text-zinc-900 dark:text-white text-sm flex items-center gap-2">
+                                <ListFilter className="w-4 h-4 text-orange-500" />
+                                Configurar Vista
+                            </h3>
+                            <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Base Temporal</label>
+                        <div className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Base Temporal</label>
                                 <Select
                                     label=""
                                     options={baseTemporalOptions}
@@ -102,9 +104,9 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Início</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Início</label>
                                     <DatePicker
                                         label=""
                                         date={filters.startDate}
@@ -112,8 +114,8 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                                         placeholder="--/--"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Fim</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Fim</label>
                                     <DatePicker
                                         label=""
                                         date={filters.endDate}
@@ -123,14 +125,14 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                                 </div>
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Implantador</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Filtrar por Implantador</label>
                                 <Select
                                     label=""
                                     options={implantadorOptions}
                                     value={filters.implantador || ''}
                                     onChange={(val) => updateFilter('implantador', val || null)}
-                                    placeholder="Todos"
+                                    placeholder="Todos os Implantadores"
                                 />
                             </div>
 
@@ -141,9 +143,9 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                                         updateFilter('endDate', null);
                                         updateFilter('implantador', null);
                                     }}
-                                    className="w-full mt-2 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 rounded-lg transition-colors border border-rose-100 dark:border-rose-900/30"
+                                    className="w-full mt-2 py-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/10 dark:text-rose-400 rounded-xl transition-colors border border-rose-100 dark:border-rose-900/20 hover:shadow-sm"
                                 >
-                                    Limpar Filtros
+                                    Limpar Filtros Ativos
                                 </button>
                             )}
                         </div>

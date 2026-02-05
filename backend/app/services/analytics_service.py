@@ -634,10 +634,11 @@ class AnalyticsService:
     @staticmethod
     def get_team_capacity():
         """
-        Calcula a carga de trabalho atual de cada implantador.
+        Calcula a carga de trabalho atual de cada implantador + Esforço Semestral.
         Regra:
         - Load = Soma (Matriz * W_Matriz) + (Filial * W_Filial) das lojas IN_PROGRESS.
-        - Network Check: Agrupar redes para identificar fragmentação (mesma rede em implantadores diferentes).
+        - Semester Done = Soma das lojas concluídas no semestre atual.
+        - Network Check: Agrupar redes.
         """
         # Configs
         w_matriz = 1.0
@@ -653,14 +654,17 @@ class AnalyticsService:
             if cfg_max: max_points = float(cfg_max.value)
         except: pass
 
-        # Buscar WIP (Lojas em andamento)
+        # 1. Buscar WIP (Lojas em andamento)
         wip_stores = db.session.query(Store).filter(
             Store.status_norm == 'IN_PROGRESS', 
             Store.manual_finished_at.is_(None),
             Store.implantador.isnot(None)
         ).all()
         
-        load_map = collections.defaultdict(lambda: {'points': 0.0, 'store_count': 0, 'networks': set()})
+        load_map = collections.defaultdict(lambda: {
+            'points': 0.0, 'store_count': 0, 'networks': set(), 
+            'finished_points': 0.0, 'finished_count': 0
+        })
         
         for s in wip_stores:
             imp = s.implantador
@@ -669,12 +673,35 @@ class AnalyticsService:
             load_map[imp]['store_count'] += 1
             if s.rede:
                 load_map[imp]['networks'].add(s.rede)
-                
+
+        # 2. Buscar Concluídas no Semestre (Esforço Acumulado)
+        today = datetime.now()
+        semester_start = datetime(today.year, 1, 1) if today.month <= 6 else datetime(today.year, 7, 1)
+        
+        finished_semester = db.session.query(Store).filter(
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            Store.implantador.isnot(None),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= semester_start),
+                and_(Store.manual_finished_at.is_(None), Store.finished_at >= semester_start)
+            )
+        ).all()
+        
+        for s in finished_semester:
+            imp = s.implantador
+            weight = w_matriz if s.tipo_loja == 'Matriz' else w_filial
+            load_map[imp]['finished_points'] += weight
+            load_map[imp]['finished_count'] += 1
+
         # Formatar saída
         capacity_data = []
         for imp, data in load_map.items():
-            points = round(data['points'], 1)
-            utilization = round((points / max_points) * 100, 1)
+            curr_points = round(data['points'], 1)
+            finished_pts = round(data['finished_points'], 1)
+            total_semester = round(curr_points + finished_pts, 1)
+            
+            # Utilization baseada apenas no WIP (Capacidade momentânea)
+            utilization = round((curr_points / max_points) * 100, 1)
             
             # Risk Level
             risk = 'NORMAL'
@@ -684,15 +711,21 @@ class AnalyticsService:
             
             capacity_data.append({
                 'implantador': imp,
-                'current_points': points,
+                'current_points': curr_points,
+                'finished_points_semester': finished_pts,
+                'total_semester_points': total_semester,
                 'max_points': max_points,
                 'store_count': data['store_count'],
+                'finished_count_semester': data['finished_count'],
                 'utilization_pct': utilization,
                 'risk_level': risk,
                 'active_networks': list(data['networks'])
             })
             
-        return sorted(capacity_data, key=lambda x: x['utilization_pct'], reverse=True)
+        # Ordenar por TOTAL SEMESTRE (equilibrar carga a longo prazo)
+        # Inverter para que quem tem MAIS pontos fique em cima? O user quer equilibrar.
+        # Geralmente lista de capacidade mostra quem está mais cheio primeiro.
+        return sorted(capacity_data, key=lambda x: x['total_semester_points'], reverse=True)
 
     @staticmethod
     def get_financial_forecast(months=6):

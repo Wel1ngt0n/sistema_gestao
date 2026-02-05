@@ -288,7 +288,7 @@ class ScoringService:
             ranking.append({
                 "implantador": imp,
                 "score": round(final_score, 1),
-                "points": round(final_score, 1), # Usando mesmo valor por enquanto, ou usar weighted_vol
+                "points": round(data['weighted_vol'], 1), # Corrigido: Usar volume ponderado real (1.0 ou 0.7)
                 "done": count,
                 "wip": data['wip'],
                 "otd_percentage": round(otd_pct, 1),

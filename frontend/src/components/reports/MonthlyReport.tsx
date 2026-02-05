@@ -101,21 +101,21 @@ const MonthlyReport: React.FC = () => {
         // Linhas de Lojas
         const rows = monthData.stores.map(s => [
             s.id,
-            `"${s.name}"`, // Quote names with commas
+            `"${s.name}"`, // Quote names
             s.implantador,
             s.tipo,
             s.finished_at,
-            s.mrr.toFixed(2),
-            s.days.toFixed(1),
+            `"${s.mrr.toFixed(2).replace('.', ',')}"`, // Quote decimal values
+            `"${s.days.toFixed(1).replace('.', ',')}"`, // Quote decimal values
             s.points
         ]);
 
         // Rodapé Estatístico
         const footer = [
             [],
-            ["TOTAIS", "", "", "", "", monthData.stats.total_mrr.toFixed(2), "", monthData.stats.total_points],
-            ["MÉDIAS", "", "", "", "", "", monthData.stats.avg_days.toFixed(1), ""],
-            ["MEDIANA", "", "", "", "", "", monthData.stats.median_days.toFixed(1), ""]
+            ["TOTAIS", "", "", "", "", `"${monthData.stats.total_mrr.toFixed(2).replace('.', ',')}"`, "", monthData.stats.total_points],
+            ["MÉDIAS", "", "", "", "", "", `"${monthData.stats.avg_days.toFixed(1).replace('.', ',')}"`, ""],
+            ["MEDIANA", "", "", "", "", "", `"${monthData.stats.median_days.toFixed(1).replace('.', ',')}"`, ""]
         ];
 
         const csvContent = [

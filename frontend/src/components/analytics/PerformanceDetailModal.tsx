@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { CheckCircle, X, Clock, Target, Calendar } from 'lucide-react';
 
 interface StoreDetail {
     id: number;
@@ -13,6 +14,8 @@ interface StoreDetail {
     reasons?: string[];
     impact_score?: number;
     impact_breakdown?: string;
+    // Helper to detect if date is valid
+    finished_at_date?: Date;
 }
 
 interface ScoreBreakdown {
@@ -55,146 +58,208 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
     }, [implantadorName]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
-                {/* Header */}
-                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            🏆 Detalhamento de Pontos: <span className="text-indigo-600 dark:text-indigo-400">{implantadorName}</span>
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 uppercase font-bold tracking-wider">Histórico de entregas e pipeline</p>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-zinc-800 ring-1 ring-white/10">
+                {/* Header Premium */}
+                <div className="px-8 py-6 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-2xl font-bold text-lg shadow-sm bg-gradient-to-br from-indigo-500 to-purple-600 text-white`}>
+                            {implantadorName.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                                {implantadorName}
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium">
+                                Detalhamento de Performance & Histórico
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
                     >
-                        <svg className="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X size={24} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-zinc-950/30">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
                         </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {/* Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl">
-                                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase">Pontos Entregues (Done)</p>
-                                    <p className="text-3xl font-black text-emerald-700 dark:text-emerald-300">{data?.total_done_points}</p>
-                                </div>
-                                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl">
-                                    <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Pontos em Aberto (WIP)</p>
-                                    <p className="text-3xl font-black text-indigo-700 dark:text-indigo-300">{data?.total_wip_points}</p>
+                    ) : (data && (
+                        <div className="space-y-8">
+                            {/* Summary Metrics Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Done Card */}
+                                <div className="p-6 bg-white dark:bg-zinc-800 rounded-2xl border border-slate-200 dark:border-zinc-700/50 shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
+                                        <CheckCircle size={80} />
+                                    </div>
+                                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2">Entregas do Período</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-4xl font-black text-slate-900 dark:text-white">{data.total_done_points.toFixed(1)}</span>
+                                        <span className="text-sm font-bold text-slate-400">pontos</span>
+                                    </div>
+                                    <div className="mt-4 h-1.5 w-full bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500" style={{ width: '100%' }}></div>
+                                    </div>
                                 </div>
 
-                                {/* New Score Card */}
-                                {data?.score_breakdown && (
-                                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl relative overflow-hidden group">
-                                        <div className="absolute right-2 top-2 opacity-10 scale-[2.5] text-amber-500">🏆</div>
-                                        <div className="relative z-10">
-                                            <p className="text-xs text-amber-600 dark:text-amber-400 font-bold uppercase flex justify-between">
-                                                <span>Performance Score</span>
-                                                <span className="text-[10px] opacity-70">0-100</span>
-                                            </p>
-                                            <p className="text-3xl font-black text-amber-700 dark:text-amber-300 mb-2">{data.score_breakdown.total}</p>
+                                {/* WIP Card */}
+                                <div className="p-6 bg-white dark:bg-zinc-800 rounded-2xl border border-slate-200 dark:border-zinc-700/50 shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
+                                        <Target size={80} />
+                                    </div>
+                                    <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2">Carga Atual (WIP)</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-4xl font-black text-slate-900 dark:text-white">{data.total_wip_points.toFixed(1)}</span>
+                                        <span className="text-sm font-bold text-slate-400">pontos</span>
+                                    </div>
+                                    <div className="mt-4 h-1.5 w-full bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                        <div className="h-full bg-indigo-500" style={{ width: '60%' }}></div>
+                                    </div>
+                                </div>
 
-                                            <div className="grid grid-cols-4 gap-1 text-[9px] uppercase font-bold text-amber-800/70 dark:text-amber-200/70">
-                                                <div title={`Volume: ${data.score_breakdown.volume} pts`}>Vol: {data.score_breakdown.volume}</div>
-                                                <div title={`OTD: ${data.score_breakdown.otd}%`}>OTD: {data.score_breakdown.otd}%</div>
-                                                <div title={`Qualidade: ${data.score_breakdown.quality}%`}>Qual: {data.score_breakdown.quality}%</div>
-                                                <div title={`Tempo: ${data.score_breakdown.time_score} pts`}>Time: {data.score_breakdown.time_score}</div>
+                                {/* Score Card */}
+                                {data.score_breakdown && (
+                                    <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30 shadow-sm relative overflow-hidden">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider">Performance Score</p>
+                                            <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 px-2 py-0.5 rounded-full">0-100</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <span className="text-5xl font-black text-amber-600 dark:text-amber-500">{data.score_breakdown.total}</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="bg-white/60 dark:bg-black/20 p-2 rounded-lg flex justify-between items-center">
+                                                <span className="text-[10px] uppercase font-bold text-amber-800/60 dark:text-amber-200/60">Volume</span>
+                                                <span className="text-xs font-bold text-amber-700 dark:text-amber-400">{data.score_breakdown.volume}pts</span>
+                                            </div>
+                                            <div className="bg-white/60 dark:bg-black/20 p-2 rounded-lg flex justify-between items-center">
+                                                <span className="text-[10px] uppercase font-bold text-amber-800/60 dark:text-amber-200/60">OTD</span>
+                                                <span className="text-xs font-bold text-amber-700 dark:text-amber-400">{data.score_breakdown.otd}%</span>
                                             </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Table */}
-                            <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-slate-50 dark:bg-slate-900/50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Loja</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Motivos</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Impacto</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Conclusão</th>
-                                            <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Potencial</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-                                        {data?.stores.sort((a, b) => (b.is_done ? 1 : 0) - (a.is_done ? 1 : 0)).map(store => (
-                                            <tr key={store.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">{store.name}</td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${store.tipo === 'Matriz' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                                                        }`}>
-                                                        {store.tipo}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`text-[11px] font-medium ${store.is_done ? 'text-emerald-500' : 'text-indigo-500'
-                                                        }`}>
-                                                        {store.is_done ? '🚀 CONCLUÍDO' : `⏳ ${store.status}`}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {store.reasons?.map((reason, idx) => (
-                                                            <span key={idx} className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border ${reason.includes('Atraso') ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' :
-                                                                reason.includes('Retrabalho') ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' :
-                                                                    'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
-                                                                }`}>
-                                                                {reason}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <div className="group relative inline-block cursor-help">
-                                                        <span className={`font-bold ${store.impact_score && store.impact_score > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300'}`}>
-                                                            {store.impact_score && store.impact_score > 0 ? `+${store.impact_score}` : '--'}
-                                                        </span>
-                                                        {store.impact_breakdown && (
-                                                            <div className="absolute right-0 bottom-full mb-2 w-32 bg-slate-800 text-white text-[10px] rounded p-2 shadow-lg z-50 invisible group-hover:visible whitespace-nowrap">
-                                                                {store.impact_breakdown}
+                            {/* Detailed Table */}
+                            <div className="bg-white dark:bg-zinc-800 rounded-2xl border border-slate-200 dark:border-zinc-700/50 overflow-hidden shadow-sm">
+                                <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-800/50">
+                                    <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                        <Calendar size={16} className="text-slate-400" />
+                                        Histórico de Lojas
+                                    </h4>
+                                    <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-700 px-2 py-1 rounded-md">
+                                        {data.stores.length} registros
+                                    </span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-slate-50 dark:bg-zinc-900/50 text-[11px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider">
+                                            <tr>
+                                                <th className="px-6 py-3">Loja / Cliente</th>
+                                                <th className="px-6 py-3 text-center">Tipo</th>
+                                                <th className="px-6 py-3">Status</th>
+                                                <th className="px-6 py-3">Fatores (Risco/Bônus)</th>
+                                                <th className="px-6 py-3 text-right">Impacto</th>
+                                                <th className="px-6 py-3 text-right">Conclusão</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-700/50 text-sm">
+                                            {data.stores.sort((a, b) => (b.is_done ? 1 : 0) - (a.is_done ? 1 : 0)).map(store => (
+                                                <tr key={store.id} className="hover:bg-slate-50 dark:hover:bg-zinc-700/20 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <p className="font-bold text-slate-700 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                            {store.name}
+                                                        </p>
+                                                        {!store.is_done && (
+                                                            <div className="flex items-center gap-1 mt-1">
+                                                                <Clock size={10} className="text-slate-400" />
+                                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Em Andamento</span>
                                                             </div>
                                                         )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-medium text-xs">
-                                                    {store.finished_at || '--'}
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className={`font-mono text-xs ${store.is_done ? 'text-slate-400' : 'text-indigo-400'}`}>
-                                                        {store.is_done ? '-' : `(${store.potential_points})`}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${store.tipo === 'Matriz'
+                                                            ? 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800/30'
+                                                            : 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800/30'
+                                                            }`}>
+                                                            {store.tipo}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            {store.is_done ? (
+                                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                                    <CheckCircle size={14} />
+                                                                    CONCLUÍDO
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                                                                    {store.status}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {(!store.reasons || store.reasons.length === 0) && (
+                                                                <span className="text-slate-300 dark:text-zinc-600 text-xs">-</span>
+                                                            )}
+                                                            {store.reasons?.map((reason, idx) => (
+                                                                <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border font-bold uppercase tracking-wider ${reason.includes('Atraso')
+                                                                    ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/30'
+                                                                    : reason.includes('Retrabalho')
+                                                                        ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30'
+                                                                        : 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30'
+                                                                    }`}>
+                                                                    {reason}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="group/impact relative inline-block cursor-help">
+                                                            <span className={`text-sm font-bold ${store.impact_score && store.impact_score > 0
+                                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                                : 'text-slate-300 dark:text-zinc-600'
+                                                                }`}>
+                                                                {store.impact_score && store.impact_score > 0 ? `+${store.impact_score}` : '--'}
+                                                            </span>
+                                                            {store.impact_breakdown && (
+                                                                <div className="absolute right-0 bottom-full mb-2 w-48 bg-slate-800 text-white text-[10px] rounded-lg p-3 shadow-xl z-50 invisible group-hover/impact:visible">
+                                                                    <p className="font-bold border-b border-slate-600 pb-1 mb-1 text-slate-300">Detalhamento:</p>
+                                                                    <p className="whitespace-pre-line leading-relaxed">{store.impact_breakdown}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">
+                                                                {store.finished_at || '--'}
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-400">
+                                                                {store.is_done ? 'Data Entrega' : 'Previsão'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    )}
-                </div>
-
-                {/* Footer */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-sm font-bold hover:bg-slate-700 transition-all shadow-md"
-                    >
-                        Fechar Visualização
-                    </button>
+                    ))}
                 </div>
             </div>
         </div >

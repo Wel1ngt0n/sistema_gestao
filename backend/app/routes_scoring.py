@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app.services.scoring_service import ScoringService
+from app.services.analytics_service import AnalyticsService
 from app.constants.scoring_constants import (
     RISK_WEIGHTS, RISK_PRAZO_THRESHOLDS, RISK_IDLE_THRESHOLDS, 
     PERFORMANCE_WEIGHTS, OP_WEIGHTS, LOAD_LEVELS
@@ -25,7 +26,7 @@ def get_performance():
 @scoring_bp.route('/api/scoring/capacity', methods=['GET'])
 def get_capacity():
     try:
-        data = ScoringService.get_team_capacity()
+        data = AnalyticsService.get_team_capacity()
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

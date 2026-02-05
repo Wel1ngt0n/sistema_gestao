@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { RefreshCw, Download, Filter } from 'lucide-react';
 import ForecastTable from './ForecastTable';
@@ -8,7 +8,6 @@ import ForecastCards from './ForecastCards';
 const API_URL = 'http://localhost:5003/api/forecast';
 
 export default function ForecastPage() {
-    const queryClient = useQueryClient();
     const [filters, setFilters] = useState({
         month: '',
         year: '',

@@ -46,7 +46,8 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
                 type: 'bar' as const,
                 label: 'Realizado (Histórico)',
                 data: realizedData,
-                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                backgroundColor: '#f97316', // Orange-500
+                hoverBackgroundColor: '#ea580c',
                 borderRadius: 4,
                 order: 1, // Draw First (Bottom)
                 stack: 'stack1'
@@ -55,8 +56,8 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
                 type: 'bar' as const,
                 label: 'Projetado (Forecast)',
                 data: projectedData,
-                backgroundColor: 'rgba(59, 130, 246, 0.2)', // Transparente/Ghost
-                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: 'rgba(132, 204, 22, 0.2)', // Lime-500 Transparent
+                borderColor: '#84cc16', // Lime-500
                 borderWidth: 1,
                 borderDash: [5, 5], // Tracejado
                 borderRadius: 4,
@@ -105,7 +106,7 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
     };
 
     return (
-        <div className={`bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ${className}`}>
+        <div className={`bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm hover:shadow-md transition-shadow ${className}`}>
             <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                 🔮 Forecast de Ativação (MRR)
                 <InfoTooltip

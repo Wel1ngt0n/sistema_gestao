@@ -53,8 +53,11 @@ export interface BottleneckData {
 export interface CapacityData {
     implantador: string;
     current_points: number;
+    finished_points_semester: number;
+    total_semester_points: number;
     max_points: number;
     store_count: number;
+    finished_count_semester: number;
     utilization_pct: number;
     risk_level: 'NORMAL' | 'HIGH' | 'CRITICAL' | 'LOW';
     active_networks: string[];

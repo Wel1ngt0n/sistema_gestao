@@ -26,6 +26,7 @@ interface MonitorTableViewProps {
     onAiAnalyze: (store: Store) => void;
     onRefetch: () => void;
     setAdminOpen: (open: boolean) => void;
+    recommendedImplantador?: string | null;
 }
 
 export default function MonitorTableView({
@@ -34,7 +35,8 @@ export default function MonitorTableView({
     onEdit,
     onAiAnalyze,
     onRefetch,
-    setAdminOpen
+    setAdminOpen,
+    recommendedImplantador
 }: MonitorTableViewProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState('');
@@ -289,7 +291,22 @@ export default function MonitorTableView({
         }),
         columnHelper.accessor('implantador', {
             header: 'Responsável',
-            cell: info => <span className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">{info.getValue() || '--'}</span>,
+            cell: info => {
+                const val = info.getValue();
+                if (val) return <span className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">{val}</span>;
+
+                if (recommendedImplantador) {
+                    return (
+                        <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-slate-400 italic">Sem responsável</span>
+                            <span className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 w-fit font-semibold" title="Sugestão baseada em menor esforço semestral">
+                                ✨ Sugestão: {recommendedImplantador}
+                            </span>
+                        </div>
+                    );
+                }
+                return <span className="text-xs text-slate-400 whitespace-nowrap">--</span>;
+            },
             enablePinning: true,
             size: 200,
         }),
@@ -416,7 +433,7 @@ export default function MonitorTableView({
             ),
             enablePinning: true,
         })
-    ], [onEdit, onAiAnalyze]);
+    ], [onEdit, onAiAnalyze, recommendedImplantador]);
 
 
 

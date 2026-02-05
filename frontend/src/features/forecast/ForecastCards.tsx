@@ -1,7 +1,6 @@
-import React from 'react';
-import { TrendingUp, AlertTriangle, CheckCircle, Package } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Package } from 'lucide-react';
 
-export default function ForecastCards({ summary }) {
+export default function ForecastCards({ summary }: { summary: any[] }) {
     if (!summary || summary.length === 0) {
         return (
             <div className="text-sm text-slate-400 p-2">Sem dados de projeção para exibir nos cards.</div>

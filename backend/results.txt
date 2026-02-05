@@ -1,0 +1,15 @@
+LOJA                                               | ETAPA ATUAL          | DIAS NA INTEGRAÇÃO
+------------------------------------------------------------------------------------------
+Atacadão São Roque (Migração Vipcommerce)          | INTEGRACAO           | 49.0
+Emporio Natural Mix - Loja 2 - Bangu               | INTEGRACAO           | 56.0
+Emporio Natural Mix - Loja Madureira               | INTEGRACAO           | 56.0
+Emporio Natural Mix - Loja 3 - Campo Grande        | INTEGRACAO           | 56.0
+Supermercado Batista                               | INTEGRACAO           | 52.0
+Emporio Natural Mix - Loja 4 - Tijucas             | INTEGRACAO           | 56.0
+Emporio Natural Mix - Loja 5 Botafogo              | INTEGRACAO           | 56.0
+Rota da Economia                                   | INTEGRACAO           | 67.0
+Empório Pas - Loja 04 - Andradina                  | INTEGRACAO           | 54.0
+Emporio Pas - Loja 2  - Mirandopolis               | INTEGRACAO           | 54.0
+O Mundo das Embalagens ( MIGRAÇÃO VIP COMMERCE )   | INTEGRACAO           | 19.0
+Supermercado Real - Carmo do Rio Verde             | INTEGRACAO           | 0.0
+Supermercado Real - Ceres                          | INTEGRACAO           | 5.0

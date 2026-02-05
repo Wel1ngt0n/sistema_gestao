@@ -8,10 +8,10 @@ import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
 import { AnalyticsFilters } from './AnalyticsFilters';
 import { useAnalyticsData } from './useAnalyticsData';
 import { KPICard } from './KPICard';
-import { TeamCapacityWidget } from './TeamCapacityWidget';
 import { FinancialForecastChart } from './FinancialForecastChart';
 import { InfoTooltip } from './InfoTooltip';
 import { RiskScatterPlot } from './RiskScatterPlot';
+import { TeamPerformanceMatrix } from './TeamPerformanceMatrix';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -26,7 +26,8 @@ import {
     Filler,
     BarController,
     LineController,
-    PieController
+    PieController,
+    ChartOptions
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 
@@ -69,7 +70,7 @@ export default function DashboardAnalytics() {
         return (
             <div className="w-full">
                 {/* Header Skeleton */}
-                <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm px-6 py-5">
+                <div className="bg-white dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700/50 sticky top-0 z-30 shadow-sm px-6 py-5">
                     <div className="flex justify-between items-center">
                         <div className="space-y-2">
                             <Skeleton width={200} height={32} />
@@ -89,15 +90,15 @@ export default function DashboardAnalytics() {
                         <Skeleton width={180} height={24} className="mb-5" />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {Array(8).fill(0).map((_, i) => (
-                                <Skeleton key={i} height={120} className="rounded-2xl" />
+                                <Skeleton key={i} height={120} className="rounded-3xl" />
                             ))}
                         </div>
                     </div>
 
                     {/* Charts Skeleton */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <Skeleton height={400} className="rounded-2xl" />
-                        <Skeleton height={400} className="rounded-2xl" />
+                        <Skeleton height={400} className="rounded-3xl" />
+                        <Skeleton height={400} className="rounded-3xl" />
                     </div>
                 </div>
             </div>
@@ -109,31 +110,46 @@ export default function DashboardAnalytics() {
 
 
     // Configuração de Gráficos (Estilo Dashboard Executivo)
-    const chartOptions = {
+    const chartOptions: ChartOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
         scales: {
             y: {
-                grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                ticks: { color: '#94a3b8' }
+                grid: {
+                    color: 'rgba(161, 161, 170, 0.1)', // Zinc-400 with opacity
+                },
+                ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } },
+                border: { display: false }
             },
             x: {
                 grid: { display: false },
-                ticks: { color: '#94a3b8' }
+                ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } },
+                border: { display: false }
             }
         },
         plugins: {
             legend: {
-                labels: { color: '#94a3b8' },
                 display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(24, 24, 27, 0.9)', // Zinc-950
+                titleColor: '#fff',
+                bodyColor: '#e4e4e7', // Zinc-200
+                padding: 12,
+                cornerRadius: 12,
+                displayColors: true,
+                boxPadding: 4,
+                titleFont: { family: 'Inter', size: 13, weight: 'bold' },
+                bodyFont: { family: 'Inter', size: 12 },
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
             }
         },
-        // Evita barras gigantes quando tem poucos dados
-        maxBarThickness: 40,
-        animation: {
-            duration: 1000,
-            easing: 'easeOutQuart' as const,
-        },
+        layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
     };
 
     // Gráfico 1: Throughput Mensal
@@ -143,27 +159,16 @@ export default function DashboardAnalytics() {
             {
                 label: 'Lojas Entregues',
                 data: safeTrendData.map(d => d.throughput),
-                backgroundColor: 'rgba(99, 102, 241, 0.7)',
-                hoverBackgroundColor: 'rgba(99, 102, 241, 1)',
-                borderRadius: 4,
+                backgroundColor: '#f97316', // Orange-500
+                hoverBackgroundColor: '#ea580c', // Orange-600
+                borderRadius: 6,
+                borderSkipped: false,
+                barPercentage: 0.6,
+                categoryPercentage: 0.8,
+                maxBarThickness: 40
             },
         ],
     };
-
-    // Gráfico 1.5: Pontuação Mensal
-    const pointsChartData = {
-        labels: trendLabels,
-        datasets: [
-            {
-                label: 'Pontos Entregues',
-                data: safeTrendData.map(d => d.total_points),
-                backgroundColor: 'rgba(139, 92, 246, 0.7)',
-                hoverBackgroundColor: 'rgba(139, 92, 246, 1)',
-                borderRadius: 4,
-            },
-        ],
-    };
-
 
 
     // Gráfico 2: OTD & Cycle Time
@@ -174,10 +179,21 @@ export default function DashboardAnalytics() {
                 type: 'line' as const,
                 label: 'Cycle Time Médio (dias)',
                 data: safeTrendData.map(d => d.cycle_time_avg),
-                borderColor: 'rgb(245, 158, 11)',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                borderWidth: 2,
-                tension: 0.3,
+                borderColor: '#84cc16', // Lime-500
+                backgroundColor: (context: any) => {
+                    const ctx = context.chart.ctx;
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                    gradient.addColorStop(0, 'rgba(132, 204, 22, 0.4)');
+                    gradient.addColorStop(1, 'rgba(132, 204, 22, 0.0)');
+                    return gradient;
+                },
+                pointBackgroundColor: '#84cc16',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 3,
+                tension: 0.4,
                 fill: true,
                 yAxisID: 'y',
             },
@@ -185,308 +201,206 @@ export default function DashboardAnalytics() {
                 type: 'bar' as const,
                 label: 'OTD %',
                 data: safeTrendData.map(d => d.otd_percentage),
-                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                backgroundColor: '#10b981', // Emerald-500
+                hoverBackgroundColor: '#059669', // Emerald-600
                 borderRadius: 4,
+                barPercentage: 0.4,
                 yAxisID: 'y1',
             },
         ],
     };
 
-    // Performance por Implantador
-    const perfLabels = safePerformanceData.map(p => p.implantador);
-    const performanceChartData = {
-        labels: perfLabels,
-        datasets: [
-            {
-                label: 'Entregues (Done)',
-                data: safePerformanceData.map(p => p.done),
-                backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                borderRadius: 4,
-            },
-            {
-                label: 'Em Progresso (WIP)',
-                data: safePerformanceData.map(p => p.wip),
-                backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                borderRadius: 4,
-            },
-        ],
-    };
-
     return (
-        <div className="w-full h-full min-h-screen bg-slate-50 dark:bg-slate-900">
-            {/* Header Premium (Fixo) */}
-            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm backdrop-blur-md bg-opacity-90 dark:bg-opacity-90">
-                <div className="max-w-[1920px] mx-auto w-full px-6 py-5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Análise de Dados</h1>
-                        </div>
-                        <div className="flex-none">
-                            <AnalyticsFilters
-                                availableImplantadores={availableImplantadores}
-                                onRefresh={refetch}
-                                isRefreshing={loading}
-                            />
-                        </div>
-                    </div>
+        <div className="min-h-screen w-full bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 p-6 lg:p-10 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
+            {/* Header: Nexus Style */}
+            <header className="mb-10 flex flex-col md:flex-row justify-between items-end">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                        Sistema de Gestão de Operações
+                    </h1>
+                    <p className="text-slate-500 dark:text-zinc-400 font-medium text-sm tracking-wide mt-1 uppercase">
+                        Deep Dive Operacional & Performance
+                    </p>
                 </div>
-            </div>
+                <div className="flex flex-col items-end gap-3">
+                    <AnalyticsFilters
+                        availableImplantadores={availableImplantadores}
+                        onRefresh={refetch}
+                        isRefreshing={loading}
+                    />
+                </div>
+            </header>
 
-            <div className="max-w-[1920px] mx-auto w-full px-6 lg:px-10 py-8">
-                <Tab.Group>
-                    <Tab.List className="flex space-x-1 rounded-xl bg-slate-200/50 dark:bg-slate-800/50 p-1 mb-8 max-w-2xl">
-                        <Tab as={Fragment}>
+            <Tab.Group>
+                <Tab.List className="flex space-x-2 rounded-full bg-slate-200/50 dark:bg-zinc-800/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-slate-200 dark:border-zinc-700/50 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5 dark:shadow-black/20">
+                    {['Visão Geral', 'Eficiência & Risco', 'Time & Performance'].map((tabName) => (
+                        <Tab as={Fragment} key={tabName}>
                             {({ selected }) => (
                                 <button
                                     className={classNames(
-                                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                                        'ring-white/60 ring-offset-2 ring-offset-indigo-400 focus:outline-none focus:ring-2',
+                                        'rounded-full px-6 py-2.5 text-sm font-bold tracking-wide transition-all duration-300 ease-out',
+                                        'focus:outline-none focus:ring-2 focus:ring-orange-500/20',
                                         selected
-                                            ? 'bg-white text-indigo-700 shadow dark:bg-slate-700 dark:text-indigo-300'
-                                            : 'text-slate-600 hover:bg-white/[0.12] hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300'
+                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105'
+                                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-700/50'
                                     )}
                                 >
-                                    📊 Visão Geral
+                                    {tabName}
                                 </button>
                             )}
                         </Tab>
-                        <Tab as={Fragment}>
-                            {({ selected }) => (
-                                <button
-                                    className={classNames(
-                                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                                        'ring-white/60 ring-offset-2 ring-offset-indigo-400 focus:outline-none focus:ring-2',
-                                        selected
-                                            ? 'bg-white text-indigo-700 shadow dark:bg-slate-700 dark:text-indigo-300'
-                                            : 'text-slate-600 hover:bg-white/[0.12] hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300'
-                                    )}
-                                >
-                                    ⚡ Eficiência & Risco
-                                </button>
-                            )}
-                        </Tab>
-                        <Tab as={Fragment}>
-                            {({ selected }) => (
-                                <button
-                                    className={classNames(
-                                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                                        'ring-white/60 ring-offset-2 ring-offset-indigo-400 focus:outline-none focus:ring-2',
-                                        selected
-                                            ? 'bg-white text-indigo-700 shadow dark:bg-slate-700 dark:text-indigo-300'
-                                            : 'text-slate-600 hover:bg-white/[0.12] hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300'
-                                    )}
-                                >
-                                    👥 Time & Performance
-                                </button>
-                            )}
-                        </Tab>
-                    </Tab.List>
+                    ))}
+                </Tab.List>
 
-                    <Tab.Panels>
-                        {/* --- ABA 1: VISÃO GERAL --- */}
-                        <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                            {/* KPIs Executivos */}
-                            {kpiData && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
-                                    <KPICard label="WIP (Pipeline Ativo)" value={kpiData.wip_stores} color="indigo" icon="🚀" subtext="Lojas em implantação" tooltip="Work In Progress. Número total de lojas que estão atualmente em fase de implantação." />
-                                    <KPICard label="Entregas (No Período)" value={kpiData.throughput_period} color="green" icon="✅" subtext="Projetos concluídos" tooltip="Total de projetos concluídos no período." />
-                                    <KPICard label="MRR em Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon="💰" subtext="Pipeline de receita" tooltip="Valor total da mensalidade (MRR) de todas as lojas em WIP." />
-                                    <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="purple" icon="📈" subtext="Receita entregue" tooltip="Valor total de MRR acumulado das lojas concluídas no período." />
-                                    <KPICard label="Pontos Entregues" value={kpiData.total_points_done} color="yellow" icon="🏅" subtext="Pontuação conquistada" tooltip="Soma dos pontos de todas as lojas entregues no período." />
-                                    <KPICard label="Cycle Time Médio" value={`${kpiData.cycle_time_avg || 0} dias`} color="slate" icon="⏱️" subtext="Tempo de navegação" tooltip="Média de dias decorridos entre o início e a conclusão." />
-                                </div>
-                            )}
+                <Tab.Panels>
+                    {/* --- ABA 1: VISÃO GERAL --- */}
+                    <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
+                        {/* KPIs Executivos */}
+                        {kpiData && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
+                                <KPICard label="WIP (Pipeline Ativo)" value={kpiData.wip_stores} color="indigo" icon="🚀" subtext="Lojas em implantação" tooltip="Work In Progress. Número total de lojas que estão atualmente em fase de implantação." />
+                                <KPICard label="Entregas (No Período)" value={kpiData.throughput_period} color="green" icon="✅" subtext="Projetos concluídos" tooltip="Total de projetos concluídos no período." />
+                                <KPICard label="MRR em Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon="💰" subtext="Pipeline de receita" tooltip="Valor total da mensalidade (MRR) de todas as lojas em WIP." />
+                                <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="purple" icon="📈" subtext="Receita entregue" tooltip="Valor total de MRR acumulado das lojas concluídas no período." />
+                                <KPICard label="Pontos Entregues" value={kpiData.total_points_done} color="yellow" icon="🏅" subtext="Pontuação conquistada" tooltip="Soma dos pontos de todas as lojas entregues no período." />
+                                <KPICard label="Cycle Time Médio" value={`${kpiData.cycle_time_avg || 0} dias`} color="slate" icon="⏱️" subtext="Tempo de navegação" tooltip="Média de dias decorridos entre o início e a conclusão." />
+                            </div>
+                        )}
 
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
-                                {/* Forecast Financeiro */}
-                                {forecastData && <FinancialForecastChart data={forecastData} />}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
+                            {/* Forecast Financeiro */}
+                            {forecastData && <FinancialForecastChart data={forecastData} />}
 
-                                {/* Evolução de Entregas */}
-                                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                                        Evolução de Entregas
-                                        <InfoTooltip text="Número absoluto de lojas implantadas (status DONE) por mês." />
-                                    </h3>
-                                    <div className="h-[350px]">
-                                        <Chart type='bar' data={throughputChartData} options={chartOptions} />
-                                    </div>
+                            {/* Evolução de Entregas */}
+                            <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                                    Evolução de Entregas
+                                    <InfoTooltip text="Número absoluto de lojas implantadas (status DONE) por mês." />
+                                </h3>
+                                <div className="h-[350px]">
+                                    <Chart type='bar' data={throughputChartData} options={chartOptions} />
                                 </div>
                             </div>
+                        </div>
 
-                        </Tab.Panel>
+                    </Tab.Panel>
 
-                        {/* --- ABA 2: EFICIÊNCIA & RISCO --- */}
-                        <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                            {/* 1. KPIs Operacionais (Topo) */}
-                            {kpiData && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
-                                    <KPICard label="On-Time Delivery (OTD)" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="Aderência ao prazo" tooltip="% de projetos entregues dentro do prazo." />
-                                    <KPICard label="Risco Preditivo" value={kpiData.avg_risk_score} color="red" icon="🤖" subtext="Score médio de risco" tooltip="Fórmula: (Prazo x 45%) + (Ociosidade x 25%) + (Financeiro x 20%) + (Qualidade x 10%)" />
-                                    <KPICard label="Lojas Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias sem updates" tooltip="Lojas sem movimentação recente em tarefas." />
-                                    <KPICard label="Matriz vs Filial (WIP)" value={`${kpiData.matrix_count} / ${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Mix de complexidade" tooltip="Proporção de lojas Matriz (Complexas) vs Filiais (Simples) em andamento." />
-                                </div>
-                            )}
+                    {/* --- ABA 2: EFICIÊNCIA & RISCO --- */}
+                    <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
+                        {/* 1. KPIs Operacionais (Topo) */}
+                        {kpiData && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
+                                <KPICard label="On-Time Delivery (OTD)" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="Aderência ao prazo" tooltip="% de projetos entregues dentro do prazo." />
+                                <KPICard label="Risco Preditivo" value={kpiData.avg_risk_score} color="red" icon="🤖" subtext="Score médio de risco" tooltip="Fórmula: (Prazo x 45%) + (Ociosidade x 25%) + (Financeiro x 20%) + (Qualidade x 10%)" />
+                                <KPICard label="Lojas Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias sem updates" tooltip="Lojas sem movimentação recente em tarefas." />
+                                <KPICard label="Matriz vs Filial (WIP)" value={`${kpiData.matrix_count} / ${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Mix de complexidade" tooltip="Proporção de lojas Matriz (Complexas) vs Filiais (Simples) em andamento." />
+                            </div>
+                        )}
 
-                            {/* 2. Gráficos Lado a Lado */}
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
-                                {/* Gráfico de Risco */}
-                                <div className="h-full">
-                                    <RiskScatterPlot />
-                                </div>
-
-                                {/* Eficiência Operacional */}
-                                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-full">
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                                        Eficiência Operacional
-                                        <InfoTooltip text="Combinação de Cycle Time e OTD ao longo do tempo." />
-                                    </h3>
-                                    <div className="h-[350px]">
-                                        <Chart
-                                            type='line'
-                                            data={efficiencyChartData}
-                                            options={{
-                                                ...chartOptions,
-                                                scales: {
-                                                    y: { ...chartOptions.scales.y, position: 'left' },
-                                                    y1: { ...chartOptions.scales.y, position: 'right', grid: { drawOnChartArea: false } }
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                </div>
+                        {/* 2. Gráficos Lado a Lado */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
+                            {/* Gráfico de Risco */}
+                            <div className="h-full">
+                                <RiskScatterPlot />
                             </div>
 
-                            {/* 3. Gargalos (Full Width) */}
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden animate-fade-in-up animation-delay-300 opacity-0">
-                                <div className="p-8 border-b border-slate-100 dark:border-slate-700">
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                        <span className="text-amber-500">⏳</span> Gargalos de Processo
-                                        <InfoTooltip text="Etapas onde os projetos passam mais tempo parados." />
-                                    </h3>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead className="bg-slate-50 dark:bg-slate-900/50 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                            <tr>
-                                                <th className="px-8 py-4">Etapa</th>
-                                                <th className="px-8 py-4 w-48">Tempo Acumulado</th>
-                                                <th className="px-8 py-4 w-48">Média / Loja</th>
-                                                <th className="px-8 py-4 w-32 text-center">Retrabalhos</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                            {(Array.isArray(bottleneckData) ? bottleneckData : []).slice(0, 10).map((b, i) => (
-                                                <tr key={i} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                                                    <td className="px-8 py-5">
-                                                        <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{b.step_name}</p>
-                                                        <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
-                                                            <div className="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full" style={{ width: `${Math.min(100, (b.avg_days / 15) * 100)}%` }}></div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 text-slate-600 dark:text-slate-400 text-sm font-mono">{b.total_days}d</td>
-                                                    <td className="px-8 py-5 text-sm font-bold text-slate-800 dark:text-white">{b.avg_days}d</td>
-                                                    <td className="px-8 py-5 text-center">
-                                                        {b.reopens > 0 ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
-                                                                {b.reopens}
-                                                            </span>
-                                                        ) : <span className="text-slate-300">-</span>}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                            {/* Eficiência Operacional */}
+                            <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                                    Eficiência Operacional
+                                    <InfoTooltip text="Combinação de Cycle Time e OTD ao longo do tempo." />
+                                </h3>
+                                <div className="h-[350px]">
+                                    <Chart
+                                        type='line'
+                                        data={efficiencyChartData}
+                                        options={{
+                                            ...chartOptions,
+                                            scales: {
+                                                y: { ...chartOptions.scales!.y, position: 'left' },
+                                                y1: { ...chartOptions.scales!.y, position: 'right', grid: { drawOnChartArea: false } }
+                                            }
+                                        }}
+                                    />
                                 </div>
                             </div>
-                        </Tab.Panel>
+                        </div>
 
-                        {/* --- ABA 3: TIME & PERFORMANCE --- */}
-                        <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                            {/* Capacidade e Charts */}
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-100 opacity-0">
-                                {capacityData && <TeamCapacityWidget data={capacityData} />}
-
-                                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                                        Performance do Time
-                                        <InfoTooltip text="Comparativo: Entregas (Verde) vs WIP (Roxo)" />
-                                    </h3>
-                                    <div className="h-[400px]">
-                                        <Chart type='bar' data={performanceChartData} options={{ ...chartOptions, indexAxis: 'y' as const }} />
-                                    </div>
-                                </div>
+                        {/* 3. Gargalos (Visual Moderno - Progress List) */}
+                        <div className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm overflow-hidden animate-fade-in-up animation-delay-300 opacity-0 hover:shadow-md transition-shadow duration-300">
+                            <div className="p-8 border-b border-slate-100 dark:border-zinc-700/50 bg-slate-50/50 dark:bg-zinc-800/50">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                    <span className="text-amber-500">⏳</span> Gargalos de Processo
+                                    <InfoTooltip text="Etapas onde os projetos passam mais tempo parados." />
+                                </h3>
                             </div>
 
-                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
-                                {/* Top Performers List */}
-                                <div className="xl:col-span-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col overflow-hidden">
-                                    <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                                        <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                            🏆 Ranking (Top 6)
-                                        </h3>
-                                    </div>
-                                    <div className="overflow-auto flex-1 p-4 space-y-2">
-                                        {safePerformanceData.slice(0, 6).map((p, idx) => {
-                                            const hasQualityIssues = (p.data_quality_flags?.missing_financial || 0) > 0 || (p.data_quality_flags?.missing_rework || 0) > 0;
-                                            return (
-                                                <div key={p.implantador} className="flex items-center justify-between p-4 bg-white dark:bg-slate-700/20 border border-slate-100 dark:border-slate-700 rounded-xl hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm shadow-sm ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-200 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'}`}>
-                                                            #{idx + 1}
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setSelectedImplantador(p.implantador)} className="font-bold text-sm text-slate-700 dark:text-slate-200 hover:text-indigo-600 hover:underline transition-colors text-left">
-                                                                    {p.implantador}
-                                                                </button>
-                                                                {hasQualityIssues && (
-                                                                    <div className="group/tooltip relative">
-                                                                        <span className="text-amber-500 cursor-help text-xs">⚠️</span>
-                                                                        <div className="absolute left-full top-0 ml-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded shadow-lg z-50 hidden group-hover/tooltip:block">
-                                                                            <p className="font-bold mb-1">Dados Faltantes:</p>
-                                                                            {p.data_quality_flags?.missing_financial ? <p>• {p.data_quality_flags.missing_financial} stores sem financeiro</p> : null}
-                                                                            {p.data_quality_flags?.missing_rework ? <p>• {p.data_quality_flags.missing_rework} stores sem flag retrabalho</p> : null}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-3 mt-0.5">
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="text-[10px] font-bold text-slate-400">PONTOS:</span>
-                                                                    <span className="text-xs font-bold text-indigo-600">{p.points.toFixed(1)}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="text-[10px] font-bold text-slate-400">SCORE:</span>
-                                                                    <span className="text-xs font-bold text-emerald-600">{p.score.toFixed(1)}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-lg font-bold text-slate-800 dark:text-white">{p.done}</p>
-                                                        <p className="text-[10px] font-bold text-emerald-500">{p.otd_percentage}% OTD</p>
-                                                    </div>
+                            <div className="p-6 grid grid-cols-1 gap-4">
+                                {(Array.isArray(bottleneckData) ? bottleneckData : []).slice(0, 8).map((b, i) => (
+                                    <div key={i} className="group relative flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-700/30 transition-all cursor-default border border-transparent hover:border-slate-200 dark:hover:border-zinc-700/50">
+
+                                        {/* Rank Number */}
+                                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-700/50 text-slate-500 dark:text-zinc-400 font-bold text-sm">
+                                            {i + 1}
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex-grow grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+
+                                            {/* Name & Progress */}
+                                            <div className="md:col-span-6">
+                                                <div className="flex justify-between mb-2">
+                                                    <span className="font-bold text-slate-700 dark:text-zinc-200 text-sm">{b.step_name}</span>
+                                                    <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">{b.avg_days}d média</span>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                                <div className="w-full bg-slate-100 dark:bg-zinc-700 h-2.5 rounded-full overflow-hidden shadow-inner">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.4)] transition-all duration-1000 ease-out group-hover:brightness-110"
+                                                        style={{ width: `${Math.min(100, (b.avg_days / 15) * 100)}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
 
-                                {/* Histórico de Pontos */}
-                                <div className="xl:col-span-2 bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                                        🏆 Pontuação Entregue por Mês
-                                        <InfoTooltip text="Volume real de trabalho entregue (ponderado)." />
-                                    </h3>
-                                    <div className="h-[350px]">
-                                        <Chart type='bar' data={pointsChartData} options={chartOptions} />
+                                            {/* Stats */}
+                                            <div className="md:col-span-3 flex flex-col items-center md:items-start pl-4 border-l border-slate-100 dark:border-zinc-700/50">
+                                                <span className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-bold">Tempo Total</span>
+                                                <span className="text-slate-700 dark:text-zinc-300 font-mono font-bold">{b.total_days}d</span>
+                                            </div>
+
+                                            {/* Retrabalhos */}
+                                            <div className="md:col-span-3 flex justify-end">
+                                                {b.reopens > 0 ? (
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400">{b.reopens} Retrabalhos</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 opacity-50">
+                                                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Fluido</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
-                        </Tab.Panel>
-                    </Tab.Panels>
-                </Tab.Group>
-            </div>
+                        </div>
+                    </Tab.Panel>
+
+                    {/* --- ABA 3: TIME & PERFORMANCE --- */}
+                    <Tab.Panel className="space-y-6 animate-fade-in-up focus:outline-none">
+                        <div className="space-y-8 animate-fade-in-up duration-300">
+                            {capacityData && safePerformanceData && (
+                                <TeamPerformanceMatrix
+                                    capacityData={capacityData}
+                                    performanceData={safePerformanceData}
+                                    onSelectImplantador={setSelectedImplantador}
+                                />
+                            )}
+                        </div>
+                    </Tab.Panel>
+                </Tab.Panels>
+            </Tab.Group>
 
             {selectedImplantador && (
                 <PerformanceDetailModal
