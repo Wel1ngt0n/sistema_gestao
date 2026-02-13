@@ -6,8 +6,9 @@ import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import ForecastPage from './features/forecast/ForecastPage'
 import SyncHealthPanel from './features/sync/SyncHealthPanel'
 import MetricsDictionaryModal from './components/MetricsDictionaryModal'
+import AIChatWindow from './components/ai/AIChatWindow'
 
-import { HelpCircle, LayoutDashboard, LayoutList, RefreshCw, BarChart, FileText, Activity } from 'lucide-react'
+import { HelpCircle, LayoutDashboard, LayoutList, RefreshCw, BarChart, FileText, Activity, Bot, Sparkles } from 'lucide-react'
 import MonthlyReport from './components/reports/MonthlyReport';
 import logo from './assets/logo.png'
 
@@ -15,6 +16,7 @@ function App() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'dashboard-v2' | 'monitor' | 'sync' | 'analytics' | 'forecast' | 'reports'>('dashboard')
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
     const [showDictionary, setShowDictionary] = useState(false)
+    const [isChatOpen, setIsChatOpen] = useState(false)
 
 
     // Theme Toggle Logic
@@ -257,6 +259,40 @@ function App() {
                 isOpen={showDictionary}
                 onClose={() => setShowDictionary(false)}
             />
+
+            {/* Global AI Chat Button */}
+            <AIChatWindow isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+            {!isChatOpen && (
+                <div className="fixed bottom-6 right-6 z-[90] animate-in slide-in-from-bottom-4 duration-500">
+                    <button
+                        onClick={() => setIsChatOpen(true)}
+                        className="group relative flex items-center gap-3 pl-4 pr-2 py-2 bg-zinc-900 border border-zinc-800 rounded-full shadow-2xl hover:scale-105 transition-all duration-300"
+                    >
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full opacity-75 blur group-hover:opacity-100 transition duration-200"></div>
+                        <div className="relative flex items-center gap-2 bg-zinc-900 rounded-full pl-3 pr-2 py-2">
+                            <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full">
+                                <Bot size={20} className="text-white" />
+                            </div>
+                            <span className="text-sm font-bold text-white pr-2">
+                                Perguntar à I.A.
+                            </span>
+                        </div>
+                    </button>
+                    {/* Tooltip hint */}
+                    <div className="absolute bottom-full right-0 mb-3 w-64 p-3 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none transform translate-y-2 group-hover:translate-y-0">
+                        <div className="flex items-start gap-3">
+                            <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-xs font-semibold text-zinc-900 dark:text-white">Analise sua operação</p>
+                                <p className="text-[10px] text-zinc-500 leading-tight mt-1">
+                                    "Quais lojas estão travadas?"<br />
+                                    "Resuma o status da Loja X"
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

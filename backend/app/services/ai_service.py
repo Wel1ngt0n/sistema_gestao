@@ -266,3 +266,95 @@ class GeminiService:
         """
 
 
+    def chat_with_operational_context(self, user_message):
+        """
+        Chat com contexto total da operação.
+        1. Busca resumo de todas as lojas ativas.
+        2. Se o usuário citar uma loja específica, busca contexto detalhado (comentários).
+        3. Envia para o Gemini com persona de Gerente de Operações.
+        """
+        if not self.client:
+            return {"response": "IA não configurada (API Key ausente).", "sources": []}
+
+        try:
+            # A. Contexto Global (Todas as lojas ativas)
+            active_stores_summary = self._get_all_active_stores_summary()
+            
+            # B. Contexto Específico (Se houver menção)
+            specific_context = []
+            mentioned_stores = self._identify_stores_in_message(user_message, active_stores_summary)
+            if mentioned_stores:
+                specific_context = self._gather_context_data(mentioned_stores)
+            
+            # C. Construção do Prompt (RAG)
+            system_instruction = f"""
+            Você é o GERENTE SÊNIOR DE OPERAÇÕES do sistema de implantação.
+            Você tem acesso total aos dados de todas as lojas.
+            
+            CONTEXTO GLOBAL (Lojas Ativas):
+            {json.dumps(active_stores_summary, ensure_ascii=False)}
+            
+            CONTEXTO DETALHADO (Lojas Citadas):
+            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Nenhuma loja específica citada."}
+            
+            SUA MISSÃO:
+            Responder à pergunta do usuário com base ESTRITAMENTE nesses dados.
+            - Seja direto, profissional e data-driven.
+            - Se perguntarem "quais lojas estão atrasadas?", cruze os dados de 'days_in_progress' com o tipo de loja.
+            - Se perguntarem sobre uma loja específica, use os comentários para explicar o motivo.
+            - Responda SEMPRE em Português.
+            - Use formatação Markdown (negrito, listas) para facilitar a leitura.
+            """
+
+            # D. Chamada à API
+            chat = self.client.chats.create(model='gemini-flash-latest')
+            response = chat.send_message(
+                message=f"CONTEXTO DO SISTEMA:\n{system_instruction}\n\nPERGUNTA DO USUÁRIO:\n{user_message}"
+            )
+            
+            return {
+                "response": response.text,
+                "sources": [s['name'] for s in mentioned_stores] if mentioned_stores else ["Base Geral"]
+            }
+
+        except Exception as e:
+            logger.error(f"[Gemini] Chat error: {e}")
+            return {"response": f"Erro ao processar sua pergunta: {str(e)}", "sources": []}
+
+    def _get_all_active_stores_summary(self):
+        """Retorna lista leve de todas as lojas não-concluídas."""
+        # Filtrar status diferente de 'DONE' e 'CANCELLED' (ajuste conforme seu modelo)
+        stores = Store.query.filter(Store.status_norm != 'DONE').all()
+        
+        summary = []
+        for s in stores:
+            summary.append({
+                "id": s.id,
+                "name": s.store_name,
+                "implantador": s.implantador,
+                "status": s.status_norm,
+                "days": s.dias_em_progresso,
+                "days": s.dias_em_progresso,
+                # Tentar pegar risco do snapshot de hoje ou mais recente
+                "risk": (s.daily_snapshots[-1].risk_score if s.daily_snapshots else 0)
+            })
+        return summary
+
+    def _identify_stores_in_message(self, message, all_stores_summary):
+        """Tenta encontrar lojas citadas na mensagem (busca simples por nome)."""
+        message_lower = message.lower()
+        found_ids = []
+        
+        for s in all_stores_summary:
+            # Tokenização simples: verifica se partes do nome da loja estão na mensagem
+            # Ex: "Loja Teste" -> verifica se "teste" está na mensagem se tiver tamanho razoável
+            name_parts = [p.lower() for p in s['name'].split() if len(p) > 3]
+            
+            if s['name'].lower() in message_lower:
+                found_ids.append(s['id'])
+            elif any(part in message_lower for part in name_parts):
+                found_ids.append(s['id'])
+                
+        if found_ids:
+            return Store.query.filter(Store.id.in_(found_ids)).all()
+        return []

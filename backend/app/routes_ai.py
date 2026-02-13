@@ -19,3 +19,21 @@ def analyze_network(store_id):
         return jsonify(result), 500
         
     return jsonify(result)
+
+@ai_bp.route('/api/ai/chat', methods=['POST'])
+def chat_with_data():
+    """
+    Endpoint para Chat com I.A. (RAG).
+    Recebe: { "message": "string" }
+    Retorna: { "response": "string", "sources": [] }
+    """
+    data = request.get_json()
+    if not data or 'message' not in data:
+        return jsonify({"error": "Message required"}), 400
+        
+    user_message = data['message']
+    
+    # Chamar serviço
+    result = ai_service.chat_with_operational_context(user_message)
+    
+    return jsonify(result)
