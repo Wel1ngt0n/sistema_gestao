@@ -36,7 +36,8 @@ def get_dashboard_data():
     
     # Listas Globais para Cálculo de KPI
     active_stores_global = [s for s in all_stores if not s.effective_finished_at]
-    concluded_stores_global = [s for s in all_stores if s.effective_finished_at]
+    # Filtrar entregas: somente a partir de 2025
+    concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2025]
 
     # Escopo Filtrado para Exibição (Risco, Listas de MRR, etc)
     if status_filter == 'active':
@@ -92,9 +93,9 @@ def get_dashboard_data():
     current_year = datetime.now().year
     mrr_concluidas_ano = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at.year == current_year and s.valor_mensalidade)
 
-    # 2. Rankings (Implantador) - Histórico Global
+    # 2. Rankings (Implantador) - Apenas lojas ativas (WIP)
     kpi_by_imp = {}
-    for s in active_stores_global + concluded_stores_global:
+    for s in active_stores_global:
         imp = s.implantador or 'N/A'
         if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
         
