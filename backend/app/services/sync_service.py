@@ -254,7 +254,7 @@ class SyncService:
             
             # 1. Stores
             yield "data: 🔍 Buscando lojas modificadas...\n\n"
-            parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=force_full)
+            parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts)
             yield f"data: ✅ {len(parent_tasks)} lojas para atualizar.\n\n"
             
             # 2. Steps
