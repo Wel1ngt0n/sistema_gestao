@@ -454,6 +454,8 @@ class AnalyticsService:
             item['score'] = round(final_score, 1)
             item['breakdown'] = raw_score_components # Expose for UI
             # del item['_raw_components'] # Cleanup -> Now we keep it as breakdown
+        # Filtrar: mostrar apenas implantadores com lojas ativas (quadro atual)
+        final_list = [item for item in final_list if item['wip'] > 0]
 
         return sorted(final_list, key=lambda x: x['score'], reverse=True)
 
