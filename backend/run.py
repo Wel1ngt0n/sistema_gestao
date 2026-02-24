@@ -31,10 +31,10 @@ def run_test_sync():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--test', action='store_true', help='Run sync test instead of server')
+    parser.add_argument('--test', action='store_true', help='Executar teste de sincronização em vez do servidor')
     args = parser.parse_args()
 
-    # Ensure tables exist (Docker Init)
+    # Garantir que as tabelas existem (Docker Init)
     with app.app_context():
         db.create_all()
         print(">>> Database initialized.")
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     if args.test:
         run_test_sync()
     else:
-        # Run Backup Check (Startup)
+        # Executar Verificação de Backup (Inicialização)
         try:
             from backup_manager import BackupManager
             BackupManager.check_and_run_backup()

@@ -61,3 +61,24 @@ export interface Store {
     days_late_predicted?: number;
     previsao_ia?: string | null;
 }
+
+export interface IntegrationData {
+    id: number;
+    name: string;
+    store_name: string;
+    rede: string | null;
+    tipo: string | null;
+    integrador: string | null;
+    assignee: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    due_date: string | null;
+    sla_days: number;
+    status: string;
+    doc_status: string;
+    bugs: number;
+    post_go_live_bugs: number;
+    churn_risk: boolean;
+    points: number;
+    task_id: string;
+}

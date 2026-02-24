@@ -1,13 +1,17 @@
 flask
 flask-sqlalchemy
+flask-cors
 flask-migrate
 sqlalchemy
-requests
-pandas
-python-dotenv
-httpx
-openpyxl
 psycopg2-binary
-flask-cors
-openai
+requests
+python-dotenv
+pandas
+numpy
+gunicorn
 google-genai
+# Segurança / Auth
+PyJWT
+pyotp
+
+# Add other dependencies as needed

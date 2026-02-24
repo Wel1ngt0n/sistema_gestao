@@ -352,8 +352,8 @@ export default function MonitorTableViewV2({
                         <button
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${isColumnsOpen
-                                    ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100'
-                                    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-orange-300'
+                                ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100'
+                                : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-orange-300'
                                 }`}
                         >
                             <span>Colunas</span>
@@ -378,8 +378,8 @@ export default function MonitorTableViewV2({
                                                 onDragOver={(e) => handleMenuDragOver(e, column.id)}
                                                 onDrop={handleMenuDrop}
                                                 className={`flex items-center gap-3 p-2 rounded-lg border border-transparent transition-all cursor-move select-none ${menuDraggedId === column.id
-                                                        ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dashed opacity-50'
-                                                        : 'hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700'
+                                                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dashed opacity-50'
+                                                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700'
                                                     }`}
                                             >
                                                 <GripVertical className="w-4 h-4 text-zinc-300" />
@@ -411,9 +411,9 @@ export default function MonitorTableViewV2({
             </div>
 
             {/* Clean Table */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
-                    <table className="w-full text-left border-collapse">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full max-w-full overflow-hidden">
+                <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+                    <table className="w-full text-left border-collapse min-w-full">
                         <thead className="bg-zinc-50 dark:bg-zinc-950/50 text-zinc-500 dark:text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
                             {table.getHeaderGroups().map(headerGroup => (
                                 <tr key={headerGroup.id}>

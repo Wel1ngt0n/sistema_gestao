@@ -44,6 +44,20 @@ def patch_database():
             # Colunas para Cache de IA
             check_and_add_column('stores', 'ai_summary', 'TEXT')
             check_and_add_column('stores', 'ai_analyzed_at', 'TIMESTAMP WITHOUT TIME ZONE')
+            
+            # V3 - Integração
+            check_and_add_column('stores', 'integrador', 'VARCHAR(100)')
+            
+            # V3 - Métricas de Integração
+            # Garantir que a tabela existe (db.create_all já deve ter cuidado disso se não existia)
+            # Mas se existia, precisamos adicionar as colunas novas
+            check_and_add_column('integration_metrics', 'start_date', 'TIMESTAMP WITHOUT TIME ZONE')
+            check_and_add_column('integration_metrics', 'end_date', 'TIMESTAMP WITHOUT TIME ZONE')
+            check_and_add_column('integration_metrics', 'sla_days', 'INTEGER DEFAULT 0')
+            check_and_add_column('integration_metrics', 'post_go_live_bugs', 'INTEGER DEFAULT 0')
+            check_and_add_column('integration_metrics', 'churn_risk', 'BOOLEAN DEFAULT FALSE')
+            check_and_add_column('integration_metrics', 'documentation_status', "VARCHAR(20) DEFAULT 'PENDING'")
+            check_and_add_column('integration_metrics', 'points', 'FLOAT DEFAULT 0.0')
 
             
             ctx.commit()

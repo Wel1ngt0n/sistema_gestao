@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Interface AdminPanelProps {
 interface AdminPanelProps {
     isOpen: boolean;
     onClose: () => void;
@@ -81,7 +82,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
                     </div>
 
                     {msg && (
-                        <div className={`p-3 rounded text-sm text-center font-bold ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        <div className={`p - 3 rounded text - sm text - center font - bold ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} `}>
                             {msg}
                         </div>
                     )}

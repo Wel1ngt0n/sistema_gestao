@@ -32,7 +32,7 @@ class ClickUpService:
                 time.sleep(2)
         return None
 
-    def fetch_parent_tasks(self, date_updated_gt=None):
+    def fetch_parent_tasks(self, date_updated_gt=None, include_closed=False):
         """Busca tarefas da Lista Principal (Lojas). Pagina por todas."""
         self.logger.info(f"[ClickUp] Buscando lojas EM ABERTO na lista {Config.LIST_ID_PRINCIPAL}...")
         tasks = []
@@ -43,8 +43,8 @@ class ClickUpService:
             params = {
                 "page": page, 
                 "subtasks": "true", 
-                "include_closed": "false",
-                "archived": "false" # Apenas tarefas abertas
+                "include_closed": "true" if include_closed else "false",
+                "archived": "true" if include_closed else "false"
             }
             if date_updated_gt:
                 params["date_updated_gt"] = date_updated_gt

@@ -17,14 +17,14 @@ export default function MonitorV2() {
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // View State
+    // Estado da Visualização
     const [viewMode, setViewMode] = useState<'table' | 'kanban' | 'cards'>('table');
 
-    // UI State
+    // Estado da UI
     const [globalFilter, setGlobalFilter] = useState('');
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
-    // Advanced Filters State
+    // Estado dos Filtros Avançados
     const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
         startDate: '',
         endDate: '',
@@ -48,7 +48,7 @@ export default function MonitorV2() {
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [selectedStoreForAi, setSelectedStoreForAi] = useState<Store | null>(null);
 
-    // Admin & Matrix State
+    // Estado Admin & Matrizes
     const [adminOpen, setAdminOpen] = useState(false);
     const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
 
@@ -106,7 +106,7 @@ export default function MonitorV2() {
             res = res.filter(s => s.name.toLowerCase().includes(lowerFilter) || String(s.id).includes(lowerFilter));
         }
 
-        // 2. Advanced Filters
+        // 2. Filtros Avançados
         if (advancedFilters.isHighRisk) res = res.filter(s => s.risk_score > 20);
         if (advancedFilters.isLate) res = res.filter(s => (s.dias_em_transito || 0) > s.tempo_contrato);
         if (advancedFilters.financialStatus) res = res.filter(s => s.financeiro_status === advancedFilters.financialStatus);
@@ -119,7 +119,7 @@ export default function MonitorV2() {
             res = res.filter(s => advancedFilters.status.includes(s.status));
         }
 
-        // Date Ranges
+        // Intervalos de Datas
         if (advancedFilters.startDate) res = res.filter(s => s.data_inicio && s.data_inicio >= advancedFilters.startDate);
         if (advancedFilters.endDate) res = res.filter(s => s.data_inicio && s.data_inicio <= advancedFilters.endDate);
         if (advancedFilters.finishStartDate) res = res.filter(s => s.data_fim && s.data_fim >= advancedFilters.finishStartDate);
@@ -171,7 +171,7 @@ export default function MonitorV2() {
         const originalStore = data[storeIndex];
         const updatedStore = { ...originalStore, status: newStatus };
 
-        // Optimistic Update
+        // Atualização Otimista
         const newData = [...data];
         newData[storeIndex] = updatedStore;
         setData(newData);
@@ -195,7 +195,7 @@ export default function MonitorV2() {
         alert("Exportar CSV (Implementado em V2)");
     };
 
-    // Memoized Stats for Mini Cards
+    // Estatísticas Memoizadas para Mini Cards
     const stats = useMemo(() => {
         const total = data.length;
         const delayed = data.filter(s => s.status_norm === 'IN_PROGRESS' && (s.dias_em_transito || 0) > s.tempo_contrato).length;
@@ -206,7 +206,7 @@ export default function MonitorV2() {
     if (loading && data.length === 0) return <SkeletonLoader />;
 
     return (
-        <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
+        <div className="relative flex flex-col min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden">
 
             <MonitorAIModal
                 isOpen={aiModalOpen}
@@ -214,7 +214,7 @@ export default function MonitorV2() {
                 store={selectedStoreForAi}
             />
 
-            {/* Global Filter Panel */}
+            {/* Painel de Filtro Global */}
             <MonitorFilterPanel
                 isOpen={isFilterPanelOpen}
                 onClose={() => setIsFilterPanelOpen(false)}
@@ -224,7 +224,7 @@ export default function MonitorV2() {
                 uniqueStatuses={uniqueStatuses}
             />
 
-            {/* NEW HEADER */}
+            {/* NOVO CABEÇALHO */}
             <MonitorHeader
                 stats={stats}
                 isRefreshing={isRefreshing}
@@ -241,11 +241,11 @@ export default function MonitorV2() {
                 handleExportCSV={handleExportCSV}
             />
 
-            {/* Content Area */}
-            <div className="flex-1 p-6">
-                <div className={`mx-auto ${viewMode === 'kanban' ? 'w-full max-w-[calc(100vw-2rem)]' : 'max-w-[1920px]'} animate-fade-in-up`}>
+            {/* Área de Conteúdo */}
+            <div className="flex-1 p-0 md:p-6 w-full max-w-full overflow-hidden">
+                <div className={`mx-auto ${viewMode === 'kanban' ? 'w-full px-2' : 'max-w-full'} animate-fade-in-up transition-all duration-300`}>
 
-                    {/* View Content */}
+                    {/* Conteúdo da Visualização */}
                     {viewMode === 'table' && (
                         <MonitorTableView
                             data={filteredData}

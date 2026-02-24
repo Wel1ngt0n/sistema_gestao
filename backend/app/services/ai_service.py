@@ -133,7 +133,7 @@ class GeminiService:
         return list(all_stores)
 
     def _gather_context_data(self, stores):
-        """Coleta status e comentários relevantes das lojas."""
+        """Coleta status, comentários e GARGALOS (Steps) das lojas."""
         data = []
         
         keywords = ["Integração", "App", "Qualidade", "Treinamento", "Financeiro"]
@@ -145,10 +145,28 @@ class GeminiService:
                 "type": s.tipo_loja,
                 "days_in_progress": s.dias_em_progresso,
                 "status": s.status_norm,
+                "bottlenecks": [], # Novos dados de gargalo
                 "comments_summary": []
             }
-            
-            # A. Comentários do Card Pai (Máx 5 mais recentes)
+
+            # 1. Análise de Gargalos (Steps Travados)
+            # Busca steps que estão abertos e parados há muito tempo
+            active_steps = TaskStep.query.filter_by(store_id=s.id).filter(
+                TaskStep.status.notin_(['closed', 'concluido', 'done'])
+            ).all()
+
+            for step in active_steps:
+                is_stuck = step.idle_days > 3 # Parado há mais de 3 dias
+                is_long = step.total_time_days > 7 # Etapa longa demais
+
+                if is_stuck or is_long:
+                    blocker_info = f"Step '{step.step_name}' "
+                    if is_stuck: blocker_info += f"[PARADO há {step.idle_days} dias] "
+                    if is_long: blocker_info += f"[TOTAL {int(step.total_time_days)} dias] "
+                    
+                    store_info["bottlenecks"].append(blocker_info)
+
+            # 2. Comentários do Card Pai (Máx 5 mais recentes)
             try:
                 comments = self.clickup.get_task_comments(s.clickup_task_id)
                 if comments:
@@ -159,21 +177,18 @@ class GeminiService:
             except Exception as e:
                 logger.error(f"Erro ao buscar comments parent {s.store_name}: {e}")
 
-            # B. Comentários de Tarefas Críticas (Apenas se estagnadas ou keywords)
-            # Buscar passos no DB
-            steps = TaskStep.query.filter_by(store_id=s.id).filter(
-                TaskStep.status != 'closed'
-            ).all()
-            
-            for step in steps:
-                # Se nome combina com keywords
-                if any(k.lower() in step.step_name.lower() for k in keywords):
+            # 3. Comentários de Tarefas Críticas (Apenas se estagnadas ou keywords)
+            for step in active_steps:
+                # Se nome combina com keywords OU está travado (bottleneck)
+                is_bottleneck = any(b for b in store_info["bottlenecks"] if step.step_name in b)
+                
+                if is_bottleneck or any(k.lower() in step.step_name.lower() for k in keywords):
                     try:
                         step_comments = self.clickup.get_task_comments(step.clickup_task_id)
                         if step_comments:
                             last_comment = step_comments[0].get('comment_text', '') # Pegar só o último
                             if last_comment:
-                                store_info["comments_summary"].append(f"TAREFA '{step.step_name}': {last_comment}")
+                                store_info["comments_summary"].append(f"REF '{step.step_name}': {last_comment}")
                     except:
                         pass
             
@@ -288,22 +303,35 @@ class GeminiService:
             
             # C. Construção do Prompt (RAG)
             system_instruction = f"""
-            Você é o GERENTE SÊNIOR DE OPERAÇÕES do sistema de implantação.
-            Você tem acesso total aos dados de todas as lojas.
-            
-            CONTEXTO GLOBAL (Lojas Ativas):
+            Você é o CENTRAL COMMAND (IA) do CRM de Implantação.
+            Você não é apenas um chatbot. Você é um ANALISTA SÊNIOR DE RISCOS.
+
+            SEUS SUPERPODERES (DADOS QUE VOCÊ TEM):
+            - Lista de Lojas Ativas
+            - Dias em Progresso (vs SLA ideal de 90 dias)
+            - **Gargalos Específicos** (Steps parados há +3 dias ou muito longos)
+            - Comentários reais de cada tarefa travada
+
+            DADOS DA FROTA (Lojas Ativas):
             {json.dumps(active_stores_summary, ensure_ascii=False)}
             
-            CONTEXTO DETALHADO (Lojas Citadas):
-            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Nenhuma loja específica citada."}
+            DADOS DE TELEMETRIA AVANÇADA (Lojas Citadas/Contexto):
+            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Análise geral da rede."}
             
             SUA MISSÃO:
-            Responder à pergunta do usuário com base ESTRITAMENTE nesses dados.
-            - Seja direto, profissional e data-driven.
-            - Se perguntarem "quais lojas estão atrasadas?", cruze os dados de 'days_in_progress' com o tipo de loja.
-            - Se perguntarem sobre uma loja específica, use os comentários para explicar o motivo.
-            - Responda SEMPRE em Português.
-            - Use formatação Markdown (negrito, listas) para facilitar a leitura.
+            1. **Identificar Padrões**: Se 3 lojas estão travadas em "Integração", isso é um problema sistêmico. ALERTE.
+            2. **Diagnóstico Preciso**: Não diga "a loja está atrasada". Diga "A loja está parada há 5 dias na etapa X".
+            3. **Formatação Rica**:
+               - Use 🚨 para Riscos Altos.
+               - Use ⚠️ para Atenção.
+               - Use ⏳ para Gargalos de Tempo.
+               - Use **Negrito** para nomes de lojas e steps.
+
+            REGRAS DE RESPOSTA:
+            - Se o usuário perguntar "Como está a rede?", faça um resumo executivo focado nos GARGALOS (Steps travados).
+            - Se perguntar de uma loja, faça uma autópsia completa: Onde travou? Por que? O que dizem os comentários?
+            - Responda SEMPRE em Português do Brasil.
+            - Seja conciso mas letal nos detalhes.
             """
 
             # D. Chamada à API
@@ -314,7 +342,7 @@ class GeminiService:
             
             return {
                 "response": response.text,
-                "sources": [s['name'] for s in mentioned_stores] if mentioned_stores else ["Base Geral"]
+                "sources": [s.store_name for s in mentioned_stores] if mentioned_stores else ["Base Geral"]
             }
 
         except Exception as e:

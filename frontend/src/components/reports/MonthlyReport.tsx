@@ -137,20 +137,20 @@ const MonthlyReport: React.FC = () => {
     if (loading) return <div className="p-8 text-center text-zinc-400">Carregando relatório...</div>;
 
     return (
-        <div className="p-6 md:p-10 space-y-8 bg-slate-50 dark:bg-zinc-900 min-h-screen text-slate-900 dark:text-zinc-100 transition-colors duration-300">
+        <div className="p-0 space-y-8 bg-zinc-50 dark:bg-[#09090b] min-h-screen text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
             {/* ... header ... */}
-            <header>
+            <header className="px-6 md:px-10 pt-6">
                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
                     Relatório Mensal de Implantação
                 </h1>
-                <p className="text-slate-500 dark:text-zinc-400 mt-2">
+                <p className="text-zinc-500 dark:text-zinc-400 mt-2">
                     Histórico de entregas, faturamento recorrente e eficiência do time.
                 </p>
             </header>
 
-            <div className="space-y-6">
+            <div className="space-y-6 px-6 md:px-10 pb-10">
                 {data.map((monthData) => (
-                    <div key={monthData.month} className="bg-white dark:bg-zinc-800/50 rounded-3xl border border-slate-200 dark:border-zinc-700/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={monthData.month} className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         {/* ... header do mes ... */}
                         <div
                             className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer group"
@@ -162,10 +162,10 @@ const MonthlyReport: React.FC = () => {
                                     <FileText size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-semibold capitalize">
+                                    <h3 className="text-xl font-semibold capitalize text-zinc-900 dark:text-white">
                                         {new Date(monthData.month + '-02').toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                                     </h3>
-                                    <span className="text-sm text-slate-500 dark:text-zinc-400">
+                                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
                                         {monthData.stores.length} lojas entregues
                                     </span>
                                 </div>
@@ -173,29 +173,29 @@ const MonthlyReport: React.FC = () => {
 
                             <div className="mt-4 md:mt-0 flex items-center gap-6">
                                 <div className="text-right">
-                                    <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">MRR Adicionado</p>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">MRR Adicionado</p>
                                     <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                                         R$ {monthData.stats.total_mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </p>
                                 </div>
                                 <div className="text-right hidden sm:block">
-                                    <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tempo Médio</p>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Tempo Médio</p>
                                     <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                                         {monthData.stats.avg_days} dias
                                     </p>
                                 </div>
                                 <div className="ml-2">
-                                    {expandedMonth === monthData.month ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
+                                    {expandedMonth === monthData.month ? <ChevronUp className="text-zinc-400" /> : <ChevronDown className="text-zinc-400" />}
                                 </div>
                             </div>
                         </div>
 
                         {/* Detalhes Expandidos */}
                         {expandedMonth === monthData.month && (
-                            <div className="border-t border-slate-100 dark:border-zinc-700 p-6 bg-slate-50/50 dark:bg-zinc-900/30 animation-fade-in">
+                            <div className="border-t border-zinc-100 dark:border-zinc-800 p-6 bg-zinc-50/50 dark:bg-zinc-800/10 animation-fade-in">
                                 {/* Botões de Ação */}
                                 <div className="flex flex-wrap gap-4 mb-6 justify-end items-center">
-                                    <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 p-1 rounded-xl border border-slate-200 dark:border-zinc-700">
+                                    <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleGenerateSummary(monthData, 'simple'); }}
                                             className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors font-medium"
@@ -206,7 +206,7 @@ const MonthlyReport: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleGenerateSummary(monthData, 'email'); }}
-                                            className="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-700 text-sm rounded-lg transition-colors font-medium"
+                                            className="flex items-center gap-2 px-3 py-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm rounded-lg transition-colors font-medium"
                                             title="Gerar relatório completo para Email"
                                         >
                                             <Bot size={16} />
@@ -227,7 +227,7 @@ const MonthlyReport: React.FC = () => {
                                 <div className="overflow-x-auto">
                                     {/* ... table content remains implicitly the same via context ... */}
                                     <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-slate-500 dark:text-zinc-400 uppercase bg-slate-100 dark:bg-zinc-800/50 rounded-lg">
+                                        <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-100 dark:bg-zinc-800/50 rounded-lg">
                                             <tr>
                                                 <th className="px-4 py-3 rounded-l-lg">Loja</th>
                                                 <th className="px-4 py-3">Implantador</th>
@@ -239,20 +239,20 @@ const MonthlyReport: React.FC = () => {
                                         </thead>
                                         <tbody>
                                             {monthData.stores.map((store) => (
-                                                <tr key={store.id} className="border-b border-slate-100 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800/30 transition-colors">
-                                                    <td className="px-4 py-3 font-medium text-slate-800 dark:text-zinc-200">
+                                                <tr key={store.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800/30 transition-colors">
+                                                    <td className="px-4 py-3 font-medium text-zinc-800 dark:text-zinc-200">
                                                         {store.name}
                                                     </td>
-                                                    <td className="px-4 py-3 text-slate-600 dark:text-zinc-400">{store.implantador}</td>
+                                                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{store.implantador}</td>
                                                     <td className="px-4 py-3">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${store.tipo === 'Matriz' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
                                                             {store.tipo}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-right text-slate-600 dark:text-zinc-400">
+                                                    <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">
                                                         {new Date(store.finished_at).toLocaleDateString()}
                                                     </td>
-                                                    <td className="px-4 py-3 text-right font-medium">
+                                                    <td className="px-4 py-3 text-right font-medium text-zinc-700 dark:text-zinc-300">
                                                         {store.days.toFixed(1)}
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400">
@@ -266,21 +266,21 @@ const MonthlyReport: React.FC = () => {
 
                                 {/* Stats Grid (MANTIDO IGUAL) */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                                    <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-zinc-700">
-                                        <p className="text-xs text-slate-500 uppercase">Média Dias</p>
-                                        <p className="text-xl font-bold text-slate-800 dark:text-zinc-200">{monthData.stats.avg_days}</p>
+                                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl text-center border border-zinc-100 dark:border-zinc-800">
+                                        <p className="text-xs text-zinc-500 uppercase">Média Dias</p>
+                                        <p className="text-xl font-bold text-zinc-800 dark:text-zinc-200">{monthData.stats.avg_days}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-zinc-700">
-                                        <p className="text-xs text-slate-500 uppercase">Mediana Dias</p>
-                                        <p className="text-xl font-bold text-slate-800 dark:text-zinc-200">{monthData.stats.median_days}</p>
+                                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl text-center border border-zinc-100 dark:border-zinc-800">
+                                        <p className="text-xs text-zinc-500 uppercase">Mediana Dias</p>
+                                        <p className="text-xl font-bold text-zinc-800 dark:text-zinc-200">{monthData.stats.median_days}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-zinc-700">
-                                        <p className="text-xs text-slate-500 uppercase">Pontos Totais</p>
+                                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl text-center border border-zinc-100 dark:border-zinc-800">
+                                        <p className="text-xs text-zinc-500 uppercase">Pontos Totais</p>
                                         <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{monthData.stats.total_points.toFixed(1)}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-zinc-700">
-                                        <p className="text-xs text-slate-500 uppercase">Total Lojas</p>
-                                        <p className="text-xl font-bold text-slate-800 dark:text-zinc-200">{monthData.stats.total_stores}</p>
+                                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl text-center border border-zinc-100 dark:border-zinc-800">
+                                        <p className="text-xs text-zinc-500 uppercase">Total Lojas</p>
+                                        <p className="text-xl font-bold text-zinc-800 dark:text-zinc-200">{monthData.stats.total_stores}</p>
                                     </div>
                                 </div>
 
@@ -294,7 +294,7 @@ const MonthlyReport: React.FC = () => {
             <Dialog open={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} className="relative z-50">
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Panel className="mx-auto max-w-2xl w-full bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                    <Dialog.Panel className="mx-auto max-w-2xl w-full bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
                         <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
                             <Dialog.Title className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                                 <Bot className="text-indigo-500" />
@@ -313,7 +313,7 @@ const MonthlyReport: React.FC = () => {
                                 <div className="space-y-4">
                                     <p className="text-sm text-zinc-500">Copie o texto abaixo para enviar:</p>
                                     <textarea
-                                        className="w-full h-64 p-4 bg-zinc-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-xl border border-zinc-200 dark:border-zinc-800 font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full h-64 p-4 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-xl border border-zinc-200 dark:border-zinc-800 font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
                                         value={aiSummary}
                                         readOnly
                                     />

@@ -77,6 +77,7 @@ class Store(db.Model):
     implantador = db.Column(db.String(100), nullable=True) # Responsável Atual
     implantador_original = db.Column(db.String(100), nullable=True) # Primeiro responsável
     implantador_atual = db.Column(db.String(100), nullable=True) # Atual explícito
+    integrador = db.Column(db.String(100), nullable=True) # Responsável Integração (V3)
     
     # Campos de Negócio / Comerciais (Sync ou Manual)
     valor_mensalidade = db.Column(db.Float, default=0.0)
@@ -114,7 +115,7 @@ class Store(db.Model):
     ai_summary = db.Column(db.Text, nullable=True)
     ai_analyzed_at = db.Column(db.DateTime, nullable=True)
 
-    # Forecast & CS Fields (V5)
+    # Campos de Previsão & CS (V5)
     address = db.Column(db.Text, nullable=True)
     state_uf = db.Column(db.String(2), nullable=True)
     had_ecommerce = db.Column(db.Boolean, default=False)
@@ -127,7 +128,7 @@ class Store(db.Model):
     include_in_forecast = db.Column(db.Boolean, default=True)
 
     
-    # Relationships
+    # Relacionamentos
     steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")
     pauses = db.relationship('StorePause', backref='store', lazy=True, cascade="all, delete-orphan")
     deep_sync_state = db.relationship('StoreDeepSyncState', uselist=False, backref='store', cascade="all, delete-orphan")
@@ -259,7 +260,7 @@ class TaskStep(db.Model):
     store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
     
     step_list_name = db.Column(db.String(100)) # e.g. "TREINAMENTO"
-    step_name = db.Column(db.String(150)) # Task Name
+    step_name = db.Column(db.String(150)) # Nome da Tarefa
     assignee = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(50))
     
@@ -278,7 +279,7 @@ class TaskStep(db.Model):
 
 class StatusEvent(db.Model):
     """
-    Legacy/Raw history if needed.
+    Histórico Bruto/Legado se necessário.
     """
     __tablename__ = 'status_events'
     
@@ -290,7 +291,7 @@ class StatusEvent(db.Model):
     changed_at = db.Column(db.DateTime, nullable=False)
     changed_by = db.Column(db.String(100), nullable=True)
     
-    entity_type = db.Column(db.String(20)) # 'store' or 'step'
+    entity_type = db.Column(db.String(20)) # 'store' ou 'step'
 
     def __repr__(self):
         return f'<Event {self.clickup_task_id}: {self.old_status}->{self.new_status}>'
@@ -333,10 +334,10 @@ class MetricsSnapshotDaily(db.Model):
     mrr = db.Column(db.Float)              # Valor financeiro
     risk_score = db.Column(db.Float)       # 0-100
     
-    # Store Relationship
+    # Relacionamento Loja
     store = db.relationship('Store', backref='daily_snapshots')
     
-    # AI Analysis Fields
+    # Campos de Análise IA
     ai_risk_level = db.Column(db.String(20)) # CRITICAL, HIGH, MEDIUM, LOW
     ai_summary = db.Column(db.Text)
     ai_network_summary = db.Column(db.Text)
@@ -383,3 +384,163 @@ class ForecastAuditLog(db.Model):
     actor = db.Column(db.String(50), default='local_user')
     
     store = db.relationship('Store', backref='forecast_audits')
+
+# --- V3.0 Models (CRM Evolution) ---
+class IntegrationMetric(db.Model):
+    """
+    Métricas específicas do Módulo de Integração (V3).
+    Armazena estado atual e KPIs de cada loja em relação à integração.
+    """
+    __tablename__ = 'integration_metrics'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    snapshot_date = db.Column(db.Date, nullable=False, default=datetime.now) # Data do snapshot
+    
+    # SLA & Prazos
+    start_date = db.Column(db.DateTime, nullable=True) # Início real da integração
+    end_date = db.Column(db.DateTime, nullable=True) # Fim real da integração
+    sla_days = db.Column(db.Integer, default=0) # Dias corridos (end - start)
+    
+    # Qualidade (Pós-Go-Live)
+    post_go_live_bugs = db.Column(db.Integer, default=0) # Qtd falhas críticas nos primeiros 30 dias
+    churn_risk = db.Column(db.Boolean, default=False) # Se gerou risco de churn
+    
+    # Documentação
+    documentation_status = db.Column(db.String(20), default='PENDING') # PENDING, PARTIAL, DONE
+    
+    # Pontuação (Volume)
+    points = db.Column(db.Float, default=0.0) # 1.0 (Matriz) ou 0.7 (Filial)
+    
+    # Legado/Compatibilidade
+    lead_time_days = db.Column(db.Integer, default=0) 
+    ticket_count = db.Column(db.Integer, default=0)
+    has_blocking_issue = db.Column(db.Boolean, default=False)
+    last_blocker_reason = db.Column(db.String(255), nullable=True)
+    
+    updated_at = db.Column(db.DateTime, default=datetime.now)
+
+    store = db.relationship('Store', backref='integration_metrics')
+
+    # Removendo Constraint de Data única para permitir Múltiplas entradas se necessário,
+    # mas por enquanto vamos manter 1 para 1 por loja como "Estado Atual"
+    # Se precisarmos de histórico, usaremos snapshots diários.
+    
+    def __repr__(self):
+        return f'<IntegrationMetric {self.store_id} Pts={self.points}>'
+
+class PerformanceReview(db.Model):
+    """
+    Avaliação de Desempenho Mensal/Semestral (V3).
+    Suporta regras 40/40/20.
+    """
+    __tablename__ = 'performance_reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    cycle = db.Column(db.String(20), nullable=False) # e.g. '2024-02' or '2024-Q1'
+    
+    # Soft Skills (20%) - Input Manual do Gestor
+    soft_communication = db.Column(db.Float, default=0.0) # 0-100
+    soft_process = db.Column(db.Float, default=0.0) # 0-100
+    soft_responsibility = db.Column(db.Float, default=0.0) # 0-100
+    
+    # Hard Skills / Metas (80%) - Calculado ou Manual (se standby)
+    # Coletivo (40%)
+    score_collective = db.Column(db.Float, default=0.0) 
+    # Individual (40%)
+    score_individual = db.Column(db.Float, default=0.0)
+    
+    # Penalidades
+    churn_count = db.Column(db.Integer, default=0) # Bloqueia 50% do comportamental
+    
+    # Resultado Final
+    final_score = db.Column(db.Float, default=0.0)
+    bonus_eligible = db.Column(db.Boolean, default=False)
+    
+    updated_at = db.Column(db.DateTime, default=datetime.now)
+    reviewer_comment = db.Column(db.Text, nullable=True)
+
+    user = db.relationship('User', backref='reviews')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'cycle', name='uix_user_cycle_review'),
+    )
+    
+    def __repr__(self):
+        return f'<Review {self.user_id} {self.cycle}>'
+
+# --- AUTH MODELS ---
+
+# Tabela de Associação: Usuários <-> Papéis (Many-to-Many)
+user_roles = db.Table('user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    extend_existing=True
+)
+
+# Tabela de Associação: Papéis <-> Permissões (Many-to-Many)
+role_permissions = db.Table('role_permissions',
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id'), primary_key=True),
+    extend_existing=True
+)
+
+class Permission(db.Model):
+    __tablename__ = 'permissions'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False) # Ex: 'view_dashboard', 'manage_users'
+    description = db.Column(db.String(255), nullable=True)
+    module = db.Column(db.String(50), nullable=True) # Para agrupar no painel de admin (ex: 'INTEGRACAO', 'DASHBOARD')
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False) # Ex: 'Admin', 'Operador'
+    description = db.Column(db.String(255), nullable=True)
+    
+    # lazy='subquery' garante que ao carregar a role, ele traga as permissões numa tacada só
+    permissions = db.relationship('Permission', secondary=role_permissions, lazy='subquery',
+                                  backref=db.backref('roles', lazy=True))
+
+class User(db.Model):
+    __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    profile_picture = db.Column(db.Text, nullable=True) # Pode ser base64 ou URL
+    
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Campos MFA / 2FA (TOTP)
+    totp_secret = db.Column(db.String(32), nullable=True)
+    totp_enabled = db.Column(db.Boolean, default=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+
+    roles = db.relationship('Role', secondary=user_roles, lazy='subquery',
+                            backref=db.backref('users', lazy=True))
+
+    def has_permission(self, perm_name):
+        """Checa se o usuário tem uma permissão específica transitando pelas suas roles."""
+        for role in self.roles:
+            for perm in role.permissions:
+                if perm.name == perm_name:
+                    return True
+        return False
+        
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "profile_picture": self.profile_picture,
+            "is_active": self.is_active,
+            "totp_enabled": self.totp_enabled,
+            "roles": [r.name for r in self.roles]
+        }

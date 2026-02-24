@@ -6,7 +6,6 @@ from datetime import datetime
 from sqlalchemy import func, case
 
 # Blueprint principal mantido para health checks e estrutura futura
-# Blueprint principal mantido para health checks e estrutura futura
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 from app.routes_forecast import forecast_bp
@@ -19,7 +18,7 @@ def get_dashboard_data():
     from app.services.scoring_service import ScoringService
     
     # Filtro de Status (Query Param)
-    # Options: 'active' (default), 'concluded', 'all'
+    # Opções: 'active' (padrão), 'concluded', 'all'
     status_filter = request.args.get('status', 'active')
 
     # Carregar Pesos
@@ -35,11 +34,11 @@ def get_dashboard_data():
 
     all_stores = Store.query.all()
     
-    # Global Lists for KPI Calculation
+    # Listas Globais para Cálculo de KPI
     active_stores_global = [s for s in all_stores if not s.effective_finished_at]
     concluded_stores_global = [s for s in all_stores if s.effective_finished_at]
 
-    # Filtered Scope for Display (Risk, MRR Lists, etc)
+    # Escopo Filtrado para Exibição (Risco, Listas de MRR, etc)
     if status_filter == 'active':
         scope_stores = active_stores_global
     elif status_filter == 'concluded':
@@ -215,10 +214,30 @@ def get_stores():
         # Concluded = Pelo menos uma data de fim preenchida
         query = query.filter(or_(Store.manual_finished_at != None, Store.end_real_at != None, Store.finished_at != None))
         
-    stores = query.order_by(Store.created_at.desc()).all()
+    page = request.args.get('page', type=int)
+    limit = request.args.get('limit', type=int)
     
-    # Helpers para o Frontend saber quem é Matriz
-    matrices = [{'id': s.id, 'name': s.store_name} for s in stores if s.tipo_loja == 'Matriz']
+    if page and limit:
+        pagination = query.order_by(Store.created_at.desc()).paginate(page=page, per_page=limit, error_out=False)
+        stores = pagination.items
+        meta = {
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "page": page,
+            "limit": limit
+        }
+    else:
+        stores = query.order_by(Store.created_at.desc()).all()
+        meta = {
+            "total": len(stores),
+            "pages": 1,
+            "page": 1,
+            "limit": len(stores)
+        }
+    
+    # Helpers para o Frontend saber quem é Matriz (Busca independente para não quebrar dropdowns)
+    all_matrices = Store.query.filter_by(tipo_loja='Matriz').all()
+    matrices = [{'id': s.id, 'name': s.store_name} for s in all_matrices]
 
     
     results = []
@@ -294,18 +313,18 @@ def get_stores():
             )).days if s.effective_started_at else 0
         })
 
-    return jsonify({"stores": results, "matrices": matrices})
+    return jsonify({"stores": results, "matrices": matrices, "meta": meta})
 
 @api_bp.route('/stores/<int:id>', methods=['DELETE'])
 def delete_store(id):
     try:
         store = Store.query.get_or_404(id)
         
-        # 1. Manual Cleanup of Dependencies without Cascade
+        # 1. Limpeza Manual de Dependências sem Cascade
         from app.models import MetricsSnapshotDaily
         MetricsSnapshotDaily.query.filter_by(store_id=id).delete()
         
-        # 2. Delete Store (Cascades steps, logs, deep_sync, etc.)
+        # 2. Deletar Loja (Cascades steps, logs, deep_sync, etc.)
         db.session.delete(store)
         db.session.commit()
         
@@ -415,6 +434,15 @@ def sync_clickup():
     result = service.run_sync(force_full=full)
     return jsonify(result)
 
+@api_bp.route('/implantacao/sync', methods=['POST'])
+def sync_implantacao():
+    service = SyncService()
+    try:
+        result = service.run_implantacao_sync()
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api_bp.route('/stores/bulk-link', methods=['POST'])
 def bulk_link_stores():
     try:
@@ -507,7 +535,7 @@ def get_store_logs(id):
     try:
         from app.models import Store, StoreSyncLog, TaskStep
         
-        # 1. Fetch Physical Logs
+        # 1. Buscar Logs Físicos
         logs = StoreSyncLog.query.filter_by(store_id=id).all()
         formatted_logs = [{
             'id': f"log_{l.id}",
@@ -519,7 +547,7 @@ def get_store_logs(id):
             'source': l.source
         } for l in logs]
 
-        # 2. Fetch Store for Creation Date
+        # 2. Buscar Loja para Data de Criação
         store = Store.query.get(id)
         if store and store.created_at:
              formatted_logs.append({
@@ -532,10 +560,10 @@ def get_store_logs(id):
                 'source': 'system'
             })
 
-        # 3. Fetch Steps for Virtual Logs
+        # 3. Buscar Etapas para Logs Virtuais
         steps = TaskStep.query.filter_by(store_id=id).all()
         for s in steps:
-            # End Event Only (User Request: Start dates are often just creation dates)
+            # Apenas Evento de Fim (Solicitação do Usuário: Datas de início são frequentemente apenas datas de criação)
             if s.end_real_at:
                  formatted_logs.append({
                     'id': f"step_end_{s.id}",
@@ -547,10 +575,10 @@ def get_store_logs(id):
                     'source': 'clickup'
                 })
 
-        # Sort by Date Descending
+        # Ordenar por Data Decrescente
         formatted_logs.sort(key=lambda x: x['at_dt'], reverse=True)
         
-        # Remove helper object
+        # Remover objeto auxiliar
         for l in formatted_logs: del l['at_dt']
 
         return jsonify(formatted_logs), 200
@@ -581,24 +609,24 @@ def analyze_store(id):
     store = Store.query.get_or_404(id)
     force = request.args.get('force', 'false').lower() == 'true'
 
-    # 1. Check Cache
+    # 1. Verificar Cache
     if not force and store.ai_summary:
         try:
             cached_data = json.loads(store.ai_summary)
-            # Add metadata to say it's cached
+            # Adicionar metadados para dizer que é cache
             cached_data['_cached'] = True
             cached_data['_analyzed_at'] = store.ai_analyzed_at.strftime('%d/%m/%Y %H:%M') if store.ai_analyzed_at else None
             return jsonify(cached_data)
         except:
-             pass # Failed to parse cache, regenerate
+             pass # Falha ao analisar cache, regenerar
 
-    # 2. Fetch Comments from ClickUp
+    # 2. Buscar Comentários do ClickUp
     clickup = ClickUpService()
     comments_list = []
     if store.clickup_task_id:
         try:
             raw_comments = clickup.get_task_comments(store.clickup_task_id)
-            # Take last 15 comments to provide context
+            # Pegar os últimos 15 comentários para fornecer contexto
             for c in raw_comments[:15]: 
                 user = c.get('user', {}).get('username', 'Unknown')
                 text = c.get('comment_text', '')
@@ -648,13 +676,13 @@ def analyze_store(id):
     service = LLMService()
     result = service.analyze_store_risks(data_context)
     
-    # 3. Save to Cache
+    # 3. Salvar no Cache
     try:
         store.ai_summary = json.dumps(result)
         store.ai_analyzed_at = datetime.now()
         db.session.commit()
     except Exception as e:
-        print(f"Error saving AI cache: {e}")
+        print(f"Erro ao salvar cache de IA: {e}")
         db.session.rollback()
 
     result['_cached'] = False
@@ -708,7 +736,11 @@ def get_monthly_implantation_report():
     for month in sorted_months:
         stores = grouped[month]
         
+        # Ordenar as lojas por Data e depois por Nome
+        stores.sort(key=lambda x: (x['finished_at'], x['name']))
+        
         # Calcular Totais e Stats
+        # O usuário confirmou que cada loja (matriz ou filial) soma receita individual.
         total_mrr = sum(s['mrr'] for s in stores)
         total_stores = len(stores)
         total_points = sum(s['points'] for s in stores)

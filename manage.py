@@ -9,260 +9,254 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(BASE_DIR, 'backend')
 FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 
+# Caminho relativo para scripts de manutenção (v2.5)
+SCRIPTS_DIR = "scripts/maintenance"
+
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def print_header():
     clear_screen()
-    print("="*50)
-    print("   GERENCIADOR DO SISTEMA DE GESTÃO (CLICKUP)   ")
-    print("="*50)
+    print("="*60)
+    print("   🕹️  GERENCIADOR DO SISTEMA DE GESTÃO (CLICKUP v2.5)   ")
+    print("="*60)
     print("")
+
+def run_script_backend(script_name, docker=False, args=""):
+    """
+    Executa um script Python localizado em backend/scripts/maintenance/
+    """
+    target_path = f"{SCRIPTS_DIR}/{script_name}"
+    
+    if docker:
+        print(f"\n🐳 Executando no Docker: {script_name}...")
+        cmd = f'docker-compose exec -T backend python {target_path} {args}'
+    else:
+        print(f"\n🖥️  Executando Localmente: {script_name}...")
+        # Verificar se arquivo existe
+        full_path = os.path.join(BACKEND_DIR, 'scripts', 'maintenance', script_name)
+        if not os.path.exists(full_path):
+            print(f"❌ Erro: Script não encontrado em {full_path}")
+            input("ENTER para voltar...")
+            return
+
+        cmd = f'cd backend && python {target_path} {args}'
+
+    os.system(cmd)
+    input("\n✅ Pressione ENTER para voltar...")
+
+# ==============================================================================
+# MENUS
+# ==============================================================================
 
 def menu_principal():
     print_header()
-    print("1. [INICIAR] Rodar Localmente (Backend + Frontend)")
-    print("2. [INICIAR] Rodar via Docker (Docker Compose)")
-    print("3. [BANCO]   Opções de Banco de Dados")
-    print("4. [UTILS]   Limpar Cache / Instalar Dependências")
-    print("5. [DOCKER]  Reiniciar e Reconstruir (Deep Restart) 🔄")
-    print("0. [SAIR]    Sair")
+    print("   1. 🚀  INICIAR      - Rodar Sistema")
+    print("   2. 💾  DADOS        - Banco de Dados")
+    print("   3. 🔄  SYNC         - Sincronização")
+    print("   4. 🔎  DIAGNÓSTICO  - Verificadores")
+    print("   5. 🛠️   MANUTENÇÃO   - Limpeza")
+    print("   0. ❌  SAIR         - Sair")
     print("")
     return input("Escolha uma opção: ")
 
-# ... (existing functions)
-
-def restart_docker():
-    print("\n🔄 Iniciando RESTART COMPLETO do Docker...")
-    print("Isso vai garantir que todas as dependências novas sejam instaladas.")
-    print("1. Parando containers...")
-    os.system('docker-compose down')
-    
-    print("\n2. Subindo com REBUILD (pode demorar um pouco)...")
-    try:
-        os.system('docker-compose up -d --build')
-        print("\n✅ Sistema reiniciado com sucesso!")
-        print("Aguarde alguns segundos para os serviços ficarem saudáveis.")
-    except KeyboardInterrupt:
-        print("\n🛑 Operação interrompida.")
-    
-    input("\nPressione ENTER para voltar...")
-
-# ... (existing functions)
-
-
-
-def menu_banco():
+# --- 1. SITEMA ---
+def menu_iniciar():
     print_header()
-    print("--- OPÇÕES DE BANCO DE DADOS ---")
-    print("1. Fazer Backup (Dump) do Banco Docker")
-    print("2. Abrir Shell SQL (psql) no Docker")
-    print("3. [NOVO] Restaurar Banco de Dados (Importar .sql)")
-    print("4. Resetar Banco de Dados (reset_db_v2.py) [⚠️ APAGA TUDO]")
-    print("5. Atualizar Schema (patch_db.py) [✅ SEGURO - SEM PERDA DE DADOS]")
-    print("5. Gerenciar Migrações (Avançado)")
-    print("0. Voltar")
-    print("")
-    return input("Escolha uma opção: ")
+    print("--- 🚀 MENU INICIAR ---")
+    print("   1. Rodar Localmente (Backend + Frontend)")
+    print("   2. Rodar via Docker (docker-compose up)")
+    print("   3. Reiniciar Docker com Rebuild (Deep Restart)")
+    print("   4. Ver Logs do Docker (Backend)")
+    print("   0. Voltar")
+    return input("\nEscolha: ")
 
+def handle_iniciar():
+    while True:
+        op = menu_iniciar()
+        if op == '1': run_local()
+        elif op == '2': run_docker()
+        elif op == '3': restart_docker()
+        elif op == '4': os.system('docker-compose logs -f backend')
+        elif op == '0': break
 
+# --- 2. DADOS ---
+def menu_dados():
+    print_header()
+    print("--- 💾 MENU DADOS ---")
+    print("   1. Fazer Backup (Dump SQL)")
+    print("   2. Restaurar Banco (Importar SQL)")
+    print("   3. Abrir Shell SQL (psql)")
+    print("   4. Atualizar Schema (Safe Patch) [🛡️ Recomendado]")
+    print("   5. Resetar Banco (Apaga Tudo!) [⚠️ PERIGO]")
+    print("   0. Voltar")
+    return input("\nEscolha: ")
 
-def db_patch():
-    print("\n🛡️ Iniciando Atualização Segura do Schema...")
-    print("Isso vai adicionar as colunas novas sem apagar seus dados.")
-    
-    # Executa dentro do container backend
-    ret = os.system('docker-compose exec -T backend python patch_db.py')
-    
-    if ret == 0:
-        print("\n✅ Atualização concluída!")
-    else:
-        print("\n❌ Falha na atualização. Verifique se o Docker está rodando.")
-    input("\nPressione ENTER para voltar...")
+def handle_dados():
+    while True:
+        op = menu_dados()
+        if op == '1': db_backup()
+        elif op == '2': db_restore()
+        elif op == '3': db_shell()
+        elif op == '4': run_script_backend('patch_db.py', docker=True)
+        elif op == '5': run_script_backend('reset_db_v2.py', docker=True)
+        elif op == '0': break
 
+# --- 3. SYNC ---
+def menu_sync():
+    print_header()
+    print("--- 🔄 MENU SYNC chao---")
+    print("   1. Forçar Sync de uma Loja (Pelo ID)")
+    print("   2. Debugar Tarefa ClickUp (JSON Dump)")
+    print("   3. Debugar Status de Loja (Fluxo)")
+    print("   0. Voltar")
+    return input("\nEscolha: ")
 
+def handle_sync():
+    while True:
+        op = menu_sync()
+        if op == '1':
+            sid = input("Digite o ID da Loja (Banco): ")
+            run_script_backend('force_sync_store.py', docker=True, args=sid)
+        elif op == '2':
+            tid = input("Digite o ID da Tarefa ClickUp: ")
+            run_script_backend('debug_sync_task.py', docker=True, args=tid)
+        elif op == '3':
+            sid = input("Digite o ID da Loja: ")
+            run_script_backend('debug_store_status.py', docker=True, args=sid)
+        elif op == '0': break
+
+# --- 4. DIAGNÓSTICO ---
+def menu_diag():
+    print_header()
+    print("--- 🔎 MENU DIAGNÓSTICO ---")
+    print("   1. Verificar Integridade Geral (Verify V3)")
+    print("   2. Analisar Métricas e KPIs (Report CLI)")
+    print("   3. Checar Autenticação e Chaves")
+    print("   4. Inspecionar Etapas (Steps)")
+    print("   0. Voltar")
+    return input("\nEscolha: ")
+
+def handle_diag():
+    while True:
+        op = menu_diag()
+        if op == '1': run_script_backend('verify_v3.py', docker=True)
+        elif op == '2': run_script_backend('analyze_metrics_cli.py', docker=True)
+        elif op == '3': run_script_backend('check_auth.py', docker=True)
+        elif op == '4': run_script_backend('inspect_steps.py', docker=True)
+        elif op == '0': break
+
+# --- 5. MANUTENÇÃO ---
+def menu_manut():
+    print_header()
+    print("--- 🛠️ MENU MANUTENÇÃO ---")
+    print("   1. Instalar Dependências (Pip & Npm)")
+    print("   2. Corrigir Normalização de Dados")
+    print("   3. Limpar Arquivos Temporários (.pyc, logs)")
+    print("   0. Voltar")
+    return input("\nEscolha: ")
+
+def handle_manut():
+    while True:
+        op = menu_manut()
+        if op == '1': install_deps()
+        elif op == '2': run_script_backend('fix_normalization.py', docker=True)
+        elif op == '3': clean_temp_files()
+        elif op == '0': break
+
+# ==============================================================================
+# FUNÇÕES CORE
+# ==============================================================================
 
 def run_local():
     print("\n🚀 Iniciando Backend e Frontend em janelas separadas...")
-    
-    # Comando para Windows (abre em novas janelas)
     if os.name == 'nt':
-        # Backend
         subprocess.Popen(f'start cmd /k "cd backend && python run.py"', shell=True)
-        # Frontend
         subprocess.Popen(f'start cmd /k "cd frontend && npm run dev"', shell=True)
     else:
-        print("Este script está otimizado para Windows. Em Linux/Mac, use tmux ou abas manuais.")
-        
-    print("\n✅ Comandos enviados! Verifique as novas janelas.")
-    input("\nPressione ENTER para voltar...")
+        print("Em Linux/Mac, use tmux ou terminais manuais.")
+    print("\n✅ Comandos enviados!")
+    input("ENTER para voltar...")
 
 def run_docker():
     print("\n🐳 Iniciando Docker Compose...")
-    print("Use Ctrl+C para parar quando quiser.")
-    time.sleep(1)
     try:
         os.system('docker-compose up --build')
     except KeyboardInterrupt:
-        print("\n🛑 Parando Docker...")
-    
-    input("\nPressione ENTER para voltar...")
+        print("\n🛑 Parando...")
+    input("ENTER para voltar...")
+
+def restart_docker():
+    print("\n🔄 Iniciando RESTART COMPLETO...")
+    os.system('docker-compose down')
+    print("Reconstruindo...")
+    os.system('docker-compose up -d --build')
+    print("\n✅ Reiniciado.")
+    input("ENTER para voltar...")
 
 def db_backup():
-    print("\n💾 Iniciando Backup do Banco de Dados (Docker)...")
+    print("\n💾 Backup do Banco (Docker)...")
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"backup_metrics_db_{timestamp}.sql"
-    
-    # Executa pg_dump dentro do container 'db' (nome definido no docker-compose)
-    # Requer que o container esteja rodando
     cmd = f'docker-compose exec -T db pg_dump -U user -d metrics_db > {filename}'
-    
-    try:
-        ret = os.system(cmd)
-        if ret == 0:
-            print(f"✅ Backup criado com sucesso: {filename}")
-        else:
-            print("❌ Erro ao criar backup. Verifique se o Docker está rodando.")
-    except Exception as e:
-        print(f"Erro: {e}")
-        
-    input("\nPressione ENTER para voltar...")
-
-def db_shell():
-    print("\n🐚 Abrindo Shell SQL no Docker...")
-    os.system('docker-compose exec db psql -U user -d metrics_db')
+    if os.system(cmd) == 0:
+        print(f"✅ Backup criado: {filename}")
+    else:
+        print("❌ Erro. Docker está rodando?")
+    input("ENTER...")
 
 def db_restore():
-    print("\n📥 Iniciando Restauração do Banco de Dados...")
-    print("Isso vai importar dados de um arquivo .sql para o Docker.")
-    
-    default_file = "backup_completo.sql"
-    file_path = input(f"Digite o caminho do arquivo (padrão: {default_file}): ") or default_file
-    
-    if not os.path.exists(file_path):
-        print(f"❌ Arquivo não encontrado: {file_path}")
-        input("\nPressione ENTER para voltar...")
+    print("\n📥 Restore do Banco...")
+    f = input("Arquivo .sql (padrão: backup_completo.sql): ") or "backup_completo.sql"
+    if not os.path.exists(f):
+        print("❌ Arquivo não existe.")
+        input("ENTER...")
         return
-
-    print(f"\nImportando de '{file_path}'... (pode demorar)")
     
-    # Comando para Windows (PowerShell style piping) ou Linux
+    print("Importando...")
     if os.name == 'nt':
-        # cmd /c "type file | docker exec ..."
-        cmd = f'cmd /c "type {file_path} | docker-compose exec -T db psql -U user -d metrics_db"'
+        cmd = f'cmd /c "type {f} | docker-compose exec -T db psql -U user -d metrics_db"'
     else:
-        cmd = f'cat {file_path} | docker-compose exec -T -i db psql -U user -d metrics_db'
-
-    ret = os.system(cmd)
+        cmd = f'cat {f} | docker-compose exec -T -i db psql -U user -d metrics_db'
     
-    if ret == 0:
-        print("\n✅ Restauração concluída com sucesso!")
-    else:
-        print("\n❌ Erro na restauração.")
-    
-    input("\nPressione ENTER para voltar...")
+    os.system(cmd)
+    input("✅ Fim. ENTER...")
 
-
-def db_reset():
-    print("\n⚠️  ATENÇÃO: ISSO VAI APAGAR E RECRIAR AS TABELAS! ⚠️")
-    confirm = input("Tem certeza? Digite 'SIM' para confirmar: ")
-    if confirm == 'SIM':
-        print("Resetando banco (dentro do container backend)...")
-        # Executa o script DENTRO do container para garantir acesso e dependências
-        # O flag -T desabilita TTY para evitar erros em scripts não interativos
-        ret = os.system('docker-compose exec -T backend python reset_db_v2.py')
-        
-        if ret == 0:
-            print("\n✅ Reset concluído com sucesso!")
-        else:
-            print("\n❌ Falha no reset. Verifique se o Docker está rodando (Opção 2).")
-    else:
-        print("Operação cancelada.")
-    input("\nPressione ENTER para voltar...")
-
-def db_patch():
-    print("\n🛡️ Iniciando Atualização Segura do Schema...")
-    print("Isso vai adicionar as colunas novas sem apagar seus dados.")
-    
-    # Executa dentro do container backend
-    ret = os.system('docker-compose exec -T backend python patch_db.py')
-    
-    if ret == 0:
-        print("\n✅ Atualização concluída!")
-    else:
-        print("\n❌ Falha na atualização. Verifique se o Docker está rodando.")
-    input("\nPressione ENTER para voltar...")
-
-def menu_migracoes():
-    print_header()
-    print("--- OPÇÕES DE MIGRAÇÃO (AVANÇADO) ---")
-    print("Use isso para alterações complexas (renomear, mudar tipos).")
-    print("1. Criar Nova Migração (flask db migrate)")
-    print("2. Aplicar Migrações Pendentes (flask db upgrade)")
-    print("0. Voltar")
-    print("")
-    return input("Escolha uma opção: ")
-
-def db_migrate():
-    print("\n📝 Criando script de migração...")
-    msg = input("Digite uma mensagem para a migração (ex: adiciona_coluna_vendas): ")
-    # Executa dentro do container backend
-    os.system(f'docker-compose exec -T backend flask db migrate -m "{msg}"')
-    input("\nPressione ENTER para voltar...")
-
-def db_upgrade():
-    print("\n🚀 Aplicando migrações...")
-    os.system('docker-compose exec -T backend flask db upgrade')
-    input("\nPressione ENTER para voltar...")
+def db_shell():
+    os.system('docker-compose exec db psql -U user -d metrics_db')
 
 def install_deps():
-    print("\n📦 Instalando Dependências...")
-    print("1. Backend (pip)")
+    print("\n📦 Backend (Pip)...")
     os.system('cd backend && pip install -r requirements.txt')
-    print("\n2. Frontend (npm)")
+    print("\n📦 Frontend (Npm)...")
     os.system('cd frontend && npm install')
-    print("\n✅ Dependências atualizadas.")
-    input("\nPressione ENTER para voltar...")
+    print("\n✅ Feito.")
+    input("ENTER...")
+
+def clean_temp_files():
+    print("\n🧹 Limpando...")
+    # Windows commands
+    if os.name == 'nt':
+        os.system('del /S *.pyc 2>nul')
+        os.system('del /S *.log 2>nul')
+        os.system('rmdir /S /Q backend\\__pycache__ 2>nul')
+    else:
+        os.system('find . -name "*.pyc" -delete')
+        os.system('find . -name "__pycache__" -delete')
+    print("✅ Limpeza concluída.")
+    input("ENTER...")
 
 # --- Loop Principal ---
 if __name__ == "__main__":
     while True:
         choice = menu_principal()
-        
-        if choice == '1':
-            run_local()
-        elif choice == '2':
-            run_docker()
-        elif choice == '3':
-            while True:
-                db_choice = menu_banco()
-                if db_choice == '1':
-                    db_backup()
-                elif db_choice == '2':
-                    db_shell()
-                elif db_choice == '3':
-                    db_restore()
-                elif db_choice == '4':
-                    db_reset()
-                elif db_choice == '5':
-                    db_patch()
-                elif db_choice == '6':
-                    while True:
-                        mig_choice = menu_migracoes()
-                        if mig_choice == '1':
-                            db_migrate()
-                        elif mig_choice == '2':
-                            db_upgrade()
-                        elif mig_choice == '0':
-                            break
-                elif db_choice == '0':
-                    break
-        elif choice == '4':
-            install_deps()
-        elif choice == '5':
-            restart_docker()
+        if choice == '1': handle_iniciar()
+        elif choice == '2': handle_dados()
+        elif choice == '3': handle_sync()
+        elif choice == '4': handle_diag()
+        elif choice == '5': handle_manut()
         elif choice == '0':
-            print("Saindo... Até mais! 👋")
+            print("Saindo... 👋")
             break
         else:
             print("Opção inválida!")

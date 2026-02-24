@@ -84,12 +84,13 @@ class MetricsService:
         current_assignee = None
         if assignees:
             current_assignee = assignees[0]['username']
-            store.implantador = current_assignee
-            store.implantador_atual = current_assignee
             
-            # Simple logic for original: if empty, set as current
-            if not store.implantador_original:
-                store.implantador_original = current_assignee
+        store.implantador = current_assignee
+        store.implantador_atual = current_assignee
+        
+        # Simple logic for original: if empty, set as current
+        if not store.implantador_original and current_assignee:
+            store.implantador_original = current_assignee
         
         if not is_new:
             self.log_change(store, 'implantador', old_implantador, current_assignee, timestamp=updated_at_ts)
