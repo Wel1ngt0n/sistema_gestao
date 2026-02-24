@@ -343,7 +343,7 @@ class AnalyticsService:
             elif s.status_norm == 'DONE' or s.manual_finished_at:
                 # Filtrar: só considerar concluídas a partir de 2026
                 end_date = s.manual_finished_at or s.finished_at
-                if end_date and end_date < DATA_CUTOFF:
+                if not end_date or end_date < DATA_CUTOFF:
                     continue
                 ranking[imp]['done'] += 1
                 ranking[imp]['mrr_done'] += (s.valor_mensalidade or 0)
@@ -491,7 +491,7 @@ class AnalyticsService:
             # Filtrar: só considerar concluídas a partir de 2026
             if is_done:
                 end_check = s.manual_finished_at or s.finished_at
-                if end_check and end_check < DATA_CUTOFF:
+                if not end_check or end_check < DATA_CUTOFF:
                     continue
             
             # Motivos individuais
