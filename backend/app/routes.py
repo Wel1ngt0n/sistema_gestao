@@ -36,8 +36,8 @@ def get_dashboard_data():
     
     # Listas Globais para Cálculo de KPI
     active_stores_global = [s for s in all_stores if not s.effective_finished_at]
-    # Filtrar entregas: somente a partir de 2025
-    concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2025]
+    # Filtrar entregas: somente a partir de 2026
+    concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
 
     # Escopo Filtrado para Exibição (Risco, Listas de MRR, etc)
     if status_filter == 'active':
@@ -696,9 +696,9 @@ def get_monthly_implantation_report():
     from collections import defaultdict
     import statistics
     
-    # Busca todas as lojas concluídas (effective_finished_at is not None)
+    # Busca lojas concluídas a partir de 2026
     all_stores = Store.query.all()
-    finished_stores = [s for s in all_stores if s.effective_finished_at]
+    finished_stores = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
     
     # Agrupar por Mês (YYYY-MM)
     grouped = defaultdict(list)
