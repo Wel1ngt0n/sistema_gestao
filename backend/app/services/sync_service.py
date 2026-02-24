@@ -57,7 +57,7 @@ class SyncService:
                 self.logger.info("Busca COMPLETA (Primeiro Sincronismo)")
 
             # 1. Buscar Lojas (Incremental)
-            parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=force_full)
+            parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts)
             self.logger.info(f"Lojas modificadas encontradas: {len(parent_tasks)}")
             
             # 2. Buscar Etapas
