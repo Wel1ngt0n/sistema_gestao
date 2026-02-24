@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, date
 import collections
 from app.services.scoring_service import ScoringService
 
+# Filtro global: só considerar lojas concluídas a partir de 2026
+DATA_CUTOFF = datetime(2026, 1, 1)
+
 class AnalyticsService:
     @staticmethod
     def get_kpi_cards(start_date=None, end_date=None, implantador=None):
@@ -19,9 +22,15 @@ class AnalyticsService:
             # Para throughput, usamos finished_at
             pass 
 
-        # 1. Throughput (Concluídas no período)
+        # 1. Throughput (Concluídas no período, a partir de 2026)
         # Lógica: status_norm = 'DONE' OU manual_finished_at preenchido
-        throughput_query = query.filter(or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)))
+        throughput_query = query.filter(
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= DATA_CUTOFF),
+                and_(Store.manual_finished_at.is_(None), Store.finished_at >= DATA_CUTOFF)
+            )
+        )
         if start_date:
             throughput_query = throughput_query.filter(
                 or_(
@@ -332,6 +341,10 @@ class AnalyticsService:
                 ranking[imp]['wip'] += 1
             
             elif s.status_norm == 'DONE' or s.manual_finished_at:
+                # Filtrar: só considerar concluídas a partir de 2026
+                end_date = s.manual_finished_at or s.finished_at
+                if end_date and end_date < DATA_CUTOFF:
+                    continue
                 ranking[imp]['done'] += 1
                 ranking[imp]['mrr_done'] += (s.valor_mensalidade or 0)
                 ranking[imp]['points'] += weight
@@ -474,6 +487,12 @@ class AnalyticsService:
         for s in stores:
             is_done = s.status_norm == 'DONE' or s.manual_finished_at is not None
             weight = w_matriz if s.tipo_loja == 'Matriz' else w_filial
+            
+            # Filtrar: só considerar concluídas a partir de 2026
+            if is_done:
+                end_check = s.manual_finished_at or s.finished_at
+                if end_check and end_check < DATA_CUTOFF:
+                    continue
             
             # Motivos individuais
             reasons = []
@@ -772,10 +791,14 @@ class AnalyticsService:
             forecast_map[key] = {'realized': 0.0, 'projected': 0.0}
             curr += relativedelta(months=1)
             
-        # 3. Preencher REALIZADO (Histórico)
+        # 3. Preencher REALIZADO (Histórico, a partir de 2026)
         # Buscar todas lojas concluídas no range
         done_stores = db.session.query(Store).filter(
-            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None))
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= DATA_CUTOFF),
+                and_(Store.manual_finished_at.is_(None), Store.finished_at >= DATA_CUTOFF)
+            )
         ).all()
         
         for s in done_stores:

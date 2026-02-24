@@ -212,8 +212,18 @@ def get_stores():
         # Active = Valendo None em todas as datas de fim
         query = query.filter(Store.manual_finished_at == None, Store.end_real_at == None, Store.finished_at == None)
     elif status_filter == 'concluded':
-        # Concluded = Pelo menos uma data de fim preenchida
-        query = query.filter(or_(Store.manual_finished_at != None, Store.end_real_at != None, Store.finished_at != None))
+        # Concluded = Pelo menos uma data de fim preenchida, somente 2026+
+        from datetime import date as dt_date
+        cutoff = datetime(2026, 1, 1)
+        query = query.filter(
+            or_(Store.manual_finished_at != None, Store.end_real_at != None, Store.finished_at != None)
+        ).filter(
+            or_(
+                and_(Store.manual_finished_at != None, Store.manual_finished_at >= cutoff),
+                and_(Store.manual_finished_at == None, Store.finished_at != None, Store.finished_at >= cutoff),
+                and_(Store.manual_finished_at == None, Store.finished_at == None, Store.end_real_at != None, Store.end_real_at >= cutoff)
+            )
+        )
         
     page = request.args.get('page', type=int)
     limit = request.args.get('limit', type=int)
