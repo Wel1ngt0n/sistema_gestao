@@ -1,14 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { api } from '../../services/api'
 import {
     LayoutList,
-    Target,
-    Calendar,
-    Bug,
-    FileText,
     RefreshCw,
     LayoutGrid,
     Table,
+    Search,
 } from 'lucide-react'
 import { IntegrationData } from '../../components/monitor/types'
 import IntegrationStoreModal from '../../components/monitor/IntegrationStoreModal'
@@ -25,11 +22,13 @@ interface KPIs {
 
 export default function IntegrationMonitor() {
     const [data, setData] = useState<IntegrationData[]>([])
-    const [kpis, setKpis] = useState<KPIs | null>(null)
+    const [, setKpis] = useState<KPIs | null>(null)
     const [loading, setLoading] = useState(true)
 
     const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table')
     const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded'>('active')
+    const [globalFilter, setGlobalFilter] = useState('')
     const [editingItem, setEditingItem] = useState<IntegrationData | null>(null)
     const [deepSyncing, setDeepSyncing] = useState(false)
 
@@ -41,8 +40,6 @@ export default function IntegrationMonitor() {
         try {
             if (!silent) setLoading(true)
             const response = await api.get('/api/integration/dashboard')
-            // Add 'id' mapping dynamically if the backend uses store_id differently, 
-            // but the api already maps id -> store.id. 
             setData(response.data.integrations)
             setKpis(response.data.kpis)
         } catch (error) {
@@ -57,7 +54,7 @@ export default function IntegrationMonitor() {
         try {
             await api.post(`/api/deep-sync/store/${storeId}`)
             alert("Deep Sync finalizado com sucesso! Histórico atualizado.")
-            await fetchData(true) // Soft refresh
+            await fetchData(true)
         } catch (error) {
             alert("Erro ao rodar Deep Sync.")
         } finally {
@@ -65,116 +62,181 @@ export default function IntegrationMonitor() {
         }
     }
 
-    const KPICard = ({ title, value, goal, suffix = '', icon: Icon, color }: any) => {
-        const isGood = value >= goal;
-        return (
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm flex items-start justify-between relative overflow-hidden group">
-                <div className={`absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
-                    <Icon size={64} />
-                </div>
-                <div>
-                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">{title}</h3>
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-zinc-900 dark:text-white">{value}{suffix}</span>
-                        <span className="text-xs text-zinc-400">/ {goal}{suffix}</span>
-                    </div>
-                </div>
-                <div className={`mt-auto px-2 py-1 rounded-lg text-xs font-bold z-10 ${isGood ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                    {isGood ? 'META BATIDA' : 'ATENÇÃO'}
-                </div>
-            </div>
-        )
-    }
+    // Filtered data
+    const filteredData = useMemo(() => {
+        let result = data
+
+        // Status filter
+        if (filterStatus === 'active') {
+            result = result.filter(d => d.status !== 'CONCLUÍDO')
+        } else {
+            result = result.filter(d => d.status === 'CONCLUÍDO')
+        }
+
+        // Assignee filter
+        if (assigneeFilter !== 'all') {
+            result = result.filter(d => d.assignee === assigneeFilter)
+        }
+
+        // Global search
+        if (globalFilter.trim()) {
+            const search = globalFilter.toLowerCase()
+            result = result.filter(d =>
+                d.name?.toLowerCase().includes(search) ||
+                d.assignee?.toLowerCase().includes(search) ||
+                d.rede?.toLowerCase().includes(search) ||
+                d.current_status?.toLowerCase().includes(search)
+            )
+        }
+
+        return result
+    }, [data, filterStatus, assigneeFilter, globalFilter])
+
+    // Stats
+    const stats = useMemo(() => {
+        const active = data.filter(d => d.status !== 'CONCLUÍDO')
+        const concluded = data.filter(d => d.status === 'CONCLUÍDO')
+        const overSla = active.filter(d => d.sla_days > 60)
+        return {
+            total: active.length,
+            concluded: concluded.length,
+            overSla: overSla.length,
+        }
+    }, [data])
 
     return (
-        <div className="max-w-[1600px] w-full mx-auto space-y-6 animate-in fade-in duration-700">
-            {/* Header & Controls */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-4 md:p-0">
-                <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                        <LayoutList className="w-6 h-6 text-orange-500" />
-                        Trilha de Integração
-                    </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-                        Monitor de Progresso, Qualidade e SLA dos Integradores
-                    </p>
-                </div>
+        <div className="flex flex-col h-full animate-in fade-in duration-500">
+            {/* Header - Matching implantation style */}
+            <header className="flex-none bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 z-30 sticky top-0 transition-all duration-300">
+                <div className="px-6 py-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    {/* View Toggle */}
-                    <div className="flex p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200 dark:border-zinc-700/50">
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'}`}
-                        >
-                            <Table size={16} /> <span className="hidden sm:inline">Tabela</span>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'}`}
-                        >
-                            <LayoutGrid size={16} /> <span className="hidden sm:inline">Kanban</span>
-                        </button>
+                        {/* Left Side: Title & Stats */}
+                        <div className="flex items-center gap-6">
+                            {/* Title Block */}
+                            <div className="flex items-center gap-3 min-w-fit">
+                                <div className="p-2.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg shadow-orange-500/20">
+                                    <LayoutList className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                                        Monitor de Integração
+                                    </h1>
+                                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                        Visão Operacional
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="hidden md:block w-px h-10 bg-zinc-200 dark:bg-zinc-800"></div>
+
+                            {/* Inline Stats */}
+                            <div className="hidden md:flex items-center gap-3">
+                                <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Ativas</span>
+                                    <span className="text-lg font-bold text-zinc-700 dark:text-zinc-200 leading-none">{stats.total}</span>
+                                </div>
+                                <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors border border-transparent hover:border-emerald-100 dark:hover:border-emerald-900/20">
+                                    <span className="text-[10px] uppercase font-bold text-emerald-500/80 tracking-wider">Concluídas</span>
+                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-none">{stats.concluded}</span>
+                                </div>
+                                <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors border border-transparent hover:border-rose-100 dark:hover:border-rose-900/20">
+                                    <span className="text-[10px] uppercase font-bold text-rose-500/80 tracking-wider">&gt;60 Dias</span>
+                                    <span className="text-lg font-bold text-rose-600 dark:text-rose-400 leading-none">{stats.overSla}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Side: Controls */}
+                        <div className="flex items-center gap-3 self-start md:self-center w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+
+                            {/* Search Bar */}
+                            <div className="relative group w-48 transition-all focus-within:w-64">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-4 w-4 text-zinc-400 group-focus-within:text-orange-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar..."
+                                    value={globalFilter}
+                                    onChange={(e) => setGlobalFilter(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all shadow-sm"
+                                />
+                            </div>
+
+                            {/* Status Toggle */}
+                            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl gap-1 border border-zinc-200 dark:border-zinc-700/50">
+                                <button
+                                    onClick={() => setFilterStatus('active')}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterStatus === 'active'
+                                        ? 'bg-white dark:bg-zinc-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600'
+                                        : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                                        }`}
+                                >
+                                    Ativas
+                                </button>
+                                <button
+                                    onClick={() => setFilterStatus('concluded')}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterStatus === 'concluded'
+                                        ? 'bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600'
+                                        : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                                        }`}
+                                >
+                                    Concluídas
+                                </button>
+                            </div>
+
+                            {/* Integrador Filter */}
+                            <select
+                                value={assigneeFilter}
+                                onChange={(e) => setAssigneeFilter(e.target.value)}
+                                className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 px-3 py-2 rounded-xl text-xs font-bold focus:ring-2 focus:ring-orange-500 focus:outline-none shadow-sm hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                            >
+                                <option value="all">Todos</option>
+                                {Array.from(new Set(data.map(d => d.assignee as string).filter(Boolean))).sort().map(assignee => (
+                                    <option key={assignee} value={assignee}>{assignee}</option>
+                                ))}
+                            </select>
+
+                            {/* Refresh */}
+                            <button
+                                onClick={() => fetchData()}
+                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                title="Atualizar"
+                            >
+                                <RefreshCw size={16} />
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Filter Integrador */}
-                    <select
-                        value={assigneeFilter}
-                        onChange={(e) => setAssigneeFilter(e.target.value)}
-                        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-2 rounded-xl text-sm font-medium focus:ring-2 focus:ring-orange-500 focus:outline-none shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
-                    >
-                        <option value="all">Todos os Integradores</option>
-                        {Array.from(new Set(data.map(d => d.assignee as string).filter(Boolean))).sort().map(assignee => (
-                            <option key={assignee} value={assignee}>{assignee}</option>
+                    {/* View Switcher Tabs */}
+                    <div className="mt-4 flex gap-6 border-b border-transparent">
+                        {[
+                            { id: 'table', icon: Table, label: 'Tabela' },
+                            { id: 'kanban', icon: LayoutGrid, label: 'Kanban' },
+                        ].map((view) => (
+                            <button
+                                key={view.id}
+                                onClick={() => setViewMode(view.id as any)}
+                                className={`pb-3 text-sm font-medium transition-all relative flex items-center gap-2 ${viewMode === view.id
+                                    ? 'text-orange-600 dark:text-orange-500'
+                                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+                                    }`}
+                            >
+                                <view.icon size={16} />
+                                {view.label}
+                                {viewMode === view.id && (
+                                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-500 rounded-t-full"></span>
+                                )}
+                            </button>
                         ))}
-                    </select>
-
-                    {/* Sync Actions */}
-                    <button onClick={() => fetchData()} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors tooltip" title="Atualizar Dados">
-                        <RefreshCw size={18} />
-                    </button>
+                    </div>
                 </div>
-            </div>
+            </header>
 
-            {/* KPI Grid */}
-            {kpis && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <KPICard
-                        title="Volume (Pontos)"
-                        value={kpis.volume_points}
-                        goal={kpis.volume_goal}
-                        icon={Target}
-                        color="text-blue-500"
-                    />
-                    <KPICard
-                        title="SLA (No Prazo)"
-                        value={kpis.sla_pct}
-                        goal={90}
-                        suffix="%"
-                        icon={Calendar}
-                        color="text-purple-500"
-                    />
-                    <KPICard
-                        title="Qualidade (Sem Bugs)"
-                        value={kpis.quality_pct}
-                        goal={90}
-                        suffix="%"
-                        icon={Bug}
-                        color="text-emerald-500"
-                    />
-                    <KPICard
-                        title="Documentação"
-                        value={kpis.doc_pct}
-                        goal={100}
-                        suffix="%"
-                        icon={FileText}
-                        color="text-amber-500"
-                    />
-                </div>
-            )}
-
-            {/* Active View Container */}
-            <div className="w-full">
+            {/* Content */}
+            <div className="flex-1 p-6 overflow-y-auto">
                 {loading ? (
                     <div className="flex flex-col gap-4">
                         <div className="h-64 bg-zinc-100 dark:bg-zinc-800 rounded-2xl animate-pulse"></div>
@@ -183,7 +245,7 @@ export default function IntegrationMonitor() {
                     <>
                         {viewMode === 'table' && (
                             <IntegrationTableView
-                                data={assigneeFilter === 'all' ? data : data.filter(d => d.assignee === assigneeFilter)}
+                                data={filteredData}
                                 onEdit={(item) => setEditingItem(item)}
                                 onRefetch={() => fetchData()}
                             />
@@ -191,7 +253,7 @@ export default function IntegrationMonitor() {
                         {viewMode === 'kanban' && (
                             <div className="overflow-x-auto pb-4 custom-scrollbar">
                                 <IntegrationKanbanView
-                                    data={assigneeFilter === 'all' ? data : data.filter(d => d.assignee === assigneeFilter)}
+                                    data={filteredData}
                                     onEdit={(item) => setEditingItem(item)}
                                 />
                             </div>
@@ -200,7 +262,7 @@ export default function IntegrationMonitor() {
                 )}
             </div>
 
-            {/* Integration Edit Modal */}
+            {/* Modal */}
             <IntegrationStoreModal
                 isOpen={!!editingItem}
                 onClose={() => setEditingItem(null)}

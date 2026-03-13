@@ -43,6 +43,19 @@ def get_trends():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@analytics_bp.route('/api/analytics/annual-trends', methods=['GET'])
+def get_annual_trends():
+    try:
+        year = request.args.get('year')
+        if year:
+            year = int(year)
+        else:
+            year = datetime.now().year
+        data = AnalyticsService.get_annual_trends(year)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @analytics_bp.route('/api/analytics/performance', methods=['GET'])
 def get_performance():
     try:

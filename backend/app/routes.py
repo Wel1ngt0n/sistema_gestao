@@ -93,18 +93,30 @@ def get_dashboard_data():
     current_year = datetime.now().year
     mrr_concluidas_ano = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at.year == current_year and s.valor_mensalidade)
 
-    # 2. Rankings (Implantador) - Apenas lojas ativas (WIP)
+    # 2. Rankings (Implantador) - Apenas implantadores com lojas ativas
+    # Identificar implantadores que têm pelo menos 1 loja ativa
+    active_implantadores = set()
+    for s in active_stores_global:
+        if s.implantador:
+            active_implantadores.add(s.implantador)
+
     kpi_by_imp = {}
     for s in active_stores_global:
-        imp = s.implantador or 'N/A'
+        imp = s.implantador
+        if not imp or imp not in active_implantadores: continue
         if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
         
         if not s.effective_finished_at:
              kpi_by_imp[imp]["wip"] += 1
-        else:
-             kpi_by_imp[imp]["done"] += 1
-             if s.dias_totais_implantacao <= (s.tempo_contrato or 90):
-                kpi_by_imp[imp]["on_time"] += 1
+
+    # Contabilizar entregas 2026+ para implantadores ativos
+    for s in concluded_stores_global:
+        imp = s.implantador
+        if not imp or imp not in active_implantadores: continue
+        if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
+        kpi_by_imp[imp]["done"] += 1
+        if s.dias_totais_implantacao <= (s.tempo_contrato or 90):
+            kpi_by_imp[imp]["on_time"] += 1
             
     rankings = []
     for imp, data in kpi_by_imp.items():
@@ -204,7 +216,7 @@ def get_dashboard_data():
 
 @api_bp.route('/stores', methods=['GET'])
 def get_stores():
-    from sqlalchemy import or_
+    from sqlalchemy import or_, and_
     status_filter = request.args.get('status', 'active') # Default active
     
     query = Store.query
@@ -705,53 +717,103 @@ def analyze_store(id):
 def get_monthly_implantation_report():
     from collections import defaultdict
     import statistics
+    import math
     
-    # Busca lojas concluídas a partir de 2026
+    # ── Configurações de meta (SystemConfig) ──
+    mrr_target = 180000.0
+    stores_target = 180
+    try:
+        cfg_mrr = SystemConfig.query.filter_by(key='annual_mrr_target').first()
+        cfg_stores = SystemConfig.query.filter_by(key='annual_stores_target').first()
+        if cfg_mrr: mrr_target = float(cfg_mrr.value)
+        if cfg_stores: stores_target = int(cfg_stores.value)
+    except: pass
+    
+    w_matriz, w_filial = 1.0, 0.7
+    SLA_TARGET = 90
+    
+    # ── Buscar lojas concluídas em 2026+ ──
     all_stores = Store.query.all()
     finished_stores = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
     
-    # Agrupar por Mês (YYYY-MM)
+    # ── Agrupar por mês ──
     grouped = defaultdict(list)
-    
-    # Configurações de Peso (para cálculo de pontos)
-    # Reutilizando lógica do dashboard
-    # Matriz = 1.0, Filial = 0.7
-    w_matriz = 1.0
-    w_filial = 0.7
-    
     for s in finished_stores:
         key = s.effective_finished_at.strftime('%Y-%m')
-        
-        # Calcular Pontos
         points = w_matriz if s.tipo_loja == 'Matriz' else w_filial
-        
-        # Calcular Tempo (dias)
         days = s.dias_totais_implantacao or 0
+        on_time = 1 if days <= SLA_TARGET else 0
         
         grouped[key].append({
             "id": s.id,
             "name": s.store_name,
             "implantador": s.implantador or "N/A",
+            "rede": s.rede or "Sem Rede",
             "finished_at": s.effective_finished_at.strftime('%Y-%m-%d'),
             "mrr": s.valor_mensalidade or 0.0,
             "days": days,
             "points": points,
-            "tipo": s.tipo_loja
+            "tipo": s.tipo_loja or "Filial",
+            "on_time": on_time
         })
-        
-    # Ordenar chaves (meses) decrescente
+    
     sorted_months = sorted(grouped.keys(), reverse=True)
     
-    results = []
+    # ── YTD Acumulados ──
+    ytd_mrr = sum(s['mrr'] for month in grouped.values() for s in month)
+    ytd_stores = sum(len(month) for month in grouped.values())
+    ytd_points = sum(s['points'] for month in grouped.values() for s in month)
+    months_elapsed = len(sorted_months)  # meses com entregas
     
-    for month in sorted_months:
-        stores = grouped[month]
+    # Projeção: baseada no ritmo médio mensal
+    avg_mrr_per_month = ytd_mrr / max(months_elapsed, 1)
+    avg_stores_per_month = ytd_stores / max(months_elapsed, 1)
+    
+    mrr_remaining = max(0, mrr_target - ytd_mrr)
+    stores_remaining = max(0, stores_target - ytd_stores)
+    
+    months_to_mrr_goal = math.ceil(mrr_remaining / avg_mrr_per_month) if avg_mrr_per_month > 0 else 0
+    months_to_stores_goal = math.ceil(stores_remaining / avg_stores_per_month) if avg_stores_per_month > 0 else 0
+    
+    # Calcular mês estimado de atingimento
+    from datetime import datetime
+    from dateutil.relativedelta import relativedelta
+    now = datetime.now()
+    est_mrr_date = (now + relativedelta(months=months_to_mrr_goal)).strftime('%Y-%m') if months_to_mrr_goal > 0 else now.strftime('%Y-%m')
+    est_stores_date = (now + relativedelta(months=months_to_stores_goal)).strftime('%Y-%m') if months_to_stores_goal > 0 else now.strftime('%Y-%m')
+    
+    # ── WIP Overview (Board Stages) ──
+    wip_stores = [s for s in all_stores if s.status_norm == 'IN_PROGRESS' and not s.manual_finished_at]
+    wip_count = len(wip_stores)
+    mrr_backlog = sum(s.valor_mensalidade or 0 for s in wip_stores)
+    
+    quase_entregue_keywords = ["treinamento", "app", "homologação", "homologacao", "valida", "final", "publica"]
+    mrr_quase_entregue = 0.0
+    mrr_em_risco = 0.0
+    
+    # Board stages from store status
+    board_stages = defaultdict(int)
+    for s in wip_stores:
+        stage_name = s.status or 'Sem Status'
+        board_stages[stage_name] += 1
         
-        # Ordenar as lojas por Data e depois por Nome
+        val = s.valor_mensalidade or 0.0
+        stage_lower = stage_name.lower()
+        if any(k in stage_lower for k in quase_entregue_keywords):
+            mrr_quase_entregue += val
+        else:
+            mrr_em_risco += val
+    
+    board_stages_list = [{"stage": k, "count": v} for k, v in sorted(board_stages.items(), key=lambda x: -x[1])]
+    
+    # ── Construir dados por mês ──
+    results = []
+    prev_month_data = None
+    
+    for month in reversed(sorted_months):  # chronological for variation calc
+        stores = grouped[month]
         stores.sort(key=lambda x: (x['finished_at'], x['name']))
         
-        # Calcular Totais e Stats
-        # O usuário confirmou que cada loja (matriz ou filial) soma receita individual.
         total_mrr = sum(s['mrr'] for s in stores)
         total_stores = len(stores)
         total_points = sum(s['points'] for s in stores)
@@ -759,6 +821,104 @@ def get_monthly_implantation_report():
         days_list = [s['days'] for s in stores]
         avg_days = statistics.mean(days_list) if days_list else 0
         median_days = statistics.median(days_list) if days_list else 0
+        ticket_medio = round(total_mrr / max(total_stores, 1), 2)
+        
+        on_time_count = sum(1 for s in stores if s['on_time'])
+        on_time_pct = round((on_time_count / max(total_stores, 1)) * 100, 1)
+        
+        # ── Breakdown por Tipo ──
+        matriz_stores = [s for s in stores if s['tipo'] == 'Matriz']
+        filial_stores = [s for s in stores if s['tipo'] != 'Matriz']
+        
+        type_breakdown = {
+            "matriz_count": len(matriz_stores),
+            "filial_count": len(filial_stores),
+            "matriz_mrr": round(sum(s['mrr'] for s in matriz_stores), 2),
+            "filial_mrr": round(sum(s['mrr'] for s in filial_stores), 2),
+            "matriz_avg_days": round(statistics.mean([s['days'] for s in matriz_stores]), 1) if matriz_stores else 0,
+            "filial_avg_days": round(statistics.mean([s['days'] for s in filial_stores]), 1) if filial_stores else 0,
+        }
+        
+        # ── Histograma de SLAs ──
+        sla_histogram = {
+            "super_rapidas": 0,
+            "padrao": 0,
+            "alerta": 0,
+            "atrasadas": 0
+        }
+        for d in days_list:
+            if d < 30:
+                sla_histogram["super_rapidas"] += 1
+            elif d <= 60:
+                sla_histogram["padrao"] += 1
+            elif d <= 90:
+                sla_histogram["alerta"] += 1
+            else:
+                sla_histogram["atrasadas"] += 1
+                
+        # ── MRR por Rede ──
+        rede_map = defaultdict(lambda: {"mrr": 0.0, "count": 0, "names": []})
+        for s in stores:
+            rede = s['rede']
+            rede_map[rede]["mrr"] += s['mrr']
+            rede_map[rede]["count"] += 1
+            rede_map[rede]["names"].append(s['name'])
+        
+        mrr_by_rede = [{"rede": k, "mrr": round(v["mrr"], 2), "count": v["count"], "store_names": v["names"]} 
+                       for k, v in sorted(rede_map.items(), key=lambda x: -x[1]["mrr"])]
+        
+        # ── Destaques ──
+        sorted_by_days = sorted(stores, key=lambda x: x['days'])
+        sorted_by_mrr = sorted(stores, key=lambda x: x['mrr'], reverse=True)
+        
+        highlights = {
+            "fastest": {"name": sorted_by_days[0]['name'], "days": sorted_by_days[0]['days']} if stores else None,
+            "slowest": {"name": sorted_by_days[-1]['name'], "days": sorted_by_days[-1]['days']} if stores else None,
+            "top_mrr": {"name": sorted_by_mrr[0]['name'], "mrr": sorted_by_mrr[0]['mrr']} if stores else None,
+            "late_stores": [{"name": s['name'], "days": s['days']} for s in stores if not s['on_time']],
+        }
+        
+        # ── Variação vs Mês Anterior ──
+        variation = None
+        if prev_month_data:
+            prev_mrr = prev_month_data['total_mrr']
+            prev_stores_count = prev_month_data['total_stores']
+            variation = {
+                "mrr_change": round(total_mrr - prev_mrr, 2),
+                "mrr_change_pct": round(((total_mrr - prev_mrr) / max(prev_mrr, 1)) * 100, 1),
+                "stores_change": total_stores - prev_stores_count,
+                "stores_change_pct": round(((total_stores - prev_stores_count) / max(prev_stores_count, 1)) * 100, 1),
+            }
+        
+        prev_month_data = {"total_mrr": total_mrr, "total_stores": total_stores}
+        
+        # ── Ranking por Implantador ──
+        impl_map = defaultdict(lambda: {"stores": 0, "mrr": 0.0, "days_list": [], "on_time": 0, "points": 0.0, "store_names": []})
+        for s in stores:
+            imp = s['implantador']
+            impl_map[imp]["stores"] += 1
+            impl_map[imp]["mrr"] += s['mrr']
+            impl_map[imp]["days_list"].append(s['days'])
+            impl_map[imp]["on_time"] += s['on_time']
+            impl_map[imp]["points"] += s['points']
+            impl_map[imp]["store_names"].append(s['name'])
+        
+        implantadores = []
+        for name, d in impl_map.items():
+            avg_impl = statistics.mean(d["days_list"]) if d["days_list"] else 0
+            impl_on_time_pct = round((d["on_time"] / max(d["stores"], 1)) * 100, 1)
+            implantadores.append({
+                "name": name,
+                "stores": d["stores"],
+                "store_names": d["store_names"],
+                "mrr": round(d["mrr"], 2),
+                "avg_days": round(avg_impl, 1),
+                "on_time": d["on_time"],
+                "on_time_pct": impl_on_time_pct,
+                "points": round(d["points"], 1)
+            })
+        
+        implantadores.sort(key=lambda x: x['mrr'], reverse=True)
         
         results.append({
             "month": month,
@@ -767,12 +927,104 @@ def get_monthly_implantation_report():
                 "total_mrr": total_mrr,
                 "total_points": total_points,
                 "avg_days": round(avg_days, 1),
-                "median_days": round(median_days, 1)
+                "median_days": round(median_days, 1),
+                "ticket_medio": ticket_medio,
+                "on_time_count": on_time_count,
+                "on_time_pct": on_time_pct
             },
+            "sla_histogram": sla_histogram,
+            "type_breakdown": type_breakdown,
+            "mrr_by_rede": mrr_by_rede,
+            "highlights": highlights,
+            "variation": variation,
+            "implantadores": implantadores,
             "stores": stores
         })
-        
-    return jsonify(results)
+    
+    # Reverter para ordem decrescente (mais recente primeiro)
+    results.reverse()
+    
+    return jsonify({
+        "annual_goals": {
+            "mrr_target": mrr_target,
+            "mrr_ytd": round(ytd_mrr, 2),
+            "mrr_pct": round(ytd_mrr / max(mrr_target, 1) * 100, 1),
+            "mrr_avg_monthly": round(avg_mrr_per_month, 2),
+            "mrr_projection_month": est_mrr_date,
+            "stores_target": stores_target,
+            "stores_ytd": ytd_stores,
+            "stores_pct": round(ytd_stores / max(stores_target, 1) * 100, 1),
+            "stores_avg_monthly": round(avg_stores_per_month, 1),
+            "stores_projection_month": est_stores_date,
+            "points_ytd": round(ytd_points, 1),
+        },
+        "wip_overview": {
+            "total_wip": wip_count,
+            "mrr_backlog": round(mrr_backlog, 2),
+            "mrr_quase_entregue": round(mrr_quase_entregue, 2),
+            "mrr_em_risco": round(mrr_em_risco, 2),
+            "board_stages": board_stages_list,
+        },
+        "months": results
+    })
+
+@api_bp.route('/reports/monthly-implantation/export-excel', methods=['POST'])
+def export_monthly_excel():
+    from app.services.excel_report_service import ExcelReportService
+    from flask import send_file
+    data = request.json
+    try:
+        excel_io = ExcelReportService.generate_monthly_implantation_excel(data)
+        month_str = data.get('month', 'mensal')
+        return send_file(
+            excel_io,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f"relatorio_implantacao_{month_str}.xlsx"
+        )
+    except Exception as e:
+        print(f"Erro ao exportar excel: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/reports/annual-implantation/export-excel', methods=['POST'])
+def export_annual_excel():
+    from app.services.excel_report_service import ExcelReportService
+    from flask import send_file
+    data = request.json
+    try:
+        excel_io = ExcelReportService.generate_annual_implantation_excel(data)
+        from datetime import datetime
+        year_str = datetime.now().year
+        return send_file(
+            excel_io,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f"visao_anual_implantacao_{year_str}.xlsx"
+        )
+    except Exception as e:
+        print(f"Erro ao exportar excel anual: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/reports/monthly-implantation/export-pdf', methods=['POST'])
+def export_monthly_pdf():
+    from app.services.pdf_report_service import PDFReportService
+    from flask import send_file
+    data = request.json
+    try:
+        pdf_io = PDFReportService.generate_monthly_implantation_pdf(data)
+        month_str = data.get('month', 'mensal')
+        return send_file(
+            pdf_io,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f"relatorio_implantacao_{month_str}.pdf"
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/reports/generate-summary', methods=['POST'])
 def generate_monthly_summary():
@@ -846,11 +1098,78 @@ def health():
     return jsonify({"status": "ok"})
 
 # --- Rotas de Configuração (Super Admin) ---
+
+DEFAULT_CONFIGS = [
+    # Metas Anuais
+    {"key": "annual_mrr_target", "value": "180000", "description": "Meta anual de MRR (R$)", "category": "goals"},
+    {"key": "annual_stores_target", "value": "180", "description": "Meta anual de lojas entregues", "category": "goals"},
+    # Pesos
+    {"key": "weight_matriz", "value": "1.0", "description": "Peso de pontuação para Matriz", "category": "weights"},
+    {"key": "weight_filial", "value": "0.7", "description": "Peso de pontuação para Filial", "category": "weights"},
+    # SLA
+    {"key": "sla_implantation_days", "value": "90", "description": "SLA de implantação (dias)", "category": "sla"},
+    {"key": "sla_integration_days", "value": "60", "description": "SLA de integração (dias)", "category": "sla"},
+    # Notificações
+    {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificações", "category": "notifications"},
+    {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
+    {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automático", "category": "notifications"},
+    {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
+]
+
+def seed_default_configs():
+    """Insere configs padrão se não existirem."""
+    from app.models import SystemConfig
+    
+    # Ensure category column exists (SQLite migration)
+    try:
+        db.session.execute(db.text("SELECT category FROM system_config LIMIT 1"))
+    except Exception:
+        db.session.rollback()
+        try:
+            db.session.execute(db.text("ALTER TABLE system_config ADD COLUMN category VARCHAR(50) DEFAULT 'general'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    
+    for cfg_data in DEFAULT_CONFIGS:
+        existing = SystemConfig.query.filter_by(key=cfg_data["key"]).first()
+        if not existing:
+            cfg = SystemConfig(
+                key=cfg_data["key"],
+                value=cfg_data["value"],
+                description=cfg_data["description"],
+                category=cfg_data.get("category", "general")
+            )
+            db.session.add(cfg)
+        else:
+            # Update description and category if missing
+            if not existing.description:
+                existing.description = cfg_data["description"]
+            try:
+                if not existing.category:
+                    existing.category = cfg_data.get("category", "general")
+            except Exception:
+                pass
+    db.session.commit()
+
 @api_bp.route('/config', methods=['GET'])
 def get_config():
     from app.models import SystemConfig
+    seed_default_configs()
     configs = SystemConfig.query.all()
-    return jsonify({c.key: c.value for c in configs})
+    
+    result = {}
+    for c in configs:
+        cat = c.category or 'general'
+        if cat not in result:
+            result[cat] = []
+        result[cat].append({
+            "key": c.key,
+            "value": c.value,
+            "description": c.description or "",
+        })
+    
+    return jsonify(result)
 
 @api_bp.route('/config', methods=['POST'])
 def update_config():

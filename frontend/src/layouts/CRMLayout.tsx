@@ -93,7 +93,7 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
             <aside
                 className={`${collapsed ? 'w-20' : 'w-72'} 
                 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 
-                flex flex-col transition-all duration-300 fixed h-full z-50 shadow-xl shadow-zinc-200/50 dark:shadow-black/50`}
+                flex flex-col transition-all duration-300 fixed h-full z-50 shadow-xl shadow-zinc-200/50 dark:shadow-black/50 print:hidden`}
             >
                 {/* Logo Area */}
                 <div className="h-16 flex items-center gap-3 px-6 border-b border-zinc-100 dark:border-zinc-800/50">
@@ -265,11 +265,11 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
             {/* Main Content Wrapper */}
             <main
                 className={`flex-1 flex flex-col min-h-screen transition-all duration-300 overflow-x-hidden
-                ${collapsed ? 'ml-20' : 'ml-72'}
+                ${collapsed ? 'ml-20' : 'ml-72'} print:ml-0 print:w-full print:bg-white
                 `}
             >
                 {/* Header/Topbar area if needed (e.g. for Breadcrumbs or global actions) */}
-                <header className="sticky top-0 z-30 h-16 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 px-8 flex items-center justify-end gap-4">
+                <header className="sticky top-0 z-30 h-16 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 px-8 flex items-center justify-end gap-4 print:hidden">
                     <button
                         onClick={() => setShowDictionary(true)}
                         className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors"
@@ -305,7 +305,7 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
                     </button>
                 </header>
 
-                <div className={location.pathname.includes('/monitor') ? 'p-0' : 'p-8'}>
+                <div className={location.pathname.includes('/monitor') ? 'p-0 print:p-0' : 'p-8 print:p-0'}>
                     <div className={`${location.pathname.includes('/monitor') ? 'max-w-full' : 'max-w-7xl'} mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500`}>
                         <Outlet />
                     </div>

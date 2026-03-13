@@ -18,17 +18,10 @@ import MonthlyReport from './components/reports/MonthlyReport'
 import SyncPage from './features/sync/SyncPage'
 import MetricsDictionaryModal from './components/MetricsDictionaryModal'
 import SuperAdminDashboard from './features/admin/SuperAdminDashboard'
+import SettingsPage from './features/admin/SettingsPage'
 import UserManagementPage from './features/admin/UserManagementPage'
 import AIChatPage from './components/ai/AIChatPage'
 import { ProfilePage } from './features/profile/ProfilePage'
-
-// Placeholder para futuras páginas Admin (será implementado a seguir)
-const AdminPlaceholder = ({ title }: { title: string }) => (
-    <div className="flex flex-col items-center justify-center h-96 text-zinc-400">
-        <h2 className="text-2xl font-bold mb-2">{title}</h2>
-        <p>Em construção...</p>
-    </div>
-)
 
 function App() {
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -81,7 +74,7 @@ function App() {
                     {/* Rotas de Admin */}
                     <Route path="/admin/performance" element={<SuperAdminDashboard />} />
                     <Route path="/admin/users" element={<UserManagementPage />} />
-                    <Route path="/admin/configs" element={<AdminPlaceholder title="Configurações do Sistema" />} />
+                    <Route path="/admin/configs" element={<SettingsPage />} />
 
                     {/* AI Command Center */}
                     <Route path="/ai-command-center" element={<AIChatPage />} />

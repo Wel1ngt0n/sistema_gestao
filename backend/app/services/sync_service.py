@@ -152,6 +152,16 @@ class SyncService:
             db.session.commit()
 
             self.logger.info("--- SYNC FINALIZADO ---")
+            
+            # Post-sync: check notifications (non-blocking)
+            try:
+                from app.services.notification_service import check_sla_alerts
+                alert_result = check_sla_alerts()
+                if alert_result.get("alerts_count", 0) > 0:
+                    self.logger.info(f"Notificação SLA: {alert_result['alerts_count']} alertas enviados")
+            except Exception as notif_err:
+                self.logger.warning(f"Erro ao enviar notificações pós-sync: {notif_err}")
+            
             return {"processed": processed_count, "steps_updated": len(all_steps)}
             
         except Exception as e:
@@ -368,6 +378,7 @@ class SyncService:
     def run_integration_sync(self):
         """
         Sincroniza APENAS a lista de Integração e atualiza métricas específicas.
+        Usa time_in_status do ClickUp para extrair datas reais de início/fim.
         """
         from app.models import Store, IntegrationMetric, TaskStep
         
@@ -376,7 +387,7 @@ class SyncService:
             
             # 1. Buscar Tarefas da Lista de Integração
             list_id = Config.LIST_IDS_STEPS['INTEGRACAO']
-            tasks = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None) # Busca tudo por segurança ou use timestamp se preferir
+            tasks = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None)
             
             if not tasks:
                 self.logger.info("Nenhuma tarefa de integração encontrada.")
@@ -384,13 +395,13 @@ class SyncService:
                 
             self.logger.info(f"Tarefas de integração encontradas: {len(tasks)}")
             
-            # 2. Processar Steps
+            # 2. Processar Steps e mapear clickup_task_id por store
             father_field_id = self.clickup.get_father_field_id()
             updated_count = 0
-            affected_store_ids = set()
+            # Mapa: store_id -> clickup_task_id (da subtarefa de integração)
+            store_task_map = {}
             
             for task in tasks:
-                # Descobrir Store ID via Custom Field
                 custom_id = None
                 for cf in task.get('custom_fields', []):
                     if cf['id'] == father_field_id:
@@ -400,45 +411,67 @@ class SyncService:
                 if custom_id:
                     store = Store.query.filter_by(custom_store_id=custom_id).first()
                     if store:
-                        # Injetar nome da lista para o processador
                         task['step_type_name'] = 'INTEGRACAO'
                         self.metrics.process_step_data(store, task)
                         
-                        # Extrair assignee apenas para a coluna de integração
                         assignees = task.get('assignees', [])
                         if assignees:
                             current_assignee = assignees[0]['username']
                             store.integrador = current_assignee
                             
-                        affected_store_ids.add(store.id)
+                        store_task_map[store.id] = task['id']
                         updated_count += 1
             
             db.session.commit()
             
-            # 3. Atualizar IntegrationMetric para lojas afetadas
-            for store_id in affected_store_ids:
+            # 3. Atualizar IntegrationMetric com datas reais via status history
+            self.logger.info(f"Buscando datas de integração para {len(store_task_map)} lojas...")
+            
+            import time as time_mod
+            for store_id, clickup_task_id in store_task_map.items():
                 store = Store.query.get(store_id)
                 metric = IntegrationMetric.query.filter_by(store_id=store_id).first()
                 if not metric:
                     metric = IntegrationMetric(store_id=store_id, snapshot_date=datetime.now().date())
                     db.session.add(metric)
+                
+                try:
+                    # Buscar datas reais via status change history
+                    dates = self.clickup.parse_integration_dates(clickup_task_id)
                     
-                # Buscar step de integração para atualizar datas
-                step = TaskStep.query.filter_by(store_id=store_id, step_list_name='INTEGRACAO').first()
-                if step:
-                    metric.start_date = step.start_real_at or step.created_at
-                    metric.end_date = step.end_real_at
+                    if dates['start_date']:
+                        metric.start_date = dates['start_date']
+                    if dates['end_date']:
+                        metric.end_date = dates['end_date']
                     
+                    # Fallback: se não achou via status, usar step dates
+                    if not metric.start_date:
+                        step = TaskStep.query.filter_by(store_id=store_id, step_list_name='INTEGRACAO').first()
+                        if step:
+                            metric.start_date = step.start_real_at or step.created_at
+                    
+                    if not metric.end_date:
+                        step = TaskStep.query.filter_by(store_id=store_id, step_list_name='INTEGRACAO').first()
+                        if step and step.end_real_at:
+                            metric.end_date = step.end_real_at
+                    
+                    # Calcular SLA
                     if metric.start_date and metric.end_date:
                         metric.sla_days = (metric.end_date - metric.start_date).days
+                    elif metric.start_date:
+                        # Em andamento: calcular dias até agora
+                        metric.sla_days = (datetime.now() - metric.start_date).days
                     
-                    # Se status do step for concluído, atualizar status da métrica?
-                    # metric.documentation_status = ... (Logica complexa, deixar manual por enquanto)
+                    # Rate limit gentil - 100ms entre requests
+                    time_mod.sleep(0.1)
+                    
+                except Exception as e:
+                    self.logger.warning(f"Erro ao buscar datas para store {store_id}: {e}")
             
             db.session.commit()
             self.logger.info(f"--- SYNC INTEGRAÇÃO FINALIZADO: {updated_count} steps atualizados ---")
             
-            return {"processed": updated_count, "stores_updated": len(affected_store_ids)}
+            return {"processed": updated_count, "stores_updated": len(store_task_map)}
             
         except Exception as e:
             self.logger.error(f"Erro Sync Integração: {e}")

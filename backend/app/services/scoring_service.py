@@ -150,26 +150,50 @@ class ScoringService:
         """
         Gera Ranking de Performance dos Implantadores.
         Performance = (Vol*0.4) + (OTD*0.3) + (Qual*0.2) + (Eff*0.1)
-        Inclui contagem de WIP e Flags de Qualidade de Dados.
+        Somente implantadores com lojas ativas (WIP) são incluídos.
+        Dados de lojas concluídas filtrados para 2026+.
         """
-        # Buscar Lojas Concluídas no Período (DONE)
+        from datetime import datetime as dt_cls
+        DATA_CUTOFF = dt_cls(2026, 1, 1)
+
+        # 1. Identificar implantadores com pelo menos 1 loja ativa (WIP)
+        stores_wip = db.session.query(Store).filter(
+            Store.status_norm == 'IN_PROGRESS',
+            Store.manual_finished_at.is_(None),
+            Store.implantador.isnot(None)
+        ).all()
+        
+        active_implantadores = set()
+        for s in stores_wip:
+            if s.implantador:
+                active_implantadores.add(s.implantador)
+
+        # 2. Buscar Lojas Concluídas (DONE) — somente 2026+
+        from sqlalchemy import or_, and_
         query_done = db.session.query(Store).filter(
-            (Store.status_norm == 'DONE') | (Store.manual_finished_at.isnot(None))
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            Store.implantador.isnot(None),
+            Store.implantador.in_(active_implantadores),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= DATA_CUTOFF),
+                and_(Store.manual_finished_at.is_(None), Store.finished_at >= DATA_CUTOFF)
+            )
         )
         if start_date:
             query_done = query_done.filter(
-                ((Store.manual_finished_at >= start_date) | 
-                 (Store.manual_finished_at.is_(None) & (Store.finished_at >= start_date)))
+                or_(
+                    and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= start_date),
+                    and_(Store.manual_finished_at.is_(None), Store.finished_at >= start_date)
+                )
             )
         if end_date:
             query_done = query_done.filter(
-                ((Store.manual_finished_at <= end_date) | 
-                 (Store.manual_finished_at.is_(None) & (Store.finished_at <= end_date)))
+                or_(
+                    and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at <= end_date),
+                    and_(Store.manual_finished_at.is_(None), Store.finished_at <= end_date)
+                )
             )
         stores_done = query_done.all()
-        
-        # Buscar Lojas em Andamento (WIP) - Snapshot atual
-        stores_wip = db.session.query(Store).filter(Store.status_norm == 'IN_PROGRESS').all()
         
         # Estrutura de Stats
         stats = collections.defaultdict(lambda: {
@@ -182,13 +206,13 @@ class ScoringService:
         global_days_sum = 0
         global_count = 0
 
-        # Processar WIP (Apenas contagem e Data Quality)
+        # Processar WIP (Apenas implantadores ativos)
         for s in stores_wip:
-            if not s.implantador: continue
+            if not s.implantador or s.implantador not in active_implantadores: continue
             stats[s.implantador]['wip'] += 1
             
-            # Data Quality Check (WIP também importa)
-            if not s.financeiro_status and s.tempo_contrato and s.dias_em_transito > 15: # Só flag se já correu tempo
+            # Data Quality Check
+            if not s.financeiro_status and s.tempo_contrato and s.dias_em_transito > 15:
                 stats[s.implantador]['missing_financial'] += 1
 
         # Processar DONE (Score + Data Quality)
@@ -201,9 +225,6 @@ class ScoringService:
             stats[imp]['weighted_vol'] += w
             stats[imp]['raw_vol'] += 1
             
-            # Qualidade (Flag de Retrabalho Explícito ou Vazio?)
-            # Assumimos que se 'teve_retrabalho' é False, está OK.
-            # Mas se quisermos flagar dados faltantes, precisaríamos saber se foi preenchido.
             if s.teve_retrabalho: stats[imp]['rework'] += 1
             
             # Data Quality Check (DONE)
@@ -237,9 +258,13 @@ class ScoringService:
         if max_vol == 0: max_vol = 1
 
         for imp, data in stats.items():
+            # Só incluir implantadores ativos
+            if imp not in active_implantadores:
+                continue
+                
             count = data['raw_vol']
             
-            # Se não tem entregas, score é 0, mas mostramos WIP
+            # Se não tem entregas 2026+, score é 0, mas mostramos WIP
             if count == 0:
                 ranking.append({
                     "implantador": imp,
@@ -288,7 +313,7 @@ class ScoringService:
             ranking.append({
                 "implantador": imp,
                 "score": round(final_score, 1),
-                "points": round(data['weighted_vol'], 1), # Corrigido: Usar volume ponderado real (1.0 ou 0.7)
+                "points": round(data['weighted_vol'], 1),
                 "done": count,
                 "wip": data['wip'],
                 "otd_percentage": round(otd_pct, 1),

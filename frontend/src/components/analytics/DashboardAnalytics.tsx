@@ -9,6 +9,7 @@ import { AnalyticsFilters } from './AnalyticsFilters';
 import { useAnalyticsData } from './useAnalyticsData';
 import { KPICard } from './KPICard';
 import { FinancialForecastChart } from './FinancialForecastChart';
+import { AnnualTrendCharts } from './AnnualTrendCharts';
 import { InfoTooltip } from './InfoTooltip';
 import { RiskScatterPlot } from './RiskScatterPlot';
 import { TeamPerformanceMatrix } from './TeamPerformanceMatrix';
@@ -54,7 +55,7 @@ function classNames(...classes: string[]) {
 
 export default function DashboardAnalytics() {
     const { filters } = useDashboardUrlParams();
-    const { kpiData, trendData, performanceData, bottleneckData, capacityData, forecastData, loading, refetch } = useAnalyticsData(filters);
+    const { kpiData, trendData, annualTrendData, performanceData, bottleneckData, capacityData, forecastData, loading, refetch } = useAnalyticsData(filters);
     const [selectedImplantador, setSelectedImplantador] = useState<string | null>(null);
 
     // Preparar dados dos gráficos
@@ -281,6 +282,11 @@ export default function DashboardAnalytics() {
                                     <Chart type='bar' data={throughputChartData} options={chartOptions} />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Trend Charts Acumulados (Burn-down) */}
+                        <div className="animate-fade-in-up animation-delay-300 opacity-0">
+                            <AnnualTrendCharts data={annualTrendData} />
                         </div>
 
                     </Tab.Panel>

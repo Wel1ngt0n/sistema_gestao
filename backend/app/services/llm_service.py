@@ -116,42 +116,65 @@ class LLMService:
             total_mrr = context_data.get('total_mrr')
             avg_time = context_data.get('avg_time')
             median_time = context_data.get('median_time')
-            stores_list = context_data.get('stores', []) # Lista de dicts {name, mrr, implantador}
+            stores_list = context_data.get('stores', [])
+            implantadores_list = context_data.get('implantadores', [])
+            on_time_pct = context_data.get('on_time_pct', 0)
+            on_time_count = context_data.get('on_time_count', 0)
+
+            # Ticket Médio
+            try:
+                ticket_medio = float(str(total_mrr).replace(',', '.')) / max(int(total_stores), 1)
+                ticket_medio_str = f"R$ {ticket_medio:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            except:
+                ticket_medio_str = "N/A"
+
+            # Construir lista de lojas formatada
+            stores_text = ""
+            for s in stores_list:
+                mrr_formatted = f"R$ {s.get('mrr', 0):.2f}".replace('.', ',')
+                days_val = s.get('days', 0)
+                prazo_flag = "✅" if s.get('on_time', 0) else "⚠️"
+                stores_text += f"{s.get('name')} ({s.get('implantador', 'N/A')}) - {mrr_formatted} - {days_val} dias {prazo_flag}\n"
+            
+            if not stores_text:
+                stores_text = "Nenhuma loja finalizada."
+
+            # Construir ranking de implantadores
+            impl_text = ""
+            for imp in implantadores_list:
+                impl_text += f"- {imp.get('name')}: {imp.get('stores')} lojas, MRR R$ {imp.get('mrr', 0):.2f}, média {imp.get('avg_days', 0)} dias, {imp.get('on_time_pct', 0)}% no prazo\n"
+            
+            if not impl_text:
+                impl_text = "Sem dados de implantadores."
 
             if format_type == 'simple':
-                # Construir lista de lojas formatada
-                stores_text = ""
-                for s in stores_list:
-                    mrr_formatted = f"R$ {s.get('mrr', 0):.2f}".replace('.', ',')
-                    stores_text += f"{s.get('name')} - {mrr_formatted}\n"
-                
-                if not stores_text:
-                    stores_text = "Nenhuma loja finalizada."
-
                 prompt = f"""
-                Você é um assistente administrativo. Gere uma mensagem de atualização para o Slack Exatamente neste formato:
+                Você é um assistente administrativo. Gere uma mensagem de atualização para o Slack exatamente neste formato:
 
                 Fechamento {month_str}
 
-                Lojas finalizadas e mensalidade:
+                Lojas finalizadas (implantador - mensalidade - dias - prazo):
                 {stores_text}
 
                 Resumo:
                 Total de lojas: {total_stores}
                 Total de recorrência (MRR): R$ {total_mrr}
+                Ticket médio: {ticket_medio_str}
                 Média de dias (implantação): {avg_time}
                 Mediana de dias: {median_time}
+                No prazo (≤90 dias): {on_time_count}/{total_stores} ({on_time_pct}%)
+
+                Ranking por implantador:
+                {impl_text}
 
                 Destaque do mês da implantação:
-                [Analise a lista de lojas abaixo e escolha UM implantador destaque baseado no maior MRR ou complexidade. Cite o nome dele e crie 1 ponto positivo curto sobre a entrega].
-
-                DADOS DAS LOJAS (Para análise do destaque):
-                {json.dumps(stores_list, ensure_ascii=False)}
+                [Analise os dados acima e escolha UM implantador destaque baseado no maior MRR, mais lojas entregues ou melhor taxa de prazo. Cite o nome dele e crie 1 ponto positivo curto sobre a entrega].
 
                 REGRAS:
                 - Mantenha a estrutura exata acima.
                 - Não adicione saudações ou introduções.
                 - No destaque, seja direto: "Nome - Motivo".
+                - Use ✅ para no prazo e ⚠️ para fora do prazo na lista de lojas.
                 """
             
             else:
@@ -163,18 +186,25 @@ class LLMService:
                 DADOS DO MÊS ({month_str}):
                 - Lojas Finalizadas: {total_stores}
                 - MRR Adicionado: R$ {total_mrr}
+                - Ticket Médio: {ticket_medio_str}
                 - Tempo Médio de Implantação: {avg_time} dias
                 - Mediana de Tempo: {median_time} dias
                 - Pontuação Total de Entregas: {context_data.get('total_points')}
+                - Entregas no Prazo (≤90 dias): {on_time_count}/{total_stores} ({on_time_pct}%)
 
-                LISTA DE ENTREGAS:
-                {json.dumps(stores_list, ensure_ascii=False)}
+                RANKING POR IMPLANTADOR:
+                {impl_text}
+
+                LISTA DETALHADA DE ENTREGAS:
+                {stores_text}
 
                 INSTRUÇÕES DE ESTILO:
                 - Tom profissional, objetivo e orientado a resultados.
                 - Use emojis moderados (📈, 🚀, ✅).
                 - Destaque o MRR total e a quantidade de lojas.
+                - Inclua seção de "Desempenho por Implantador" com os dados do ranking.
                 - Mencione se o tempo médio está bom (bom < 60 dias, ruim > 90 dias).
+                - Comente a taxa de entregas no prazo.
                 - Faça uma análise breve sobre quem foi o destaque do mês (quem trouxe mais MRR ou entregou mais rápido).
                 """
             

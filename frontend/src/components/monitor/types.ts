@@ -75,10 +75,12 @@ export interface IntegrationData {
     due_date: string | null;
     sla_days: number;
     status: string;
+    current_status: string | null;
     doc_status: string;
     bugs: number;
     post_go_live_bugs: number;
     churn_risk: boolean;
+    on_time: boolean | null;
     points: number;
     task_id: string;
 }

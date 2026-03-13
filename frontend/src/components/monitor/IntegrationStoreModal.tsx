@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Store, IntegrationData } from './types';
-import { formatDate } from './monitorUtils';
 
 interface IntegrationStoreModalProps {
     isOpen: boolean;

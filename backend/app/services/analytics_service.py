@@ -291,10 +291,117 @@ class AnalyticsService:
         return result
 
     @staticmethod
+    def get_annual_trends(year=None):
+        """
+        Retorna dados cumulativos do ano atual ou especificado.
+        Inclui métricas acumuladas (MRR, Stores) para construção de burn-down
+        comparando com as metas.
+        """
+        if not year:
+            year = datetime.now().year
+            
+        mrr_target = float(SystemConfig.query.filter_by(key="annual_mrr_target").first().value if SystemConfig.query.filter_by(key="annual_mrr_target").first() else 180000)
+        stores_target = int(SystemConfig.query.filter_by(key="annual_stores_target").first().value if SystemConfig.query.filter_by(key="annual_stores_target").first() else 180)
+
+        # Iniciar dicionário para todos os 12 meses
+        trends = collections.OrderedDict()
+        for month in range(1, 13):
+            month_key = f"{year}-{month:02d}"
+            trends[month_key] = {
+                'stores_completed': 0,
+                'mrr_added': 0.0,
+                'avg_cycle_time': 0,
+                'total_days': 0
+            }
+
+        # Lojas finalizadas no ano
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31, 23, 59, 59)
+        
+        finished_stores = db.session.query(Store).filter(
+            or_(
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= start_date, Store.manual_finished_at <= end_date),
+                and_(Store.manual_finished_at.is_(None), Store.status_norm == 'DONE', Store.finished_at >= start_date, Store.finished_at <= end_date)
+            )
+        ).with_entities(
+            Store.finished_at,
+            Store.manual_finished_at,
+            Store.end_real_at,
+            Store.start_real_at,
+            Store.created_at,
+            Store.valor_mensalidade
+        ).all()
+
+        for s in finished_stores:
+            end = s.manual_finished_at or s.end_real_at or s.finished_at
+            if not end: continue
+            
+            month_key = end.strftime('%Y-%m')
+            
+            if month_key in trends:
+                trends[month_key]['stores_completed'] += 1
+                trends[month_key]['mrr_added'] += float(s.valor_mensalidade or 0)
+                
+                start = s.start_real_at or s.created_at
+                if start:
+                    days = (end - start).days
+                    trends[month_key]['total_days'] += max(0, days)
+
+        # Montar resultado cumulativo
+        result = []
+        cumulative_mrr = 0.0
+        cumulative_stores = 0
+        
+        for key, data in trends.items():
+            count = data['stores_completed']
+            mrr = data['mrr_added']
+            
+            cumulative_mrr += mrr
+            cumulative_stores += count
+            
+            avg_days = round(data['total_days'] / count, 1) if count > 0 else 0
+            
+            # Não incluir projeção para meses futuros se não tem dados e ainda não aconteceram
+            parsed_key = datetime.strptime(key, '%Y-%m')
+            is_future = parsed_key > datetime.now()
+            
+            result.append({
+                "month": key,
+                "stores_monthly": count,
+                "mrr_monthly": round(mrr, 1),
+                "cumulative_stores": cumulative_stores if not (is_future and count == 0) else None,
+                "cumulative_mrr": round(cumulative_mrr, 1) if not (is_future and count == 0) else None,
+                "cycle_time_avg": avg_days,
+                "target_cumulative_stores": round((stores_target / 12) * int(key.split('-')[1]), 1),
+                "target_cumulative_mrr": round((mrr_target / 12) * int(key.split('-')[1]), 1)
+            })
+            
+        return {
+            "year": year,
+            "annual_goals": {
+                "mrr": mrr_target,
+                "stores": stores_target
+            },
+            "trends": result
+        }
+
+
+
+    @staticmethod
     def get_performance_ranking(implantador=None):
         """
         Retorna métricas por implantador.
+        Somente implantadores com lojas ativas (WIP) são incluídos.
+        Dados de lojas concluídas são filtrados para 2026+.
         """
+        # 1. Identificar implantadores com pelo menos 1 loja ativa
+        active_implantadores_query = db.session.query(Store.implantador).filter(
+            Store.implantador.isnot(None),
+            Store.status_norm == 'IN_PROGRESS',
+            Store.manual_finished_at.is_(None)
+        ).distinct()
+        active_implantadores = {row[0] for row in active_implantadores_query.all()}
+
         query = db.session.query(
             Store.implantador,
             Store.status_norm,
@@ -307,7 +414,10 @@ class AnalyticsService:
             Store.valor_mensalidade,
             Store.teve_retrabalho,
             Store.tipo_loja
-        ).filter(Store.implantador.isnot(None))
+        ).filter(
+            Store.implantador.isnot(None),
+            Store.implantador.in_(active_implantadores)
+        )
 
         if implantador:
             query = query.filter(Store.implantador == implantador)

@@ -45,7 +45,16 @@ export default function IntegrationTableView({
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-    // 1. Column Visibility & Pinning & Order Persistence
+    // Force reset localStorage on layout version change
+    const LAYOUT_VERSION = 'v3';
+    const storedVersion = localStorage.getItem('int_monitor_layout_version');
+    if (storedVersion !== LAYOUT_VERSION) {
+        localStorage.removeItem('int_monitor_columnVisibility');
+        localStorage.removeItem('int_monitor_columnPinning');
+        localStorage.removeItem('int_monitor_columnOrder');
+        localStorage.setItem('int_monitor_layout_version', LAYOUT_VERSION);
+    }
+
     const savedVisibility = localStorage.getItem('int_monitor_columnVisibility');
     const savedPinning = localStorage.getItem('int_monitor_columnPinning');
     const savedOrder = localStorage.getItem('int_monitor_columnOrder');
@@ -53,11 +62,15 @@ export default function IntegrationTableView({
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
         savedVisibility ? JSON.parse(savedVisibility) : {
             task_id: false,
+            status: false,
+            churn_risk: false,
+            doc_status: false,
+            end_date: false,
         }
     );
 
     const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
-        savedPinning ? JSON.parse(savedPinning) : { left: ['select', 'row_index', 'store_name'] }
+        savedPinning ? JSON.parse(savedPinning) : { left: ['select', 'row_index', 'name'] }
     );
 
     const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(
@@ -81,6 +94,19 @@ export default function IntegrationTableView({
     const [isColumnsOpen, setIsColumnsOpen] = useState(false);
     const [menuDraggedId, setMenuDraggedId] = useState<string | null>(null);
     const [rowSelection, setRowSelection] = useState({});
+
+    const getStepStatusColor = (status: string | null) => {
+        if (!status) return 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800';
+        const s = status.toLowerCase();
+        if (s.includes('implantado')) return 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400';
+        if (s.includes('revisão') || s.includes('revisao')) return 'text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
+        if (s.includes('bloqueado')) return 'text-rose-700 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400';
+        if (s.includes('aguardando')) return 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400';
+        if (s.includes('progresso') || s.includes('contato')) return 'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
+        if (s.includes('backlog') || s.includes('não vão')) return 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400';
+        if (s.includes('produtos integrados') || s.includes('dados coletados')) return 'text-indigo-700 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400';
+        return 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400';
+    };
 
     // Columns Definition
     const columnHelper = createColumnHelper<IntegrationData>();
@@ -116,7 +142,7 @@ export default function IntegrationTableView({
             size: 30,
             enablePinning: true,
         }),
-        columnHelper.accessor('store_name', {
+        columnHelper.accessor('name', {
             header: 'Loja / Cliente',
             cell: info => (
                 <div className="flex flex-col">
@@ -126,6 +152,65 @@ export default function IntegrationTableView({
             enablePinning: true,
             size: 250,
         }),
+        columnHelper.accessor('current_status', {
+            header: 'Etapa Atual',
+            cell: info => {
+                const val = info.getValue();
+                if (!val) return <span className="text-zinc-300">--</span>;
+                const color = getStepStatusColor(val);
+                return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${color}`}>{val}</span>;
+            },
+            size: 160,
+        }),
+        columnHelper.accessor('assignee', {
+            header: 'Integrador',
+            cell: info => <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">{info.getValue() || '--'}</span>,
+            size: 150,
+        }),
+        columnHelper.accessor('start_date', {
+            header: 'Início',
+            cell: info => <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{formatDate(info.getValue())}</span>,
+            size: 100,
+        }),
+        columnHelper.accessor('end_date', {
+            header: 'Conclusão',
+            cell: info => {
+                const val = info.getValue();
+                return val
+                    ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-medium">{formatDate(val)}</span>
+                    : <span className="text-xs text-zinc-300">--</span>;
+            },
+            size: 100,
+        }),
+        columnHelper.accessor('sla_days', {
+            header: 'Dias',
+            cell: info => {
+                const days = info.getValue() || 0;
+                const isDone = info.row.original.status === 'CONCLUÍDO';
+                const color = days > 60
+                    ? 'text-rose-600 dark:text-rose-400 font-bold'
+                    : days > 45
+                        ? 'text-amber-600 dark:text-amber-400 font-medium'
+                        : 'text-zinc-600 dark:text-zinc-300';
+                return (
+                    <span className={`text-xs font-mono ${color}`}>
+                        {days}d {!isDone && <span className="text-[9px] text-zinc-400">(ativo)</span>}
+                    </span>
+                );
+            },
+            size: 90,
+        }),
+        columnHelper.accessor('on_time', {
+            header: 'Prazo',
+            cell: info => {
+                const val = info.getValue();
+                if (val === null || val === undefined) return <span className="text-zinc-300 text-xs">--</span>;
+                return val
+                    ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">✅ No prazo</span>
+                    : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">⚠️ Atrasada</span>;
+            },
+            size: 100,
+        }),
         columnHelper.accessor('status', {
             header: 'Status',
             cell: info => {
@@ -134,50 +219,35 @@ export default function IntegrationTableView({
                 return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-transparent ${styleClass}`}>{val}</span>;
             },
             enablePinning: true,
-            size: 140,
-        }),
-        columnHelper.accessor('assignee', {
-            header: 'Integrador',
-            cell: info => <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">{info.getValue() || '--'}</span>,
-            size: 150,
-        }),
-        columnHelper.accessor('points', {
-            header: 'Pontos',
-            cell: info => <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">{info.getValue() || 0} pts</span>,
-            size: 80,
-        }),
-        columnHelper.accessor('due_date', {
-            header: 'Previsão',
-            cell: info => <span className="text-xs text-zinc-500 dark:text-zinc-400">{formatDate(info.getValue())}</span>,
-            size: 100,
+            size: 120,
         }),
         columnHelper.accessor('post_go_live_bugs', {
-            header: 'Qtd Bugs',
+            header: 'Bugs',
             cell: info => {
                 const bugs = info.getValue() || 0;
                 const isBad = bugs > 0;
                 return <span className={`font-mono text-xs ${isBad ? 'text-rose-600 font-bold' : 'text-zinc-400'}`}>{bugs}</span>
             },
-            size: 80,
+            size: 70,
         }),
         columnHelper.accessor('churn_risk', {
-            header: 'Risco Churn',
+            header: 'Churn',
             cell: info => {
                 const isRisk = info.getValue() === true;
                 return isRisk
-                    ? <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-full animate-pulse">Risco Alto</span>
+                    ? <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-full animate-pulse">Risco</span>
                     : <span className="text-zinc-300">-</span>
             },
-            size: 100,
+            size: 80,
         }),
         columnHelper.accessor('doc_status', {
             header: 'Doc',
             cell: info => {
                 const doc = info.getValue() || 'Pendente';
-                const color = doc === 'Concluída' ? 'text-emerald-500' : 'text-amber-500';
+                const color = doc === 'Concluída' || doc === 'DONE' ? 'text-emerald-500' : 'text-amber-500';
                 return <span className={`text-xs font-medium ${color}`}>{String(doc)}</span>
             },
-            size: 100,
+            size: 90,
         }),
         columnHelper.accessor('task_id', {
             header: 'Task ClickUp',

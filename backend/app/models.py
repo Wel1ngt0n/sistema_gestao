@@ -23,10 +23,10 @@ class SystemConfig(db.Model):
     """
     __tablename__ = 'system_config'
     id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(50), unique=True, nullable=False) # ex: 'weight_matriz'
-    value = db.Column(db.String(255), nullable=False) # ex: '1.0'
-    value = db.Column(db.String(255), nullable=False) # ex: '1.0'
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(200))
+    category = db.Column(db.String(50), default='general')
 
 class StorePause(db.Model):
     """

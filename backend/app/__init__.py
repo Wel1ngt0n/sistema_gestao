@@ -51,4 +51,6 @@ def create_app():
     from app.routes_performance import performance_bp
     app.register_blueprint(performance_bp)
 
+    from app.routes_notifications import notifications_bp
+    app.register_blueprint(notifications_bp)
     return app

@@ -76,6 +76,24 @@ export interface DistributionData {
     erps: Record<string, number>;
 }
 
+export interface AnnualTrendData {
+    year: number;
+    annual_goals: {
+        mrr: number;
+        stores: number;
+    };
+    trends: {
+        month: string;
+        stores_monthly: number;
+        mrr_monthly: number;
+        cumulative_stores: number | null;
+        cumulative_mrr: number | null;
+        cycle_time_avg: number;
+        target_cumulative_stores: number;
+        target_cumulative_mrr: number;
+    }[];
+}
+
 const API_BASE_URL = 'http://localhost:5003';
 
 const buildParams = (filters: AnalyticsFiltersState) => {
@@ -166,8 +184,16 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         }
     });
 
-    const isLoading = kpiQuery.isLoading || trendQuery.isLoading || perfQuery.isLoading || bottleQuery.isLoading || capacityQuery.isLoading || forecastQuery.isLoading || riskQuery.isLoading || distQuery.isLoading;
-    const isError = kpiQuery.isError || trendQuery.isError || perfQuery.isError || bottleQuery.isError || riskQuery.isError || distQuery.isError;
+    const annualTrendQuery = useQuery({
+        queryKey: ['annual-trends'],
+        queryFn: async () => {
+            const res = await axios.get<AnnualTrendData>(`${API_BASE_URL}/api/analytics/annual-trends`);
+            return res.data;
+        }
+    });
+
+    const isLoading = kpiQuery.isLoading || trendQuery.isLoading || perfQuery.isLoading || bottleQuery.isLoading || capacityQuery.isLoading || forecastQuery.isLoading || riskQuery.isLoading || distQuery.isLoading || annualTrendQuery.isLoading;
+    const isError = kpiQuery.isError || trendQuery.isError || perfQuery.isError || bottleQuery.isError || riskQuery.isError || distQuery.isError || annualTrendQuery.isError;
 
     const refetchAll = async () => {
         await Promise.all([
@@ -185,6 +211,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     return {
         kpiData: kpiQuery.data || null,
         trendData: trendQuery.data || [],
+        annualTrendData: annualTrendQuery.data || null,
         performanceData: perfQuery.data || [],
         bottleneckData: bottleQuery.data || [],
         capacityData: capacityQuery.data || [],

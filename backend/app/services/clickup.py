@@ -107,10 +107,86 @@ class ClickUpService:
         """
         Busca histórico de status para uma tarefa.
         """
-        # Endpoint: GET /task/{task_id}/time_in_status
-        # Nota: Este endpoint fornece array 'status_history' com intervalos.
         data = self._get(f"task/{task_id}/time_in_status")
         return data
+
+    def parse_integration_dates(self, task_id):
+        """
+        Usa time_in_status para extrair datas reais de início e fim da integração.
+        Início = quando entrou em 'contato/comunicação' (primeiro status ativo do workflow)
+        Fim = quando entrou em 'implantado'
+        """
+        # Status que NÃO representam trabalho ativo de integração
+        INACTIVE_STATUSES = {
+            'backlog', 'não vão iniciar agora',
+            'open', 'todo', 'to do', 'closed',
+        }
+        END_STATUS = 'implantado'
+        
+        data = self.get_task_history(task_id)
+        if not data:
+            return {'start_date': None, 'end_date': None}
+        
+        start_date = None
+        end_date = None
+        
+        # Coletar somente status do workflow (que têm orderindex definido)
+        workflow_statuses = []
+        
+        for item in data.get('status_history', []):
+            status_name = item.get('status', '').lower().strip()
+            since_ts = item.get('total_time', {}).get('since')
+            order = item.get('orderindex')
+            
+            # Ignorar status default do ClickUp (sem orderindex = não é do workflow)
+            if order is None:
+                self.logger.debug(f"Ignorando status default '{status_name}' (sem orderindex)")
+                continue
+            
+            if since_ts:
+                try:
+                    since_dt = datetime.fromtimestamp(int(since_ts) / 1000)
+                    workflow_statuses.append({
+                        'status': status_name,
+                        'since': since_dt,
+                        'orderindex': order
+                    })
+                except:
+                    pass
+        
+        # Incluir current_status se tiver orderindex
+        current = data.get('current_status', {})
+        if current and current.get('orderindex') is not None:
+            cs_name = current.get('status', '').lower().strip()
+            cs_since = current.get('total_time', {}).get('since')
+            if cs_since:
+                try:
+                    cs_dt = datetime.fromtimestamp(int(cs_since) / 1000)
+                    workflow_statuses.append({
+                        'status': cs_name,
+                        'since': cs_dt,
+                        'orderindex': current.get('orderindex')
+                    })
+                except:
+                    pass
+        
+        # Ordenar pelo workflow
+        workflow_statuses.sort(key=lambda x: x['orderindex'])
+        
+        # START: Primeiro status ativo (NÃO inativo) no workflow
+        for s in workflow_statuses:
+            if s['status'] not in INACTIVE_STATUSES:
+                start_date = s['since']
+                break
+        
+        # END: Status 'implantado'
+        for s in workflow_statuses:
+            if s['status'] == END_STATUS:
+                end_date = s['since']
+                break
+        
+        self.logger.info(f"[ClickUp] Datas integração task {task_id}: início={start_date}, fim={end_date}")
+        return {'start_date': start_date, 'end_date': end_date}
 
     def get_task_comments(self, task_id):
         """
