@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '../services/api';
 import { Settings, Target, Scale, Clock, Bell, Send, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -37,7 +37,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     const fetchConfig = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5003/api/config');
+            const res = await api.get('/api/config');
             setConfigs(res.data);
             const flat: Record<string, string> = {};
             Object.values(res.data).forEach((items: any) => {
@@ -56,7 +56,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await axios.post('http://localhost:5003/api/config', editValues);
+            await api.post('/api/config', editValues);
             showMsg('Configurações salvas!', 'success');
             fetchConfig();
         } catch { showMsg('Erro ao salvar', 'error'); }
@@ -70,7 +70,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
                 : type === 'sla' ? '/api/notifications/sla-alerts'
                     : type === 'summary' ? '/api/notifications/weekly-summary'
                         : '/api/notifications/goal-check';
-            const res = await axios.post(`http://localhost:5003${endpoint}`);
+            const res = await api.post(endpoint);
             if (res.data.ok || res.data.sent !== false) {
                 showMsg(`✅ ${type === 'test' ? 'Teste enviado' : 'Notificação enviada'}!`, 'success');
             } else {

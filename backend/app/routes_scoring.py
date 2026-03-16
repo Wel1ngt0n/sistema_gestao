@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.services.scoring_service import ScoringService
 from app.services.analytics_service import AnalyticsService
+from app.services.security_service import require_auth
 from app.constants.scoring_constants import (
     RISK_WEIGHTS, RISK_PRAZO_THRESHOLDS, RISK_IDLE_THRESHOLDS, 
     PERFORMANCE_WEIGHTS, OP_WEIGHTS, LOAD_LEVELS
@@ -10,7 +11,8 @@ from datetime import datetime
 scoring_bp = Blueprint('scoring_bp', __name__)
 
 @scoring_bp.route('/api/scoring/performance', methods=['GET'])
-def get_performance():
+@require_auth
+def get_performance(payload):
     try:
         start_str = request.args.get('start_date')
         end_str = request.args.get('end_date')
@@ -24,7 +26,8 @@ def get_performance():
         return jsonify({"error": str(e)}), 500
 
 @scoring_bp.route('/api/scoring/capacity', methods=['GET'])
-def get_capacity():
+@require_auth
+def get_capacity(payload):
     try:
         data = AnalyticsService.get_team_capacity()
         return jsonify(data), 200
@@ -32,7 +35,8 @@ def get_capacity():
         return jsonify({"error": str(e)}), 500
 
 @scoring_bp.route('/api/scoring/rules', methods=['GET'])
-def get_rules():
+@require_auth
+def get_rules(payload):
     """Retorna constantes para a página de Regras no Frontend"""
     return jsonify({
         "risk_weights": RISK_WEIGHTS,

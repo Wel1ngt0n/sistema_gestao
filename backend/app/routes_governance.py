@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request
 from app.models import db, SyncRun, SyncError
 from app.services.audit_service import AuditService
+from app.services.security_service import require_auth
 from datetime import datetime, timedelta
 
 gov_bp = Blueprint('governance', __name__, url_prefix='/api')
 
 @gov_bp.route('/sync/health', methods=['GET'])
-def get_sync_health():
+@require_auth
+def get_sync_health(payload):
     """
     Retorna resumo da saúde da sincronização.
     """
@@ -43,7 +45,8 @@ def get_sync_health():
     })
 
 @gov_bp.route('/sync/runs', methods=['GET'])
-def get_sync_runs():
+@require_auth
+def get_sync_runs(payload):
     """
     Histórico de execuções.
     """
@@ -60,7 +63,8 @@ def get_sync_runs():
     } for r in runs])
 
 @gov_bp.route('/audit/forecast/<int:store_id>', methods=['GET'])
-def get_audit_trail(store_id):
+@require_auth
+def get_audit_trail(payload, store_id):
     """
     Histórico de mudanças do forecast.
     """

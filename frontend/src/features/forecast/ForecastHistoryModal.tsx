@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { X, User, Calendar, FileText, CheckSquare } from 'lucide-react';
 
-const API_URL = 'http://localhost:5003/api';
+// API_URL removido pois já está no serviço api.ts
 
 interface ForecastHistoryModalProps {
     storeId: number;
@@ -17,7 +17,7 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
         queryKey: ['forecast-audit', storeId],
         queryFn: async () => {
             if (!storeId) return [];
-            const res = await axios.get(`${API_URL}/audit/forecast/${storeId}`);
+            const res = await api.get(`/api/audit/forecast/${storeId}`);
             return res.data;
         },
         enabled: isOpen && !!storeId

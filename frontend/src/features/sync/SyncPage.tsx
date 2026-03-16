@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { RefreshCw, Activity } from 'lucide-react'
+import { api } from '../../services/api'
 import SyncHealthPanel from './SyncHealthPanel'
 
 export default function SyncPage() {
@@ -21,7 +22,8 @@ export default function SyncPage() {
         setLogs(['Iniciando conexão com o servidor...'])
 
         // Use EventSource for real-time logs
-        const url = `http://localhost:5003/api/sync/stream${forceFull ? '?full=true' : ''}`
+        const token = localStorage.getItem('auth_token')
+        const url = `http://localhost:5003/api/sync/stream${forceFull ? '?full=true' : ''}${forceFull ? '&' : '?'}token=${token}`
         const eventSource = new EventSource(url)
 
         eventSource.onopen = () => {
@@ -50,12 +52,10 @@ export default function SyncPage() {
         setLogs(['Iniciando Sync Rápido de Integração...'])
 
         try {
-            const response = await fetch('http://localhost:5003/api/integration/sync', {
-                method: 'POST'
-            })
-            const data = await response.json()
+            const response = await api.post('/api/integration/sync')
+            const data = response.data
 
-            if (response.ok) {
+            if (response.status === 200) {
                 setLogs(prev => [
                     ...prev,
                     `✅ Sync Concluído!`,
@@ -77,12 +77,10 @@ export default function SyncPage() {
         setLogs(['Iniciando Sync Rápido de Implantação...'])
 
         try {
-            const response = await fetch('http://localhost:5003/api/implantacao/sync', {
-                method: 'POST'
-            })
-            const data = await response.json()
+            const response = await api.post('/api/implantacao/sync')
+            const data = response.data
 
-            if (response.ok) {
+            if (response.status === 200) {
                 setLogs(prev => [
                     ...prev,
                     `✅ Sync Concluído!`,

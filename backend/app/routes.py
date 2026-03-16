@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, Response, stream_with_context
 from app.models import db, Store, StoreSyncLog
 from app.services.metrics import MetricsService
 from app.services.sync_service import SyncService
+from app.services.security_service import require_auth, require_permission, log_audit
 from datetime import datetime
 from sqlalchemy import func, case
 
@@ -13,7 +14,8 @@ from app.routes_forecast import forecast_bp
 # --- Rotas da API (Backend React V2.5) ---
 
 @api_bp.route('/dashboard', methods=['GET'])
-def get_dashboard_data():
+@require_auth
+def get_dashboard_data(payload):
     from app.models import SystemConfig
     from app.services.scoring_service import ScoringService
     
@@ -215,7 +217,8 @@ def get_dashboard_data():
     })
 
 @api_bp.route('/stores', methods=['GET'])
-def get_stores():
+@require_auth
+def get_stores(payload):
     from sqlalchemy import or_, and_
     status_filter = request.args.get('status', 'active') # Default active
     
@@ -339,7 +342,8 @@ def get_stores():
     return jsonify({"stores": results, "matrices": matrices, "meta": meta})
 
 @api_bp.route('/stores/<int:id>', methods=['DELETE'])
-def delete_store(id):
+@require_auth
+def delete_store(payload, id):
     try:
         store = Store.query.get_or_404(id)
         
@@ -348,8 +352,17 @@ def delete_store(id):
         MetricsSnapshotDaily.query.filter_by(store_id=id).delete()
         
         # 2. Deletar Loja (Cascades steps, logs, deep_sync, etc.)
+        store_name = store.store_name
         db.session.delete(store)
         db.session.commit()
+        
+        log_audit(
+            action="DELETE_STORE",
+            resource_type="Store",
+            resource_id=id,
+            details=f"Loja '{store_name}' deletada permanentemente",
+            user_id=payload['sub']
+        )
         
         return jsonify({"status": "deleted", "id": id}), 200
     except Exception as e:
@@ -357,7 +370,8 @@ def delete_store(id):
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/store/<int:id>', methods=['PUT'])
-def update_store(id):
+@require_auth
+def update_store(payload, id):
     store = Store.query.get_or_404(id)
     data = request.json
     if not data: return jsonify({"error": "No data"}), 400
@@ -448,17 +462,28 @@ def update_store(id):
             store.manual_finished_at = None
             
     db.session.commit()
+    
+    log_audit(
+        action="UPDATE_STORE_MANUAL",
+        resource_type="Store",
+        resource_id=id,
+        details=f"Atualização manual dos campos: {list(data.keys())}",
+        user_id=payload['sub']
+    )
+    
     return jsonify({"status": "success"})
 
 @api_bp.route('/sync', methods=['POST'])
-def sync_clickup():
+@require_auth
+def sync_clickup(payload):
     full = request.args.get('full', 'false').lower() == 'true'
     service = SyncService()
     result = service.run_sync(force_full=full)
     return jsonify(result)
 
 @api_bp.route('/implantacao/sync', methods=['POST'])
-def sync_implantacao():
+@require_auth
+def sync_implantacao(payload):
     service = SyncService()
     try:
         result = service.run_implantacao_sync()
@@ -467,7 +492,8 @@ def sync_implantacao():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/stores/bulk-link', methods=['POST'])
-def bulk_link_stores():
+@require_auth
+def bulk_link_stores(payload):
     try:
         data = request.json
         store_ids = data.get('store_ids', [])
@@ -507,7 +533,8 @@ def bulk_link_stores():
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/stores/bulk-update', methods=['POST'])
-def bulk_update_stores():
+@require_auth
+def bulk_update_stores(payload):
     try:
         data = request.json
         store_ids = data.get('store_ids', [])
@@ -554,7 +581,8 @@ def bulk_update_stores():
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/stores/<int:id>/logs', methods=['GET'])
-def get_store_logs(id):
+@require_auth
+def get_store_logs(payload, id):
     try:
         from app.models import Store, StoreSyncLog, TaskStep
         
@@ -609,7 +637,8 @@ def get_store_logs(id):
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/deep-sync/store/<int:id>', methods=['POST'])
-def deep_sync_store(id):
+@require_auth
+def deep_sync_store(payload, id):
     service = SyncService()
     result = service.run_deep_sync(id)
     if "error" in result:
@@ -617,13 +646,15 @@ def deep_sync_store(id):
     return jsonify(result)
 
 @api_bp.route('/sync/stream', methods=['GET'])
-def sync_stream():
+@require_auth
+def sync_stream(payload):
     full = request.args.get('full', 'false').lower() == 'true'
     service = SyncService()
     return Response(stream_with_context(service.run_sync_stream(force_full=full)), mimetype='text/event-stream')
 
 @api_bp.route('/analyze/store/<int:id>', methods=['POST'])
-def analyze_store(id):
+@require_auth
+def analyze_store(payload, id):
     from app.services.llm_service import LLMService
     from app.models import Store
     from app.services.clickup import ClickUpService
@@ -714,7 +745,8 @@ def analyze_store(id):
     return jsonify(result)
 
 @api_bp.route('/reports/monthly-implantation', methods=['GET'])
-def get_monthly_implantation_report():
+@require_auth
+def get_monthly_implantation_report(payload):
     from collections import defaultdict
     import statistics
     import math
@@ -969,7 +1001,8 @@ def get_monthly_implantation_report():
     })
 
 @api_bp.route('/reports/monthly-implantation/export-excel', methods=['POST'])
-def export_monthly_excel():
+@require_auth
+def export_monthly_excel(payload):
     from app.services.excel_report_service import ExcelReportService
     from flask import send_file
     data = request.json
@@ -989,7 +1022,8 @@ def export_monthly_excel():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/reports/annual-implantation/export-excel', methods=['POST'])
-def export_annual_excel():
+@require_auth
+def export_annual_excel(payload):
     from app.services.excel_report_service import ExcelReportService
     from flask import send_file
     data = request.json
@@ -1010,7 +1044,8 @@ def export_annual_excel():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/reports/monthly-implantation/export-pdf', methods=['POST'])
-def export_monthly_pdf():
+@require_auth
+def export_monthly_pdf(payload):
     from app.services.pdf_report_service import PDFReportService
     from flask import send_file
     data = request.json
@@ -1027,7 +1062,8 @@ def export_monthly_pdf():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/reports/generate-summary', methods=['POST'])
-def generate_monthly_summary():
+@require_auth
+def generate_monthly_summary(payload):
     from app.services.llm_service import LLMService
     data = request.json
     
@@ -1053,7 +1089,8 @@ def generate_monthly_summary():
     return jsonify({"summary": summary})
 
 @api_bp.route('/steps', methods=['GET'])
-def get_steps():
+@require_auth
+def get_steps(payload):
     from app.models import TaskStep
     steps = TaskStep.query.order_by(TaskStep.store_id.asc(), TaskStep.start_real_at.asc()).limit(500).all()
     results = []
@@ -1074,7 +1111,8 @@ def get_steps():
     return jsonify(results)
 
 @api_bp.route('/stores/<int:store_id>/steps', methods=['GET'])
-def get_store_steps(store_id):
+@require_auth
+def get_store_steps(payload, store_id):
     from app.models import TaskStep
     steps = TaskStep.query.filter_by(store_id=store_id).order_by(TaskStep.start_real_at.asc()).all()
     results = []
@@ -1153,7 +1191,8 @@ def seed_default_configs():
     db.session.commit()
 
 @api_bp.route('/config', methods=['GET'])
-def get_config():
+@require_auth
+def get_config(payload):
     from app.models import SystemConfig
     seed_default_configs()
     configs = SystemConfig.query.all()
@@ -1172,7 +1211,9 @@ def get_config():
     return jsonify(result)
 
 @api_bp.route('/config', methods=['POST'])
-def update_config():
+@require_auth
+@require_permission('manage_system')
+def update_config(payload):
     from app.models import SystemConfig
     data = request.json
     
@@ -1189,7 +1230,8 @@ def update_config():
 # --- Rotas de Pausas (V4) ---
 
 @api_bp.route('/stores/<int:id>/pauses', methods=['GET'])
-def get_store_pauses(id):
+@require_auth
+def get_store_pauses(payload, id):
     from app.models import StorePause
     pauses = StorePause.query.filter_by(store_id=id).order_by(StorePause.start_date.desc()).all()
     
@@ -1212,7 +1254,8 @@ def get_store_pauses(id):
     return jsonify(results)
 
 @api_bp.route('/stores/<int:id>/pauses', methods=['POST'])
-def add_store_pause(id):
+@require_auth
+def add_store_pause(payload, id):
     from app.models import StorePause
     data = request.json
     

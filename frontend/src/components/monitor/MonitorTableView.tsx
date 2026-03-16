@@ -14,7 +14,7 @@ import {
     ColumnFiltersState,
     Column,
 } from '@tanstack/react-table';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { Store } from './types';
 import { formatCurrency, formatDate, getStatusColor, getDeepSyncColor } from './monitorUtils';
 import { Filter, RiskTooltip } from './MonitorComponents';
@@ -104,7 +104,7 @@ export default function MonitorTableView({
         if (!confirm(`Deseja aplicar em ${ids.length} lojas: ${actionMsg}?`)) return;
 
         try {
-            await axios.post('http://localhost:5003/api/stores/bulk-update', {
+            await api.post('/api/stores/bulk-update', {
                 store_ids: ids,
                 parent_id: bulkMatrizId ? parseInt(bulkMatrizId) : null,
                 tipo_loja: bulkTipoLoja || null

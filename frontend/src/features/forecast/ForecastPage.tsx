@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { RefreshCw, Download, Filter } from 'lucide-react';
 import ForecastTable from './ForecastTable';
 import ForecastCards from './ForecastCards';
 
-const API_URL = 'http://localhost:5003/api/forecast';
+// API_URL removido pois já está no serviço api.ts
 
 export default function ForecastPage() {
     const [filters, setFilters] = useState({
@@ -20,7 +20,7 @@ export default function ForecastPage() {
     const { data: summaryData, isLoading: loadingSummary } = useQuery({
         queryKey: ['forecast-summary'],
         queryFn: async () => {
-            const res = await axios.get(`${API_URL}/summary`);
+            const res = await api.get('/api/forecast/summary');
             return res.data;
         }
     });
@@ -36,7 +36,7 @@ export default function ForecastPage() {
             if (filters.rede) params.append('rede', filters.rede);
             if (filters.status) params.append('status', filters.status);
 
-            const res = await axios.get(`${API_URL}/?${params.toString()}`);
+            const res = await api.get(`/api/forecast/?${params.toString()}`);
             return res.data;
         }
     });
@@ -49,7 +49,7 @@ export default function ForecastPage() {
             if (filters.year) params.append('year', filters.year);
             if (filters.implantador) params.append('implantador', filters.implantador);
 
-            const response = await axios.get(`${API_URL}/export?${params.toString()}`, {
+            const response = await api.get(`/api/forecast/export?${params.toString()}`, {
                 responseType: 'blob',
             });
 

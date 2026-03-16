@@ -1,11 +1,13 @@
 from flask import Blueprint, jsonify, request
 from app.services.ai_service import GeminiService
+from app.services.security_service import require_auth
 
 ai_bp = Blueprint('ai', __name__)
 ai_service = GeminiService()
 
 @ai_bp.route('/api/ai/analyze-network/<int:store_id>', methods=['POST'])
-def analyze_network(store_id):
+@require_auth
+def analyze_network(payload, store_id):
     """
     Gatilho manual para analisar uma rede de lojas.
     Identifica a rede baseada no store_id e roda a análise.
@@ -21,7 +23,8 @@ def analyze_network(store_id):
     return jsonify(result)
 
 @ai_bp.route('/api/ai/chat', methods=['POST'])
-def chat_with_data():
+@require_auth
+def chat_with_data(payload):
     """
     Endpoint para Chat com I.A. (RAG).
     Recebe: { "message": "string" }

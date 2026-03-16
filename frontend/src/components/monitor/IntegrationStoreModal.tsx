@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { Store, IntegrationData } from './types';
 
 interface IntegrationStoreModalProps {
@@ -84,7 +84,7 @@ export default function IntegrationStoreModal({
             // Workaround: MonitorTableView passa a store completa. IntegrationMonitor só tem IntegrationData via dashboard.
             // Vamos tentar chamar /api/stores?limit=1000 e filtrar no front se não tiver endpoint de detalhe? Não, muito pesado.
             // Vamos deixar sem detalhes extras por enquanto se a API não suportar.
-            const res = await axios.get(`http://localhost:5003/api/stores?limit=5000`); // Horrível, mas temporário
+            const res = await api.get(`/api/stores?limit=5000`); // Horrível, mas temporário
             if (res.data && res.data.items) {
                 const found = res.data.items.find((s: Store) => s.id === storeId);
                 if (found) setFullStore(found);
@@ -101,7 +101,7 @@ export default function IntegrationStoreModal({
         if (!localData?.id) return;
         setLoadingLogs(true);
         try {
-            const res = await axios.get(`http://localhost:5003/api/stores/${localData.id}/logs`);
+            const res = await api.get(`/api/stores/${localData.id}/logs`);
             setLogs(res.data);
         } catch (e) {
             console.error("Erro ao carregar logs", e);
@@ -114,7 +114,7 @@ export default function IntegrationStoreModal({
         if (!localData?.id) return;
         setLoadingSteps(true);
         try {
-            const res = await axios.get(`http://localhost:5003/api/stores/${localData.id}/steps`);
+            const res = await api.get(`/api/stores/${localData.id}/steps`);
             setSteps(res.data);
         } catch (e) {
             console.error("Erro ao carregar etapas", e);
@@ -129,7 +129,7 @@ export default function IntegrationStoreModal({
         try {
             // Mapear localData para payload esperado pelo backend
             // /api/integration/metrics/:store_id
-            await axios.post(`http://localhost:5003/api/integration/metrics/${localData.id}`, {
+            await api.post(`/api/integration/metrics/${localData.id}`, {
                 integrador: localData.integrador,
                 start_date: localData.start_date,
                 end_date: localData.end_date,

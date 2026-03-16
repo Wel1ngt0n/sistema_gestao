@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app.models import db, User
 from app.services.security_service import (
-    verify_password, generate_jwt_token, 
-    generate_totp_secret, generate_totp_uri, verify_totp_code, require_auth, hash_password
+    generate_jwt_token, verify_password,
+    generate_totp_secret, generate_totp_uri, verify_totp_code, require_auth, hash_password,
+    log_audit
 )
 import datetime
 
@@ -10,6 +11,16 @@ auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
 def login():
+    limiter = getattr(current_app, 'limiter', None)
+    if limiter:
+        @limiter.limit("5 per minute")
+        def rate_limited_login():
+            return login_logic()
+        return rate_limited_login()
+    
+    return login_logic()
+
+def login_logic():
     """Endpoint inicial de Login. Se 2FA ativado, exige 2º passo."""
     data = request.json
     email = data.get('email')
@@ -22,6 +33,7 @@ def login():
     
     # Falha Segura e Mitigação de Enumeração de Usuários (sempre deve demorar o mesmo tempo)
     if not user or not verify_password(password, user.password_hash):
+        log_audit("LOGIN_FAILED", details=f"Tentativa de login falha para o email: {email}")
         return jsonify({"error": "Credenciais inválidas"}), 401
 
     if not user.is_active:
@@ -41,6 +53,8 @@ def login():
 
     # Gera o JWT
     token = generate_jwt_token(user.id, user.email)
+    
+    log_audit("LOGIN_SUCCESS", user_id=user.id, details="Login realizado com sucesso")
     
     return jsonify({
         "token": token,
@@ -130,11 +144,17 @@ def enable_2fa(payload):
 
     user = User.query.get(payload['sub'])
     
+    print(f"DEBUG 2FA: user_id={payload['sub']}, email={user.email if user else 'None'}")
+    print(f"DEBUG 2FA: secret_exists={bool(user.totp_secret)}, code_received={code}")
+    
     if not user.totp_secret:
         return jsonify({"error": "Precisa rodar setup-2fa antes de habilitar."}), 400
 
-    if not verify_totp_code(user.totp_secret, code):
-        return jsonify({"error": "Código inválido. O 2FA não foi ativado."}), 400
+    is_valid = verify_totp_code(user.totp_secret, code)
+    print(f"DEBUG 2FA: code_valid={is_valid}")
+    
+    if not is_valid:
+        return jsonify({"error": "Código inválido. O 2FA não foi ativado. Verifique se o horário do seu celular e do servidor estão sincronizados.", "code": "INVALID_TOTP"}), 400
 
     user.totp_enabled = True
     db.session.commit()

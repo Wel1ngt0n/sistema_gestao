@@ -7,14 +7,19 @@ from functools import wraps
 from flask import request, jsonify
 
 # JWT Configuration
-# Em produção, a secret key deve vir de variáveis de ambiente
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'default_dev_secret_key_123!@#')
+# Segurança Crítica (A04): Em produção, usar sempre variáveis de ambiente fortes.
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+if not JWT_SECRET_KEY and os.environ.get('FLASK_ENV') != 'development':
+    raise ValueError("CRITICAL SECURITY ERROR: JWT_SECRET_KEY must be set in production mode!")
+elif not JWT_SECRET_KEY:
+    JWT_SECRET_KEY = 'default_dev_secret_key_123!@#' # Só permitido se explicitly development
+
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 
 def hash_password(password: str) -> str:
-    """Gera o hash da senha usando werkzeug.security (seguro com pbkdf2:sha256)."""
-    return generate_password_hash(password)
+    """Gera o hash da senha usando werkzeug.security (seguro com scrypt em 2025)."""
+    return generate_password_hash(password, method='scrypt')
 
 def verify_password(password: str, hashed_password: str) -> bool:
     """Verifica se a senha em texto plano bate com o hash."""
@@ -75,11 +80,18 @@ def require_auth(f):
         print(f"HEADERS: {dict(request.headers)}")
 
         auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            print(f"AUTH MISSING! auth_header={auth_header}")
+        token = None
+        
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+        else:
+            # Fallback para token via query parameter (útil para EventSource/SSE)
+            token = request.args.get("token")
+
+        if not token:
+            print(f"AUTH MISSING! No header or query token found.")
             return jsonify({"error": "Token de autenticação ausente ou inválido.", "code": "AUTH_MISSING"}), 401
             
-        token = auth_header.split(" ")[1]
         payload = decode_jwt_token(token)
         
         if not payload:
@@ -122,6 +134,51 @@ def require_permission(permission_name: str):
                 }), 403
                 
             return f(payload, *args, **kwargs)
+        return decorated_function
+    return decorator
+
+def log_audit(action, resource_type=None, resource_id=None, details=None, user_id=None):
+    """
+    Helper para registrar uma ação no log de auditoria.
+    Se user_id não for passado, tenta pegar do request context se disponível.
+    """
+    from app.models import db, AuditLog
+    
+    # Se não for passado user_id, podemos tentar inferir do payload se a rota for autenticada
+    # Mas o ideal é passar explicitamente quando disponível.
+    
+    new_log = AuditLog(
+        user_id=user_id,
+        action=action,
+        resource_type=resource_type,
+        resource_id=str(resource_id) if resource_id else None,
+        details=details if isinstance(details, str) else str(details),
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string if request.user_agent else None
+    )
+    
+    try:
+        db.session.add(new_log)
+        db.session.commit()
+    except Exception as e:
+        print(f"AUDIT_LOG_ERROR: {e}")
+        db.session.rollback()
+
+def validate_schema(schema_class):
+    """
+    Decorator para validar o JSON do request contra um schema (Pydantic ou similar).
+    Por simplicidade, implementamos uma lógica básica aqui, mas em apps maiores 
+    usaríamos Marshmallow ou Pydantic estruturado.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not request.is_json:
+                return jsonify({"error": "Formato de dados inválido. Esperado JSON.", "code": "JSON_REQUIRED"}), 400
+            
+            # Nota: Aqui viria a lógica de validação do schema_class
+            # Se fosse Pydantic: schema_class(**request.json)
+            return f(*args, **kwargs)
         return decorated_function
     return decorator
 

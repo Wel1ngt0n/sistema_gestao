@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { CheckCircle, X, Clock, Target, Calendar } from 'lucide-react';
 
 interface StoreDetail {
@@ -46,7 +46,7 @@ const PerformanceDetailModal: React.FC<PerformanceDetailModalProps> = ({ implant
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                const res = await axios.get(`http://localhost:5003/api/analytics/implantador-detail/${encodeURIComponent(implantadorName)}`);
+                const res = await api.get(`/api/analytics/implantador-detail/${encodeURIComponent(implantadorName)}`);
                 setData(res.data);
             } catch (err) {
                 console.error('Erro ao buscar detalhes:', err);

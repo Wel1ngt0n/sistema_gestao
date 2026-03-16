@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../services/api';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -38,7 +38,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get('http://localhost:5003/api/dashboard')
+        api.get('/api/dashboard')
             .then(res => {
                 setData(res.data);
                 setLoading(false);

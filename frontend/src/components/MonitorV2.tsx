@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
+import { api } from '../services/api';
 import AdminPanel from './AdminPanel';
 import { SkeletonLoader } from './monitor/MonitorComponents';
 import MonitorTableView from './monitor/MonitorTableViewV2';
@@ -68,7 +68,7 @@ export default function MonitorV2() {
         if (!silent) setLoading(true);
         else setIsRefreshing(true);
 
-        axios.get('http://localhost:5003/api/stores', {
+        api.get('/api/stores', {
             params: { status: filterStatus }
         })
             .then(res => {
@@ -136,7 +136,7 @@ export default function MonitorV2() {
     const handleRunDeepSync = async (storeId: number) => {
         setDeepSyncLoading(true);
         try {
-            await axios.post(`http://localhost:5003/api/deep-sync/store/${storeId}`);
+            await api.post(`/api/deep-sync/store/${storeId}`);
             alert("Deep Sync finalizado com sucesso! Histórico atualizado.");
             fetchStores(true); // Soft refresh
             setDeepSyncLoading(false);
@@ -152,10 +152,10 @@ export default function MonitorV2() {
             return;
         }
 
-        const url = `http://localhost:5003/api/store/${storeToSave.id}`;
+        const url = `/api/store/${storeToSave.id}`;
 
         try {
-            await axios.put(url, storeToSave);
+            await api.put(url, storeToSave);
             setIsStoreModalOpen(false);
             fetchStores(true); // Soft refresh
         } catch (error: any) {
@@ -177,7 +177,7 @@ export default function MonitorV2() {
         setData(newData);
 
         try {
-            await axios.put(`http://localhost:5003/api/store/${storeId}`, updatedStore);
+            await api.put(`/api/store/${storeId}`, updatedStore);
         } catch (e) {
             console.error("Rollback status change", e);
             setData(prev => {

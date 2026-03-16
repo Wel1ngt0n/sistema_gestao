@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, send_file
 from app.services.forecast_service import ForecastService
 from app.models import db, Store
+from app.services.security_service import require_auth
 import pandas as pd
 import io
 from datetime import datetime
@@ -8,7 +9,8 @@ from datetime import datetime
 forecast_bp = Blueprint('forecast', __name__, url_prefix='/api/forecast')
 
 @forecast_bp.route('/', methods=['GET'])
-def get_forecast():
+@require_auth
+def get_forecast(payload):
     """
     Retorna dados da tabela principal de forecast.
     Filtros query param: month, year, implantador, rede, status.
@@ -26,7 +28,8 @@ def get_forecast():
     return jsonify(data)
 
 @forecast_bp.route('/summary', methods=['GET'])
-def get_summary():
+@require_auth
+def get_summary(payload):
     """
     Retorna cards de resumo mensal.
     """
@@ -34,7 +37,8 @@ def get_summary():
     return jsonify(data)
 
 @forecast_bp.route('/store/<int:store_id>', methods=['PUT'])
-def update_store_forecast(store_id):
+@require_auth
+def update_store_forecast(payload, store_id):
     """
     Atualiza dados manuais de forecast da loja.
     """
@@ -70,7 +74,8 @@ def update_store_forecast(store_id):
     return jsonify({"message": "Forecast updated", "id": store.id})
 
 @forecast_bp.route('/export', methods=['GET'])
-def export_forecast():
+@require_auth
+def export_forecast(payload):
     """
     Gera Excel com colunas exatas solicitadas.
     """

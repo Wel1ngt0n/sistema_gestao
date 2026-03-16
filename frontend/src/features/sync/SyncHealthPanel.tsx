@@ -1,15 +1,15 @@
-import axios from 'axios';
+import { api } from '../../services/api';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle, XCircle, Activity, Database } from 'lucide-react';
 
-const API_URL = 'http://localhost:5003/api';
+// API_URL removido pois já está no serviço api.ts
 
 export default function SyncHealthPanel() {
 
     const { data: health, isLoading, error, refetch } = useQuery({
         queryKey: ['sync-health'],
         queryFn: async () => {
-            const res = await axios.get(`${API_URL}/sync/health`);
+            const res = await api.get('/api/sync/health');
             return res.data;
         },
         refetchInterval: 30000 // Refresh every 30s

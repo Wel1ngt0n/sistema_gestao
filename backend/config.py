@@ -6,6 +6,10 @@ load_dotenv()
 
 
 class Config:
+    # Security: Flask Secret Key for session/cookies
+    SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev_fallback_key_dont_use_in_prod")
+    DEBUG = os.getenv("FLASK_ENV") == "development"
+    
     CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
@@ -26,5 +30,10 @@ class Config:
         "POS_IMPLANTACAO": "901306837383"
     }
 
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///metrics.db')
+    # Security: Ensure PostgreSQL is used correctly for Supabase, fallback to SQLite for dev
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///metrics.db')
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+    SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False

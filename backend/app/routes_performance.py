@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request
 from app.models import db, Store, IntegrationMetric, PerformanceReview, User
+from app.services.security_service import require_auth, require_permission
 from datetime import datetime, date
 from sqlalchemy import func
 
 performance_bp = Blueprint('performance', __name__, url_prefix='/api/performance')
 
 @performance_bp.route('/summary', methods=['GET'])
-def get_performance_summary():
+@require_auth
+def get_performance_summary(payload):
     """
     Retorna o resumo de performance de todos os colaboradores elegíveis.
     Filtros: ?cycle=2024-02 (Default: Mês atual)
@@ -183,7 +185,9 @@ def get_performance_summary():
     })
 
 @performance_bp.route('/review', methods=['POST'])
-def save_review():
+@require_auth
+@require_permission('manage_performance')
+def save_review(payload):
     """
     Salva avaliação comportamental manual.
     Payload: { user_id, cycle, soft_communication, soft_process, soft_responsibility, churn_count }

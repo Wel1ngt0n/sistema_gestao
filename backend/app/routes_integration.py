@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request
 from app.models import db, Store, IntegrationMetric, TaskStep
+from app.services.security_service import require_auth
 from sqlalchemy import desc, func, case
 from datetime import datetime, date
 
 integration_bp = Blueprint('integration', __name__, url_prefix='/api/integration')
 
 @integration_bp.route('/dashboard', methods=['GET'])
-def get_integration_dashboard():
+@require_auth
+def get_integration_dashboard(payload):
     """
     Retorna KPIs e Lista de Integrações.
     Aceita filtros: ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD (para KPIs de volume)
@@ -109,7 +111,8 @@ def get_integration_dashboard():
     })
 
 @integration_bp.route('/metrics/<int:store_id>', methods=['POST'])
-def update_integration_metric(store_id):
+@require_auth
+def update_integration_metric(payload, store_id):
     """
     Atualiza métricas manuais de integração (Doc, Bugs, Churn, Dates).
     Payload: { field: value }
@@ -155,7 +158,8 @@ def update_integration_metric(store_id):
         return jsonify({"error": str(e)}), 500
 
 @integration_bp.route('/analytics/kpi-cards', methods=['GET'])
-def get_integration_kpis():
+@require_auth
+def get_integration_kpis(payload):
     """
     Retorna Big Numbers para o Dashboard.
     """
@@ -167,7 +171,8 @@ def get_integration_kpis():
         return jsonify({"error": str(e)}), 500
 
 @integration_bp.route('/analytics/trends', methods=['GET'])
-def get_integration_trends():
+@require_auth
+def get_integration_trends(payload):
     """
     Retorna gráfico de evolução mensal.
     """
@@ -180,7 +185,8 @@ def get_integration_trends():
         return jsonify({"error": str(e)}), 500
 
 @integration_bp.route('/reports/monthly', methods=['GET'])
-def get_monthly_integration_report():
+@require_auth
+def get_monthly_integration_report(payload):
     """
     Retorna dados agrupados de integrações concluidas por mês (JSON).
     Espelha a estrutura do relatório mensal de implantações.
@@ -441,7 +447,8 @@ def get_monthly_integration_report():
         return jsonify({"error": str(e)}), 500
 
 @integration_bp.route('/reports/export', methods=['GET'])
-def export_integration_report():
+@require_auth
+def export_integration_report(payload):
     """
     Exporta Excel com todas as integrações.
     """
@@ -462,7 +469,8 @@ def export_integration_report():
         return jsonify({"error": str(e)}), 500
 
 @integration_bp.route('/sync', methods=['POST'])
-def sync_integration_tasks():
+@require_auth
+def sync_integration_tasks(payload):
     """
     Dispara sincronização manual apenas da fase de Integração.
     """

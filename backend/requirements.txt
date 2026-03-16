@@ -13,6 +13,8 @@ google-genai
 # Segurança / Auth
 PyJWT
 pyotp
+flask-talisman
+flask-limiter
 
 # Add other dependencies as needed
 xlsxwriter==3.2.9

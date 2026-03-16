@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app.models import db, SystemConfig, User, Role
-from app.services.security_service import require_auth, require_permission, hash_password
+from app.services.security_service import require_auth, require_permission, hash_password, log_audit
 from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
@@ -37,6 +37,15 @@ def update_config(payload):
         db.session.add(config)
         
     db.session.commit()
+    
+    log_audit(
+        action="UPDATE_CONFIG",
+        resource_type="SystemConfig",
+        resource_id=key,
+        details=f"Valor alterado para: {value}",
+        user_id=payload['sub']
+    )
+    
     return jsonify({"status": "success", "key": key, "value": value})
 
 # --- User Management ---
@@ -84,6 +93,14 @@ def create_user(payload):
     db.session.add(user)
     db.session.commit()
     
+    log_audit(
+        action="CREATE_USER",
+        resource_type="User",
+        resource_id=user.id,
+        details=f"Usuário {name} ({email}) criado com papel {role_name}",
+        user_id=payload['sub']
+    )
+    
     return jsonify({"status": "created", "id": user.id})
 
 @admin_bp.route('/users/<int:id>', methods=['PUT'])
@@ -102,4 +119,13 @@ def update_user(payload, id):
     if 'name' in data: user.name = data['name']
     
     db.session.commit()
+    
+    log_audit(
+        action="UPDATE_USER",
+        resource_type="User",
+        resource_id=id,
+        details=f"Campos atualizados: {list(data.keys())}",
+        user_id=payload['sub']
+    )
+    
     return jsonify({"status": "updated"})

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getSortedRowModel, getFilteredRowModel } from '@tanstack/react-table';
 import { Edit2, Check, X, History } from 'lucide-react';
 import ForecastHistoryModal from './ForecastHistoryModal';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { format } from 'date-fns';
 
-const API_URL = 'http://localhost:5003/api/forecast';
+// API_URL removido pois já está no serviço api.ts
 
 interface ForecastData {
     id: number;
@@ -54,7 +54,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
     const saveEdit = async () => {
         setSaving(true);
         try {
-            await axios.put(`${API_URL}/store/${editingId}`, {
+            await api.put(`/api/forecast/store/${editingId}`, {
                 manual_go_live_date: editValues.manual_go_live_date === '' ? null : editValues.manual_go_live_date, // Empty string -> Null
                 projected_orders: editValues.projected_orders,
                 order_rate: editValues.order_rate,

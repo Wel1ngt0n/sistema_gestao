@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { Store } from './types';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -43,8 +43,8 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
         setError(null);
         try {
             // New endpoint for network-aware analysis
-            const url = `http://localhost:5003/api/ai/analyze-network/${storeId}${force ? '?force=true' : ''}`;
-            const res = await axios.post(url);
+            const url = `/api/ai/analyze-network/${storeId}${force ? '?force=true' : ''}`;
+            const res = await api.post(url);
             setAnalysis(res.data);
         } catch (e) {
             console.error(e);

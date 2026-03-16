@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { ChevronDown, ChevronUp, Download, Bot, FileText, Loader2, Users, CheckCircle, Clock, Target, TrendingUp, TrendingDown, BarChart3, Building2, Layers, Printer } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 
@@ -122,7 +122,7 @@ const MonthlyReport: React.FC = () => {
     const fetchReport = async () => {
         try {
             setLoading(true);
-            const response = await axios.get('http://localhost:5003/api/reports/monthly-implantation');
+            const response = await api.get('/api/reports/monthly-implantation');
             setReportData(response.data);
             if (response.data.months?.length > 0) {
                 setExpandedMonth(response.data.months[0].month);
@@ -153,7 +153,7 @@ const MonthlyReport: React.FC = () => {
                 on_time_count: monthData.stats.on_time_count,
                 format: formatType
             };
-            const response = await axios.post('http://localhost:5003/api/reports/generate-summary', payload);
+            const response = await api.post('/api/reports/generate-summary', payload);
             setAiSummary(response.data.summary);
         } catch {
             setAiSummary("Erro ao gerar resumo. Verifique a conexão.");
@@ -169,7 +169,7 @@ const MonthlyReport: React.FC = () => {
                 annual_goals: reportData?.annual_goals,
                 wip_overview: reportData?.wip_overview
             };
-            const response = await axios.post('http://localhost:5003/api/reports/monthly-implantation/export-excel', payload, {
+            const response = await api.post('/api/reports/monthly-implantation/export-excel', payload, {
                 responseType: 'blob'
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -188,7 +188,7 @@ const MonthlyReport: React.FC = () => {
     const handleExportAnnualExcel = async () => {
         if (!reportData) return;
         try {
-            const response = await axios.post('http://localhost:5003/api/reports/annual-implantation/export-excel', reportData, {
+            const response = await api.post('/api/reports/annual-implantation/export-excel', reportData, {
                 responseType: 'blob'
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -211,7 +211,7 @@ const MonthlyReport: React.FC = () => {
                 annual_goals: reportData?.annual_goals,
                 wip_overview: reportData?.wip_overview
             };
-            const response = await axios.post('http://localhost:5003/api/reports/monthly-implantation/export-pdf', payload, {
+            const response = await api.post('/api/reports/monthly-implantation/export-pdf', payload, {
                 responseType: 'blob'
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));

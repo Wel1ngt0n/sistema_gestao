@@ -544,3 +544,36 @@ class User(db.Model):
             "totp_enabled": self.totp_enabled,
             "roles": [r.name for r in self.roles]
         }
+
+class AuditLog(db.Model):
+    """
+    Registra ações administrativas e mudanças críticas no sistema.
+    """
+    __tablename__ = 'audit_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # None para ações do sistema
+    action = db.Column(db.String(100), nullable=False) # Ex: 'DELETE_STORE', 'UPDATE_CONFIG'
+    resource_type = db.Column(db.String(50)) # Ex: 'Store', 'SystemConfig'
+    resource_id = db.Column(db.String(50))
+    
+    details = db.Column(db.Text) # JSON ou descrição textual da mudança
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.String(255))
+    
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='audit_logs')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "user_name": self.user.name if self.user else "System",
+            "action": self.action,
+            "resource_type": self.resource_type,
+            "resource_id": self.resource_id,
+            "details": self.details,
+            "ip_address": self.ip_address,
+            "timestamp": self.timestamp.isoformat()
+        }

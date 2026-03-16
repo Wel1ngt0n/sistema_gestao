@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { AnalyticsFiltersState } from '../../hooks/useDashboardUrlParams';
 
 // Reuse existing interfaces
@@ -94,7 +94,7 @@ export interface AnnualTrendData {
     }[];
 }
 
-const API_BASE_URL = 'http://localhost:5003';
+// API_BASE_URL removido pois já está no serviço api.ts
 
 const buildParams = (filters: AnalyticsFiltersState) => {
     const params = new URLSearchParams();
@@ -118,7 +118,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const kpiQuery = useQuery({
         queryKey: [...queryKey, 'kpi'],
         queryFn: async () => {
-            const res = await axios.get<KPIData>(`${API_BASE_URL}/api/analytics/kpi-cards`, { params: buildParams(filters) });
+            const res = await api.get<KPIData>('/api/analytics/kpi-cards', { params: buildParams(filters) });
             return res.data;
         }
     });
@@ -128,7 +128,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         queryFn: async () => {
             const params = buildParams(filters);
             params.append('months', '6');
-            const res = await axios.get<TrendData[]>(`${API_BASE_URL}/api/analytics/trends`, { params });
+            const res = await api.get<TrendData[]>('/api/analytics/trends', { params });
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -136,7 +136,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const perfQuery = useQuery({
         queryKey: [...queryKey, 'performance'],
         queryFn: async () => {
-            const res = await axios.get<PerformanceData[]>(`${API_BASE_URL}/api/scoring/performance`, { params: buildParams(filters) });
+            const res = await api.get<PerformanceData[]>('/api/scoring/performance', { params: buildParams(filters) });
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -144,7 +144,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const bottleQuery = useQuery({
         queryKey: [...queryKey, 'bottlenecks'],
         queryFn: async () => {
-            const res = await axios.get<BottleneckData[]>(`${API_BASE_URL}/api/analytics/bottlenecks`, { params: buildParams(filters) });
+            const res = await api.get<BottleneckData[]>('/api/analytics/bottlenecks', { params: buildParams(filters) });
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -153,7 +153,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         queryKey: ['capacity', filters.implantador],
         queryFn: async () => {
             // Updated to use the new standardized scoring endpoint for capacity
-            const res = await axios.get<CapacityData[]>(`${API_BASE_URL}/api/scoring/capacity`);
+            const res = await api.get<CapacityData[]>('/api/scoring/capacity');
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -161,7 +161,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const forecastQuery = useQuery({
         queryKey: ['forecast', 6],
         queryFn: async () => {
-            const res = await axios.get<ForecastData[]>(`${API_BASE_URL}/api/analytics/forecast`, { params: { months: 6 } });
+            const res = await api.get<ForecastData[]>('/api/analytics/forecast', { params: { months: 6 } });
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -171,7 +171,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
         queryFn: async () => {
             const params = new URLSearchParams();
             if (filters.implantador) params.append('implantador', filters.implantador);
-            const res = await axios.get<any[][]>(`${API_BASE_URL}/api/analytics/risk-scatter`, { params });
+            const res = await api.get<any[][]>('/api/analytics/risk-scatter', { params });
             return Array.isArray(res.data) ? res.data : [];
         }
     });
@@ -179,7 +179,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const distQuery = useQuery({
         queryKey: ['distribution'],
         queryFn: async () => {
-            const res = await axios.get<DistributionData>(`${API_BASE_URL}/api/analytics/distribution`);
+            const res = await api.get<DistributionData>('/api/analytics/distribution');
             return res.data;
         }
     });
@@ -187,7 +187,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const annualTrendQuery = useQuery({
         queryKey: ['annual-trends'],
         queryFn: async () => {
-            const res = await axios.get<AnnualTrendData>(`${API_BASE_URL}/api/analytics/annual-trends`);
+            const res = await api.get<AnnualTrendData>('/api/analytics/annual-trends');
             return res.data;
         }
     });

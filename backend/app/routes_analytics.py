@@ -1,11 +1,13 @@
 from flask import Blueprint, jsonify, request, Response
 from app.services.analytics_service import AnalyticsService
+from app.services.security_service import require_auth
 from datetime import datetime
 
 analytics_bp = Blueprint('analytics_bp', __name__)
 
 @analytics_bp.route('/api/analytics/kpi-cards', methods=['GET'])
-def get_kpi_cards():
+@require_auth
+def get_kpi_cards(payload):
     try:
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
@@ -34,7 +36,8 @@ def get_kpi_cards():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/trends', methods=['GET'])
-def get_trends():
+@require_auth
+def get_trends(payload):
     try:
         months = int(request.args.get('months', 6))
         implantador = request.args.get('implantador')
@@ -44,7 +47,8 @@ def get_trends():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/annual-trends', methods=['GET'])
-def get_annual_trends():
+@require_auth
+def get_annual_trends(payload):
     try:
         year = request.args.get('year')
         if year:
@@ -57,7 +61,8 @@ def get_annual_trends():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/performance', methods=['GET'])
-def get_performance():
+@require_auth
+def get_performance(payload):
     try:
         implantador = request.args.get('implantador')
         data = AnalyticsService.get_performance_ranking(implantador)
@@ -66,7 +71,8 @@ def get_performance():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/bottlenecks', methods=['GET'])
-def get_bottlenecks():
+@require_auth
+def get_bottlenecks(payload):
     try:
         implantador = request.args.get('implantador')
         data = AnalyticsService.get_bottlenecks(implantador)
@@ -74,7 +80,8 @@ def get_bottlenecks():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 @analytics_bp.route('/api/analytics/implantador-detail/<path:implantador_name>', methods=['GET'])
-def get_performance_detail(implantador_name):
+@require_auth
+def get_performance_detail(payload, implantador_name):
     try:
         data = AnalyticsService.get_implantador_details(implantador_name)
         return jsonify(data), 200
@@ -82,7 +89,8 @@ def get_performance_detail(implantador_name):
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/export-csv', methods=['GET'])
-def export_excel_report():
+@require_auth
+def export_excel_report(payload):
     try:
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
@@ -113,7 +121,8 @@ def export_excel_report():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/capacity', methods=['GET'])
-def get_capacity():
+@require_auth
+def get_capacity(payload):
     try:
         data = AnalyticsService.get_team_capacity()
         return jsonify(data), 200
@@ -121,7 +130,8 @@ def get_capacity():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/forecast', methods=['GET'])
-def get_forecast():
+@require_auth
+def get_forecast(payload):
     try:
         months = int(request.args.get('months', 6))
         data = AnalyticsService.get_financial_forecast(months)
@@ -130,7 +140,8 @@ def get_forecast():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/risk-scatter', methods=['GET'])
-def get_risk_scatter():
+@require_auth
+def get_risk_scatter(payload):
     try:
         data = AnalyticsService.get_risk_scatter()
         return jsonify(data), 200
@@ -138,7 +149,8 @@ def get_risk_scatter():
         return jsonify({"error": str(e)}), 500
 
 @analytics_bp.route('/api/analytics/distribution', methods=['GET'])
-def get_distribution():
+@require_auth
+def get_distribution(payload):
     try:
         from app.models import Store
         from sqlalchemy import or_
