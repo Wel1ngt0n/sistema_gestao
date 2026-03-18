@@ -10,7 +10,7 @@ services:
       - key: FLASK_ENV
         value: production
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.11.10
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET_KEY
