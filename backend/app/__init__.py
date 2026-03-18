@@ -12,10 +12,16 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
+    import re
     # Enable CORS for frontend domains (Security Fix - A02)
     frontend_url_env = os.environ.get('FRONTEND_URL', 'http://localhost:3000,http://localhost:5173,http://localhost:5177')
-    allowed_origins = [origin.strip() for origin in frontend_url_env.split(',')]
-    CORS(app, resources={r"/*": {"origins": allowed_origins}}, allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"])
+    allowed_origins = [origin.strip() for origin in frontend_url_env.split(',') if origin.strip()]
+    
+    # Adicionar suporte dinâmico a domínios da Vercel para evitar bloqueios de CORS em produção
+    cors_origins = allowed_origins + [re.compile(r"https://.*\.vercel\.app"), re.compile(r"http://localhost:\d+")]
+    
+    # Configuração permissiva, porém restrita aos domínios Vercel/Localhost
+    CORS(app, resources={r"/*": {"origins": cors_origins}}, supports_credentials=True, allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"])
     
     # Security Headers (A05 - Security Headers)
     csp = {
