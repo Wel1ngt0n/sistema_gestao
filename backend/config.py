@@ -10,7 +10,7 @@ class Config:
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev_fallback_key_dont_use_in_prod")
     DEBUG = os.getenv("FLASK_ENV") == "development"
     
-    CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY")
+    CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY", "").strip()
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
     # List IDs extracted from URLs
