@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: clickup-crm-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --chdir backend run:app
+    envVars:
+      - key: FLASK_APP
+        value: backend/app
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11
+      - fromContext: DATABASE_URL
+      - fromContext: JWT_SECRET_KEY
+      - fromContext: FLASK_SECRET_KEY
+      - fromContext: CLICKUP_API_KEY
+      - fromContext: GEMINI_API_KEY
+      - fromContext: FRONTEND_URL
