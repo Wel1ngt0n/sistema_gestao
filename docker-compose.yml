@@ -30,7 +30,7 @@ services:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://user:password@db:5432/metrics_db
       - PYTHONUNBUFFERED=1
-      - GOOGLE_API_KEY=AIzaSyC-KhFAZF-7GtCfpjsnBV1r0bL9MxPmquQ
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
