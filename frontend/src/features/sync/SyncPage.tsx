@@ -23,7 +23,8 @@ export default function SyncPage() {
 
         // Use EventSource for real-time logs
         const token = localStorage.getItem('auth_token')
-        const url = `http://localhost:5003/api/sync/stream${forceFull ? '?full=true' : ''}${forceFull ? '&' : '?'}token=${token}`
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+        const url = `${baseUrl}/api/sync/stream${forceFull ? '?full=true' : ''}${forceFull ? '&' : '?'}token=${token}`
         const eventSource = new EventSource(url)
 
         eventSource.onopen = () => {
