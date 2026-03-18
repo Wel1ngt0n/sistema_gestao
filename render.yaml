@@ -11,9 +11,15 @@ services:
         value: production
       - key: PYTHON_VERSION
         value: 3.11
-      - fromContext: DATABASE_URL
-      - fromContext: JWT_SECRET_KEY
-      - fromContext: FLASK_SECRET_KEY
-      - fromContext: CLICKUP_API_KEY
-      - fromContext: GEMINI_API_KEY
-      - fromContext: FRONTEND_URL
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: CLICKUP_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
