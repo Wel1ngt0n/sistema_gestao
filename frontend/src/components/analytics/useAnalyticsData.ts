@@ -16,6 +16,12 @@ export interface KPIData {
     filial_count: number;
     total_points_done: number;
     total_points_wip: number;
+    prev_throughput: number;
+    prev_mrr_done: number;
+    ytd_throughput: number;
+    ytd_mrr_done: number;
+    high_risk_count: number;
+    high_risk_mrr: number;
 }
 
 export interface TrendData {

@@ -6,6 +6,7 @@ from app.services.security_service import (
     log_audit
 )
 import datetime
+import os
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -39,8 +40,9 @@ def login_logic():
     if not user.is_active:
         return jsonify({"error": "Usuário desativado pelo administrador"}), 403
 
-    # Se TOTP está ativo, não devolvemos o JWT Token definitivo ainda.
-    if user.totp_enabled:
+    # Se TOTP está ativo, não devolvemos o JWT Token definitivo ainda. (Ignorado em dev para facilitar)
+    is_dev = current_app.config.get('DEBUG', False) or os.getenv('FLASK_ENV') == 'development'
+    if user.totp_enabled and not is_dev:
         return jsonify({
             "requires_2fa": True,
             "user_id": user.id,

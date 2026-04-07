@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginScreen from './pages/LoginScreen'
@@ -12,7 +12,7 @@ import IntegrationMonitor from './features/integration/IntegrationMonitor'
 import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
 
-import DashboardAnalytics from './components/analytics/DashboardAnalytics'
+import AnalyticsV2 from './components/analytics/AnalyticsV2'
 import ForecastPage from './features/forecast/ForecastPage'
 import MonthlyReport from './components/reports/MonthlyReport'
 import SyncPage from './features/sync/SyncPage'
@@ -24,21 +24,7 @@ import AIChatPage from './components/ai/AIChatPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 
 function App() {
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark')
     const [showDictionary, setShowDictionary] = useState(false)
-
-    // Lógica de Alternância de Tema
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-    }, [theme])
-
-    const toggleTheme = () => {
-        setTheme(prev => prev === 'dark' ? 'light' : 'dark')
-    }
 
     return (
         <>
@@ -49,11 +35,7 @@ function App() {
                 {/* Rotas Protegidas pelo AuthContext */}
                 <Route element={
                     <ProtectedRoute>
-                        <CRMLayout
-                            theme={theme}
-                            toggleTheme={toggleTheme}
-                            setShowDictionary={setShowDictionary}
-                        />
+                        <CRMLayout setShowDictionary={setShowDictionary} />
                     </ProtectedRoute>
                 }>
                     <Route path="/" element={<Dashboard />} />
@@ -66,7 +48,7 @@ function App() {
                     <Route path="/integration/analytics" element={<IntegrationAnalytics />} />
                     <Route path="/integration/reports" element={<IntegrationReports />} />
 
-                    <Route path="/analytics" element={<DashboardAnalytics />} />
+                    <Route path="/analytics" element={<AnalyticsV2 />} />
                     <Route path="/forecast" element={<ForecastPage />} />
                     <Route path="/reports" element={<MonthlyReport />} />
                     <Route path="/sync" element={<SyncPage />} />

@@ -8,89 +8,72 @@ interface KPICardProps {
     subtext?: string;
     icon?: string;
     trend?: 'up' | 'down' | 'neutral';
+    trendValue?: string | React.ReactNode;
+    trendLabel?: string;
+    trendColor?: 'green' | 'red' | 'slate';
+    yearTotal?: string | number | React.ReactNode;
     color?: 'indigo' | 'green' | 'red' | 'yellow' | 'blue' | 'purple' | 'slate' | 'orange' | 'emerald';
     tooltip?: string;
     className?: string;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtext, icon, trend, color = 'indigo', tooltip, className = '' }) => {
-
-    const colorClasses = {
-        indigo: 'text-indigo-600 dark:text-indigo-400',
-        green: 'text-emerald-500 dark:text-emerald-400',
-        red: 'text-rose-500 dark:text-rose-400',
-        yellow: 'text-amber-500 dark:text-amber-400',
-        blue: 'text-blue-500 dark:text-blue-400',
-        purple: 'text-violet-500 dark:text-violet-400',
-        slate: 'text-slate-500 dark:text-zinc-400',
-        orange: 'text-orange-500 dark:text-orange-400',
-        emerald: 'text-emerald-500 dark:text-emerald-400',
-    };
-
-    const bgIconClasses = {
-        indigo: 'text-indigo-500',
-        green: 'text-emerald-500',
-        red: 'text-rose-500',
-        yellow: 'text-amber-500',
-        blue: 'text-blue-500',
-        purple: 'text-violet-500',
-        slate: 'text-slate-500',
-        orange: 'text-orange-500',
-        emerald: 'text-emerald-500',
-    };
-
+export const KPICard: React.FC<KPICardProps> = ({
+    label, value, subValue, subtext, trend, trendValue, trendLabel, trendColor, yearTotal, tooltip, className = ''
+}) => {
     return (
-        <div className={`relative bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-zinc-700/50 flex flex-col justify-between transition-all duration-300 hover:shadow-md dark:hover:shadow-lg group ${className}`}>
-
-            {/* Background Decorator Layer (Clipped) */}
-            <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-                {/* Ícone de Fundo (Efeito Bento) */}
-                {icon && (
-                    <div className={`absolute -right-6 -top-6 text-[100px] opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 ${bgIconClasses[color]}`}>
-                        {icon}
-                    </div>
-                )}
-
-                {/* Barra de Progresso Decorativa (Opcional) */}
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 dark:bg-black/20">
-                    <div className={`h-full opacity-50 ${colorClasses[color].split(' ')[0].replace('text-', 'bg-')}`} style={{ width: '40%' }}></div>
-                </div>
-            </div>
-
-            <div className="relative z-10 flex flex-col h-full justify-between">
+        <div className={`bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-between transition-all duration-300 hover:shadow-[0_4px_15px_rgba(0,0,0,0.04)] ${className}`}>
+            <div className="flex flex-col h-full justify-between">
                 <div>
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{label}</span>
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[13px] font-semibold text-slate-500 tracking-wide">{label}</span>
                             {tooltip && <InfoTooltip text={tooltip} />}
                         </div>
                     </div>
 
-                    <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter ${colorClasses[color]} transition-colors`}>
-                        {value}
-                    </h3>
+                    <div className="flex items-baseline gap-3">
+                        <h3 className="text-3xl font-bold text-slate-900 tracking-tight">
+                            {value}
+                        </h3>
+                        {trendValue && React.isValidElement(trendValue) ? (
+                            <span className="mb-1">{trendValue}</span> // Render as node
+                        ) : null}
+                    </div>
                 </div>
 
                 <div className="mt-4">
                     {(subValue || subtext) && (
-                        <div className="flex flex-col">
-                            {subValue && <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">{subValue}</span>}
-                            {subtext && <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">{subtext}</span>}
+                        <div className="flex flex-col mb-1.5">
+                            {subValue && <span className="text-sm font-medium text-slate-700">{subValue}</span>}
+                            {subtext && <span className="text-xs text-slate-400">{subtext}</span>}
                         </div>
                     )}
 
-                    {/* Trend Indicator */}
-                    {trend && (
-                        <div className="mt-2 flex items-center text-xs">
-                            {trend === 'up' ? (
-                                <span className="text-emerald-500 font-bold flex items-center gap-1">
-                                    <span className="bg-emerald-100 dark:bg-emerald-500/20 p-0.5 rounded-full">↑</span> Melhorou
-                                </span>
-                            ) : (
-                                <span className="text-rose-500 font-bold flex items-center gap-1">
-                                    <span className="bg-rose-100 dark:bg-rose-500/20 p-0.5 rounded-full">↓</span> Piorou
-                                </span>
-                            )}
+                    {/* Trend Indicator Below */}
+                    {trend && typeof trendValue === 'string' && (
+                        <div className="flex items-center text-xs gap-1.5 font-medium whitespace-nowrap">
+                            {(() => {
+                                const isUp = trend === 'up';
+                                const dColor = trendColor === 'green' ? 'text-emerald-500' : trendColor === 'red' ? 'text-rose-500' :
+                                    !trendColor ? (isUp ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-500';
+
+                                return (
+                                    <>
+                                        <span className={`font-semibold ${dColor}`}>
+                                            {trendValue}
+                                        </span>
+                                        {trendLabel && <span className="text-slate-400 font-normal">{trendLabel}</span>}
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    {/* Year Total Line */}
+                    {yearTotal && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+                            <span>Total Ano</span>
+                            <span className="text-slate-600 tracking-normal font-bold">{yearTotal}</span>
                         </div>
                     )}
                 </div>

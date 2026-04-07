@@ -6,9 +6,9 @@ import { AnalyticsFilters } from './AnalyticsFilters';
 import { useAnalyticsData } from './useAnalyticsData';
 import { KPICard } from './KPICard';
 import { TeamCapacityWidget } from './TeamCapacityWidget';
-import { FinancialForecastChart } from './FinancialForecastChart';
-import { RiskScatterPlot } from './RiskScatterPlot';
+import { EfficiencyImplantadorCard } from './EfficiencyImplantadorCard';
 import { TeamPerformanceMatrix } from './TeamPerformanceMatrix';
+import { AnalyticsOverviewPage } from './AnalyticsOverviewPage';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -26,7 +26,7 @@ import {
     PieController
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-import { Zap, Trophy, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Zap, Trophy, AlertTriangle } from 'lucide-react';
 
 ChartJS.register(
     CategoryScale,
@@ -54,6 +54,23 @@ export default function AnalyticsV2() {
     const [performanceViewMode, setPerformanceViewMode] = useState<'cards' | 'matrix'>('matrix');
     const [selectedImplantador, setSelectedImplantador] = useState<string | null>(null);
 
+    // Busca a meta anual de lojas e calcula a meta mensal semestral
+    // Logica: meta semestral = annual / 2 → meta mensal = semestral / 6
+    const [monthlyGoal, setMonthlyGoal] = useState<number>(15);
+    useMemo(() => {
+        import('../../services/api').then(({ api }) => {
+            api.get('/api/config').then((res: any) => {
+                const goals: any[] = res.data?.goals || [];
+                const found = goals.find((g: any) => g.key === 'annual_stores_target');
+                if (found) {
+                    const annual = parseInt(found.value, 10) || 180;
+                    setMonthlyGoal(Math.round((annual / 2) / 6));
+                }
+            }).catch(() => { });
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // Preparar dados dos gráficos
     const safePerformanceData = Array.isArray(performanceData) ? performanceData : [];
 
@@ -72,7 +89,9 @@ export default function AnalyticsV2() {
         );
     }
 
-    const safeTrendData = Array.isArray(trendData) ? trendData : [];
+    // Regra global: considera apenas dados a partir de 01/01/2026
+    const ANALYTICS_START = '2026-01';
+    const safeTrendData = (Array.isArray(trendData) ? trendData : []).filter(d => d.month >= ANALYTICS_START);
     const trendLabels = safeTrendData.map(d => d.month);
 
     // Configuração de Gráficos (Estilo Dashboard V2)
@@ -113,19 +132,7 @@ export default function AnalyticsV2() {
         },
     };
 
-    // Gráfico 1: Throughput Mensal
-    const throughputChartData = {
-        labels: trendLabels,
-        datasets: [
-            {
-                label: 'Lojas Entregues',
-                data: safeTrendData.map(d => d.throughput),
-                backgroundColor: '#f97316', // Orange-500
-                hoverBackgroundColor: '#fb923c', // Orange-400
-                borderRadius: 8,
-            },
-        ],
-    };
+    // throughputChartData moved to AnalyticsOverviewPage
 
     // Gráfico 1.5: Pontuação Mensal
     const pointsChartData = {
@@ -189,42 +196,49 @@ export default function AnalyticsV2() {
         ],
     };
 
+    // getTrendProps moved to AnalyticsOverviewPage
+
     return (
-        <div className="min-h-screen w-full bg-slate-50 dark:bg-zinc-900 font-sans selection:bg-orange-500/30 selection:text-orange-500 transition-colors duration-300">
+        <div className="min-h-screen w-full bg-[#f7f7f8] dark:bg-zinc-900 font-sans selection:bg-orange-500/30 selection:text-orange-500 transition-colors duration-300">
 
             {/* Header Sticky */}
-            <div className="sticky top-0 z-30 bg-slate-50/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800">
-                <div className="w-full px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="sticky top-0 z-30 bg-[#f7f7f8]/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800">
+                <div className="w-full px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 max-w-[1400px]">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                            Analytics<span className="text-orange-500">.</span>
+                        <h1 className="text-[24px] font-bold tracking-tight text-[#111827] dark:text-white">
+                            Sistema de Gestão de Operações
                         </h1>
-                        <p className="text-slate-500 dark:text-zinc-400 font-medium text-xs tracking-wide uppercase">
-                            Deep Dive Visual
+                        <p className="text-[#6b7280] dark:text-zinc-400 text-[14px]">
+                            Deep Dive Operacional & Performance
                         </p>
                     </div>
-                    <div className="flex-none">
+                    <div className="flex-none flex items-center gap-4">
                         <AnalyticsFilters
                             availableImplantadores={availableImplantadores}
                             onRefresh={refetch}
                             isRefreshing={loading}
                         />
+                        <div className="h-8 w-[1px] bg-slate-200 dark:bg-zinc-800 mx-2 hidden md:block"></div>
+                        <div className="hidden md:flex items-center bg-white dark:bg-zinc-800 rounded-[14px] px-3 py-1.5 shadow-sm border border-slate-100 dark:border-zinc-700">
+                            <img src="https://ui-avatars.com/api/?name=Administrador&background=ff6c00&color=fff" alt="Administrador" className="w-6 h-6 rounded-full" />
+                            <span className="ml-2 text-[13px] font-semibold text-slate-700 dark:text-zinc-300">Administrador</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div className="w-full px-6 lg:px-8 py-8">
                 <Tab.Group>
-                    <Tab.List className="flex space-x-2 rounded-2xl bg-slate-200/50 dark:bg-zinc-800/50 p-1.5 mb-10 max-w-xl mx-auto md:mx-0">
+                    <Tab.List className="flex space-x-1 rounded-full bg-slate-100 dark:bg-zinc-800 p-1 mb-8 max-w-fit mx-auto md:mx-0">
                         {['Visão Geral', 'Eficiência & Risco', 'Time & Performance'].map((tab) => (
                             <Tab as={Fragment} key={tab}>
-                                {({ selected }) => (
+                                {({ selected }: { selected: boolean }) => (
                                     <button
                                         className={classNames(
-                                            'w-full rounded-xl py-3 text-sm font-bold leading-5 transition-all duration-200',
+                                            'rounded-full px-6 py-2.5 text-[13.5px] font-bold transition-all duration-200 outline-none',
                                             selected
-                                                ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-md scale-105 ring-1 ring-black/5 dark:ring-white/10'
-                                                : 'text-slate-500 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-800'
+                                                ? 'bg-white dark:bg-zinc-700 text-[#ff6c00] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-300'
                                         )}
                                     >
                                         {tab}
@@ -236,56 +250,37 @@ export default function AnalyticsV2() {
 
                     <Tab.Panels>
                         {/* --- ABA 1: VISÃO GERAL --- */}
-                        <Tab.Panel className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 focus:outline-none">
-                            {/* KPIs Executivos */}
-                            {kpiData && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <KPICard label="WIP" value={kpiData.wip_stores} color="orange" icon="🚀" subtext="Pipeline Ativo" tooltip="Work In Progress" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="Entregas" value={kpiData.throughput_period} color="green" icon="✅" subtext="No Período" tooltip="Concluídos" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="MRR Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon="💰" subtext="Potencial" tooltip="Receita futura" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="purple" icon="📈" subtext="Realizado" tooltip="Receita nova" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="Pontos" value={kpiData.total_points_done} color="yellow" icon="🏅" subtext="Score Total" tooltip="Soma de pontos" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="Cycle Time" value={`${kpiData.cycle_time_avg || 0}d`} color="slate" icon="⏱️" subtext="Média" tooltip="Tempo médio de entrega" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                {/* Forecast Financeiro */}
-                                {forecastData && <FinancialForecastChart data={forecastData} className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm p-8" />}
-
-                                {/* Evolução de Entregas */}
-                                <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm min-h-[400px]">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
-                                        <TrendingUp size={18} className="text-orange-500" />
-                                        Evolução de Entregas
-                                    </h3>
-                                    <div className="h-[300px]">
-                                        <Chart type='bar' data={throughputChartData} options={chartOptions} />
-                                    </div>
-                                </div>
-                            </div>
+                        <Tab.Panel className="focus:outline-none">
+                            <AnalyticsOverviewPage
+                                kpiData={kpiData}
+                                trendData={safeTrendData}
+                                forecastData={forecastData || null}
+                                bottleneckData={bottleneckData || []}
+                                performanceData={performanceData || []}
+                                monthlyGoal={monthlyGoal}
+                            />
                         </Tab.Panel>
 
                         {/* --- ABA 2: EFICIÊNCIA & RISCO --- */}
                         <Tab.Panel className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 focus:outline-none">
                             {kpiData && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <KPICard label="OTD %" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="No Prazo" className="bg-white dark:bg-zinc-800 rounded-3xl" />
-                                    <KPICard label="Risco Médio" value={kpiData.avg_risk_score} color="red" icon="🔥" subtext="Score Preditivo" className="bg-white dark:bg-zinc-800 rounded-3xl" />
-                                    <KPICard label="Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias" className="bg-white dark:bg-zinc-800 rounded-3xl" />
-                                    <KPICard label="Mix M/F" value={`${kpiData.matrix_count}/${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Matriz vs Filial" className="bg-white dark:bg-zinc-800 rounded-3xl" />
+                                    <KPICard label="OTD %" value={`${kpiData?.otd_percentage || 0}%`} color={(kpiData?.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="No Prazo" className="bg-white dark:bg-zinc-800 rounded-3xl" />
+                                    <KPICard label="Risco Médio" value={kpiData?.avg_risk_score} color="red" icon="🔥" subtext="Score Preditivo" className="bg-white dark:bg-zinc-800 rounded-3xl" />
+                                    <KPICard label="Estagnadas" value={kpiData?.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias" className="bg-white dark:bg-zinc-800 rounded-3xl" />
+                                    <KPICard label="Mix M/F" value={`${kpiData?.matrix_count}/${kpiData?.filial_count}`} color="slate" icon="🏢" subtext="Matriz vs Filial" className="bg-white dark:bg-zinc-800 rounded-3xl" />
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                <div className="h-full bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 p-6 shadow-sm">
-                                    <RiskScatterPlot />
-                                </div>
+                                {/* NOVO: Gráfico de Eficiência comparando Implantadores */}
+                                <EfficiencyImplantadorCard data={performanceData || []} />
 
+                                {/* Gráfico Histórico de Eficiência Geral */}
                                 <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm h-full max-h-[500px]">
                                     <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
                                         <Zap size={18} className="text-yellow-500" />
-                                        Eficiência (Cycle Time vs OTD)
+                                        Evolução (Cycle Time vs OTD)
                                     </h3>
                                     <div className="h-[350px]">
                                         <Chart
@@ -450,7 +445,7 @@ export default function AnalyticsV2() {
 
             {selectedImplantador && (
                 <PerformanceDetailModal
-                    implantadorName={selectedImplantador}
+                    implantadorName={selectedImplantador!}
                     onClose={() => setSelectedImplantador(null)}
                 />
             )}

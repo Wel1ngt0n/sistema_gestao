@@ -194,17 +194,119 @@ def get_dashboard_data(payload):
     evo_labels = [d.strftime('%m/%Y') for d in sorted_dates]
     evo_values = [date_map[d] for d in sorted_dates]
 
+    from datetime import timedelta
+    now = datetime.now()
+    week_ago = now - timedelta(days=7)
+    two_weeks_ago = now - timedelta(days=14)
+    current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_ago = now - timedelta(days=30)
+    prev_month_ago = now - timedelta(days=60)
+    year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    if current_month_start.month == 1:
+        prev_month_start = current_month_start.replace(year=current_month_start.year - 1, month=12)
+    else:
+        prev_month_start = current_month_start.replace(month=current_month_start.month - 1)
+    
+    # Projetos em Andamento
+    wip_current = count_wip
+    wip_week_ago = sum(1 for s in all_stores if (s.created_at and s.created_at <= week_ago) and (not s.effective_finished_at or s.effective_finished_at > week_ago))
+    wip_diff = wip_current - wip_week_ago
+    wip_trend_type = "positive" if wip_diff >= 0 else "negative"
+    wip_trend_value = f"+{wip_diff}%" if wip_week_ago == 0 and wip_current > 0 else f"{round((wip_diff/wip_week_ago)*100)}%" if wip_week_ago > 0 else "0%"
+    if not wip_trend_value.startswith('-') and wip_diff > 0: wip_trend_value = f"+{wip_trend_value}"
+
+    # Entregas (Mês atual vs Mês anterior, e Total do Ano)
+    done_mes_atual = sum(1 for s in all_stores if s.effective_finished_at and s.effective_finished_at >= current_month_start)
+    done_mes_passado = sum(1 for s in all_stores if s.effective_finished_at and prev_month_start <= s.effective_finished_at < current_month_start)
+    done_ano = sum(1 for s in all_stores if s.effective_finished_at and s.effective_finished_at >= year_start)
+    
+    done_diff = done_mes_atual - done_mes_passado
+    done_pct = (done_diff / done_mes_passado * 100) if done_mes_passado > 0 else 0
+    done_trend_type = "positive" if done_diff >= 0 else "negative"
+    done_trend_value = f"+{round(done_pct)}%" if done_pct > 0 else f"{round(done_pct)}%"
+
+    # SLA (Mês atual vs Mês anterior, e Média do Ano)
+    on_time_mes_atual = sum(1 for s in all_stores if s.effective_finished_at and s.effective_finished_at >= current_month_start and s.dias_totais_implantacao <= (s.tempo_contrato or 90))
+    pct_prazo_mes_atual = (on_time_mes_atual / done_mes_atual * 100) if done_mes_atual > 0 else 0
+    
+    on_time_mes_passado = sum(1 for s in all_stores if s.effective_finished_at and prev_month_start <= s.effective_finished_at < current_month_start and s.dias_totais_implantacao <= (s.tempo_contrato or 90))
+    pct_prazo_mes_passado = (on_time_mes_passado / done_mes_passado * 100) if done_mes_passado > 0 else 0
+    
+    on_time_ano = sum(1 for s in all_stores if s.effective_finished_at and s.effective_finished_at >= year_start and s.dias_totais_implantacao <= (s.tempo_contrato or 90))
+    pct_prazo_ano = (on_time_ano / done_ano * 100) if done_ano > 0 else 0
+
+    sla_diff = round(pct_prazo_mes_atual - pct_prazo_mes_passado, 1)
+    sla_trend_type = "positive" if sla_diff >= 0 else "negative"
+    sla_trend_value = f"+{sla_diff}%" if sla_diff > 0 else f"{sla_diff}%"
+
+    # MRR Ativo no Mês
+    mrr_ativo_mes = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at >= current_month_start and s.valor_mensalidade)
+    mrr_concluidas_ano = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at >= year_start and s.valor_mensalidade)
+    
+    mrr_ativo_semana = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at >= week_ago and s.valor_mensalidade)
+    mrr_ativo_semana_passada = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at >= two_weeks_ago and s.effective_finished_at < week_ago and s.valor_mensalidade)
+    
+    mrr_diff_ativado = mrr_ativo_semana - mrr_ativo_semana_passada
+    mrr_pct_ativado = (mrr_diff_ativado / mrr_ativo_semana_passada * 100) if mrr_ativo_semana_passada > 0 else 0
+    mrr_ativado_trend_type = "positive" if mrr_diff_ativado >= 0 else "negative"
+    mrr_ativado_trend_value = f"+{round(mrr_pct_ativado)}%" if mrr_pct_ativado > 0 else f"{round(mrr_pct_ativado)}%"
+
+    def format_currency(value):
+        return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
     return jsonify({
         "kpis": {
-            "wip": count_wip,
-            "done_total": count_done,
-            "pct_prazo": round(pct_prazo, 1),
-            "mrr_implantacao": mrr_implantacao,
+            "projetos": {
+                "value": count_wip,
+                "label": "Projetos em andamento",
+                "trend": {
+                    "value": wip_trend_value,
+                    "label": "vs semana passada",
+                    "type": wip_trend_type
+                },
+                "total_ano": f"MRR em ativação: {format_currency(mrr_implantacao)}"
+            },
+            "entregas": {
+                "value": done_mes_atual,
+                "label": "Entregas concluídas",
+                "trend": {
+                    "value": done_trend_value,
+                    "label": "vs mês anterior",
+                    "type": done_trend_type
+                },
+                "total_ano": f"{done_ano} no total do ano"
+            },
+            "sla": {
+                "value": round(pct_prazo_mes_atual),
+                "label": "SLA no prazo",
+                "trend": {
+                    "value": sla_trend_value,
+                    "label": "vs mês anterior",
+                    "type": sla_trend_type
+                },
+                "total_ano": f"{pct_prazo_ano:.1f}% de média no ano"
+            },
+            "mrr_ativo": {
+                "value": mrr_ativo_mes,
+                "label": "MRR ativo no mês",
+                "trend": {
+                    "value": mrr_ativado_trend_value,
+                    "label": "vs semana passada",
+                    "type": mrr_ativado_trend_type
+                },
+                "total_ano": f"{format_currency(mrr_concluidas_ano)} entregue no ano"
+            },
+            # Dados auxiliares para outros sub-cards
             "mrr_pagando": mrr_ja_pagando,
             "mrr_devendo": mrr_devendo,
             "mrr_concluidas_ano": mrr_concluidas_ano,
             "points_wip": round(total_points_wip, 1),
-            "points_done": round(total_points_done, 1)
+            "points_done": round(total_points_done, 1),
+            "wip": count_wip,
+            "done_total": count_done,
+            "pct_prazo": round(pct_prazo, 1),
+            "mrr_implantacao": mrr_implantacao
         },
         "charts": {
             "impl_labels": impl_labels,
@@ -630,7 +732,8 @@ def get_store_logs(payload, id):
         formatted_logs.sort(key=lambda x: x['at_dt'], reverse=True)
         
         # Remover objeto auxiliar
-        for l in formatted_logs: del l['at_dt']
+        for l in formatted_logs:
+            l.pop('at_dt', None)
 
         return jsonify(formatted_logs), 200
     except Exception as e:

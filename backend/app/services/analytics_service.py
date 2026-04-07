@@ -123,11 +123,18 @@ class AnalyticsService:
             Store.manual_finished_at.is_(None)
         ).all()
         avg_risk = 0
+        high_risk_count = 0
+        high_risk_mrr = 0.0
+
         if in_progress_stores:
             total_risk = 0
             for s in in_progress_stores:
                 risk_data = ScoringService.calculate_risk_score(s)
-                total_risk += risk_data['total']
+                risk_val = risk_data['total']
+                total_risk += risk_val
+                if risk_val > 80:
+                    high_risk_count += 1
+                    high_risk_mrr += float(s.valor_mensalidade or 0.0)
             avg_risk = round(total_risk / len(in_progress_stores), 1)
 
         # 8. Contagem Matriz vs Filial (WIP)
@@ -147,14 +154,16 @@ class AnalyticsService:
         w_matriz = 1.0
         w_filial = 0.7
         try:
-            cfg_m = SystemConfig.query.filter_by(key='weight_matriz').first()
-            cfg_f = SystemConfig.query.filter_by(key='weight_filial').first()
+            from app.models import SystemConfig
+            cfg_m = db.session.query(SystemConfig).filter_by(key='weight_matriz').first()
+            cfg_f = db.session.query(SystemConfig).filter_by(key='weight_filial').first()
             if cfg_m: w_matriz = float(cfg_m.value)
             if cfg_f: w_filial = float(cfg_f.value)
-        except: pass
+        except:
+            pass
 
         total_points_done = 0
-        done_types = throughput_query.with_entities(Store.tipo_loja).all()
+        done_types = query.filter(or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None))).with_entities(Store.tipo_loja).all()
         for s in done_types:
             total_points_done += w_matriz if s.tipo_loja == 'Matriz' else w_filial
 
@@ -162,6 +171,38 @@ class AnalyticsService:
         wip_types = query.filter(Store.status_norm == 'IN_PROGRESS', Store.manual_finished_at.is_(None)).with_entities(Store.tipo_loja).all()
         for s in wip_types:
             total_points_wip += w_matriz if s.tipo_loja == 'Matriz' else w_filial
+
+        # 10. Cálculos de Comparação (Mês Anterior e Ano)
+        # Vamos assumir Mês Atual e Mês Anterior para simplificar a comparação
+        from sqlalchemy import extract
+        today = datetime.now()
+        current_year = today.year
+        current_month = today.month
+        
+        prev_month = current_month - 1 if current_month > 1 else 12
+        prev_year = current_year if current_month > 1 else current_year - 1
+
+        # Throughput e MRR no mês anterior
+        prev_period_query = query.filter(
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), extract('month', Store.manual_finished_at) == prev_month, extract('year', Store.manual_finished_at) == prev_year),
+                and_(Store.manual_finished_at.is_(None), extract('month', Store.finished_at) == prev_month, extract('year', Store.finished_at) == prev_year)
+            )
+        )
+        prev_throughput = prev_period_query.count()
+        prev_mrr = prev_period_query.with_entities(func.sum(Store.valor_mensalidade)).scalar() or 0.0
+
+        # Totais do Ano (YTD)
+        ytd_query = query.filter(
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), extract('year', Store.manual_finished_at) == current_year),
+                and_(Store.manual_finished_at.is_(None), extract('year', Store.finished_at) == current_year)
+            )
+        )
+        ytd_throughput = ytd_query.count()
+        ytd_mrr = ytd_query.with_entities(func.sum(Store.valor_mensalidade)).scalar() or 0.0
 
         return {
             "wip_stores": wip_count,
@@ -175,7 +216,13 @@ class AnalyticsService:
             "matrix_count": matrix_count,
             "filial_count": filial_count,
             "total_points_done": round(total_points_done, 1),
-            "total_points_wip": round(total_points_wip, 1)
+            "total_points_wip": round(total_points_wip, 1),
+            "prev_throughput": prev_throughput,
+            "prev_mrr_done": float(prev_mrr),
+            "ytd_throughput": ytd_throughput,
+            "ytd_mrr_done": float(ytd_mrr),
+            "high_risk_count": high_risk_count,
+            "high_risk_mrr": float(high_risk_mrr)
         }
 
     @staticmethod
@@ -1102,39 +1149,34 @@ class AnalyticsService:
     def get_risk_scatter(target_date=None, implantador=None):
         """
         Retorna dados para o gráfico de Scatter (Risco x Tempo).
-        Lê da tabela MetricsSnapshotDaily para performance extrema.
-        Se não tiver snapshot hoje, tenta fallback para cálculo on-the-fly ou dia anterior.
-        (Para simplificar V3: lê do snapshot do dia ou retorna vazio se não rodou job)
+        Calcula on-the-fly para garantir dados precisos e em tempo real
+        (ideal para o dashboard que o usuário acabou de abrir).
         """
-        if not target_date:
-            target_date = date.today()
-            
-        # Tenta buscar snapshot
-        query = db.session.query(MetricsSnapshotDaily).filter(MetricsSnapshotDaily.snapshot_date == target_date)
+        query = db.session.query(Store).filter(
+            Store.status_norm == 'IN_PROGRESS',
+            Store.manual_finished_at.is_(None)
+        )
         
         if implantador:
-            query = query.filter(MetricsSnapshotDaily.implantador == implantador)
+            query = query.filter(Store.implantador == implantador)
             
-        snapshots = query.all()
-        
-        # Se não tem dados HOJE, talvez o job não rodou. 
-        # Fallback inteligente: buscar do último dia disponível?
-        # Por enquanto, retorna vazio para incentivar rodar o job.
+        stores = query.all()
         
         data = []
-        for s in snapshots:
-            # Determinando cor/status para o gráfico
-            # Regra simples visual
+        for s in stores:
+            risk_data = ScoringService.calculate_risk_score(s)
+            risk = risk_data['total']
+            
             status_color = 'Verde'
-            if s.risk_score > 80: status_color = 'Crítico'
-            elif s.risk_score > 50: status_color = 'Atenção'
+            if risk > 80: status_color = 'Crítico'
+            elif risk > 50: status_color = 'Atenção'
             else: status_color = 'Em dia'
             
             data.append([
-                s.days_in_stage or 0,    # X: Dias em Progresso (Corrigido)
-                s.risk_score or 0,       # Y: Risco
-                s.mrr or 0,              # Size: MRR
-                f"{s.store.store_name} ({s.rede or 'N/A'})", # Tooltip
+                s.dias_em_progresso or 0,    # X: Dias em Progresso
+                risk or 0,                   # Y: Risco
+                s.valor_mensalidade or 0,     # Size: MRR
+                f"{s.store_name} ({s.rede or 'N/A'})", # Tooltip
                 status_color             # Color Group
             ])
             

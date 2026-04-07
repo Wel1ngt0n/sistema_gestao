@@ -2,9 +2,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json .
-# Install dependencies including devDependencies
-RUN npm install
+COPY package*.json ./
+# Install dependencies with verbose logging and timeouts to prevent silent hanging
+RUN npm config set fetch-retry-maxtimeout 600000 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm install --verbose --legacy-peer-deps
 
 COPY . .
 

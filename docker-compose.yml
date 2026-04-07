@@ -29,8 +29,11 @@ services:
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://user:password@db:5432/metrics_db
+      # - DATABASE_URL_SUPABASE=postgresql://postgres.klnntuqbigegopbmzcly:XNLVT3Lm8viPXK6f@aws-1-us-east-1.pooler.supabase.com:6543/postgres
       - PYTHONUNBUFFERED=1
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_API_KEY=AIzaSyC-KhFAZF-7GtCfpjsnBV1r0bL9MxPmquQ
+      - GEMINI_API_KEY=AIzaSyC-KhFAZF-7GtCfpjsnBV1r0bL9MxPmquQ
+      - CLICKUP_API_KEY=pk_61029153_OZYMFRVK07NEKLIBQRINT2ZA5BLG3HBF
     depends_on:
       db:
         condition: service_healthy
