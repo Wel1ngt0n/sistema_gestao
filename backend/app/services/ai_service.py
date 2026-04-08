@@ -133,68 +133,76 @@ class GeminiService:
         return list(all_stores)
 
     def _gather_context_data(self, stores):
-        """Coleta status, comentários e GARGALOS (Steps) das lojas."""
+        """ESCAVAÇÃO RAIO-X: Extrai tudo da Loja, incluindo Subtarefas e Oceanos de Comentários."""
         data = []
-        
-        keywords = ["Integração", "App", "Qualidade", "Treinamento", "Financeiro"]
-        
         for s in stores:
             store_info = {
                 "id": s.id,
                 "name": s.store_name,
-                "type": s.tipo_loja,
+                "implantador": s.implantador,
                 "days_in_progress": s.dias_em_progresso,
                 "status": s.status_norm,
-                "bottlenecks": [], # Novos dados de gargalo
-                "comments_summary": []
+                "bottlenecks": [],
+                "subtasks_status": [],
+                "comments_ocean": []
             }
-
-            # 1. Análise de Gargalos (Steps Travados)
-            # Busca steps que estão abertos e parados há muito tempo
-            active_steps = TaskStep.query.filter_by(store_id=s.id).filter(
-                TaskStep.status.notin_(['closed', 'concluido', 'done'])
-            ).all()
-
-            for step in active_steps:
-                is_stuck = step.idle_days > 3 # Parado há mais de 3 dias
-                is_long = step.total_time_days > 7 # Etapa longa demais
-
-                if is_stuck or is_long:
-                    blocker_info = f"Step '{step.step_name}' "
-                    if is_stuck: blocker_info += f"[PARADO há {step.idle_days} dias] "
-                    if is_long: blocker_info += f"[TOTAL {int(step.total_time_days)} dias] "
-                    
-                    store_info["bottlenecks"].append(blocker_info)
-
-            # 2. Comentários do Card Pai (Máx 5 mais recentes)
-            try:
-                comments = self.clickup.get_task_comments(s.clickup_task_id)
-                if comments:
-                    # Filter: Pegar texto de comentários recentes não automáticos
-                    relevant_comments = [c['comment_text'] for c in comments[:5] if c.get('comment_text')]
-                    if relevant_comments:
-                        store_info["comments_summary"].append(f"CARD PAI: {' | '.join(relevant_comments)}")
-            except Exception as e:
-                logger.error(f"Erro ao buscar comments parent {s.store_name}: {e}")
-
-            # 3. Comentários de Tarefas Críticas (Apenas se estagnadas ou keywords)
-            for step in active_steps:
-                # Se nome combina com keywords OU está travado (bottleneck)
-                is_bottleneck = any(b for b in store_info["bottlenecks"] if step.step_name in b)
+            
+            # Puxa Todas as Steps da Loja mapeadas no banco (que já conectam aos IDs do ClickUp)
+            all_steps = TaskStep.query.filter_by(store_id=s.id).all()
+            
+            for step in all_steps:
+                # Status e Gargalos
+                is_stuck = step.idle_days > 3
+                if step.status not in ['closed', 'concluido', 'done']:
+                    status_str = f"[{step.step_name.upper()}]: {step.status} (Parado há {step.idle_days} dias, Total: {int(step.total_time_days)}d)"
+                    store_info["subtasks_status"].append(status_str)
+                    if is_stuck:
+                        store_info["bottlenecks"].append(f"ALERTA: A equipe/etapa de {step.step_name} está travada há {step.idle_days} dias.")
                 
-                if is_bottleneck or any(k.lower() in step.step_name.lower() for k in keywords):
-                    try:
-                        step_comments = self.clickup.get_task_comments(step.clickup_task_id)
-                        if step_comments:
-                            last_comment = step_comments[0].get('comment_text', '') # Pegar só o último
-                            if last_comment:
-                                store_info["comments_summary"].append(f"REF '{step.step_name}': {last_comment}")
-                    except:
-                        pass
-            
+                # Comentários de TODAS as subtarefas (Escavação Profunda)
+                try:
+                    step_comments = self.clickup.get_task_comments(step.clickup_task_id)
+                    if step_comments:
+                        # Filtrar bots (ignora usuários automáticos)
+                        real_comments = [c for c in step_comments if 'ClickUp' not in c.get('user', {}).get('username', '')]
+                        for c in real_comments[:3]: # Mantém os 3 mais recentes por etapa
+                            text = c.get('comment_text', '').replace('\n', ' ')
+                            user = c.get('user', {}).get('username', 'Equipe')
+                            date_str = datetime.fromtimestamp(int(c.get('date', 0))/1000).strftime('%d/%m') if c.get('date') else ''
+                            store_info["comments_ocean"].append(f"[{date_str}] Na etapa '{step.step_name}', {user} disse: {text}")
+                except Exception as e:
+                    logger.error(f"[Gemini] Erro ao ler comments subtask {step.step_name}: {e}")
+
+            # Comentários do Card Pai (Loja Principal)
+            try:
+                parent_comments = self.clickup.get_task_comments(s.clickup_task_id)
+                if parent_comments:
+                    real_parent_comments = [c for c in parent_comments if 'ClickUp' not in c.get('user', {}).get('username', '')]
+                    for c in real_parent_comments[:5]:
+                        text = c.get('comment_text', '').replace('\n', ' ')
+                        user = c.get('user', {}).get('username', 'Equipe')
+                        date_str = datetime.fromtimestamp(int(c.get('date', 0))/1000).strftime('%d/%m') if c.get('date') else ''
+                        store_info["comments_ocean"].append(f"[{date_str}] No CARD PAI da Loja, {user} disse: {text}")
+            except Exception as e:
+                logger.error(f"[Gemini] Erro ao ler comments da loja matriz: {e}")
+                
             data.append(store_info)
-            
         return data
+
+    def _get_team_performance_summary(self):
+        """MÓDULO DE TIME: Retorna volume e atraso concentrado por Implantador."""
+        active_stores = Store.query.filter(Store.status_norm != 'DONE').all()
+        team_stats = {}
+        for s in active_stores:
+            imp = s.implantador or "Sem Dono Fixo"
+            if imp not in team_stats:
+                team_stats[imp] = {"lojas_ativas": 0, "lojas_atrasadas_ou_críticas": 0}
+            
+            team_stats[imp]["lojas_ativas"] += 1
+            if s.dias_em_progresso > (s.tempo_contrato or 90) or (s.daily_snapshots and s.daily_snapshots[-1].risk_score > 25):
+                team_stats[imp]["lojas_atrasadas_ou_críticas"] += 1
+        
+        return team_stats
 
     def _build_prompt(self, context_data):
         return f"""
@@ -297,6 +305,7 @@ class GeminiService:
             
             # A. Contexto Global (Todas as lojas ativas)
             active_stores_summary = self._get_all_active_stores_summary()
+            team_performance = self._get_team_performance_summary()
             
             # B. Contexto Específico (Se houver menção) e Memórias
             specific_context = []
@@ -330,19 +339,21 @@ class GeminiService:
             # C. Construção do Prompt (RAG com Tool-like approach na mente)
             system_instruction = f"""
             Você é o CENTRAL COMMAND (IA) do CRM de Implantação.
-            Você não é apenas um chatbot. Você é a DIRETORA OPERACIONAL E DE RISCOS.
+            Você não é apenas um chatbot. Você é a DIRETORA OPERACIONAL E DE PERFORMANCE.
 
             SEUS SUPERPODERES (DADOS DE EXAUSTÃO):
-            - Lista de Lojas Ativas
-            - Dias em Progresso (vs SLA ideal de 90 dias)
-            - **Gargalos Específicos** (Steps parados há +3 dias ou intermináveis)
-            - Oceano de Comentários e Status do Time de Integração, Produtos, Qualidade, etc.
+            - Relatório de Desempenho do Time e Carga de Trabalho atual.
+            - Visualização de Todas as Lojas e seus Atrasos.
+            - **Raio-X de Lojas**: Se o usuário questionar sobre uma Loja X, avalie as sub-etapas dela e o OCEANO DE COMENTÁRIOS que extraímos de todos os departamentos (Integração, Qualidade, Cadastro).
 
-            DADOS DA FROTA GERAL (Lojas Ativas):
-            {json.dumps(active_stores_summary, ensure_ascii=False)[:3000]} # Limitado se for muito grande
+            --- DADOS DO TIME ATUAL (Performance e Carga de Lojas): ---
+            {json.dumps(team_performance, ensure_ascii=False)}
+
+            --- DADOS DA REDE GERAL (Lojas Ativas): ---
+            {json.dumps(active_stores_summary, ensure_ascii=False)[:3000]}
             
-            DADOS DE DEEP-DIVE RAIO-X (Das lojas ou contextos citados):
-            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Nenhuma loja específica requerida para Deep Dive."}
+            --- DEEP-DIVE DA LOJA (Gargalos, Status das Subtarefas e O que as equipes estão comentando lá dentro): ---
+            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Nenhuma loja específica requerida para Escavação Profunda."}
             {past_memories_text}
             
             SUA MISSÃO:
