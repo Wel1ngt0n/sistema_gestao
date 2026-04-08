@@ -159,9 +159,24 @@ class GeminiService:
                     if is_stuck:
                         store_info["bottlenecks"].append(f"ALERTA: A equipe/etapa de {step.step_name} está travada há {step.idle_days} dias.")
                 
-                # Comentários de TODAS as subtarefas (Escavação Profunda)
+            # Comentários de TODAS as subtarefas RELEVANTES em Paralelo (Escavação Profunda sem TIMEOUT)
+            import concurrent.futures
+            
+            def fetch_comments_for_step(step_obj):
                 try:
-                    step_comments = self.clickup.get_task_comments(step.clickup_task_id)
+                    c = self.clickup.get_task_comments(step_obj.clickup_task_id)
+                    return (step_obj.step_name, c)
+                except Exception as e:
+                    logger.error(f"[Gemini] Erro comments subtask {step_obj.step_name}: {e}")
+                    return (step_obj.step_name, None)
+                    
+            # Vamos puxar comentários das ativas ou estratégicas para não jogar a API no limite
+            relevant_steps = [st for st in all_steps if st.status not in ['closed', 'concluido', 'done'] or st.idle_days > 3 or 'integração' in st.step_name.lower()]
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                future_to_step = {executor.submit(fetch_comments_for_step, st): st for st in relevant_steps}
+                for future in concurrent.futures.as_completed(future_to_step):
+                    step_name, step_comments = future.result()
                     if step_comments:
                         # Filtrar bots (ignora usuários automáticos)
                         real_comments = [c for c in step_comments if 'ClickUp' not in c.get('user', {}).get('username', '')]
@@ -169,9 +184,7 @@ class GeminiService:
                             text = c.get('comment_text', '').replace('\n', ' ')
                             user = c.get('user', {}).get('username', 'Equipe')
                             date_str = datetime.fromtimestamp(int(c.get('date', 0))/1000).strftime('%d/%m') if c.get('date') else ''
-                            store_info["comments_ocean"].append(f"[{date_str}] Na etapa '{step.step_name}', {user} disse: {text}")
-                except Exception as e:
-                    logger.error(f"[Gemini] Erro ao ler comments subtask {step.step_name}: {e}")
+                            store_info["comments_ocean"].append(f"[{date_str}] Na etapa '{step_name}', {user} disse: {text}")
 
             # Comentários do Card Pai (Loja Principal)
             try:
