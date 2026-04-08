@@ -190,9 +190,60 @@ export default function MonitorV2() {
     };
 
     const handleExportCSV = () => {
-        if (!data || data.length === 0) return;
-        // Implementation will be same as V1 (omitted for brevity during build phase, will copy if needed or import util)
-        alert("Exportar CSV (Implementado em V2)");
+        if (!filteredData || filteredData.length === 0) {
+            alert("Nenhum dado para exportar.");
+            return;
+        }
+
+        const headers = [
+            "ID", "Nome da Loja", "ID Personalizado", "Status", "Status Normalizado",
+            "Implantador", "Dias em Trânsito", "Dias Ociosos (Parado)", "Score de Risco",
+            "Rede", "Tipo de Loja", "Início", "Fim", "Mensalidade (R$)", "Implantação (R$)",
+            "Status Financeiro", "ERP", "CNPJ", "Teve Retrabalho", "Entregue com Qualidade",
+            "Tempo de Contrato", "Observações"
+        ];
+
+        const rows = filteredData.map(s => [
+            s.id,
+            s.name,
+            s.custom_id || '',
+            s.status,
+            s.status_norm,
+            s.implantador || 'Sem Responsável',
+            s.dias_em_transito || 0,
+            s.idle_days || 0,
+            s.risk_score || 0,
+            s.rede || '',
+            s.tipo_loja || '',
+            s.data_inicio ? new Date(s.data_inicio).toLocaleDateString('pt-BR') : '',
+            s.data_fim ? new Date(s.data_fim).toLocaleDateString('pt-BR') : '',
+            s.valor_mensalidade || 0,
+            s.valor_implantacao || 0,
+            s.financeiro_status || '',
+            s.erp || '',
+            s.cnpj || '',
+            s.teve_retrabalho ? 'Sim' : 'Não',
+            s.delivered_with_quality ? 'Sim' : 'Não',
+            s.tempo_contrato || 0,
+            s.observacoes || ''
+        ]);
+
+        // Escape quotes and format as CSV
+        const csvContent = [
+            headers.join(';'), // Usando Ponto e Vírgula para abrir fácil no Excel Pt-BR
+            ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+        ].join('\n');
+
+        // Adiciona BOM (Byte Order Mark) para o Excel reconhecer UTF-8
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `monitor_lojas_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     // Estatísticas Memoizadas para Mini Cards
