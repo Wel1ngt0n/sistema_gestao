@@ -461,6 +461,15 @@ def update_store(payload, id):
                 service.log_change(store, 'fim_manual', old_val, None, source='manual')
             store.manual_finished_at = None
             
+    # FECHAR PAUSAS ABERTAS SE A LOJA ESTIVER SENDO FINALIZADA MANUALMENTE:
+    # Corrige bug em que a loja era "morta" com 31/03, mas possuía uma "pausa" em aberto que consumia todos os dias até 31/03.
+    if store.manual_finished_at or store.status_norm == 'DONE':
+        from app.models import StorePause
+        open_pauses = StorePause.query.filter_by(store_id=id, end_date=None).all()
+        for p in open_pauses:
+            p.end_date = store.manual_finished_at or datetime.now()
+            p.reason = f"{(p.reason or '')} (Fechado via Finalização Manual)".strip()
+            
     db.session.commit()
     
     log_audit(
