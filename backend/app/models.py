@@ -577,3 +577,26 @@ class AuditLog(db.Model):
             "ip_address": self.ip_address,
             "timestamp": self.timestamp.isoformat()
         }
+
+class AILongTermMemory(db.Model):
+    """
+    Guarda o histórico de análises da IA para permitir comparação de evolução.
+    Pode ser atrelado a uma loja específica ou ser uma análise sistêmica (geral).
+    """
+    __tablename__ = 'ai_long_term_memory'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=True) # Se for análise geral, fica None
+    analysis_type = db.Column(db.String(50), nullable=False) # 'specific_store', 'general_operations', etc.
+    
+    query_prompt = db.Column(db.Text, nullable=True) # O que o usuário perguntou na época
+    context_snapshot = db.Column(db.Text, nullable=True) # JSON com dados que a IA leu (bottlenecks, etc.) para referência de estado
+    ai_response = db.Column(db.Text, nullable=False) # O parecer/resposta gerada
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # Relação com Store
+    store = db.relationship('Store', backref=db.backref('ai_memories', lazy=True))
+
+    def __repr__(self):
+        return f'<AIMemory {self.id} - {self.analysis_type} ({self.created_at.strftime("%d/%m")})>'

@@ -283,40 +283,67 @@ class GeminiService:
 
     def chat_with_operational_context(self, user_message):
         """
-        Chat com contexto total da operação.
+        Chat com contexto total da operação. Agora possui Memória de Longo Prazo.
         1. Busca resumo de todas as lojas ativas.
-        2. Se o usuário citar uma loja específica, busca contexto detalhado (comentários).
-        3. Envia para o Gemini com persona de Gerente de Operações.
+        2. Se o usuário citar uma loja específica, busca contexto detalhado (comentários) e MEMÓRIAS ANTERIORES.
+        3. Envia para o Gemini com persona de Gerente de Operações e salva uma nova memória.
         """
         if not self.client:
             return {"response": "IA não configurada (API Key ausente).", "sources": []}
 
         try:
+            # Importa para acesso à memória
+            from app.models import AILongTermMemory
+            
             # A. Contexto Global (Todas as lojas ativas)
             active_stores_summary = self._get_all_active_stores_summary()
             
-            # B. Contexto Específico (Se houver menção)
+            # B. Contexto Específico (Se houver menção) e Memórias
             specific_context = []
             mentioned_stores = self._identify_stores_in_message(user_message, active_stores_summary)
+            past_memories_text = ""
+            
+            analysis_type = "general_operations"
+            store_id_for_memory = None
+            
             if mentioned_stores:
                 specific_context = self._gather_context_data(mentioned_stores)
+                analysis_type = "specific_store"
+                store_id_for_memory = mentioned_stores[0].id
+                
+                # Busca as últimas 3 memórias desta loja
+                past_memories = AILongTermMemory.query.filter_by(store_id=store_id_for_memory).order_by(AILongTermMemory.created_at.desc()).limit(3).all()
+                if past_memories:
+                    past_memories_text = "\n--- MEMÓRIAS E ANÁLISES ANTERIORES DESTA LOJA ---\n"
+                    for mem in reversed(past_memories): # Do mais antigo pro mais recente
+                        past_memories_text += f"\nEm {mem.created_at.strftime('%d/%m/%Y %H:%M')} o usuário perguntou: '{mem.query_prompt}'\n"
+                        past_memories_text += f"Sua análise na época foi: '{mem.ai_response}'\n"
+                        
+            else:
+                # Se for análise geral, traz as últimas memórias gerais
+                past_memories = AILongTermMemory.query.filter_by(analysis_type="general_operations").order_by(AILongTermMemory.created_at.desc()).limit(2).all()
+                if past_memories:
+                    past_memories_text = "\n--- MEMÓRIAS ANTERIORES DO QUADRO GERAL ---\n"
+                    for mem in reversed(past_memories):
+                        past_memories_text += f"\nEm {mem.created_at.strftime('%d/%m/%Y')} foi avaliado isso:\n{mem.ai_response}\n"
             
-            # C. Construção do Prompt (RAG)
+            # C. Construção do Prompt (RAG com Tool-like approach na mente)
             system_instruction = f"""
             Você é o CENTRAL COMMAND (IA) do CRM de Implantação.
-            Você não é apenas um chatbot. Você é um ANALISTA SÊNIOR DE RISCOS.
+            Você não é apenas um chatbot. Você é a DIRETORA OPERACIONAL E DE RISCOS.
 
-            SEUS SUPERPODERES (DADOS QUE VOCÊ TEM):
+            SEUS SUPERPODERES (DADOS DE EXAUSTÃO):
             - Lista de Lojas Ativas
             - Dias em Progresso (vs SLA ideal de 90 dias)
-            - **Gargalos Específicos** (Steps parados há +3 dias ou muito longos)
-            - Comentários reais de cada tarefa travada
+            - **Gargalos Específicos** (Steps parados há +3 dias ou intermináveis)
+            - Oceano de Comentários e Status do Time de Integração, Produtos, Qualidade, etc.
 
-            DADOS DA FROTA (Lojas Ativas):
-            {json.dumps(active_stores_summary, ensure_ascii=False)}
+            DADOS DA FROTA GERAL (Lojas Ativas):
+            {json.dumps(active_stores_summary, ensure_ascii=False)[:3000]} # Limitado se for muito grande
             
-            DADOS DE TELEMETRIA AVANÇADA (Lojas Citadas/Contexto):
-            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Análise geral da rede."}
+            DADOS DE DEEP-DIVE RAIO-X (Das lojas ou contextos citados):
+            {json.dumps(specific_context, indent=2, ensure_ascii=False) if specific_context else "Nenhuma loja específica requerida para Deep Dive."}
+            {past_memories_text}
             
             SUA MISSÃO:
             1. **Identificar Padrões**: Se 3 lojas estão travadas em "Integração", isso é um problema sistêmico. ALERTE.
@@ -339,6 +366,21 @@ class GeminiService:
             response = chat.send_message(
                 message=f"CONTEXTO DO SISTEMA:\n{system_instruction}\n\nPERGUNTA DO USUÁRIO:\n{user_message}"
             )
+            
+            # E. Ouro: Salvar Nova Memória a Longo Prazo
+            try:
+                nova_memoria = AILongTermMemory(
+                    store_id=store_id_for_memory,
+                    analysis_type=analysis_type,
+                    query_prompt=user_message,
+                    context_snapshot=json.dumps(specific_context) if specific_context else "Resumo Geral",
+                    ai_response=response.text
+                )
+                db.session.add(nova_memoria)
+                db.session.commit()
+            except Exception as mem_e:
+                logger.error(f"[Gemini Memory] Falha ao gravar memória: {mem_e}")
+                db.session.rollback()
             
             return {
                 "response": response.text,
