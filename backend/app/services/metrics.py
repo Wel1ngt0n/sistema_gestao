@@ -157,8 +157,14 @@ class MetricsService:
             if task_data.get('date_started'):
                 step.start_real_at = datetime.fromtimestamp(int(task_data['date_started']) / 1000)
             else:
-                # Fallback Hierarquia: Usar final da etapa anterior se disponivel
-                last_finished_step = TaskStep.query.filter(TaskStep.store_id == store_db.id, TaskStep.id != step.id, TaskStep.end_real_at != None).order_by(TaskStep.end_real_at.desc()).first()
+                # Fallback Hierarquia: Usar final da etapa concluída imediatamente antes dela (time-travel seguro)
+                limit_date = step.end_real_at or datetime.now()
+                last_finished_step = TaskStep.query.filter(
+                    TaskStep.store_id == store_db.id, 
+                    TaskStep.id != step.id, 
+                    TaskStep.end_real_at != None,
+                    TaskStep.end_real_at <= limit_date
+                ).order_by(TaskStep.end_real_at.desc()).first()
                 if last_finished_step:
                     step.start_real_at = last_finished_step.end_real_at
                 else:
@@ -168,6 +174,10 @@ class MetricsService:
             if task_data.get('date_closed'):
                 step.end_real_at = datetime.fromtimestamp(int(task_data['date_closed']) / 1000)
                 step.closed_at = step.end_real_at
+
+        # Trava de Segurança Final: Início não pode ser maior que o Fim (Geração de Duração Negativa)
+        if step.start_real_at and step.end_real_at and step.start_real_at > step.end_real_at:
+             step.start_real_at = step.created_at or step.end_real_at
 
         if task_data.get('date_updated'):
              updated_at = datetime.fromtimestamp(int(task_data['date_updated']) / 1000)
