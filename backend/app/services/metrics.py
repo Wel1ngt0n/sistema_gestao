@@ -135,6 +135,8 @@ class MetricsService:
         step = TaskStep.query.filter_by(clickup_task_id=clickup_id).first()
         if not step:
             step = TaskStep(clickup_task_id=clickup_id)
+            db.session.add(step)
+            db.session.flush() # needs ID for manual check
             
         step.store_id = store_db.id
         step.step_name = task_data['name']
@@ -143,16 +145,30 @@ class MetricsService:
         
         if task_data.get('date_created'):
             step.created_at = datetime.fromtimestamp(int(task_data['date_created']) / 1000)
-        
-        if task_data.get('date_started'):
-            step.start_real_at = datetime.fromtimestamp(int(task_data['date_started']) / 1000)
-        else:
-            step.start_real_at = step.created_at
             
-        if task_data.get('date_closed'):
-            step.end_real_at = datetime.fromtimestamp(int(task_data['date_closed']) / 1000)
-            step.closed_at = step.end_real_at
+        # Determinar se a data foi editada manualmente (Hierarquia Max)
+        has_manual_start = False
+        has_manual_end = False
+        if step.id:
+            has_manual_start = StoreSyncLog.query.filter_by(store_id=store_db.id, field_name=f'step_start_{step.id}', source='manual').first() is not None
+            has_manual_end = StoreSyncLog.query.filter_by(store_id=store_db.id, field_name=f'step_end_{step.id}', source='manual').first() is not None
+
+        if not has_manual_start:
+            if task_data.get('date_started'):
+                step.start_real_at = datetime.fromtimestamp(int(task_data['date_started']) / 1000)
+            else:
+                # Fallback Hierarquia: Usar final da etapa anterior se disponivel
+                last_finished_step = TaskStep.query.filter(TaskStep.store_id == store_db.id, TaskStep.id != step.id, TaskStep.end_real_at != None).order_by(TaskStep.end_real_at.desc()).first()
+                if last_finished_step:
+                    step.start_real_at = last_finished_step.end_real_at
+                else:
+                    step.start_real_at = step.created_at
             
+        if not has_manual_end:
+            if task_data.get('date_closed'):
+                step.end_real_at = datetime.fromtimestamp(int(task_data['date_closed']) / 1000)
+                step.closed_at = step.end_real_at
+
         if task_data.get('date_updated'):
              updated_at = datetime.fromtimestamp(int(task_data['date_updated']) / 1000)
              delta = datetime.now() - updated_at
@@ -160,7 +176,12 @@ class MetricsService:
         
         if step.start_real_at and step.end_real_at:
             delta = step.end_real_at - step.start_real_at
-            step.total_time_days = round(delta.total_seconds() / 86400, 2)
+            step.total_time_days = round(max(0.0, delta.total_seconds() / 86400), 2)
+        elif step.start_real_at and not step.end_real_at:
+            delta = datetime.now() - step.start_real_at
+            step.total_time_days = round(max(0.0, delta.total_seconds() / 86400), 2)
+        else:
+            step.total_time_days = 0.0
             
         db.session.add(step)
         return step

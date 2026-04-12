@@ -60,6 +60,11 @@ export default function MonitorStoreModal({
     const [steps, setSteps] = useState<TaskStep[]>([]);
     const [loadingSteps, setLoadingSteps] = useState(false);
 
+    // Step Editing State
+    const [editingStepId, setEditingStepId] = useState<number | null>(null);
+    const [editStartDate, setEditStartDate] = useState<string>("");
+    const [editEndDate, setEditEndDate] = useState<string>("");
+
     // Pauses State
     const [pauses, setPauses] = useState<StorePause[]>([]);
     const [loadingPauses, setLoadingPauses] = useState(false);
@@ -171,6 +176,26 @@ export default function MonitorStoreModal({
             console.error("Erro ao carregar etapas", e);
         } finally {
             setLoadingSteps(false);
+        }
+    };
+
+    const handleEditStep = (step: TaskStep) => {
+        setEditingStepId(step.id);
+        setEditStartDate(step.start_date || "");
+        setEditEndDate(step.end_date || "");
+    };
+
+    const handleSaveStep = async (stepId: number) => {
+        if (!localStore?.id) return;
+        try {
+            await api.put(`/api/stores/${localStore.id}/steps/${stepId}`, {
+                start_date: editStartDate || null,
+                end_date: editEndDate || null
+            });
+            setEditingStepId(null);
+            fetchSteps();
+        } catch (e: any) {
+            alert("Erro ao atualizar data: " + (e.response?.data?.error || e.message));
         }
     };
 
@@ -600,12 +625,12 @@ export default function MonitorStoreModal({
                                         <thead className="bg-slate-100 dark:bg-slate-900/50 text-xs uppercase text-slate-500 font-bold border-b border-slate-200 dark:border-slate-700">
                                             <tr>
                                                 <th className="px-4 py-3">Fase</th>
-                                                <th className="px-4 py-3">Tarefa</th>
+                                                <th className="px-4 py-3 truncate max-w-[150px]">Tarefa</th>
                                                 <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3">Início</th>
                                                 <th className="px-4 py-3">Conclusão</th>
-                                                <th className="px-4 py-3">Responsável</th>
                                                 <th className="px-4 py-3 text-right">Duração</th>
-                                                <th className="px-4 py-3 text-right">Idle</th>
+                                                <th className="px-4 py-3 text-center">Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -616,7 +641,7 @@ export default function MonitorStoreModal({
                                                             {step.list_name}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                                                    <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200 text-xs truncate max-w-[150px]" title={step.step_name}>
                                                         {step.step_name}
                                                     </td>
                                                     <td className="px-4 py-3">
@@ -627,20 +652,49 @@ export default function MonitorStoreModal({
                                                             {step.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-400">
-                                                        {step.end_date || '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-slate-500 text-xs">
-                                                        {step.assignee || '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-mono text-xs text-indigo-600 dark:text-indigo-400">
-                                                        {step.duration > 0 ? `${step.duration}d` : '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right text-xs">
-                                                        <span className={step.idle > 5 ? 'text-red-500 font-bold' : 'text-slate-400'}>
-                                                            {step.idle > 0 ? step.idle : '-'}
-                                                        </span>
-                                                    </td>
+
+                                                    {editingStepId === step.id ? (
+                                                        <>
+                                                            <td className="px-2 py-2">
+                                                                <input
+                                                                    type="date"
+                                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                    value={editStartDate}
+                                                                    onChange={e => setEditStartDate(e.target.value)}
+                                                                />
+                                                            </td>
+                                                            <td className="px-2 py-2">
+                                                                <input
+                                                                    type="date"
+                                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                    value={editEndDate}
+                                                                    onChange={e => setEditEndDate(e.target.value)}
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                                                                {step.duration > 0 ? `${step.duration}d` : '-'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center flex items-center justify-center gap-2">
+                                                                <button onClick={() => handleSaveStep(step.id)} className="text-emerald-600 hover:text-emerald-700 text-base font-bold" title="Salvar">✅</button>
+                                                                <button onClick={() => setEditingStepId(null)} className="text-slate-400 hover:text-slate-600 text-base font-bold" title="Cancelar">❌</button>
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-400">
+                                                                {step.start_date ? formatDate(step.start_date) : '-'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-400">
+                                                                {step.end_date ? formatDate(step.end_date) : '-'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                                                                {step.duration > 0 ? `${step.duration}d` : '-'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <button onClick={() => handleEditStep(step)} className="text-slate-400 hover:text-indigo-500 transition-colors" title="Editar Datas">✏️</button>
+                                                            </td>
+                                                        </>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>

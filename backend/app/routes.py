@@ -1133,12 +1133,84 @@ def get_store_steps(payload, store_id):
             "list_name": s.step_list_name,
             "status": s.status,
             "assignee": s.assignee,
-            "start_date": s.start_real_at.strftime('%d/%m/%Y') if s.start_real_at else None,
-            "end_date": s.end_real_at.strftime('%d/%m/%Y') if s.end_real_at else None,
-            "duration": s.total_time_days,
+            "start_date": s.start_real_at.strftime('%Y-%m-%d') if s.start_real_at else None,
+            "end_date": s.end_real_at.strftime('%Y-%m-%d') if s.end_real_at else None,
+            "duration": round(s.total_time_days, 1),
             "idle": s.idle_days
         })
     return jsonify(results)
+
+@api_bp.route('/stores/<int:store_id>/steps/<int:step_id>', methods=['PUT'])
+@require_auth
+def update_store_step(payload, store_id, step_id):
+    from app.models import db, TaskStep, StoreSyncLog
+    from datetime import datetime
+    
+    step = TaskStep.query.filter_by(id=step_id, store_id=store_id).first_or_404()
+    data = request.json
+    
+    if not data:
+        return jsonify({"error": "No data"}), 400
+        
+    try:
+        if 'start_date' in data:
+            date_str = data['start_date']
+            old_str = step.start_real_at.strftime('%Y-%m-%d') if step.start_real_at else None
+            if date_str:
+                new_date = datetime.strptime(date_str, '%Y-%m-%d')
+                if old_str != date_str:
+                    log = StoreSyncLog(store_id=store_id, field_name=f'step_start_{step_id}', old_value=old_str, new_value=date_str, source='manual')
+                    db.session.add(log)
+                step.start_real_at = new_date
+            else:
+                if old_str:
+                    log = StoreSyncLog(store_id=store_id, field_name=f'step_start_{step_id}', old_value=old_str, new_value=None, source='manual')
+                    db.session.add(log)
+                step.start_real_at = None
+                
+        if 'end_date' in data:
+            date_str = data['end_date']
+            old_str = step.end_real_at.strftime('%Y-%m-%d') if step.end_real_at else None
+            if date_str:
+                new_date = datetime.strptime(date_str, '%Y-%m-%d')
+                if old_str != date_str:
+                    log = StoreSyncLog(store_id=store_id, field_name=f'step_end_{step_id}', old_value=old_str, new_value=date_str, source='manual')
+                    db.session.add(log)
+                step.end_real_at = new_date
+            else:
+                if old_str:
+                    log = StoreSyncLog(store_id=store_id, field_name=f'step_end_{step_id}', old_value=old_str, new_value=None, source='manual')
+                    db.session.add(log)
+                step.end_real_at = None
+                
+        # Recalcular duração
+        if step.start_real_at and step.end_real_at:
+            delta = step.end_real_at - step.start_real_at
+            step.total_time_days = max(0.0, delta.days + (delta.seconds / 86400.0))
+        elif step.start_real_at and not step.end_real_at:
+            delta = datetime.now() - step.start_real_at
+            step.total_time_days = max(0.0, delta.days + (delta.seconds / 86400.0))
+        else:
+            step.total_time_days = 0.0
+            
+        db.session.commit()
+        
+        # Log da acao como auditoria se o payload possuir email/sub
+        log_audit(
+            action="UPDATE_STEP_DATES",
+            resource_type="TaskStep",
+            resource_id=str(step.id),
+            details=f"Atualizou a Step '{step.step_name}' ds loja {store_id} manualmente",
+            user_id=payload.get('sub')
+        )
+        return jsonify({"status": "success"})
+        
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"error": f"Formato invalido: {str(e)}"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @main_bp.route('/health', methods=['GET'])
 def health():
