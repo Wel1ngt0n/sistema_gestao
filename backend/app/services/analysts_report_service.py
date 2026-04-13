@@ -130,8 +130,8 @@ class AnalystsReportService:
         for s in ativas:
             carteira_atual.append({
                 "id": s.id,
-                "name": s.name,
-                "status_name": s.status_name,
+                "name": s.store_name,
+                "status_name": s.status,
                 "tipo_loja": s.tipo_loja,
                 "idle_days": s.idle_days,
                 "dias_em_progresso": s.dias_em_progresso,
@@ -172,7 +172,7 @@ class AnalystsReportService:
         if dias <= sla and idle <= 5:
             return "NO_PRAZO"
             
-        status_lower = (store.status_name or "").lower()
+        status_lower = (store.status or "").lower()
         
         # 1. Cliente (Pausas formais, status explícito)
         if 'aguardando' in status_lower or 'inadimplente' in status_lower or 'cliente' in status_lower or len(store.pauses) > 0:
@@ -223,7 +223,7 @@ class AnalystsReportService:
                 causas[causa] += 1
                 
             if causa == "ETAPA":
-                step_name = s.status_name or "Desconhecido"
+                step_name = s.status or "Desconhecido"
                 gargalos_etapa[step_name] = gargalos_etapa.get(step_name, 0) + 1
                 
         # Format top gargalos
