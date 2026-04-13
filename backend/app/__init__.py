@@ -89,4 +89,8 @@ def create_app():
 
     from app.routes_notifications import notifications_bp
     app.register_blueprint(notifications_bp)
+    
+    from app.routes_analysts_reports import analysts_reports_bp
+    app.register_blueprint(analysts_reports_bp)
+    
     return app

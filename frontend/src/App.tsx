@@ -11,6 +11,8 @@ import IntegrationDashboard from './features/integration/IntegrationDashboard'
 import IntegrationMonitor from './features/integration/IntegrationMonitor'
 import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
+import TeamDiagnosticsView from './pages/implantadores/TeamDiagnosticsView'
+import AnalystProfileView from './pages/implantadores/AnalystProfileView'
 
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import ForecastPage from './features/forecast/ForecastPage'
@@ -58,6 +60,8 @@ function App() {
                 }>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/monitor" element={<Monitor />} />
+                    <Route path="/team-diagnostics" element={<TeamDiagnosticsView />} />
+                    <Route path="/team-diagnostics/:name" element={<AnalystProfileView />} />
 
                     {/* Suíte de Integração */}
                     <Route path="/integration" element={<Navigate to="/integration/dashboard" replace />} />

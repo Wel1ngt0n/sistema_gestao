@@ -1,0 +1,330 @@
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { api } from '../../services/api'
+import {
+    ArrowLeft, UserIcon, BriefcaseIcon, AlertTriangle,
+    Clock, Activity, Download, Sparkles, Loader2
+} from 'lucide-react'
+
+export default function AnalystProfileView() {
+    const { name } = useParams<{ name: string }>()
+    const navigate = useNavigate()
+
+    const [data, setData] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    // AI State
+    const [aiResult, setAiResult] = useState<any>(null)
+    const [aiLoading, setAiLoading] = useState(false)
+
+    useEffect(() => {
+        if (!name) return
+        const fetchAnalyst = async () => {
+            try {
+                setLoading(true)
+                const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}`)
+                setData(res.data)
+            } catch (err: any) {
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchAnalyst()
+    }, [name])
+
+    const handleAIAnalysis = async () => {
+        if (!name) return
+        try {
+            setAiLoading(true)
+            const res = await api.post(`/api/reports/implantadores/analyze/${encodeURIComponent(name)}`)
+            setAiResult(res.data)
+        } catch (err: any) {
+            setAiResult({ error: err.message })
+        } finally {
+            setAiLoading(false)
+        }
+    }
+
+    const handleExportCSV = async () => {
+        if (!name) return
+        try {
+            const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}/export-csv`, { responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([res.data]))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `diagnostico_${name}.csv`)
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+        } catch {
+            alert('Erro ao exportar CSV')
+        }
+    }
+
+    const handleExportPDF = async () => {
+        if (!name) return
+        try {
+            const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}/export-pdf`, { responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `diagnostico_${name}.pdf`)
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+        } catch {
+            alert('Erro ao exportar PDF')
+        }
+    }
+
+    const formatMoney = (val: number) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="w-8 h-8 rounded-full border-4 border-zinc-200 border-t-orange-500 animate-spin"></div>
+            </div>
+        )
+    }
+
+    if (error || !data) {
+        return (
+            <div className="p-4 bg-red-50 text-red-600 rounded-xl">
+                {error || "Dados não encontrados"}
+            </div>
+        )
+    }
+
+    const { resumo, carteira_atual } = data
+
+    return (
+        <div className="space-y-6">
+            {/* HEADER */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/team-diagnostics')}
+                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-700"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold flex items-center gap-3">
+                            <UserIcon className="text-orange-500" />
+                            Perfil Analítico: {data.implantador}
+                        </h1>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                            Raio-X de performance operacional individual
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-750 transition-colors"
+                    >
+                        <Download size={16} />
+                        CSV
+                    </button>
+                    <button
+                        onClick={handleExportPDF}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                        <Download size={16} />
+                        PDF
+                    </button>
+                </div>
+            </div>
+
+            {/* KPI CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <BriefcaseIcon className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Carga Ponderada</span>
+                    </div>
+                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                        {resumo.carga_ponderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-2">
+                        Base: {resumo.ativos} Projetos. (Matriz: 1.0pt | Filial: 0.5pt)
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                            <Activity className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Entrega no SLA</span>
+                    </div>
+                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                        {resumo.pct_sla.toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-2">
+                        De todas as lojas entregues, esse % cumpriu o prazo.
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Retrabalho</span>
+                    </div>
+                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                        {resumo.pct_retrabalho.toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-2">
+                        Projetos reabertos ou marcados com defeitos pós-entrega.
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">MRR Retido</span>
+                    </div>
+                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                        {formatMoney(resumo.mrr_ativo)}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-2">
+                        Faturamento bloqueado nas {resumo.ativos} lojas ativas.
+                    </div>
+                </div>
+            </div>
+
+            {/* AI ANALYSIS BLOCK */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                        <Sparkles className="text-orange-500" />
+                        Diagnóstico Assistido por IA
+                    </h2>
+                    <button
+                        onClick={handleAIAnalysis}
+                        disabled={aiLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                        {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles size={16} />}
+                        {aiLoading ? 'Analisando...' : 'Gerar Diagnóstico'}
+                    </button>
+                </div>
+
+                {!aiResult && !aiLoading && (
+                    <p className="text-sm text-zinc-400 italic">
+                        Clique em "Gerar Diagnóstico" para que a IA analise os dados operacionais deste analista.
+                    </p>
+                )}
+
+                {aiResult && !aiResult.error && (
+                    <div className="space-y-4 text-sm">
+                        {aiResult.resumo_geral && (
+                            <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-1">Resumo Geral</h3>
+                                <p className="text-zinc-600 dark:text-zinc-400">{aiResult.resumo_geral}</p>
+                            </div>
+                        )}
+                        {aiResult.padroes_observados && (
+                            <div>
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-2">Padrões Observados</h3>
+                                <ul className="list-disc pl-5 space-y-1 text-zinc-600 dark:text-zinc-400">
+                                    {aiResult.padroes_observados.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                                </ul>
+                            </div>
+                        )}
+                        {aiResult.gargalos_relevantes && (
+                            <div>
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-2">Gargalos Relevantes</h3>
+                                <ul className="list-disc pl-5 space-y-1 text-zinc-600 dark:text-zinc-400">
+                                    {aiResult.gargalos_relevantes.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                                </ul>
+                            </div>
+                        )}
+                        {aiResult.sugestoes_acao && (
+                            <div>
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-2">Sugestões de Ação</h3>
+                                <ul className="list-disc pl-5 space-y-1 text-zinc-600 dark:text-zinc-400">
+                                    {aiResult.sugestoes_acao.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {aiResult?.error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg text-sm">
+                        {aiResult.error}
+                    </div>
+                )}
+            </div>
+
+            {/* CARTEIRA ATUAL */}
+            <h2 className="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
+                <BriefcaseIcon size={20} className="text-indigo-500" />
+                Carteira Ativa ({carteira_atual.length} Projetos)
+            </h2>
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
+                            <tr>
+                                <th className="px-6 py-4">Loja</th>
+                                <th className="px-6 py-4">Tipo</th>
+                                <th className="px-6 py-4">Status Atual</th>
+                                <th className="px-6 py-4">Tempo (Dias)</th>
+                                <th className="px-6 py-4">Idle (Espera)</th>
+                                <th className="px-6 py-4">MRR</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                            {carteira_atual.map((loja: any) => (
+                                <tr key={loja.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                        {loja.name}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
+                                            {loja.tipo_loja || 'Indefinido'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-zinc-700 dark:text-zinc-300">
+                                        {loja.status_name}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`font-medium ${loja.dias_em_progresso > loja.tempo_contrato ? 'text-red-500' : ''}`}>
+                                            {loja.dias_em_progresso}d / {loja.tempo_contrato}d
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`font-bold ${loja.idle_days > 7 ? 'text-red-500' : loja.idle_days > 4 ? 'text-amber-500' : 'text-zinc-600'}`}>
+                                            {loja.idle_days}d
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-zinc-500">
+                                        {formatMoney(loja.valor_mensalidade || 0)}
+                                    </td>
+                                </tr>
+                            ))}
+                            {carteira_atual.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">Carteira 100% entregue. Sem lojas ativas.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    )
+}
