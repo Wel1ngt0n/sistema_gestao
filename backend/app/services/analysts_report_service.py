@@ -58,13 +58,21 @@ class AnalystsReportService:
             
             # SLA Global (% Dentro do Prazo entre as concluídas)
             sla_ok = 0
+            sla_total = 0
             for s in concluidas:
+                # Ignorar lojas que não devem ser contabilizadas
+                if not s.considerar_tempo_implantacao:
+                    continue
+                # Precisamos de data de início para calcular
+                if not s.effective_started_at:
+                    continue
+                sla_total += 1
                 sla = s.tempo_contrato or 90
-                # Desconta dias em progresso
-                if s.dias_totais_implantacao <= sla:
+                dias = s.dias_totais_implantacao or 0
+                if dias > 0 and dias <= sla:
                     sla_ok += 1
             
-            pct_sla = (sla_ok / len(concluidas) * 100) if len(concluidas) > 0 else 0
+            pct_sla = (sla_ok / sla_total * 100) if sla_total > 0 else 0
             
             # Qualidade (Nas entregues)
             retrabalho_count = sum(1 for s in concluidas if s.teve_retrabalho)
@@ -119,8 +127,19 @@ class AnalystsReportService:
         mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
         
         # Qualidade % e SLA %
-        sla_ok = sum(1 for s in concluidas if s.dias_totais_implantacao <= (s.tempo_contrato or 90))
-        pct_sla = (sla_ok / len(concluidas) * 100) if len(concluidas) > 0 else 0
+        sla_total = 0
+        sla_ok = 0
+        for s in concluidas:
+            if not s.considerar_tempo_implantacao:
+                continue
+            if not s.effective_started_at:
+                continue
+            sla_total += 1
+            sla_val = s.tempo_contrato or 90
+            dias = s.dias_totais_implantacao or 0
+            if dias > 0 and dias <= sla_val:
+                sla_ok += 1
+        pct_sla = (sla_ok / sla_total * 100) if sla_total > 0 else 0
         
         retrabalho_count = sum(1 for s in concluidas if s.teve_retrabalho)
         pct_retrabalho = (retrabalho_count / len(concluidas) * 100) if len(concluidas) > 0 else 0
