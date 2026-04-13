@@ -99,7 +99,7 @@ export default function AnalystProfileView() {
         )
     }
 
-    const { resumo, carteira_atual } = data
+    const { summary, carteira_atual } = data
 
     return (
         <div className="space-y-6">
@@ -150,56 +150,90 @@ export default function AnalystProfileView() {
                         <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Carga Ponderada</span>
                     </div>
                     <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                        {resumo.carga_ponderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
+                        {summary.carga_ponderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
                     </div>
                     <div className="text-xs text-zinc-500 mt-2">
-                        Base: {resumo.ativos} Projetos. (Matriz: 1.0pt | Filial: 0.5pt)
+                        Base: {summary.ativos} Projetos. (Matriz: 1.0pt | Filial: 0.5pt)
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
-                            <Activity className="w-5 h-5" />
+                {/* ENTREGA NO SLA */}
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                            <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
-                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Entrega no SLA</span>
+                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
+                            SLA & Conformidade
+                        </h3>
                     </div>
-                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                        {resumo.pct_sla.toFixed(0)}%
+
+                    <div className="space-y-4">
+                        <div>
+                            <div className="flex justify-between items-end mb-1">
+                                <span className="text-xs text-zinc-500 text-left">Lojas Entregues (Geral)</span>
+                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{summary.pct_sla_concluidas}%</span>
+                            </div>
+                            <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
+                                    style={{ width: `${summary.pct_sla_concluidas}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-end mb-1">
+                                <span className="text-xs text-zinc-500 text-left">Saúde da Carteira (Ativas)</span>
+                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{summary.pct_sla_ativas}%</span>
+                            </div>
+                            <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                    style={{ width: `${summary.pct_sla_ativas}%` }}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-xs text-zinc-500 mt-2">
-                        De todas as lojas entregues, esse % cumpriu o prazo.
-                    </div>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-4 leading-relaxed">
+                        Percentual de conformidade com o prazo contratual.
+                    </p>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
-                            <AlertTriangle className="w-5 h-5" />
+                {/* RETRABALHO */}
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                         </div>
-                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Retrabalho</span>
+                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
+                            Retrabalho
+                        </h3>
                     </div>
-                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                        {resumo.pct_retrabalho.toFixed(0)}%
-                    </div>
-                    <div className="text-xs text-zinc-500 mt-2">
+                    <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                        {summary.pct_retrabalho}%
+                    </span>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
                         Projetos reabertos ou marcados com defeitos pós-entrega.
-                    </div>
+                    </p>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
-                            <Clock className="w-5 h-5" />
+                {/* MRR RETIDO */}
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
+                            <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">MRR Retido</span>
+                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
+                            MRR Ativo
+                        </h3>
                     </div>
-                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                        {formatMoney(resumo.mrr_ativo)}
-                    </div>
-                    <div className="text-xs text-zinc-500 mt-2">
-                        Faturamento bloqueado nas {resumo.ativos} lojas ativas.
-                    </div>
+                    <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(summary.mrr_ativo)}
+                    </span>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
+                        Faturamento em implantação nas {summary.ativos} lojas ativas.
+                    </p>
                 </div>
             </div>
 

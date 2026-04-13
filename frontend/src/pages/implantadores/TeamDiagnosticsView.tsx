@@ -15,7 +15,8 @@ interface AnalystResume {
   filiais_ativas: number
   mrr_ativo: number
   throughput_30d: number
-  pct_sla: number
+  pct_sla_concluidas: number
+  pct_sla_ativas: number
   pct_retrabalho: number
   idle_medio: number
   idle_critico_count: number
@@ -184,8 +185,11 @@ export default function TeamDiagnosticsView() {
                   <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 text-center" onClick={() => handleSort('idle_critico_count')}>
                     <div className="flex items-center justify-center gap-2">Críticos (<span className="text-red-500">{'>'}7d</span>) <ArrowUpDown size={14} /></div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('pct_sla')}>
-                    <div className="flex items-center gap-2">% no SLA <ArrowUpDown size={14} /></div>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('pct_sla_concluidas')}>
+                    <div className="flex items-center gap-2">SLA Entregues <ArrowUpDown size={14} /></div>
+                  </th>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('pct_sla_ativas')}>
+                    <div className="flex items-center gap-2">Saúde Carteira <ArrowUpDown size={14} /></div>
                   </th>
                   <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('pct_retrabalho')}>
                     <div className="flex items-center gap-2">Retrabalho <ArrowUpDown size={14} /></div>
@@ -238,8 +242,13 @@ export default function TeamDiagnosticsView() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`font-medium ${item.pct_sla < 80 ? 'text-red-500' : 'text-emerald-500'}`}>
-                        {item.pct_sla.toFixed(0)}%
+                      <span className={`font-medium ${item.pct_sla_concluidas < 70 ? 'text-red-500' : 'text-emerald-500'}`}>
+                        {item.pct_sla_concluidas}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`font-medium ${item.pct_sla_ativas < 80 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        {item.pct_sla_ativas}%
                       </span>
                     </td>
                     <td className="px-6 py-4">

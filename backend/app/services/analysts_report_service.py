@@ -56,23 +56,34 @@ class AnalystsReportService:
             concluidas_30d = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= thirty_days_ago]
             throughput_30d = len(concluidas_30d)
             
-            # SLA Global (% Dentro do Prazo entre as concluídas)
-            sla_ok = 0
-            sla_total = 0
+            # 1. SLA Concluídas
+            sla_ok_concluidas = 0
+            sla_total_concluidas = 0
             for s in concluidas:
-                # Ignorar lojas que não devem ser contabilizadas
-                if not s.considerar_tempo_implantacao:
-                    continue
-                # Precisamos de data de início para calcular
-                if not s.effective_started_at:
-                    continue
-                sla_total += 1
-                sla = s.tempo_contrato or 90
+                if not s.considerar_tempo_implantacao: continue
+                if not s.effective_started_at: continue
+                sla_total_concluidas += 1
+                sla_limit = s.tempo_contrato or 90
                 dias = s.dias_totais_implantacao or 0
-                if dias > 0 and dias <= sla:
-                    sla_ok += 1
+                if dias > 0 and dias <= sla_limit:
+                    sla_ok_concluidas += 1
             
-            pct_sla = (sla_ok / sla_total * 100) if sla_total > 0 else 0
+            pct_sla_concluidas = (sla_ok_concluidas / sla_total_concluidas * 100) if sla_total_concluidas > 0 else 0
+
+            # 2. SLA Ativas (Saúde da Carteira)
+            sla_ok_ativas = 0
+            sla_total_ativas = 0
+            for s in ativas:
+                if not s.considerar_tempo_implantacao: continue
+                if not s.effective_started_at: continue
+                sla_total_ativas += 1
+                sla_limit = s.tempo_contrato or 90
+                dias = s.dias_em_progresso or 0
+                if dias <= sla_limit:
+                    sla_ok_ativas += 1
+            
+            pct_sla_ativas = (sla_ok_ativas / sla_total_ativas * 100) if sla_total_ativas > 0 else 0
+            
             
             # Qualidade (Nas entregues)
             retrabalho_count = sum(1 for s in concluidas if s.teve_retrabalho)
@@ -95,7 +106,8 @@ class AnalystsReportService:
                 "filiais_ativas": filiais_ativas,
                 "mrr_ativo": mrr_ativo,
                 "throughput_30d": throughput_30d,
-                "pct_sla": pct_sla,
+                "pct_sla_concluidas": round(pct_sla_concluidas, 1),
+                "pct_sla_ativas": round(pct_sla_ativas, 1),
                 "pct_retrabalho": pct_retrabalho,
                 "idle_medio": round(idle_medio, 1),
                 "idle_critico_count": idle_critico_count
@@ -126,20 +138,32 @@ class AnalystsReportService:
         carga_ponderada = sum(1.0 if (s.tipo_loja and s.tipo_loja.lower() == 'matriz') else 0.5 for s in ativas)
         mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
         
-        # Qualidade % e SLA %
-        sla_total = 0
-        sla_ok = 0
+        # 1. SLA Concluídas
+        sla_total_concluidas = 0
+        sla_ok_concluidas = 0
         for s in concluidas:
-            if not s.considerar_tempo_implantacao:
-                continue
-            if not s.effective_started_at:
-                continue
-            sla_total += 1
-            sla_val = s.tempo_contrato or 90
+            if not s.considerar_tempo_implantacao: continue
+            if not s.effective_started_at: continue
+            sla_total_concluidas += 1
+            sla_limit = s.tempo_contrato or 90
             dias = s.dias_totais_implantacao or 0
-            if dias > 0 and dias <= sla_val:
-                sla_ok += 1
-        pct_sla = (sla_ok / sla_total * 100) if sla_total > 0 else 0
+            if dias > 0 and dias <= sla_limit:
+                sla_ok_concluidas += 1
+        pct_sla_concluidas = (sla_ok_concluidas / sla_total_concluidas * 100) if sla_total_concluidas > 0 else 0
+
+        # 2. SLA Ativas
+        sla_total_ativas = 0
+        sla_ok_ativas = 0
+        for s in ativas:
+            if not s.considerar_tempo_implantacao: continue
+            if not s.effective_started_at: continue
+            sla_total_ativas += 1
+            sla_limit = s.tempo_contrato or 90
+            dias = s.dias_em_progresso or 0
+            if dias <= sla_limit:
+                sla_ok_ativas += 1
+        pct_sla_ativas = (sla_ok_ativas / sla_total_ativas * 100) if sla_total_ativas > 0 else 0
+        
         
         retrabalho_count = sum(1 for s in concluidas if s.teve_retrabalho)
         pct_retrabalho = (retrabalho_count / len(concluidas) * 100) if len(concluidas) > 0 else 0
@@ -165,16 +189,17 @@ class AnalystsReportService:
         # A intenção original pede comparação da média do analista vs média do time
         # TODO: Podemos simplificar agora pegando apenas a média do analista para listar as etapas.
         # Exemplo: Agrupar TaskSteps das lojas concluídas e ativas para ver velocidade
-        
         return {
-            "implantador": implantador_name,
-            "resumo": {
+            "summary": {
+                "implantador": implantador_name,
                 "ativos": len(ativas),
-                "entregues_30d": len(concluidas_30d),
+                "entregues": len(concluidas),
+                "throughput_30d": len(concluidas_30d),
                 "carga_ponderada": carga_ponderada,
                 "mrr_ativo": mrr_ativo,
-                "pct_sla": pct_sla,
-                "pct_retrabalho": pct_retrabalho,
+                "pct_sla_concluidas": round(pct_sla_concluidas, 1),
+                "pct_sla_ativas": round(pct_sla_ativas, 1),
+                "pct_retrabalho": round(pct_retrabalho, 1)
             },
             "carteira_atual": carteira_atual
         }
@@ -475,10 +500,10 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
         pdf.ln(2)
         
         # Table Header
-        col_widths = [38, 18, 18, 18, 18, 18, 18, 22, 22]
-        headers = ["Implantador", "Carga", "Ativas", "Entr.30d", "Idle", "Crit.", "SLA%", "Retr.%", "MRR"]
+        col_widths = [36, 16, 16, 16, 16, 16, 20, 20, 20, 22]
+        headers = ["Implantador", "Carga", "Ativas", "Entr.30d", "Idle", "Crit.", "SLA Ent.", "SLA Car.", "Retr.%", "MRR"]
         
-        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_font("Helvetica", "B", 7)
         pdf.set_fill_color(240, 240, 240)
         for i, h in enumerate(headers):
             pdf.cell(col_widths[i], 7, h, 1, 0, "C", True)
@@ -486,16 +511,18 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
         
         # Table Body
         pdf.set_font("Helvetica", "", 8)
+        pdf.set_font("Helvetica", "", 7)
         for t in team:
-            pdf.cell(col_widths[0], 6, str(t['implantador'])[:20], 1, 0)
+            pdf.cell(col_widths[0], 6, str(t['implantador'])[:18], 1, 0)
             pdf.cell(col_widths[1], 6, f"{t['carga_ponderada']:.1f}", 1, 0, "C")
             pdf.cell(col_widths[2], 6, str(t['ativos']), 1, 0, "C")
             pdf.cell(col_widths[3], 6, str(t['throughput_30d']), 1, 0, "C")
             pdf.cell(col_widths[4], 6, f"{t['idle_medio']:.0f}d", 1, 0, "C")
             pdf.cell(col_widths[5], 6, str(t['idle_critico_count']), 1, 0, "C")
-            pdf.cell(col_widths[6], 6, f"{t['pct_sla']:.0f}%", 1, 0, "C")
-            pdf.cell(col_widths[7], 6, f"{t['pct_retrabalho']:.0f}%", 1, 0, "C")
-            pdf.cell(col_widths[8], 6, f"R${t['mrr_ativo']:.0f}", 1, 0, "R")
+            pdf.cell(col_widths[6], 6, f"{t['pct_sla_concluidas']:.0f}%", 1, 0, "C")
+            pdf.cell(col_widths[7], 6, f"{t['pct_sla_ativas']:.0f}%", 1, 0, "C")
+            pdf.cell(col_widths[8], 6, f"{t['pct_retrabalho']:.0f}%", 1, 0, "C")
+            pdf.cell(col_widths[9], 6, f"R${t['mrr_ativo']:.0f}", 1, 0, "R")
             pdf.ln()
         
         # Footer
@@ -516,7 +543,7 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
         from fpdf import FPDF
         
         details = AnalystsReportService.get_analyst_details(implantador_name)
-        resumo = details.get("resumo", {})
+        summary = details.get("summary", {})
         carteira = details.get("carteira_atual", [])
         
         pdf = FPDF()
@@ -538,12 +565,14 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
         pdf.set_font("Helvetica", "", 10)
         
         kpis = [
-            ("Lojas Ativas", str(resumo.get('ativos', 0))),
-            ("Entregas (30 dias)", str(resumo.get('entregues_30d', 0))),
-            ("Carga Ponderada", f"{resumo.get('carga_ponderada', 0):.1f} pts"),
-            ("MRR Retido", f"R$ {resumo.get('mrr_ativo', 0):,.2f}"),
-            ("% dentro do SLA", f"{resumo.get('pct_sla', 0):.0f}%"),
-            ("% Retrabalho", f"{resumo.get('pct_retrabalho', 0):.0f}%"),
+            ("Lojas Ativas", str(summary.get('ativos', 0))),
+            ("Entregas (Total)", str(summary.get('entregues', 0))),
+            ("Entregas (30 dias)", str(summary.get('throughput_30d', 0))),
+            ("Carga Ponderada", f"{summary.get('carga_ponderada', 0):.1f} pts"),
+            ("MRR Ativo", f"R$ {summary.get('mrr_ativo', 0):,.2f}"),
+            ("% SLA Concluídas", f"{summary.get('pct_sla_concluidas', 0):.1f}%"),
+            ("% SLA Ativas", f"{summary.get('pct_sla_ativas', 0):.1f}%"),
+            ("% Retrabalho", f"{summary.get('pct_retrabalho', 0):.0f}%"),
         ]
         
         for label, val in kpis:
