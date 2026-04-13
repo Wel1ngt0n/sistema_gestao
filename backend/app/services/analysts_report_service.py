@@ -1,5 +1,5 @@
 from app.models import db, Store, TaskStep
-from sqlalchemy import func, case
+from sqlalchemy import func, case, or_
 from datetime import datetime, timedelta
 
 class AnalystsReportService:
@@ -25,7 +25,7 @@ class AnalystsReportService:
         # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES em 2026
         # Isso garante que a Débora e o Derik apareçam sempre que tiverem trabalho ativo.
         implantadores_query = implantadores_query.filter(
-            db.or_(
+            or_(
                 Store.status_norm != 'DONE',
                 Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
@@ -46,7 +46,7 @@ class AnalystsReportService:
                 Store.implantador == imp, 
                 Store.status_norm != 'CANCELED'
             ).filter(
-                db.or_(
+                or_(
                     Store.status_norm != 'DONE',
                     Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
                     Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
@@ -74,9 +74,7 @@ class AnalystsReportService:
             mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
             
             # Entregas Periodo (Mês Vigente)
-            import datetime
-            now = datetime.datetime.now()
-            first_day_of_month = datetime.datetime(now.year, now.month, 1)
+            first_day_of_month = datetime(now.year, now.month, 1)
             
             concluidas_mes = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= first_day_of_month]
             throughput_mes = len(concluidas_mes)
