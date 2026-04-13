@@ -335,7 +335,7 @@ class MetricsSnapshotDaily(db.Model):
     risk_score = db.Column(db.Float)       # 0-100
     
     # Relacionamento Loja
-    store = db.relationship('Store', backref='daily_snapshots')
+    store = db.relationship('Store', backref=db.backref('daily_snapshots', cascade='all, delete-orphan'))
     
     # Campos de Análise IA
     ai_risk_level = db.Column(db.String(20)) # CRITICAL, HIGH, MEDIUM, LOW
@@ -383,7 +383,7 @@ class ForecastAuditLog(db.Model):
     changed_at = db.Column(db.DateTime, default=datetime.now)
     actor = db.Column(db.String(50), default='local_user')
     
-    store = db.relationship('Store', backref='forecast_audits')
+    store = db.relationship('Store', backref=db.backref('forecast_audits', cascade='all, delete-orphan'))
 
 # --- V3.0 Models (CRM Evolution) ---
 class IntegrationMetric(db.Model):
@@ -420,7 +420,7 @@ class IntegrationMetric(db.Model):
     
     updated_at = db.Column(db.DateTime, default=datetime.now)
 
-    store = db.relationship('Store', backref='integration_metrics')
+    store = db.relationship('Store', backref=db.backref('integration_metrics', cascade='all, delete-orphan'))
 
     # Removendo Constraint de Data única para permitir Múltiplas entradas se necessário,
     # mas por enquanto vamos manter 1 para 1 por loja como "Estado Atual"
@@ -596,7 +596,7 @@ class AILongTermMemory(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     
     # Relação com Store
-    store = db.relationship('Store', backref=db.backref('ai_memories', lazy=True))
+    store = db.relationship('Store', backref=db.backref('ai_memories', cascade='all, delete-orphan', lazy=True))
 
     def __repr__(self):
         return f'<AIMemory {self.id} - {self.analysis_type} ({self.created_at.strftime("%d/%m")})>'
