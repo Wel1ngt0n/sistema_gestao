@@ -138,11 +138,33 @@ class Store(db.Model):
 
     @property
     def effective_finished_at(self):
+        # Prioridade: Manual > Real (Fim Etapa) > ClickUp Closed
+        # Se estiver DONE mas sem data, retorna None (não deve usar 'now')
         return self.manual_finished_at or self.end_real_at or self.finished_at
 
     @property
     def effective_started_at(self):
-        return self.start_real_at or self.created_at
+        # Lógica de Início Implante:
+        # 1. Data Manual (futuro)
+        # 2. start_real_at do ClickUp
+        # 3. Data de criação do primeiro Step (indicador real de que o time começou)
+        # 4. created_at da tarefa (fallback)
+        
+        candidates = []
+        if self.start_real_at: candidates.append(self.start_real_at)
+        
+        # Primeiro step criado
+        first_step_at = None
+        if self.steps:
+            steps_dates = [s.created_at for s in self.steps if s.created_at]
+            if steps_dates:
+                first_step_at = min(steps_dates)
+                candidates.append(first_step_at)
+        
+        if not candidates:
+            return self.created_at
+            
+        return min(candidates)
 
     @property
     def dias_em_progresso(self):
@@ -153,7 +175,13 @@ class Store(db.Model):
             return 0
             
         # Data de referência final (Data de Fim ou Hoje)
-        ref_end = end_date or datetime.now()
+        if self.status_norm == 'DONE':
+            # Se já está concluído, o fim DEVE ser a data de conclusão.
+            # Se não tiver data de conclusão gravada, retornamos a diferença até a criação (ou 0) 
+            # para evitar que conte até 'hoje' e fique falso-atrasado.
+            ref_end = end_date or self.created_at
+        else:
+            ref_end = end_date or datetime.now()
         
         # Delta Total Bruto
         delta = ref_end - start_date
@@ -195,6 +223,22 @@ class Store(db.Model):
             days = self.tempo_contrato or 90
             return start_date + timedelta(days=days)
         return None
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.store_name,
+            "custom_id": self.custom_store_id,
+            "status_name": self.status,
+            "status_norm": self.status_norm,
+            "tipo_loja": self.tipo_loja,
+            "dias_em_progresso": self.dias_em_progresso,
+            "idle_days": self.idle_days or 0,
+            "tempo_contrato": self.tempo_contrato or 90,
+            "valor_mensalidade": self.valor_mensalidade,
+            "finished_at": self.effective_finished_at.isoformat() if self.effective_finished_at else None,
+            "started_at": self.effective_started_at.isoformat() if self.effective_started_at else None
+        }
 
     def __repr__(self):
         return f'<Store {self.custom_store_id or self.store_name}>'

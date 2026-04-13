@@ -22,6 +22,7 @@ class AnalystsReportService:
             db.or_(
                 Store.status_norm != 'DONE',
                 Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.finished_at >= AnalystsReportService.CUTOFF_DATE
             )
         ).all()
@@ -42,6 +43,7 @@ class AnalystsReportService:
                 db.or_(
                     Store.status_norm != 'DONE',
                     Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                    Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
                     Store.finished_at >= AnalystsReportService.CUTOFF_DATE
                 )
             ).all()
@@ -146,6 +148,7 @@ class AnalystsReportService:
             db.or_(
                 Store.status_norm != 'DONE',
                 Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.finished_at >= AnalystsReportService.CUTOFF_DATE
             )
         ).all()
@@ -223,7 +226,8 @@ class AnalystsReportService:
                 "pct_sla_ativas": round(pct_sla_ativas, 1),
                 "pct_retrabalho": round(pct_retrabalho, 1)
             },
-            "carteira_atual": carteira_atual
+            "ativas": [s.to_dict() for s in ativas],
+            "entregas": [s.to_dict() for s in concluidas]
         }
 
     @staticmethod

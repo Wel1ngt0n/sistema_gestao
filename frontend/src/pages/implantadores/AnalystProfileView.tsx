@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
 import {
     ArrowLeft, UserIcon, BriefcaseIcon, AlertTriangle,
-    Clock, Activity, Download, Sparkles, Loader2
+    Clock, Activity, Download, Sparkles, Loader2, CheckCircle
 } from 'lucide-react'
 
 export default function AnalystProfileView() {
@@ -99,7 +99,7 @@ export default function AnalystProfileView() {
         )
     }
 
-    const { summary, carteira_atual } = data
+    const { summary, ativas, entregas } = data
 
     return (
         <div className="space-y-6">
@@ -305,7 +305,7 @@ export default function AnalystProfileView() {
             {/* CARTEIRA ATUAL */}
             <h2 className="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
                 <BriefcaseIcon size={20} className="text-indigo-500" />
-                Carteira Ativa ({carteira_atual.length} Projetos)
+                Carteira Ativa ({ativas.length} Projetos)
             </h2>
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
@@ -317,11 +317,11 @@ export default function AnalystProfileView() {
                                 <th className="px-6 py-4">Status Atual</th>
                                 <th className="px-6 py-4">Tempo (Dias)</th>
                                 <th className="px-6 py-4">Idle (Espera)</th>
-                                <th className="px-6 py-4">MRR</th>
+                                <th className="px-6 py-4 text-right">MRR</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                            {carteira_atual.map((loja: any) => (
+                            {ativas.map((loja: any) => (
                                 <tr key={loja.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                                     <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-100">
                                         {loja.name}
@@ -344,16 +344,71 @@ export default function AnalystProfileView() {
                                             {loja.idle_days}d
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-zinc-500">
+                                    <td className="px-6 py-4 font-medium text-zinc-500 text-right">
                                         {formatMoney(loja.valor_mensalidade || 0)}
                                     </td>
                                 </tr>
                             ))}
-                            {carteira_atual.length === 0 && (
+                            {ativas.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">Carteira 100% entregue. Sem lojas ativas.</td>
+                                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500 italic">Nenhuma loja ativa no momento.</td>
                                 </tr>
                             )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* ENTREGAS */}
+            <h2 className="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
+                <CheckCircle size={20} className="text-emerald-500" />
+                Histórico de Entregas (Desde 2026) - {entregas.length} Lojas
+            </h2>
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
+                            <tr>
+                                <th className="px-6 py-4">Loja</th>
+                                <th className="px-6 py-4">Tipo</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Tempo Total (SLA)</th>
+                                <th className="px-6 py-4">Data Entrega</th>
+                                <th className="px-6 py-4 text-right">MRR</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                            {entregas.map((loja: any) => (
+                                <tr key={loja.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                        {loja.name}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
+                                            {loja.tipo_loja || 'Indefinido'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-emerald-600">
+                                        Entregue
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <span className={`font-bold ${loja.dias_em_progresso > loja.tempo_contrato ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                {loja.dias_em_progresso}d <span className="text-[10px] text-zinc-400 font-normal">SLA: {loja.tempo_contrato}d</span>
+                                            </span>
+                                            {loja.dias_em_progresso > loja.tempo_contrato && (
+                                                <span className="text-[10px] text-red-500 font-medium">Atraso: {loja.dias_em_progresso - loja.tempo_contrato}d</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-zinc-500">
+                                        {loja.finished_at ? new Date(loja.finished_at).toLocaleDateString('pt-BR') : 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-zinc-500 text-right">
+                                        {formatMoney(loja.valor_mensalidade || 0)}
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
