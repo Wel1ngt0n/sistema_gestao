@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
 import {
-    ArrowLeft, UserIcon, BriefcaseIcon, AlertTriangle,
+    ArrowLeft, UserIcon, BriefcaseIcon,
     Clock, Activity, Download, Sparkles, Loader2, CheckCircle
 } from 'lucide-react'
 
