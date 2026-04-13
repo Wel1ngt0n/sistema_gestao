@@ -15,19 +15,25 @@ class AnalystsReportService:
         """
         
         # Obter todos os implantadores distintos que possuem lojas não canceladas.
-        implantadores = db.session.query(Store.implantador).distinct().filter(
+        # Obter lista de implantadores relevantes (ativos ou com entregas recentes)
+        implantadores_query = db.session.query(Store.implantador).distinct().filter(
             Store.implantador.isnot(None), 
             Store.implantador != '',
-            Store.status_norm != 'CANCELED',
+            Store.status_norm != 'CANCELED'
+        )
+        
+        # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES em 2026
+        # Isso garante que a Débora e o Derik apareçam sempre que tiverem trabalho ativo.
+        implantadores_query = implantadores_query.filter(
             db.or_(
                 Store.status_norm != 'DONE',
                 Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.finished_at >= AnalystsReportService.CUTOFF_DATE
             )
-        ).all()
+        )
         
-        implantadores = [i[0] for i in implantadores]
+        implantadores = [i[0] for i in implantadores_query.all()]
         
         report = []
         

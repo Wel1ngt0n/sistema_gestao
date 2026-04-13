@@ -78,6 +78,8 @@ class MetricsService:
 
         if task_data.get('date_closed'):
             store.finished_at = datetime.fromtimestamp(int(task_data['date_closed']) / 1000)
+        elif task_data.get('date_done'):
+             store.finished_at = datetime.fromtimestamp(int(task_data['date_done']) / 1000)
             
         # Assignee
         assignees = task_data.get('assignees', [])

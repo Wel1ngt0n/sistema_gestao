@@ -139,32 +139,43 @@ class Store(db.Model):
     @property
     def effective_finished_at(self):
         # Prioridade: Manual > Real (Fim Etapa) > ClickUp Closed
-        # Se estiver DONE mas sem data, retorna None (não deve usar 'now')
-        return self.manual_finished_at or self.end_real_at or self.finished_at
+        # Se estiver DONE mas sem data explícita, buscar a data da última subtarefa concluída
+        main_date = self.manual_finished_at or self.end_real_at or self.finished_at
+        if main_date:
+            return main_date
+            
+        if self.status_norm == 'DONE' and self.steps:
+             # Fallback 2: Data da última etapa concluída
+             concluded_steps = [s.end_real_at for s in self.steps if s.end_real_at]
+             if concluded_steps:
+                 return max(concluded_steps)
+                 
+        return None
 
     @property
     def effective_started_at(self):
-        # Lógica de Início Implante:
-        # 1. Data Manual (futuro)
-        # 2. start_real_at do ClickUp
-        # 3. Data de criação do primeiro Step (indicador real de que o time começou)
-        # 4. created_at da tarefa (fallback)
+        # Lógica de Início Implante (Prioridade à Ação Real):
+        # 1. start_real_at do ClickUp (se o analista clicou em Play/Start)
+        # 2. Earliest start_real_at das subtarefas
+        # 3. Earliest end_real_at das subtarefas (indicativo que pelo menos uma coisa foi feita)
+        # 4. created_at da tarefa (fallback final - pior caso)
         
         candidates = []
-        if self.start_real_at: candidates.append(self.start_real_at)
+        if self.start_real_at: 
+            candidates.append(self.start_real_at)
         
-        # Primeiro step criado
-        first_step_at = None
         if self.steps:
-            steps_dates = [s.created_at for s in self.steps if s.created_at]
-            if steps_dates:
-                first_step_at = min(steps_dates)
-                candidates.append(first_step_at)
-        
-        if not candidates:
-            return self.created_at
+            # Pegar menor data de início ou fim de qualquer subtarefa
+            sub_starts = [s.start_real_at for s in self.steps if s.start_real_at]
+            sub_ends = [s.end_real_at for s in self.steps if s.end_real_at]
             
-        return min(candidates)
+            if sub_starts: candidates.append(min(sub_starts))
+            if sub_ends: candidates.append(min(sub_ends))
+        
+        if candidates:
+            return min(candidates)
+            
+        return self.created_at
 
     @property
     def dias_em_progresso(self):
