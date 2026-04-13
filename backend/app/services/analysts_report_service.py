@@ -73,9 +73,13 @@ class AnalystsReportService:
             # MRR Ativo
             mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
             
-            # Entregas Periodo (Últimos 30 dias)
-            concluidas_30d = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= thirty_days_ago]
-            throughput_30d = len(concluidas_30d)
+            # Entregas Periodo (Mês Vigente)
+            import datetime
+            now = datetime.datetime.now()
+            first_day_of_month = datetime.datetime(now.year, now.month, 1)
+            
+            concluidas_mes = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= first_day_of_month]
+            throughput_mes = len(concluidas_mes)
             
             # 1. SLA Concluídas
             sla_ok_concluidas = 0
@@ -126,7 +130,7 @@ class AnalystsReportService:
                 "matrizes_ativas": matrizes_ativas,
                 "filiais_ativas": filiais_ativas,
                 "mrr_ativo": mrr_ativo,
-                "throughput_30d": throughput_30d,
+                "entregas_mes": throughput_mes,
                 "pct_sla_concluidas": round(pct_sla_concluidas, 1),
                 "pct_sla_ativas": round(pct_sla_ativas, 1),
                 "pct_retrabalho": pct_retrabalho,
@@ -224,8 +228,8 @@ class AnalystsReportService:
             "summary": {
                 "implantador": implantador_name,
                 "ativos": len(ativas),
-                "entregues": len(concluidas),
-                "throughput_30d": len(concluidas_30d),
+                "entregue_mes": len([s for s in concluidas if s.effective_finished_at and s.effective_finished_at.year == datetime.now().year and s.effective_finished_at.month == datetime.now().month]),
+                "entregues_total": len(concluidas),
                 "carga_ponderada": carga_ponderada,
                 "mrr_ativo": mrr_ativo,
                 "pct_sla_concluidas": round(pct_sla_concluidas, 1),
@@ -533,7 +537,7 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
         
         # Table Header
         col_widths = [36, 16, 16, 16, 16, 16, 20, 20, 20, 22]
-        headers = ["Implantador", "Carga", "Ativas", "Entr.30d", "Idle", "Crit.", "SLA Ent.", "SLA Car.", "Retr.%", "MRR"]
+        headers = ["Implantador", "Carga", "Ativas", "Entr.Mes", "Idle", "Crit.", "SLA Ent.", "SLA Car.", "Retr.%", "MRR"]
         
         pdf.set_font("Helvetica", "B", 7)
         pdf.set_fill_color(240, 240, 240)
@@ -548,7 +552,7 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
             pdf.cell(col_widths[0], 6, str(t['implantador'])[:18], 1, 0)
             pdf.cell(col_widths[1], 6, f"{t['carga_ponderada']:.1f}", 1, 0, "C")
             pdf.cell(col_widths[2], 6, str(t['ativos']), 1, 0, "C")
-            pdf.cell(col_widths[3], 6, str(t['throughput_30d']), 1, 0, "C")
+            pdf.cell(col_widths[3], 6, str(t['entregas_mes']), 1, 0, "C")
             pdf.cell(col_widths[4], 6, f"{t['idle_medio']:.0f}d", 1, 0, "C")
             pdf.cell(col_widths[5], 6, str(t['idle_critico_count']), 1, 0, "C")
             pdf.cell(col_widths[6], 6, f"{t['pct_sla_concluidas']:.0f}%", 1, 0, "C")
@@ -598,8 +602,8 @@ Responda APENAS com o JSON abaixo (sem markdown, sem crases):
         
         kpis = [
             ("Lojas Ativas", str(summary.get('ativos', 0))),
-            ("Entregas (Total)", str(summary.get('entregues', 0))),
-            ("Entregas (30 dias)", str(summary.get('throughput_30d', 0))),
+            ("Entregas (Mês)", str(summary.get('entregue_mes', 0))),
+            ("Entregas (Total)", str(summary.get('entregues_total', 0))),
             ("Carga Ponderada", f"{summary.get('carga_ponderada', 0):.1f} pts"),
             ("MRR Ativo", f"R$ {summary.get('mrr_ativo', 0):,.2f}"),
             ("% SLA Concluídas", f"{summary.get('pct_sla_concluidas', 0):.1f}%"),

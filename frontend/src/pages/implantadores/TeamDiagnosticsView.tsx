@@ -14,7 +14,7 @@ interface AnalystResume {
   matrizes_ativas: number
   filiais_ativas: number
   mrr_ativo: number
-  throughput_30d: number
+  entregas_mes: number
   pct_sla_concluidas: number
   pct_sla_ativas: number
   pct_retrabalho: number
@@ -176,8 +176,8 @@ export default function TeamDiagnosticsView() {
                   <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" title="Matrizes vs Filiais" onClick={() => handleSort('ativos')}>
                     <div className="flex items-center gap-2">Lojas Ativas <ArrowUpDown size={14} /></div>
                   </th>
-                  <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('throughput_30d')}>
-                    <div className="flex items-center gap-2">Entregas (30D) <ArrowUpDown size={14} /></div>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('entregas_mes')}>
+                    <div className="flex items-center gap-2">Entregas (Mês) <ArrowUpDown size={14} /></div>
                   </th>
                   <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('idle_medio')}>
                     <div className="flex items-center gap-2">Idle Médio <ArrowUpDown size={14} /></div>
@@ -223,7 +223,7 @@ export default function TeamDiagnosticsView() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-emerald-500 w-4 h-4" />
-                        <span className="font-medium">{item.throughput_30d}</span>
+                        <span className="font-medium">{item.entregas_mes}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">

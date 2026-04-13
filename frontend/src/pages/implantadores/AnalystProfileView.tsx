@@ -200,21 +200,21 @@ export default function AnalystProfileView() {
                     </p>
                 </div>
 
-                {/* RETRABALHO */}
+                {/* ENTREGA (MÊS) */}
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg">
-                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                            <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
-                            Retrabalho
+                            Entregas (Mês)
                         </h3>
                     </div>
                     <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                        {summary.pct_retrabalho}%
+                        {summary.entregue_mes}
                     </span>
                     <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
-                        Projetos reabertos ou marcados com defeitos pós-entrega.
+                        Total de {summary.entregues_total} lojas entregues desde o início.
                     </p>
                 </div>
 
