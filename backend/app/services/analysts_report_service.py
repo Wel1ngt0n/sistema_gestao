@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 
 class AnalystsReportService:
     
+    # Corte: Considerar apenas lojas a partir de 01/01/2026
+    CUTOFF_DATE = datetime(2026, 1, 1)
+    
     @staticmethod
     def get_team_resume():
         """
@@ -15,7 +18,8 @@ class AnalystsReportService:
         implantadores = db.session.query(Store.implantador).distinct().filter(
             Store.implantador.isnot(None), 
             Store.implantador != '',
-            Store.status_norm != 'CANCELED' 
+            Store.status_norm != 'CANCELED',
+            Store.created_at >= AnalystsReportService.CUTOFF_DATE
         ).all()
         
         implantadores = [i[0] for i in implantadores]
@@ -27,7 +31,7 @@ class AnalystsReportService:
         
         for imp in implantadores:
             # Lojas Totais (Ativas vs Entregues)
-            stores = Store.query.filter(Store.implantador == imp, Store.status_norm != 'CANCELED').all()
+            stores = Store.query.filter(Store.implantador == imp, Store.status_norm != 'CANCELED', Store.created_at >= AnalystsReportService.CUTOFF_DATE).all()
             
             ativas = [s for s in stores if s.status_norm != 'DONE']
             concluidas = [s for s in stores if s.status_norm == 'DONE']
@@ -102,7 +106,7 @@ class AnalystsReportService:
         Retorna o Drill-down Individual do Implantador (Aba 3).
         """
         # Obter todas as lojas do analista
-        stores = Store.query.filter(Store.implantador == implantador_name, Store.status_norm != 'CANCELED').all()
+        stores = Store.query.filter(Store.implantador == implantador_name, Store.status_norm != 'CANCELED', Store.created_at >= AnalystsReportService.CUTOFF_DATE).all()
         
         ativas = [s for s in stores if s.status_norm != 'DONE']
         concluidas = [s for s in stores if s.status_norm == 'DONE']
@@ -190,7 +194,7 @@ class AnalystsReportService:
         """
         Retorna o dashboard e agregados macro de causas do time (Aba 2).
         """
-        stores = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE').all()
+        stores = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE', Store.created_at >= AnalystsReportService.CUTOFF_DATE).all()
         
         # Pré-calcular cargas por implantador para a heurística
         cargas = {}
