@@ -19,7 +19,11 @@ class AnalystsReportService:
             Store.implantador.isnot(None), 
             Store.implantador != '',
             Store.status_norm != 'CANCELED',
-            Store.created_at >= AnalystsReportService.CUTOFF_DATE
+            db.or_(
+                Store.status_norm != 'DONE',
+                Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+            )
         ).all()
         
         implantadores = [i[0] for i in implantadores]
@@ -31,7 +35,16 @@ class AnalystsReportService:
         
         for imp in implantadores:
             # Lojas Totais (Ativas vs Entregues)
-            stores = Store.query.filter(Store.implantador == imp, Store.status_norm != 'CANCELED', Store.created_at >= AnalystsReportService.CUTOFF_DATE).all()
+            stores = Store.query.filter(
+                Store.implantador == imp, 
+                Store.status_norm != 'CANCELED'
+            ).filter(
+                db.or_(
+                    Store.status_norm != 'DONE',
+                    Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                    Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+                )
+            ).all()
             
             ativas = [s for s in stores if s.status_norm != 'DONE']
             concluidas = [s for s in stores if s.status_norm == 'DONE']
@@ -126,7 +139,16 @@ class AnalystsReportService:
         Retorna o Drill-down Individual do Implantador (Aba 3).
         """
         # Obter todas as lojas do analista
-        stores = Store.query.filter(Store.implantador == implantador_name, Store.status_norm != 'CANCELED', Store.created_at >= AnalystsReportService.CUTOFF_DATE).all()
+        stores = Store.query.filter(
+            Store.implantador == implantador_name, 
+            Store.status_norm != 'CANCELED'
+        ).filter(
+            db.or_(
+                Store.status_norm != 'DONE',
+                Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+            )
+        ).all()
         
         ativas = [s for s in stores if s.status_norm != 'DONE']
         concluidas = [s for s in stores if s.status_norm == 'DONE']
