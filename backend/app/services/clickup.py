@@ -43,7 +43,7 @@ class ClickUpService:
             params = {
                 "page": page, 
                 "subtasks": "true", 
-                "include_closed": "false",
+                "include_closed": "true",
                 "archived": "false"
             }
             if date_updated_gt:
