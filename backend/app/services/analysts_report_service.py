@@ -511,7 +511,26 @@ Responda APENAS o JSON.
 
         llm = LLMService()
         result = llm.call_openai_diagnostic(prompt)
+
+        # Salvar em Memória de Longo Prazo para Auditoria e PDF
+        try:
+            from app.models import AILongTermMemory
+            from app import db
+            
+            # Guardar como análise de perfil do implantador
+            memory = AILongTermMemory(
+                analysis_type="individual_diagnostic",
+                query_prompt=f"Implantador: {implantador_name}",
+                ai_response=json.dumps(result),
+                context_snapshot=json.dumps(payload)
+            )
+            db.session.add(memory)
+            db.session.commit()
+        except Exception as mem_e:
+            print(f"Erro ao salvar memória de IA: {mem_e}")
+
         return result
+
 
     @staticmethod
     def generate_team_ai_analysis():
@@ -748,6 +767,64 @@ Responda APENAS o JSON.
             pdf.cell(col_widths[5], 6, f"R${loja.get('valor_mensalidade', 0) or 0:.0f}", 1, 0, "R")
             pdf.ln()
         
+        # PARECER DA IA (RAIO-X)
+        try:
+            from app.models import AILongTermMemory
+            memory = AILongTermMemory.query.filter(
+                AILongTermMemory.analysis_type == "individual_diagnostic",
+                AILongTermMemory.query_prompt.ilike(f"%{implantador_name}%")
+            ).order_by(AILongTermMemory.created_at.desc()).first()
+            
+            if memory:
+                import json
+                ai_data = json.loads(memory.ai_response)
+                pdf.add_page()
+                
+                # Title IA
+                pdf.set_font("Helvetica", "B", 16)
+                pdf.set_text_color(0, 51, 102) # Blueish
+                pdf.cell(0, 12, "Parecer Detalhado da IA (Raio-X)", ln=True)
+                pdf.ln(4)
+                
+                # Exec Summary
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.set_text_color(0, 0, 0)
+                pdf.cell(0, 8, "Resumo Executivo:", ln=True)
+                pdf.set_font("Helvetica", "", 10)
+                pdf.multi_cell(0, 6, ai_data.get('resumo_executivo', '-'))
+                pdf.ln(5)
+                
+                # ClickUp Audit
+                raio_x = ai_data.get('auditoria_raio_x', {})
+                if raio_x:
+                    pdf.set_font("Helvetica", "B", 11)
+                    pdf.cell(0, 8, "Auditoria Qualitativa (ClickUp):", ln=True)
+                    pdf.set_font("Helvetica", "", 10)
+                    pdf.multi_cell(0, 6, f"Documentacao: {raio_x.get('qualidade_documentacao', '-')}")
+                    pdf.multi_cell(0, 6, f"Conformidade: {raio_x.get('conformidade_etapas', '-')}")
+                    pdf.ln(4)
+
+                # Attention Points
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(0, 8, "Pontos de Atencao e Riscos:", ln=True)
+                pdf.set_font("Helvetica", "", 10)
+                bullets = ai_data.get('riscos_identificados', []) + ai_data.get('gargalos_operacionais', [])
+                for b in bullets:
+                    pdf.multi_cell(0, 6, f"  * {b}")
+                pdf.ln(4)
+
+                # Proposed Actions
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.set_text_color(204, 0, 0) # Reddish
+                pdf.cell(0, 8, "Acoes Recomendadas para Gestao:", ln=True)
+                pdf.set_font("Helvetica", "", 10)
+                pdf.set_text_color(0, 0, 0)
+                for a in ai_data.get('acoes_recomendadas', []):
+                    pdf.multi_cell(0, 6, f"  > {a}")
+
+        except Exception as pdf_ai_e:
+            print(f"Erro ao incluir IA no PDF: {pdf_ai_e}")
+
         # Footer
         pdf.ln(10)
         pdf.set_font("Helvetica", "I", 8)
@@ -758,3 +835,4 @@ Responda APENAS o JSON.
         pdf.output(output)
         output.seek(0)
         return output
+
