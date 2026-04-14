@@ -50,12 +50,22 @@ def create_app():
     db.init_app(app)
     migrate = Migrate(app, db)
     
-    # Init DB tables if they don't exist
+    # Garantir que as tabelas existem (Caminho CLI local)
     with app.app_context():
+        # create_all já é chamado no create_app()
         try:
             db.create_all()
-        except:
-            pass
+            
+            # Reparação Automática de Schema (Raio-X)
+            try:
+                from app.services.schema_repair import repair_database_schema
+                repair_database_schema()
+            except Exception as repair_e:
+                app.logger.error(f"FAILED TO REPAIR SCHEMA: {repair_e}")
+        except Exception as e:
+            app.logger.error(f"Error during database initialization: {e}")
+        
+    print(">>> Database initialized.")
         
     # Register Blueprints
     from app.routes import main_bp, api_bp

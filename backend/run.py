@@ -34,17 +34,11 @@ if __name__ == '__main__':
     parser.add_argument('--test', action='store_true', help='Executar teste de sincronização em vez do servidor')
     args = parser.parse_args()
 
-    # Garantir que as tabelas existem (Docker Init)
+    # Garantir que as tabelas existem (Caminho CLI local)
     with app.app_context():
-        db.create_all()
+        # create_all e repair_database_schema já são chamados no create_app()
+        pass
         
-        # Reparação Automática de Schema (Raio-X)
-        try:
-            from app.services.schema_repair import repair_database_schema
-            repair_database_schema()
-        except Exception as e:
-            print(f"FAILED TO REPAIR SCHEMA: {e}")
-            
         print(">>> Database initialized.")
 
 
