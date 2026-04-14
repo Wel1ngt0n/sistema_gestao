@@ -99,7 +99,18 @@ export default function AnalystProfileView() {
         )
     }
 
-    const { summary, ativas, entregas } = data
+    const summary = data?.summary || {}
+    const ativas = data?.carteira_atual || data?.ativas || []
+    const entregas = data?.entregas || []
+
+    // Constantes seguras para renderização
+    const cargaPonderada = summary?.carga_ponderada ?? 0
+    const pctSlaConcluidas = summary?.pct_sla_concluidas ?? 0
+    const pctSlaAtivas = summary?.pct_sla_ativas ?? 0
+    const entregueMes = summary?.entregue_mes ?? 0
+    const entreguesTotal2026 = summary?.entregues_total ?? 0
+    const mrrAtivo = summary?.mrr_ativo ?? 0
+    const ativosCount = summary?.ativos ?? 0
 
     return (
         <div className="space-y-6">
@@ -150,10 +161,10 @@ export default function AnalystProfileView() {
                         <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Carga Ponderada</span>
                     </div>
                     <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                        {summary.carga_ponderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
+                        {cargaPonderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
                     </div>
                     <div className="text-xs text-zinc-500 mt-2">
-                        Base: {summary.ativos} Projetos. (Matriz: 1.0pt | Filial: 0.5pt)
+                        Base: {ativosCount} Projetos. (Matriz: 1.0pt | Filial: 0.5pt)
                     </div>
                 </div>
 
@@ -172,12 +183,12 @@ export default function AnalystProfileView() {
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <span className="text-xs text-zinc-500 text-left">Lojas Entregues (Geral)</span>
-                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{summary.pct_sla_concluidas}%</span>
+                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{pctSlaConcluidas}%</span>
                             </div>
                             <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
-                                    style={{ width: `${summary.pct_sla_concluidas}%` }}
+                                    style={{ width: `${pctSlaConcluidas}%` }}
                                 />
                             </div>
                         </div>
@@ -185,12 +196,12 @@ export default function AnalystProfileView() {
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <span className="text-xs text-zinc-500 text-left">Saúde da Carteira (Ativas)</span>
-                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{summary.pct_sla_ativas}%</span>
+                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{pctSlaAtivas}%</span>
                             </div>
                             <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                    style={{ width: `${summary.pct_sla_ativas}%` }}
+                                    style={{ width: `${pctSlaAtivas}%` }}
                                 />
                             </div>
                         </div>
@@ -211,10 +222,10 @@ export default function AnalystProfileView() {
                         </h3>
                     </div>
                     <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                        {summary.entregue_mes}
+                        {entregueMes}
                     </span>
                     <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
-                        Total de {summary.entregues_total} lojas entregues desde o início.
+                        Total de {entreguesTotal2026} lojas entregues desde o início.
                     </p>
                 </div>
 
@@ -229,12 +240,13 @@ export default function AnalystProfileView() {
                         </h3>
                     </div>
                     <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(summary.mrr_ativo)}
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrrAtivo)}
                     </span>
                     <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
-                        Faturamento em implantação nas {summary.ativos} lojas ativas.
+                        Faturamento em implantação nas {ativosCount} lojas ativas.
                     </p>
                 </div>
+
             </div>
 
             {/* AI ANALYSIS BLOCK */}
