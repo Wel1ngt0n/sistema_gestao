@@ -327,6 +327,45 @@ export default function AnalystProfileView() {
                             </div>
                         </div>
 
+                        {/* Raio-X Audit (Deep Analysis) */}
+                        {aiResult.auditoria_raio_x && (
+                            <div className="bg-zinc-900 dark:bg-black text-white p-5 rounded-2xl border border-zinc-800 shadow-xl">
+                                <h3 className="font-bold text-orange-400 mb-4 flex items-center gap-2 text-base">
+                                    <Sparkles size={18} />
+                                    Raio-X: Auditoria Qualitativa (ClickUp)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* Qualidade Doc */}
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Documentação</span>
+                                        <p className="text-sm text-zinc-300 leading-relaxed italic">
+                                            "{aiResult.auditoria_raio_x.qualidade_documentacao}"
+                                        </p>
+                                    </div>
+                                    {/* Bloqueios Reais */}
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Bloqueios Detectados</span>
+                                        <ul className="space-y-1">
+                                            {aiResult.auditoria_raio_x.bloqueios_identificados?.map((b: string, idx: number) => (
+                                                <li key={idx} className="text-sm text-red-400 flex items-start gap-2">
+                                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500/50 flex-shrink-0" />
+                                                    {b}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    {/* Conformidade Etapas */}
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Procedimento/Etapas</span>
+                                        <p className="text-sm text-zinc-300 leading-relaxed text-balance">
+                                            {aiResult.auditoria_raio_x.conformidade_etapas}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+
                         {/* 6. Ações */}
                         <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
                             <h3 className="font-bold text-emerald-800 dark:text-emerald-300 mb-3 flex items-center gap-2">

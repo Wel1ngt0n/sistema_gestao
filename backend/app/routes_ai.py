@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
-from app.services.ai_service import GeminiService
+from app.services.ai_service import OperationalAIService
 from app.services.security_service import require_auth
 
 ai_bp = Blueprint('ai', __name__)
-ai_service = GeminiService()
+ai_service = OperationalAIService()
+
 
 @ai_bp.route('/api/ai/analyze-network/<int:store_id>', methods=['POST'])
 @require_auth

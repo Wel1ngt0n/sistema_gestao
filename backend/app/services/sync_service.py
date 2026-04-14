@@ -12,6 +12,39 @@ class SyncService:
         self.clickup = ClickUpService()
         self.metrics = MetricsService()
         
+    def _sync_verbal_context(self, task_data):
+        """
+        Busca descrição e comentários recentes para enriquecer a IA (Raio-X).
+        """
+        task_id = task_data.get('id')
+        if not task_id: return
+        
+        # 1. Descrição
+        # Às vezes a descrição já vem no task_data, se não, buscaríamos (ClickUp API cost)
+        # Por padrão, fetch_tasks do ClickUp traz text_content/description
+        
+        # 2. Comentários (Endpoint separado)
+        try:
+            comments = self.clickup.get_task_comments(task_id)
+            if comments:
+                # Pegar os 15 mais recentes
+                recent = comments[:15]
+                formatted = []
+                for c in recent:
+                    user = c.get('user', {}).get('username', 'N/A')
+                    text = c.get('comment_text', '').strip()
+                    date_ms = c.get('date')
+                    date_str = ""
+                    if date_ms:
+                        date_str = datetime.fromtimestamp(int(date_ms)/1000).strftime('%d/%m')
+                    
+                    if text:
+                        formatted.append(f"[{date_str}] {user}: {text}")
+                
+                task_data['comments_text'] = "\n".join(formatted)
+        except Exception as e:
+            self.logger.warning(f"Erro ao buscar comentários para task {task_id}: {e}")
+
     def get_last_sync_ts(self):
         state = SyncState.query.get(1)
         if state and state.last_shallow_sync_at:
@@ -97,9 +130,13 @@ class SyncService:
             # 3. Processar Lojas
             for p_task in parent_tasks:
                  try:
-                     self.metrics.process_store_data(p_task)
-                     db.session.commit()
-                     processed_count += 1
+                      # Sincronizar Contexto Verbal (Raio-X)
+                      self._sync_verbal_context(p_task)
+                      
+                      self.metrics.process_store_data(p_task)
+
+                      db.session.commit()
+                      processed_count += 1
                  except Exception as e:
                      db.session.rollback()
                      self.logger.error(f"Erro ao processar loja {p_task.get('name')}: {e}")
@@ -122,7 +159,11 @@ class SyncService:
                     store_db = Store.query.filter_by(custom_store_id=custom_id).first()
                     if store_db:
                         for s_task in s_tasks:
+                             # Sincronizar Contexto Verbal para Etapa
+                             self._sync_verbal_context(s_task)
+                             
                              self.metrics.process_step_data(store_db, s_task)
+
                              steps_updated_count += 1
                         
                         # Reaplicar regras
@@ -306,7 +347,11 @@ class SyncService:
             count = 0
             for p_task in parent_tasks:
                 try:
+                    # Sincronizar Contexto Verbal (Raio-X)
+                    self._sync_verbal_context(p_task)
+                    
                     self.metrics.process_store_data(p_task)
+
                     db.session.commit()
                     count += 1
                 except Exception as e:
@@ -333,7 +378,11 @@ class SyncService:
                     store_db = Store.query.filter_by(custom_store_id=custom_id).first()
                     if store_db:
                         for s_task in s_tasks:
+                                # Sincronizar Contexto Verbal para Etapa
+                                self._sync_verbal_context(s_task)
+                                
                                 self.metrics.process_step_data(store_db, s_task)
+
                         
                         self.metrics.apply_training_completion_rule(store_db)
                         db.session.commit()

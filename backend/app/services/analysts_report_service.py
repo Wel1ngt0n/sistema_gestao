@@ -452,10 +452,19 @@ class AnalystsReportService:
                     "etapa": l.get('status_name'),
                     "idle_dias": l.get('idle_days'),
                     "tempo_total": l.get('dias_em_progresso'),
-                    "tempo_limite": l.get('tempo_contrato')
+                    "tempo_limite": l.get('tempo_contrato'),
+                    "contexto_verbal": {
+                        "descricao": l.get('description'),
+                        "ultimos_comentarios": l.get('last_comments')
+                    }
                 } for l in lojas_criticas
+            ],
+            "feed_comentarios_recentes": [
+                s.last_comments for s in (Store.query.filter(Store.implantador == implantador_name, Store.status_norm != 'DONE').order_by(Store.idle_days.desc()).limit(5).all())
+                if s.last_comments
             ]
         }
+
 
         prompt = f"""Você é um analista de operações especializado em implantação de sistemas SaaS.
 Seu papel NÃO é avaliar o colaborador como pessoa, e sim diagnosticar a operação com base nos dados.
@@ -468,7 +477,12 @@ REGRAS:
 - NÃO apenas descreva os dados, interprete-os
 - NÃO use linguagem vaga
 - NÃO invente hipóteses sem base
-- SEMPRE foque em: cadência de execução, concentração de idle, distribuição de carga, risco da carteira, padrão de atraso.
+- SEMPRE analise:
+    1. **Documentação**: Os implantadores estão comentando? Os comentários são úteis ou apenas protocolares?
+    2. **Integração**: Há bloqueios técnicos mencionados?
+    3. **Qualidade**: Há menção de configurações faltando ou erros de checkout?
+    4. **Cadastro**: Foram cadastrados produtos na etapa correta?
+- FOCO: cadência de execução, concentração de idle, distribuição de carga, risco da carteira.
 
 DADOS PARA ANÁLISE:
 {json.dumps(payload, indent=2)}
@@ -485,10 +499,16 @@ ESTRUTURA OBRIGATÓRIA DA RESPOSTA (JSON):
   }},
   "gargalos_operacionais": ["onde trava"],
   "riscos_identificados": ["riscos de SLA, etc"],
-  "acoes_recomendadas": ["ação 1", "ação 2"]
+  "acoes_recomendadas": ["ação 1", "ação 2"],
+  "auditoria_raio_x": {{
+      "qualidade_documentacao": "descrição",
+      "bloqueios_identificados": ["bloqueio 1"],
+      "conformidade_etapas": "descrição de problemas em Integração/Qualidade/Cadastro"
+  }}
 }}
 Responda APENAS o JSON.
 """
+
         llm = LLMService()
         result = llm.call_openai_diagnostic(prompt)
         return result
@@ -521,8 +541,17 @@ Responda APENAS o JSON.
                 "fluxo": causas.get('ETAPA', 0),
                 "carga": causas.get('CARGA', 0),
                 "no_prazo": causas.get('NO_PRAZO', 0)
-            }
+            },
+            "alertas_verbais_criticos": [
+                {
+                    "loja": s.store_name,
+                    "implantador": s.implantador,
+                    "comentarios": s.last_comments
+                } for s in (Store.query.filter(Store.status_norm != 'DONE', Store.idle_days > 7).order_by(Store.idle_days.desc()).limit(10).all())
+                if s.last_comments
+            ]
         }
+
 
         prompt = f"""Você é um analista de operações senior especializado em gestão de times de implantação SaaS.
 Analise os dados consolidados do time abaixo e produza um diagnóstico gerencial de alta performance.
@@ -530,7 +559,9 @@ Analise os dados consolidados do time abaixo e produza um diagnóstico gerencial
 REGRAS:
 - NÃO avalie colaboradores individualmente como pessoas.
 - FOCO: Distribuição de carga, gargalos sistêmicos, riscos de throughput e saúde da operação.
+- ANALISE: Verifique se os 'alertas_verbais_criticos' indicam um problema comum (ex: muitos implantadores reclamando da mesma coisa/etapa).
 - RESPOSTA: Tom profissional, baseado em dados, com ações práticas para o gestor.
+
 
 DADOS DO TIME:
 {json.dumps(payload, indent=2)}

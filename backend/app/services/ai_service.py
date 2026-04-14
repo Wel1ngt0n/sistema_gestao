@@ -1,4 +1,4 @@
-from google import genai
+from openai import OpenAI
 import logging
 import json
 import os
@@ -9,20 +9,21 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-class GeminiService:
+class OperationalAIService:
     def __init__(self):
-        self.api_key = Config.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+        self.api_key = os.environ.get("OPENAI_API_KEY")
         if self.api_key:
             try:
-                self.client = genai.Client(api_key=self.api_key)
+                self.client = OpenAI(api_key=self.api_key)
             except Exception as e:
-                logger.error(f"[Gemini] Error initializing client: {e}")
+                logger.error(f"[AI] Error initializing OpenAI client: {e}")
                 self.client = None
         else:
             self.client = None
-            logger.warning("[Gemini] API Key not found. AI features disabled.")
+            logger.warning("[AI] OpenAI API Key not found.")
         
         self.clickup = ClickUpService()
+
         
     def analyze_network_context(self, store_id, force=False):
         """
@@ -59,28 +60,30 @@ class GeminiService:
         
         # 4. Chamar IA
         try:
-            logger.info("[Gemini] Enviando prompt para API...")
-            response = self.client.models.generate_content(
-                model='gemini-flash-latest',
-                contents=prompt
+            logger.info("[AI] Enviando prompt para OpenAI (GPT-4o)...")
+            response = self.client.chat.completions.create(
+                model='gpt-4o',
+                messages=[
+                    {"role": "system", "content": "Você é um supervisor sênior de operações SaaS."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"}
             )
-            raw_text = response.text
+            raw_text = response.choices[0].message.content
             
-            # Limpar JSON markdown
-            json_text = raw_text.replace("```json", "").replace("```", "").strip()
+            # OpenAI traz raw JSON se response_format for json_object
+            result = json.loads(raw_text)
             
-            # Tentar parsear
-            result = json.loads(json_text)
-            
-            # Salvar resultado no banco (apenas para a loja alvo por enquanto, ou para todas)
+            # Salvar resultado no banco
             self._save_analysis_to_db(target_store, result)
             
-            logger.info(f"[Gemini] Análise concluída em {(datetime.now() - start_time).seconds}s")
+            logger.info(f"[AI] Análise de rede concluída.")
             
             # Return with metadata
             result['_cached'] = False
             result['_analyzed_at'] = datetime.now().strftime('%d/%m/%Y %H:%M')
             return result
+
             
         except Exception as e:
             logger.error(f"[Gemini] Erro na análise: {e}")
@@ -385,11 +388,17 @@ class GeminiService:
             - Seja conciso mas letal nos detalhes.
             """
 
-            # D. Chamada à API
-            chat = self.client.chats.create(model='gemini-flash-latest')
-            response = chat.send_message(
-                message=f"CONTEXTO DO SISTEMA:\n{system_instruction}\n\nPERGUNTA DO USUÁRIO:\n{user_message}"
+            # D. Chamada à API (OpenAI GPT-4o)
+            logger.info("[AI] Realizando chat operacional via GPT-4o...")
+            res = self.client.chat.completions.create(
+                model='gpt-4o',
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_message}
+                ]
             )
+            answer = res.choices[0].message.content
+
             
             # E. Ouro: Salvar Nova Memória a Longo Prazo
             try:
@@ -398,8 +407,9 @@ class GeminiService:
                     analysis_type=analysis_type,
                     query_prompt=user_message,
                     context_snapshot=json.dumps(specific_context) if specific_context else "Resumo Geral",
-                    ai_response=response.text
+                    ai_response=answer
                 )
+
                 db.session.add(nova_memoria)
                 db.session.commit()
             except Exception as mem_e:
@@ -407,13 +417,14 @@ class GeminiService:
                 db.session.rollback()
             
             return {
-                "response": response.text,
+                "response": answer,
                 "sources": [s.store_name for s in mentioned_stores] if mentioned_stores else ["Base Geral"]
             }
 
         except Exception as e:
-            logger.error(f"[Gemini] Chat error: {e}")
-            return {"response": f"Erro ao processar sua pergunta: {str(e)}", "sources": []}
+            logger.error(f"[AI] Chat error: {e}")
+            return {"response": f"Erro ao processar sua pergunta via GPT-4o: {str(e)}", "sources": []}
+
 
     def _get_all_active_stores_summary(self):
         """Retorna lista leve de todas as lojas não-concluídas."""

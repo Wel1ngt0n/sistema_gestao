@@ -98,6 +98,11 @@ class Store(db.Model):
     # Controle Manual
     observacoes = db.Column(db.Text, nullable=True)
     tempo_contrato = db.Column(db.Integer, default=90)
+
+    # Raio-X: Contexto Verbal
+    description = db.Column(db.Text, nullable=True)
+    last_comments = db.Column(db.Text, nullable=True) # JSON stringified list
+
     manual_finished_at = db.Column(db.DateTime, nullable=True) # Sobrescrita manual
     
     considerar_tempo_implantacao = db.Column(db.Boolean, default=True)
@@ -328,6 +333,11 @@ class TaskStep(db.Model):
     idle_days = db.Column(db.Integer, default=0)
     
     reopen_count = db.Column(db.Integer, default=0)
+
+    # Raio-X: Contexto Verbal
+    description = db.Column(db.Text, nullable=True)
+    last_comments = db.Column(db.Text, nullable=True) # JSON stringified
+
 
     def __repr__(self):
         return f'<TaskStep {self.step_name} [{self.status}]>'

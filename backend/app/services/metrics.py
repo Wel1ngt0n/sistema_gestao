@@ -129,6 +129,12 @@ class MetricsService:
              delta = datetime.now() - updated_at_ts
              store.idle_days = delta.days
         
+        # Raio-X Data
+        if task_data.get('description'):
+            store.description = task_data.get('description')
+        if task_data.get('comments_text'): # Passado pelo SyncService
+            store.last_comments = task_data.get('comments_text')
+        
         db.session.add(store)
         return store
 
@@ -195,6 +201,12 @@ class MetricsService:
         else:
             step.total_time_days = 0.0
             
+        # Raio-X Data
+        if task_data.get('description'):
+            step.description = task_data.get('description')
+        if task_data.get('comments_text'):
+            step.last_comments = task_data.get('comments_text')
+
         db.session.add(step)
         return step
 
