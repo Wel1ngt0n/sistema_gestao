@@ -14,10 +14,11 @@ def repair_database_schema():
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description TEXT;",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS last_comments TEXT;",
         
-        # Tabela: task_steps
-        "ALTER TABLE task_steps ADD COLUMN IF NOT EXISTS description TEXT;",
-        "ALTER TABLE task_steps ADD COLUMN IF NOT EXISTS last_comments TEXT;"
+        # Tabela: tasks_steps
+        "ALTER TABLE tasks_steps ADD COLUMN IF NOT EXISTS description TEXT;",
+        "ALTER TABLE tasks_steps ADD COLUMN IF NOT EXISTS last_comments TEXT;"
     ]
+
     
     try:
         with db.engine.connect() as conn:
