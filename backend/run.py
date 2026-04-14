@@ -37,7 +37,16 @@ if __name__ == '__main__':
     # Garantir que as tabelas existem (Docker Init)
     with app.app_context():
         db.create_all()
+        
+        # Reparação Automática de Schema (Raio-X)
+        try:
+            from app.services.schema_repair import repair_database_schema
+            repair_database_schema()
+        except Exception as e:
+            print(f"FAILED TO REPAIR SCHEMA: {e}")
+            
         print(">>> Database initialized.")
+
 
     if args.test:
         run_test_sync()
