@@ -519,7 +519,8 @@ Responda APENAS o JSON.
         from app.services.llm_service import LLMService
         import json
         
-        team_data = AnalystsReportService.get_team_resume().get("team", [])
+        team_data = AnalystsReportService.get_team_resume()
+
         diagnostics = AnalystsReportService.get_diagnostics()
         causas = diagnostics.get("causas_distribuicao", {})
         
