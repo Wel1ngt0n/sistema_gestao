@@ -746,6 +746,8 @@ Responda APENAS o JSON.
         summary = details.get("summary", {})
         carteira = details.get("carteira_atual", [])
         concluidas = details.get("concluidas_mes", [])
+        entregas_data = details.get("entregas", []) # Corrigido: Variável faltante
+
         
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
