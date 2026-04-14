@@ -385,30 +385,32 @@ class AnalystsReportService:
         import json
         
         details = AnalystsReportService.get_analyst_details(implantador_name)
-        resumo = details.get("resumo", {})
-        carteira = details.get("carteira_atual", [])
+        summary = details.get("summary", {})
+        ativas = details.get("ativas", [])
         
-        prompt = f"""Voce eh um consultor operacional de implantacao de sistemas.
-Analise os dados abaixo de um analista e produza um diagnostico gerencial.
+        prompt = f"""Você é um consultor operacional de implantação de sistemas.
+Analise os dados abaixo de um analista e produza um diagnóstico gerencial.
 
 REGRAS:
-- NAO avalie o colaborador como pessoa. Foque em padroes operacionais.
-- NAO de notas ou classifique como bom/ruim.
-- Foque em: padroes de atraso, concentracao de idle, carga de trabalho, gargalos.
-- Sugira acoes praticas para o gestor.
-- Responda em portugues brasileiro.
+- NÃO avalie o colaborador como pessoa. Foque em padrões operacionais.
+- NÃO dê notas ou classifique como bom/ruim.
+- Foque em: padrões de atraso, concentração de idle, carga de trabalho, gargalos.
+- Sugira ações práticas para o gestor.
+- Responda em português brasileiro.
 
 DADOS DO ANALISTA: {implantador_name}
-- Lojas ativas: {resumo.get('ativos', 0)}
-- Entregas (30d): {resumo.get('entregues_30d', 0)}
-- Carga ponderada: {resumo.get('carga_ponderada', 0)}
-- MRR retido: R$ {resumo.get('mrr_ativo', 0):.2f}
-- % dentro do SLA: {resumo.get('pct_sla', 0):.0f}%
-- % retrabalho: {resumo.get('pct_retrabalho', 0):.0f}%
+- Lojas ativas: {summary.get('ativos', 0)}
+- Entregas (Mês): {summary.get('entregue_mes', 0)}
+- Entregas (Total): {summary.get('entregues_total', 0)}
+- Carga ponderada: {summary.get('carga_ponderada', 0)}
+- MRR em implantação: R$ {summary.get('mrr_ativo', 0):.2f}
+- % SLA Entregues: {summary.get('pct_sla_concluidas', 0):.0f}%
+- % Saúde da Carteira (Ativas): {summary.get('pct_sla_ativas', 0):.0f}%
+- % Retrabalho: {summary.get('pct_retrabalho', 0):.0f}%
 
 CARTEIRA ATIVA (top 10):
 """
-        for loja in carteira[:10]:
+        for loja in ativas[:10]:
             prompt += f"- {loja['name']} | Tipo: {loja['tipo_loja']} | Idle: {loja['idle_days']}d | Dias: {loja['dias_em_progresso']}d/{loja['tempo_contrato']}d | Status: {loja['status_name']}\n"
         
         prompt += """
@@ -450,7 +452,7 @@ REGRAS:
 DADOS DO TIME ({len(team_data)} analistas):
 """
         for t in team_data:
-            prompt += f"- {t['implantador']}: {t['ativos']} ativas (M:{t['matrizes_ativas']}/F:{t['filiais_ativas']}), Carga: {t['carga_ponderada']}, Idle medio: {t['idle_medio']}d, SLA: {t['pct_sla']:.0f}%, Retrabalho: {t['pct_retrabalho']:.0f}%, Entregas 30d: {t['throughput_30d']}\n"
+            prompt += f"- {t['implantador']}: {t['ativos']} ativas (M:{t['matrizes_ativas']}/F:{t['filiais_ativas']}), Carga: {t['carga_ponderada']}, Idle Médio: {t['idle_medio']}d, SLA Entregues: {t['pct_sla_concluidas']:.0f}%, Saúde Carteira: {t['pct_sla_ativas']:.0f}%, Entregas no Mês: {t['entregas_mes']}\n"
         
         causas = diagnostics.get("causas_distribuicao", {})
         prompt += f"""
