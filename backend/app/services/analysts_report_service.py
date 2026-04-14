@@ -14,22 +14,19 @@ class AnalystsReportService:
         Agrega métricas por implantador_.
         """
         
-        # Obter todos os implantadores distintos que possuem lojas não canceladas.
-        # Obter lista de implantadores relevantes (ativos ou com entregas recentes)
+        # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES em 2026
+        # Isso garante que a Débora e o Derik apareçam sempre que tiverem trabalho ativo.
         implantadores_query = db.session.query(Store.implantador).distinct().filter(
             Store.implantador.isnot(None), 
             Store.implantador != '',
             Store.status_norm != 'CANCELED'
-        )
-        
-        # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES em 2026
-        # Isso garante que a Débora e o Derik apareçam sempre que tiverem trabalho ativo.
-        implantadores_query = implantadores_query.filter(
+        ).filter(
             or_(
                 Store.status_norm != 'DONE',
                 Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+                Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.created_at >= AnalystsReportService.CUTOFF_DATE
             )
         )
         
@@ -39,22 +36,26 @@ class AnalystsReportService:
         
         now = datetime.now()
         thirty_days_ago = now - timedelta(days=30)
-        
         for imp in implantadores:
             # Lojas Totais (Ativas vs Entregues)
             stores = Store.query.filter(
-                Store.implantador == imp, 
+                or_(
+                    Store.implantador == imp,
+                    Store.implantador_atual == imp
+                ),
                 Store.status_norm != 'CANCELED'
             ).filter(
                 or_(
                     Store.status_norm != 'DONE',
                     Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
                     Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
-                    Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+                    Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
+                    Store.created_at >= AnalystsReportService.CUTOFF_DATE
                 )
             ).all()
-            
+
             ativas = [s for s in stores if s.status_norm != 'DONE']
+
             concluidas = [s for s in stores if s.status_norm == 'DONE']
             
             # Carga Ponderada (Somente Ativas)
@@ -150,16 +151,22 @@ class AnalystsReportService:
         """
         # Obter todas as lojas do analista
         stores = Store.query.filter(
-            Store.implantador == implantador_name, 
+            or_(
+                Store.implantador == implantador_name,
+                Store.implantador_atual == implantador_name
+            ),
             Store.status_norm != 'CANCELED'
         ).filter(
-            db.or_(
+            or_(
                 Store.status_norm != 'DONE',
                 Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
                 Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+                Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.created_at >= AnalystsReportService.CUTOFF_DATE
             )
         ).all()
+
+
         
         ativas = [s for s in stores if s.status_norm != 'DONE']
         concluidas = [s for s in stores if s.status_norm == 'DONE']
@@ -282,8 +289,11 @@ class AnalystsReportService:
                 "diagnostico_causas": causas_imp
             },
             "carteira_atual": carteira_atual,
-            "concluidas_mes": concluidas_mes_list
+            "concluidas_mes": concluidas_mes_list,
+            "ativas": carteira_atual, # Retrocompatibilidade com Frontend
+            "entregas": [s.to_dict() for s in concluidas] # Retrocompatibilidade com Frontend
         }
+
 
 
     @staticmethod
