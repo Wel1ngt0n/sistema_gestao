@@ -25,7 +25,13 @@ export default function AnalystProfileView() {
                 setLoading(true)
                 const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}`)
                 setData(res.data)
+
+                // Set initial AI Result from Cache if available
+                if (res.data.last_ai_analysis) {
+                    setAiResult(res.data.last_ai_analysis)
+                }
             } catch (err: any) {
+
                 setError(err.message)
             } finally {
                 setLoading(false)

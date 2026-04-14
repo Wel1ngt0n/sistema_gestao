@@ -269,6 +269,20 @@ class AnalystsReportService:
                     "finished_at": s.effective_finished_at.strftime('%d/%m/%Y') if s.effective_finished_at else "-"
                 })
 
+        # Buscar última análise da IA salva (Cache)
+        from app.models import AILongTermMemory
+        last_memory = AILongTermMemory.query.filter(
+            AILongTermMemory.analysis_type == "individual_diagnostic",
+            AILongTermMemory.query_prompt.ilike(f"%{implantador_name}%")
+        ).order_by(AILongTermMemory.created_at.desc()).first()
+        
+        last_ai_analysis = None
+        if last_memory:
+            try:
+                last_ai_analysis = json.loads(last_memory.ai_response)
+            except:
+                pass
+
         return {
             "summary": {
                 "implantador": implantador_name,
@@ -291,8 +305,10 @@ class AnalystsReportService:
             "carteira_atual": carteira_atual,
             "concluidas_mes": concluidas_mes_list,
             "ativas": carteira_atual, # Retrocompatibilidade com Frontend
-            "entregas": [s.to_dict() for s in concluidas] # Retrocompatibilidade com Frontend
+            "entregas": [s.to_dict() for s in concluidas], # Retrocompatibilidade com Frontend
+            "last_ai_analysis": last_ai_analysis # Cache para Tela
         }
+
 
 
 
@@ -791,26 +807,30 @@ Responda APENAS o JSON.
                 pdf.ln()
             pdf.ln(5)
 
-        # --- TABELA: CONCLUÍDAS NO MÊS ---
-        if concluidas:
+        # --- TABELA: HISTÓRICO DE ENTREGAS (2026) ---
+        if entregas_data:
             pdf.set_font("Helvetica", "B", 13)
-            pdf.cell(0, 10, f"Lojas Concluidas no Mes ({len(concluidas)} Projetos)", ln=True)
+            # pdf.add_page() # Opcional: quebrar página se necessário
+            pdf.cell(0, 10, f"Historico de Entregas (Desde 2026) - {len(entregas_data)} Lojas", ln=True)
             pdf.ln(2)
-            col_widths = [60, 25, 40, 40]
-            headers = ["Loja", "Tipo", "Tempo Total", "Data Conclusao"]
+            col_widths = [55, 20, 30, 30, 25, 30]
+            headers = ["Loja", "Tipo", "Status", "Tempo", "Data", "MRR"]
             pdf.set_font("Helvetica", "B", 8)
-            pdf.set_fill_color(230, 245, 230) # Verde clarinho
+            pdf.set_fill_color(240, 255, 240) # Verde clarinho
             for i, h in enumerate(headers):
                 pdf.cell(col_widths[i], 7, h, 1, 0, "C", True)
             pdf.ln()
             pdf.set_font("Helvetica", "", 7)
-            for loja in concluidas:
-                pdf.cell(col_widths[0], 6, str(loja['name'])[:35], 1, 0)
+            for loja in entregas_data:
+                pdf.cell(col_widths[0], 6, str(loja['name'])[:30], 1, 0)
                 pdf.cell(col_widths[1], 6, str(loja.get('tipo_loja', '-')), 1, 0, "C")
-                pdf.cell(col_widths[2], 6, f"{loja['tempo_total'] or 0:.0f} dias", 1, 0, "C")
-                pdf.cell(col_widths[3], 6, str(loja['finished_at']), 1, 0, "C")
+                pdf.cell(col_widths[2], 6, str(loja.get('status_name', 'Concluido'))[:25], 1, 0)
+                pdf.cell(col_widths[3], 6, f"{loja['dias_em_progresso']}d / {loja['tempo_contrato']}d", 1, 0, "C")
+                pdf.cell(col_widths[4], 6, str(loja['finished_at'])[:10] if loja['finished_at'] else "-", 1, 0, "C")
+                pdf.cell(col_widths[5], 6, f"R${loja.get('valor_mensalidade', 0) or 0:.0f}", 1, 0, "R")
                 pdf.ln()
             pdf.ln(5)
+
 
         # --- PARECER COMPLETO DA IA (RAIO-X) ---
         try:
