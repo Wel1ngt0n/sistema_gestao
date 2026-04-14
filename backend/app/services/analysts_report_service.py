@@ -249,11 +249,24 @@ class AnalystsReportService:
             c = AnalystsReportService._classify_store_delay(s, carga_ponderada)
             if c in causas_imp: causas_imp[c] += 1
 
+        # Lojas Concluídas no Mês (Lista formatada para PDF)
+        concluidas_mes_list = []
+        for s in concluidas:
+            if s.effective_finished_at and s.effective_finished_at.year == now.year and s.effective_finished_at.month == now.month:
+                concluidas_mes_list.append({
+                    "id": s.id,
+                    "name": s.store_name,
+                    "tipo_loja": s.tipo_loja,
+                    "tempo_total": s.dias_totais_implantacao,
+                    "valor_mensalidade": s.valor_mensalidade,
+                    "finished_at": s.effective_finished_at.strftime('%d/%m/%Y') if s.effective_finished_at else "-"
+                })
+
         return {
             "summary": {
                 "implantador": implantador_name,
                 "ativos": len(ativas),
-                "entregue_mes": len([s for s in concluidas if s.effective_finished_at and s.effective_finished_at.year == datetime.now().year and s.effective_finished_at.month == datetime.now().month]),
+                "entregue_mes": len(concluidas_mes_list),
                 "entregues_total": len(concluidas),
                 "carga_ponderada": carga_ponderada,
                 "mrr_ativo": mrr_ativo,
@@ -268,9 +281,10 @@ class AnalystsReportService:
                 "etapas": avg_etapas,
                 "diagnostico_causas": causas_imp
             },
-            "ativas": [s.to_dict() for s in ativas],
-            "entregas": [s.to_dict() for s in concluidas]
+            "carteira_atual": carteira_atual,
+            "concluidas_mes": concluidas_mes_list
         }
+
 
     @staticmethod
     def _classify_store_delay(store, carga_ponderada):
@@ -697,19 +711,21 @@ Responda APENAS o JSON.
 
     @staticmethod
     def build_individual_pdf(implantador_name):
-        """Gera PDF executivo individual para 1:1 ou feedback."""
+        """Gera PDF executivo individual completo com Tabelas e Parecer de IA."""
         import io
         from fpdf import FPDF
+        import json
         
         details = AnalystsReportService.get_analyst_details(implantador_name)
         summary = details.get("summary", {})
         carteira = details.get("carteira_atual", [])
+        concluidas = details.get("concluidas_mes", [])
         
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
         
-        # Title
+        # --- CABEÇALHO ---
         pdf.set_font("Helvetica", "B", 18)
         pdf.cell(0, 12, f"Perfil Analitico: {implantador_name}", ln=True, align="C")
         pdf.set_font("Helvetica", "", 10)
@@ -717,7 +733,7 @@ Responda APENAS o JSON.
         pdf.cell(0, 8, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="C")
         pdf.ln(8)
         
-        # KPIs
+        # --- KPIs ---
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("Helvetica", "B", 13)
         pdf.cell(0, 10, "Indicadores Principais", ln=True)
@@ -725,11 +741,11 @@ Responda APENAS o JSON.
         
         kpis = [
             ("Lojas Ativas", str(summary.get('ativos', 0))),
-            ("Entregas (Mês)", str(summary.get('entregue_mes', 0))),
-            ("Entregas (Total)", str(summary.get('entregues_total', 0))),
+            ("Entregas (Mes Atual)", str(summary.get('entregue_mes', 0))),
+            ("Entregas (Total 2026)", str(summary.get('entregues_total', 0))),
             ("Carga Ponderada", f"{summary.get('carga_ponderada', 0):.1f} pts"),
-            ("MRR Ativo", f"R$ {summary.get('mrr_ativo', 0):,.2f}"),
-            ("% SLA Concluídas", f"{summary.get('pct_sla_concluidas', 0):.1f}%"),
+            ("MRR Ativo (Em Implante)", f"R$ {summary.get('mrr_ativo', 0):,.2f}"),
+            ("% SLA Concluidas", f"{summary.get('pct_sla_concluidas', 0):.1f}%"),
             ("% SLA Ativas", f"{summary.get('pct_sla_ativas', 0):.1f}%"),
             ("% Retrabalho", f"{summary.get('pct_retrabalho', 0):.0f}%"),
         ]
@@ -742,32 +758,51 @@ Responda APENAS o JSON.
         
         pdf.ln(6)
         
-        # Carteira
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 10, f"Carteira Ativa ({len(carteira)} Projetos)", ln=True)
-        pdf.ln(2)
-        
-        col_widths = [50, 20, 35, 22, 18, 25]
-        headers = ["Loja", "Tipo", "Status", "Dias", "Idle", "MRR"]
-        
-        pdf.set_font("Helvetica", "B", 8)
-        pdf.set_fill_color(240, 240, 240)
-        for i, h in enumerate(headers):
-            pdf.cell(col_widths[i], 7, h, 1, 0, "C", True)
-        pdf.ln()
-        
-        pdf.set_font("Helvetica", "", 7)
-        for loja in carteira:
-            name_trunc = str(loja['name'])[:28]
-            pdf.cell(col_widths[0], 6, name_trunc, 1, 0)
-            pdf.cell(col_widths[1], 6, str(loja.get('tipo_loja', '-'))[:10], 1, 0, "C")
-            pdf.cell(col_widths[2], 6, str(loja.get('status_name', '-'))[:20], 1, 0)
-            pdf.cell(col_widths[3], 6, f"{loja['dias_em_progresso']}d/{loja['tempo_contrato']}d", 1, 0, "C")
-            pdf.cell(col_widths[4], 6, f"{loja['idle_days']}d", 1, 0, "C")
-            pdf.cell(col_widths[5], 6, f"R${loja.get('valor_mensalidade', 0) or 0:.0f}", 1, 0, "R")
+        # --- TABELA: CARTEIRA ATIVA ---
+        if carteira:
+            pdf.set_font("Helvetica", "B", 13)
+            pdf.cell(0, 10, f"Carteira Ativa ({len(carteira)} Projetos)", ln=True)
+            pdf.ln(2)
+            col_widths = [50, 18, 35, 20, 18, 25]
+            headers = ["Loja", "Tipo", "Status", "Dias", "Idle", "MRR"]
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.set_fill_color(240, 240, 240)
+            for i, h in enumerate(headers):
+                pdf.cell(col_widths[i], 7, h, 1, 0, "C", True)
             pdf.ln()
-        
-        # PARECER DA IA (RAIO-X)
+            pdf.set_font("Helvetica", "", 7)
+            for loja in carteira:
+                pdf.cell(col_widths[0], 6, str(loja['name'])[:28], 1, 0)
+                pdf.cell(col_widths[1], 6, str(loja.get('tipo_loja', '-'))[:10], 1, 0, "C")
+                pdf.cell(col_widths[2], 6, str(loja.get('status_name', '-'))[:25], 1, 0)
+                pdf.cell(col_widths[3], 6, f"{loja['dias_em_progresso']}d", 1, 0, "C")
+                pdf.cell(col_widths[4], 6, f"{loja['idle_days']}d", 1, 0, "C")
+                pdf.cell(col_widths[5], 6, f"R${loja.get('valor_mensalidade', 0) or 0:.0f}", 1, 0, "R")
+                pdf.ln()
+            pdf.ln(5)
+
+        # --- TABELA: CONCLUÍDAS NO MÊS ---
+        if concluidas:
+            pdf.set_font("Helvetica", "B", 13)
+            pdf.cell(0, 10, f"Lojas Concluidas no Mes ({len(concluidas)} Projetos)", ln=True)
+            pdf.ln(2)
+            col_widths = [60, 25, 40, 40]
+            headers = ["Loja", "Tipo", "Tempo Total", "Data Conclusao"]
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.set_fill_color(230, 245, 230) # Verde clarinho
+            for i, h in enumerate(headers):
+                pdf.cell(col_widths[i], 7, h, 1, 0, "C", True)
+            pdf.ln()
+            pdf.set_font("Helvetica", "", 7)
+            for loja in concluidas:
+                pdf.cell(col_widths[0], 6, str(loja['name'])[:35], 1, 0)
+                pdf.cell(col_widths[1], 6, str(loja.get('tipo_loja', '-')), 1, 0, "C")
+                pdf.cell(col_widths[2], 6, f"{loja['tempo_total'] or 0:.0f} dias", 1, 0, "C")
+                pdf.cell(col_widths[3], 6, str(loja['finished_at']), 1, 0, "C")
+                pdf.ln()
+            pdf.ln(5)
+
+        # --- PARECER COMPLETO DA IA (RAIO-X) ---
         try:
             from app.models import AILongTermMemory
             memory = AILongTermMemory.query.filter(
@@ -776,63 +811,91 @@ Responda APENAS o JSON.
             ).order_by(AILongTermMemory.created_at.desc()).first()
             
             if memory:
-                import json
                 ai_data = json.loads(memory.ai_response)
                 pdf.add_page()
                 
                 # Title IA
                 pdf.set_font("Helvetica", "B", 16)
-                pdf.set_text_color(0, 51, 102) # Blueish
+                pdf.set_text_color(0, 51, 102)
                 pdf.cell(0, 12, "Parecer Detalhado da IA (Raio-X)", ln=True)
                 pdf.ln(4)
                 
-                # Exec Summary
+                # 1. Resumo Executivo
                 pdf.set_font("Helvetica", "B", 11)
                 pdf.set_text_color(0, 0, 0)
-                pdf.cell(0, 8, "Resumo Executivo:", ln=True)
+                pdf.cell(0, 8, "1. Resumo Executivo:", ln=True)
                 pdf.set_font("Helvetica", "", 10)
                 pdf.multi_cell(0, 6, ai_data.get('resumo_executivo', '-'))
-                pdf.ln(5)
-                
+                pdf.ln(2)
+
+                # 2. Padroes
+                if ai_data.get('padroes_identificados'):
+                    pdf.set_font("Helvetica", "B", 11)
+                    pdf.cell(0, 8, "2. Principais Padroes Identificados:", ln=True)
+                    pdf.set_font("Helvetica", "", 10)
+                    for p in ai_data.get('padroes_identificados', []):
+                        pdf.multi_cell(0, 6, f"  * {p}")
+                    pdf.ln(2)
+
+                # 3. Causas
+                causa = ai_data.get('diagnostico_causa', {})
+                if causa:
+                    pdf.set_font("Helvetica", "B", 11)
+                    pdf.cell(0, 8, "3. Diagnostico de Causa:", ln=True)
+                    pdf.set_font("Helvetica", "", 10)
+                    for k, v in causa.items():
+                        pdf.set_font("Helvetica", "B", 9)
+                        pdf.cell(0, 6, f"  {k.replace('_', ' ').upper()}:", ln=True)
+                        pdf.set_font("Helvetica", "", 10)
+                        pdf.multi_cell(0, 6, f"    {v}")
+                    pdf.ln(2)
+
+                # 4/5. Gargalos e Riscos
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(0, 8, "4. Gargalos e Riscos Criticos:", ln=True)
+                pdf.set_font("Helvetica", "", 10)
+                bullets = ai_data.get('gargalos_operacionais', []) + ai_data.get('riscos_identificados', [])
+                for b in bullets:
+                    pdf.multi_cell(0, 6, f"  ! {b}")
+                pdf.ln(2)
+
                 # ClickUp Audit
                 raio_x = ai_data.get('auditoria_raio_x', {})
                 if raio_x:
                     pdf.set_font("Helvetica", "B", 11)
-                    pdf.cell(0, 8, "Auditoria Qualitativa (ClickUp):", ln=True)
+                    pdf.set_text_color(102, 51, 0)
+                    pdf.cell(0, 8, "Auditoria Qualitativa (Evidencias ClickUp):", ln=True)
                     pdf.set_font("Helvetica", "", 10)
-                    pdf.multi_cell(0, 6, f"Documentacao: {raio_x.get('qualidade_documentacao', '-')}")
-                    pdf.multi_cell(0, 6, f"Conformidade: {raio_x.get('conformidade_etapas', '-')}")
-                    pdf.ln(4)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.multi_cell(0, 6, f"DOCUMENTACAO: {raio_x.get('qualidade_documentacao', '-')}")
+                    pdf.multi_cell(0, 6, f"CONFORMIDADE: {raio_x.get('conformidade_etapas', '-')}")
+                    if raio_x.get('bloqueios_identificados'):
+                        pdf.cell(0, 6, "  BLOQUEIOS:", ln=True)
+                        for bl in raio_x.get('bloqueios_identificados', []):
+                            pdf.multi_cell(0, 6, f"    - {bl}")
+                    pdf.ln(2)
 
-                # Attention Points
+                # 6. Ações
                 pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 8, "Pontos de Atencao e Riscos:", ln=True)
-                pdf.set_font("Helvetica", "", 10)
-                bullets = ai_data.get('riscos_identificados', []) + ai_data.get('gargalos_operacionais', [])
-                for b in bullets:
-                    pdf.multi_cell(0, 6, f"  * {b}")
-                pdf.ln(4)
-
-                # Proposed Actions
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.set_text_color(204, 0, 0) # Reddish
-                pdf.cell(0, 8, "Acoes Recomendadas para Gestao:", ln=True)
+                pdf.set_text_color(153, 0, 0)
+                pdf.cell(0, 8, "6. Plano de Acao Recomendado:", ln=True)
                 pdf.set_font("Helvetica", "", 10)
                 pdf.set_text_color(0, 0, 0)
                 for a in ai_data.get('acoes_recomendadas', []):
-                    pdf.multi_cell(0, 6, f"  > {a}")
+                    pdf.multi_cell(0, 6, f"  [ ] {a}")
 
         except Exception as pdf_ai_e:
             print(f"Erro ao incluir IA no PDF: {pdf_ai_e}")
 
         # Footer
-        pdf.ln(10)
+        pdf.set_y(-15)
         pdf.set_font("Helvetica", "I", 8)
         pdf.set_text_color(150, 150, 150)
-        pdf.cell(0, 6, "CRM Instabuy - Modulo de Diagnostico Gerencial", 0, 0, "C")
+        pdf.cell(0, 10, f"CRM Instabuy v3.0 - Diagnostico Gerencial de {implantador_name}", 0, 0, "C")
         
         output = io.BytesIO()
         pdf.output(output)
         output.seek(0)
         return output
+
 
