@@ -1,4 +1,5 @@
 from google import genai
+from openai import OpenAI
 import logging
 import os
 import json
@@ -7,17 +8,27 @@ class LLMService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         # Load from env
-        self.api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+        self.google_api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         
-        if self.api_key:
+        # client initialization
+        if self.google_api_key:
             try:
-                self.client = genai.Client(api_key=self.api_key)
+                self.client = genai.Client(api_key=self.google_api_key)
             except Exception as e:
                 self.logger.error(f"Erro ao inicializar cliente Gemini: {e}")
                 self.client = None
         else:
-            self.logger.warning("GOOGLE_API_KEY não encontrada nas variáveis de ambiente.")
             self.client = None
+
+        if self.openai_api_key:
+            try:
+                self.openai_client = OpenAI(api_key=self.openai_api_key)
+            except Exception as e:
+                self.logger.error(f"Erro ao inicializar cliente OpenAI: {e}")
+                self.openai_client = None
+        else:
+            self.openai_client = None
 
     def analyze_store_risks(self, store_data):
         """
@@ -216,3 +227,42 @@ class LLMService:
         except Exception as e:
             self.logger.error(f"Erro ao gerar relatório mensal IA: {e}")
             return f"Erro ao gerar relatório: {str(e)}"
+    def call_openai_diagnostic(self, prompt):
+        """
+        Executa uma análise usando o GPT-4o (OpenAI).
+        """
+        if not self.openai_client:
+            # Fallback para Gemini se OpenAI não estiver configurado
+            return self.call_gemini_fallback(prompt)
+
+        try:
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "Você é um analista de operações sênior especializado em implantação de sistemas SaaS."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            
+            content = response.choices[0].message.content
+            return json.loads(content)
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao chamar OpenAI: {e}")
+            return {"error": str(e)}
+
+    def call_gemini_fallback(self, prompt):
+        """Fallback para quando a OpenAI não está configurada."""
+        if not self.client:
+            return {"error": "Nenhuma IA configurada (OpenAI ou Google)."}
+            
+        try:
+            response = self.client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt
+            )
+            cleaned = response.text.replace('```json', '').replace('```', '').strip()
+            return json.loads(cleaned)
+        except Exception as e:
+            return {"error": f"IA indisponível: {str(e)}"}

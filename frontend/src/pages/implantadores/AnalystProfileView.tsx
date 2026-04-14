@@ -261,37 +261,87 @@ export default function AnalystProfileView() {
                 )}
 
                 {aiResult && !aiResult.error && (
-                    <div className="space-y-4 text-sm">
-                        {aiResult.resumo_geral && (
-                            <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-1">Resumo Geral</h3>
-                                <p className="text-zinc-600 dark:text-zinc-400">{aiResult.resumo_geral}</p>
-                            </div>
-                        )}
-                        {aiResult.padroes_observados && (
-                            <div>
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-2">Padrões Observados</h3>
-                                <ul className="list-disc pl-5 space-y-1 text-zinc-600 dark:text-zinc-400">
-                                    {aiResult.padroes_observados.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                    <div className="space-y-6 text-sm">
+                        {/* 1. Resumo Executivo */}
+                        <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-100 dark:border-orange-500/20">
+                            <h3 className="font-bold text-orange-800 dark:text-orange-300 mb-2 flex items-center gap-2">
+                                <Activity size={16} />
+                                1. Resumo Executivo
+                            </h3>
+                            <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+                                {aiResult.resumo_executivo}
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* 2. Padrões */}
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3">2. Principais Padrões Identificados</h3>
+                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                                    {aiResult.padroes_identificados?.map((p: string, i: number) => (
+                                        <li key={i} className="flex gap-2">
+                                            <span className="text-orange-500">•</span>
+                                            {p}
+                                        </li>
+                                    ))}
                                 </ul>
                             </div>
-                        )}
-                        {aiResult.gargalos_relevantes && (
-                            <div>
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-2">Gargalos Relevantes</h3>
-                                <ul className="list-disc pl-5 space-y-1 text-zinc-600 dark:text-zinc-400">
-                                    {aiResult.gargalos_relevantes.map((g: string, i: number) => <li key={i}>{g}</li>)}
+
+                            {/* 3. Diagnóstico de Causa */}
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3">3. Diagnóstico de Causa</h3>
+                                <div className="space-y-3">
+                                    {aiResult.diagnostico_causa && Object.entries(aiResult.diagnostico_causa).map(([key, val]: [string, any]) => (
+                                        <div key={key}>
+                                            <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">{key.replace('_', ' ')}</span>
+                                            <p className="text-zinc-600 dark:text-zinc-400">{val}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 4. Gargalos */}
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3 text-red-600 dark:text-red-400">4. Gargalos Operacionais</h3>
+                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                                    {aiResult.gargalos_operacionais?.map((g: string, i: number) => (
+                                        <li key={i} className="flex gap-2">
+                                            <span className="text-red-500">•</span>
+                                            {g}
+                                        </li>
+                                    ))}
                                 </ul>
                             </div>
-                        )}
-                        {aiResult.sugestoes_acao && (
-                            <div>
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-2">Sugestões de Ação</h3>
-                                <ul className="list-disc pl-5 space-y-1 text-zinc-600 dark:text-zinc-400">
-                                    {aiResult.sugestoes_acao.map((s: string, i: number) => <li key={i}>{s}</li>)}
+
+                            {/* 5. Riscos */}
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3 text-amber-600 dark:text-amber-500">5. Riscos</h3>
+                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                                    {aiResult.riscos_identificados?.map((r: string, i: number) => (
+                                        <li key={i} className="flex gap-2">
+                                            <span className="text-amber-500">•</span>
+                                            {r}
+                                        </li>
+                                    ))}
                                 </ul>
                             </div>
-                        )}
+                        </div>
+
+                        {/* 6. Ações */}
+                        <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+                            <h3 className="font-bold text-emerald-800 dark:text-emerald-300 mb-3 flex items-center gap-2">
+                                <CheckCircle size={16} />
+                                6. Ações Recomendadas para Gestão
+                            </h3>
+                            <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
+                                {aiResult.acoes_recomendadas?.map((a: string, i: number) => (
+                                    <li key={i} className="flex gap-2 font-medium">
+                                        <span className="bg-emerald-500 w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" />
+                                        {a}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
                 )}
 

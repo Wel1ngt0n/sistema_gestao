@@ -10,6 +10,7 @@ pandas
 numpy
 gunicorn
 google-genai
+openai
 # Segurança / Auth
 PyJWT
 pyotp

@@ -219,9 +219,36 @@ class AnalystsReportService:
         carteira_atual.sort(key=lambda x: x['idle_days'] or 0, reverse=True)
             
         # Tempos Médios por Etapa:
-        # A intenção original pede comparação da média do analista vs média do time
-        # TODO: Podemos simplificar agora pegando apenas a média do analista para listar as etapas.
-        # Exemplo: Agrupar TaskSteps das lojas concluídas e ativas para ver velocidade
+        # Agrupar TaskSteps das lojas para ver gargalos por etapa
+        steps_stats = {}
+        total_work_days = 0
+        total_idle_days = 0
+        
+        for s in ativas:
+            total_work_days += (s.dias_em_progresso or 0)
+            total_idle_days += (s.idle_days or 0)
+            for step in s.steps:
+                name = (step.step_list_name or "Geral").upper()
+                if name not in steps_stats: steps_stats[name] = []
+                # Considerar tempo total do step se fechado, ou tempo ate agora
+                val = step.total_time_days or 0
+                steps_stats[name].append(val)
+        
+        avg_etapas = {k: round(sum(v)/len(v), 1) for k, v in steps_stats.items() if len(v) > 0}
+        
+        # Proporção Execução vs Espera
+        exec_pct = 100
+        wait_pct = 0
+        if total_work_days > 0:
+            wait_pct = round((total_idle_days / total_work_days) * 100, 1)
+            exec_pct = 100 - wait_pct
+
+        # Diagnóstico de Causa (Backend heurístico para enviar para IA)
+        causas_imp = {"CLIENTE": 0, "IMPLANTADOR": 0, "FLUXO": 0, "CARGA": 0}
+        for s in ativas:
+            c = AnalystsReportService._classify_store_delay(s, carga_ponderada)
+            if c in causas_imp: causas_imp[c] += 1
+
         return {
             "summary": {
                 "implantador": implantador_name,
@@ -232,7 +259,14 @@ class AnalystsReportService:
                 "mrr_ativo": mrr_ativo,
                 "pct_sla_concluidas": round(pct_sla_concluidas, 1),
                 "pct_sla_ativas": round(pct_sla_ativas, 1),
-                "pct_retrabalho": round(pct_retrabalho, 1)
+                "pct_retrabalho": round(pct_retrabalho, 1),
+                "idle_medio": round((total_idle_days / len(ativas)) if len(ativas) > 0 else 0, 1),
+                "tempo": {
+                    "execucao_pct": exec_pct,
+                    "espera_pct": wait_pct
+                },
+                "etapas": avg_etapas,
+                "diagnostico_causas": causas_imp
             },
             "ativas": [s.to_dict() for s in ativas],
             "entregas": [s.to_dict() for s in concluidas]
@@ -380,106 +414,144 @@ class AnalystsReportService:
 
     @staticmethod
     def generate_ai_analysis(implantador_name):
-        """Gera análise consultiva via Gemini para um implantador individual."""
+        """Gera análise consultiva via OpenAI (GPT-4o) para um implantador individual."""
         from app.services.llm_service import LLMService
         import json
         
         details = AnalystsReportService.get_analyst_details(implantador_name)
-        summary = details.get("summary", {})
+        summ = details.get("summary", {})
         ativas = details.get("ativas", [])
         
-        prompt = f"""Você é um consultor operacional de implantação de sistemas.
-Analise os dados abaixo de um analista e produza um diagnóstico gerencial.
+        lojas_criticas = sorted(ativas, key=lambda x: x.get('idle_days', 0), reverse=True)[:10]
+        
+        payload = {
+            "implantador": implantador_name,
+            "resumo": {
+                "lojas_ativas": summ.get('ativos', 0),
+                "lojas_concluidas_mes": summ.get('entregue_mes', 0),
+                "percentual_sla": summ.get('pct_sla_ativas', 0),
+                "idle_medio": summ.get('idle_medio', 0),
+                "lojas_idle_alto": len([s for s in ativas if (s.get('idle_days') or 0) > 7])
+            },
+            "carga": {
+                "carga_ponderada": summ.get('carga_ponderada', 0),
+                "mrr": summ.get('mrr_ativo', 0)
+            },
+            "tempo": {
+                "tempo_execucao_percentual": summ.get('tempo', {}).get('exec_pct', 100),
+                "tempo_espera_percentual": summ.get('tempo', {}).get('wait_pct', 0)
+            },
+            "qualidade": {
+                "retrabalho_percentual": summ.get('pct_retrabalho', 0)
+            },
+            "etapas": summ.get('etapas', {}),
+            "diagnostico_backend": summ.get('diagnostico_causas', {}),
+            "lojas_criticas": [
+                {
+                    "nome": l.get('name'),
+                    "etapa": l.get('status_name'),
+                    "idle_dias": l.get('idle_days'),
+                    "tempo_total": l.get('dias_em_progresso'),
+                    "tempo_limite": l.get('tempo_contrato')
+                } for l in lojas_criticas
+            ]
+        }
+
+        prompt = f"""Você é um analista de operações especializado em implantação de sistemas SaaS.
+Seu papel NÃO é avaliar o colaborador como pessoa, e sim diagnosticar a operação com base nos dados.
+
+OBJETIVO:
+Identificar padrões de baixa performance, entender as causas mais prováveis e sugerir ações práticas para o gestor.
 
 REGRAS:
-- NÃO avalie o colaborador como pessoa. Foque em padrões operacionais.
-- NÃO dê notas ou classifique como bom/ruim.
-- Foque em: padrões de atraso, concentração de idle, carga de trabalho, gargalos.
-- Sugira ações práticas para o gestor.
-- Responda em português brasileiro.
+- NÃO faça julgamentos pessoais (ex: "bom", "ruim")
+- NÃO apenas descreva os dados, interprete-os
+- NÃO use linguagem vaga
+- NÃO invente hipóteses sem base
+- SEMPRE foque em: cadência de execução, concentração de idle, distribuição de carga, risco da carteira, padrão de atraso.
 
-DADOS DO ANALISTA: {implantador_name}
-- Lojas ativas: {summary.get('ativos', 0)}
-- Entregas (Mês): {summary.get('entregue_mes', 0)}
-- Entregas (Total): {summary.get('entregues_total', 0)}
-- Carga ponderada: {summary.get('carga_ponderada', 0)}
-- MRR em implantação: R$ {summary.get('mrr_ativo', 0):.2f}
-- % SLA Entregues: {summary.get('pct_sla_concluidas', 0):.0f}%
-- % Saúde da Carteira (Ativas): {summary.get('pct_sla_ativas', 0):.0f}%
-- % Retrabalho: {summary.get('pct_retrabalho', 0):.0f}%
+DADOS PARA ANÁLISE:
+{json.dumps(payload, indent=2)}
 
-CARTEIRA ATIVA (top 10):
+ESTRUTURA OBRIGATÓRIA DA RESPOSTA (JSON):
+{{
+  "resumo_executivo": "Visão geral em poucas linhas",
+  "padroes_identificados": ["bullet 1", "bullet 2"],
+  "diagnostico_causa": {{
+      "cliente": "explicação",
+      "execucao_interna": "explicação",
+      "carga_trabalho": "explicação",
+      "fluxo_etapa": "explicação"
+  }},
+  "gargalos_operacionais": ["onde trava"],
+  "riscos_identificados": ["riscos de SLA, etc"],
+  "acoes_recomendadas": ["ação 1", "ação 2"]
+}}
+Responda APENAS o JSON.
 """
-        for loja in ativas[:10]:
-            prompt += f"- {loja['name']} | Tipo: {loja['tipo_loja']} | Idle: {loja['idle_days']}d | Dias: {loja['dias_em_progresso']}d/{loja['tempo_contrato']}d | Status: {loja['status_name']}\n"
-        
-        prompt += """
-Responda APENAS com o JSON abaixo (sem markdown, sem crases):
-{"resumo_geral": "...", "padroes_observados": ["..."], "gargalos_relevantes": ["..."], "riscos_operacionais": ["..."], "sugestoes_acao": ["..."]}"""
-
         llm = LLMService()
-        if not llm.client:
-            return {"error": "IA nao configurada. Verifique a chave de API do Gemini."}
-        
-        try:
-            response = llm.client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-            cleaned = response.text.replace('```json', '').replace('```', '').strip()
-            try:
-                return json.loads(cleaned)
-            except:
-                return {"resumo_geral": cleaned}
-        except Exception as e:
-            return {"error": str(e)}
+        result = llm.call_openai_diagnostic(prompt)
+        return result
 
     @staticmethod
     def generate_team_ai_analysis():
-        """Gera analise consultiva via Gemini para o time inteiro."""
+        """Gera análise consultiva via OpenAI (GPT-4o) para o time inteiro."""
         from app.services.llm_service import LLMService
         import json
         
         team_data = AnalystsReportService.get_team_resume().get("team", [])
         diagnostics = AnalystsReportService.get_diagnostics()
+        causas = diagnostics.get("causas_distribuicao", {})
         
-        prompt = f"""Voce eh um consultor operacional senior de implantacao de sistemas.
-Analise os dados consolidados do time e produza um diagnostico gerencial.
+        payload = {
+            "time": [
+                {
+                    "implantador": t['implantador'],
+                    "ativos": t['ativos'],
+                    "carga": t['carga_ponderada'],
+                    "entregas_mes": t['entregas_mes'],
+                    "sla_concluidas": t['pct_sla_concluidas'],
+                    "saude_carteira": t['pct_sla_ativas'],
+                    "idle_medio": t['idle_medio']
+                } for t in team_data
+            ],
+            "causas_macro": {
+                "cliente": causas.get('CLIENTE', 0),
+                "interno": causas.get('IMPLANTADOR', 0),
+                "fluxo": causas.get('ETAPA', 0),
+                "carga": causas.get('CARGA', 0),
+                "no_prazo": causas.get('NO_PRAZO', 0)
+            }
+        }
+
+        prompt = f"""Você é um analista de operações senior especializado em gestão de times de implantação SaaS.
+Analise os dados consolidados do time abaixo e produza um diagnóstico gerencial de alta performance.
 
 REGRAS:
-- NAO avalie colaboradores individualmente como pessoas.
-- Foque em padroes do TIME: distribuicao de carga, gargalos recorrentes, riscos.
-- Sugira acoes praticas para o gestor redistribuir ou corrigir a operacao.
-- Responda em portugues brasileiro.
+- NÃO avalie colaboradores individualmente como pessoas.
+- FOCO: Distribuição de carga, gargalos sistêmicos, riscos de throughput e saúde da operação.
+- RESPOSTA: Tom profissional, baseado em dados, com ações práticas para o gestor.
 
-DADOS DO TIME ({len(team_data)} analistas):
+DADOS DO TIME:
+{json.dumps(payload, indent=2)}
+
+ESTRUTURA OBRIGATÓRIA DA RESPOSTA (JSON):
+{{
+  "resumo_executivo": "Visão geral do time em poucas linhas",
+  "padroes_equipe": ["tendência 1", "tendência 2"],
+  "diagnostico_causas": {{
+      "externas": "impacto do cliente no time",
+      "internas": "gargalos de execução do time",
+      "processo": "falhas no fluxo de etapas"
+  }},
+  "riscos_criticos": ["riscos de meta, turnover, etc"],
+  "sugestoes_gestao": ["redistribuição", "treinamento", "ajuste de fluxo"]
+}}
+Responda APENAS o JSON.
 """
-        for t in team_data:
-            prompt += f"- {t['implantador']}: {t['ativos']} ativas (M:{t['matrizes_ativas']}/F:{t['filiais_ativas']}), Carga: {t['carga_ponderada']}, Idle Médio: {t['idle_medio']}d, SLA Entregues: {t['pct_sla_concluidas']:.0f}%, Saúde Carteira: {t['pct_sla_ativas']:.0f}%, Entregas no Mês: {t['entregas_mes']}\n"
-        
-        causas = diagnostics.get("causas_distribuicao", {})
-        prompt += f"""
-DIAGNOSTICO HEURISTICO DE CAUSAS:
-- Cliente/Externo: {causas.get('CLIENTE', 0)} lojas
-- Implantador/Interno: {causas.get('IMPLANTADOR', 0)} lojas
-- Etapa/Processo: {causas.get('ETAPA', 0)} lojas
-- Sobrecarga: {causas.get('CARGA', 0)} lojas
-- No prazo: {causas.get('NO_PRAZO', 0)} lojas
-
-Responda APENAS com o JSON abaixo (sem markdown, sem crases):
-"""
-        prompt += '{"resumo_geral": "...", "padroes_observados": ["..."], "diagnostico_predominante": "...", "gargalos_relevantes": ["..."], "riscos_operacionais": ["..."], "sugestoes_acao": ["..."]}'
-
         llm = LLMService()
-        if not llm.client:
-            return {"error": "IA nao configurada. Verifique a chave de API do Gemini."}
-        
-        try:
-            response = llm.client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-            cleaned = response.text.replace('```json', '').replace('```', '').strip()
-            try:
-                return json.loads(cleaned)
-            except:
-                return {"resumo_geral": cleaned}
-        except Exception as e:
-            return {"error": str(e)}
+        result = llm.call_openai_diagnostic(prompt)
+        return result
 
     @staticmethod
     def build_team_pdf():
