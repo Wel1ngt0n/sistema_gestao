@@ -42,22 +42,22 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
     }
 
     const bgMap: Record<string, string> = {
-        CLIENTE: 'rgba(99, 102, 241, 0.8)', // indigo-500
-        IMPLANTADOR: 'rgba(245, 158, 11, 0.8)', // amber-500
-        CARGA: 'rgba(239, 68, 68, 0.8)', // red-500
-        ETAPA: 'rgba(59, 130, 246, 0.8)', // blue-500
-        NO_PRAZO: 'rgba(16, 185, 129, 0.8)' // emerald-500
+        CLIENTE: 'rgba(99, 102, 241, 0.85)', // indigo-500
+        IMPLANTADOR: 'rgba(249, 115, 22, 0.85)', // orange-500
+        CARGA: 'rgba(239, 68, 68, 0.85)', // red-500
+        ETAPA: 'rgba(14, 165, 233, 0.85)', // sky-500
+        NO_PRAZO: 'rgba(16, 185, 129, 0.85)' // emerald-500
     };
 
     const borderMap: Record<string, string> = {
         CLIENTE: 'rgba(99, 102, 241, 1)',
-        IMPLANTADOR: 'rgba(245, 158, 11, 1)',
+        IMPLANTADOR: 'rgba(249, 115, 22, 1)',
         CARGA: 'rgba(239, 68, 68, 1)',
-        ETAPA: 'rgba(59, 130, 246, 1)',
+        ETAPA: 'rgba(14, 165, 233, 1)',
         NO_PRAZO: 'rgba(16, 185, 129, 1)'
     };
 
-    const backgroundColor = Object.keys(data).map(k => bgMap[k] || 'rgba(156, 163, 175, 0.8)');
+    const backgroundColor = Object.keys(data).map(k => bgMap[k] || 'rgba(156, 163, 175, 0.85)');
     const borderColor = Object.keys(data).map(k => borderMap[k] || 'rgba(156, 163, 175, 1)');
 
     const chartData = {
@@ -67,7 +67,10 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
                 data: values,
                 backgroundColor,
                 borderColor,
-                borderWidth: 1,
+                borderWidth: 2,
+                hoverOffset: 15,
+                borderRadius: 4,
+                spacing: 2
             },
         ],
     };
@@ -77,25 +80,32 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                position: 'right' as const,
+                position: 'bottom' as const,
                 labels: {
-                    color: 'rgba(100, 116, 139, 1)',
+                    color: '#94a3b8', // slate-400
                     usePointStyle: true,
+                    pointStyle: 'circle',
                     padding: 20,
                     font: {
-                        size: 11
+                        size: 10,
+                        weight: '600',
+                        family: "'Inter', sans-serif"
                     }
                 }
             },
             tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
                 titleColor: '#fff',
                 bodyColor: '#cbd5e1',
                 borderColor: 'rgba(255,255,255,0.1)',
                 borderWidth: 1,
+                padding: 12,
+                boxPadding: 8,
+                cornerRadius: 12,
+                displayColors: true,
             }
         },
-        cutout: '65%',
+        cutout: '72%',
     };
 
     return (

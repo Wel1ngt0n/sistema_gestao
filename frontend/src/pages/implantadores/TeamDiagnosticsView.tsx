@@ -164,45 +164,16 @@ export default function TeamDiagnosticsView() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-        <div className="text-zinc-500 font-medium">Período de Análise Base:</div>
-        <PeriodFilter value={period} onChange={setPeriod} />
-      </div>
-
-      <div className="mb-2">
-         {companyProjection && <MRRNetProjectionWidget data={companyProjection} />}
-      </div>
-
-      {/* Alerts */}
-      {!loading && !error && data.length > 0 && (
-        <AlertSummaryBar teamData={data} />
-      )}
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveTab('TABLE')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'TABLE' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-        >
-          <List size={16} />
-          Visão Comparativa do Time
-        </button>
-        <button
-          onClick={() => setActiveTab('DASHBOARD')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'DASHBOARD' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-        >
-          <LayoutDashboard size={16} />
-          Diagnóstico e Causa Raiz
-        </button>
-      </div>
-
-      <div className="flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-        <div className="text-zinc-500 font-medium">Período de Análise Base:</div>
-        <PeriodFilter value={period} onChange={setPeriod} />
-      </div>
-
-      <div className="mb-2">
-         {companyProjection && <MRRNetProjectionWidget data={companyProjection} />}
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1">
+          {companyProjection && <MRRNetProjectionWidget data={companyProjection} />}
+        </div>
+        <div className="w-full lg:w-80 flex flex-col gap-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col justify-center h-full">
+            <span className="text-[10px] uppercase font-bold text-zinc-400 mb-1">Período de Referência</span>
+            <PeriodFilter value={period} onChange={setPeriod} />
+          </div>
+        </div>
       </div>
 
       {/* Alerts */}
@@ -210,22 +181,26 @@ export default function TeamDiagnosticsView() {
         <AlertSummaryBar teamData={data} />
       )}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveTab('TABLE')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'TABLE' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-        >
-          <List size={16} />
-          Visão Comparativa do Time
-        </button>
-        <button
-          onClick={() => setActiveTab('DASHBOARD')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'DASHBOARD' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-        >
-          <LayoutDashboard size={16} />
-          Diagnóstico e Causa Raiz
-        </button>
+      {/* Navigation Tabs */}
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1">
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => setActiveTab('TABLE')}
+            className={`flex items-center gap-2 pb-4 text-sm font-bold transition-all relative ${activeTab === 'TABLE' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+          >
+            <List size={18} />
+            Visão Geral do Time
+            {activeTab === 'TABLE' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-orange-500 rounded-full" />}
+          </button>
+          <button
+            onClick={() => setActiveTab('DASHBOARD')}
+            className={`flex items-center gap-2 pb-4 text-sm font-bold transition-all relative ${activeTab === 'DASHBOARD' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+          >
+            <LayoutDashboard size={18} />
+            Diagnóstico de Saúde
+            {activeTab === 'DASHBOARD' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-orange-500 rounded-full" />}
+          </button>
+        </div>
       </div>
 
       {activeTab === 'DASHBOARD' ? (
