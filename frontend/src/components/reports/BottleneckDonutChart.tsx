@@ -5,7 +5,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 
 ChartJS.register(
   ArcElement,
@@ -100,7 +100,7 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
 
     return (
         <div className="w-full h-full min-h-[250px] p-2">
-            <Doughnut data={chartData} options={options} />
+            <Chart type="doughnut" data={chartData} options={options} />
         </div>
     );
 };

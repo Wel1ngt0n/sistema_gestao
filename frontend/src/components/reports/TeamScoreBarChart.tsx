@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -99,7 +99,7 @@ export const TeamScoreBarChart: React.FC<TeamScoreBarChartProps> = ({ data }) =>
 
     return (
         <div className="w-full h-full min-h-[300px] p-2">
-            <Bar data={chartData} options={options} />
+            <Chart type="bar" data={chartData} options={options} />
         </div>
     );
 };

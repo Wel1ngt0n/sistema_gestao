@@ -59,22 +59,6 @@ export default function TeamDiagnosticsDashboardView() {
 
     const { causas_distribuicao, top_gargalos_etapa, total_analisado } = data
 
-    const colors = {
-        "CLIENTE": "bg-indigo-500",
-        "IMPLANTADOR": "bg-amber-500",
-        "CARGA": "bg-red-500",
-        "ETAPA": "bg-blue-500",
-        "NO_PRAZO": "bg-emerald-500",
-    }
-
-    const parseLabel = (l: string) => {
-        if (l === "CLIENTE") return "Cliente / Fator Externo"
-        if (l === "IMPLANTADOR") return "Analista / Fator Interno"
-        if (l === "CARGA") return "Sobrecarga de Trabalho"
-        if (l === "ETAPA") return "Demora Natural / Processo"
-        return "Em Fluxo Normal"
-    }
-
     return (
         <div className="space-y-6">
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">

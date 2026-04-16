@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Radar } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 
 ChartJS.register(
   RadialLinearScale,
@@ -102,7 +102,7 @@ export const AnalystRadarChart: React.FC<AnalystRadarChartProps> = ({ data }) =>
 
     return (
         <div className="w-full h-full min-h-[300px] flex items-center justify-center p-4">
-            <Radar data={chartData} options={options} />
+            <Chart type="radar" data={chartData} options={options} />
         </div>
     );
 };
