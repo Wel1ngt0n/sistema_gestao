@@ -241,21 +241,23 @@ class AnalystsReportService:
         report.sort(key=lambda x: x['carga_ponderada'], reverse=True)
         
         # Para calculo geral de MRR da empresa no período selecionado:
+        effective_finished = func.coalesce(Store.manual_finished_at, Store.end_real_at, Store.finished_at)
+
         # 1. Churn MRR
         churn_query = Store.query.filter(Store.status_norm == 'CANCELED')
         if start_date:
-             churn_query = churn_query.filter(Store.effective_finished_at >= start_date)
+             churn_query = churn_query.filter(effective_finished >= start_date)
         if end_date:
-             churn_query = churn_query.filter(Store.effective_finished_at <= end_date)
+             churn_query = churn_query.filter(effective_finished <= end_date)
         churn_stores = churn_query.all()
         churn_mrr = sum(s.valor_mensalidade or 0.0 for s in churn_stores)
 
         # 2. Entregue MRR
         delivered_query = Store.query.filter(Store.status_norm == 'DONE')
         if start_date:
-             delivered_query = delivered_query.filter(Store.effective_finished_at >= start_date)
+             delivered_query = delivered_query.filter(effective_finished >= start_date)
         if end_date:
-             delivered_query = delivered_query.filter(Store.effective_finished_at <= end_date)
+             delivered_query = delivered_query.filter(effective_finished <= end_date)
         delivered_stores = delivered_query.all()
         delivered_mrr = sum(s.valor_mensalidade or 0.0 for s in delivered_stores)
         
@@ -309,9 +311,18 @@ class AnalystsReportService:
              "churn_limit": period_churn_limit,
              "months_in_period": months_in_period
         }
-        
+
+        # Sumarização do Time
+        summary = {
+            "total_ativos": sum(item['ativos'] for item in report),
+            "total_entregues": sum(item['entregas_mes'] for item in report),
+            "mrr_total_ativo": sum(item['mrr_ativo'] for item in report),
+            "carga_media": (sum(item['carga_ponderada'] for item in report) / len(report)) if report else 0
+        }
+
         return {
-            "team": report,
+            "data": report,
+            "summary": summary,
             "company_projection": company_projection
         }
 

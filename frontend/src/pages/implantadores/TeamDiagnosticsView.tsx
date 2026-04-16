@@ -64,8 +64,12 @@ export default function TeamDiagnosticsView() {
           url += `?start=${period.start.toISOString()}&end=${period.end.toISOString()}`
       }
       const res = await api.get(url)
-      setData(res.data.team || [])
-      setCompanyProjection(res.data.projection || null)
+      setData(res.data.data || [])
+      setCompanyProjection(res.data.company_projection || null)
+      if (res.data.summary) {
+          // You might need a setSummary state here if it exists
+          // setSummary(res.data.summary)
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
