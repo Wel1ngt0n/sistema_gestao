@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { api } from '../../services/api'
 import {
     PieChart, Sparkles, Loader2, Activity, CheckCircle, 
-    AlertTriangle, LayoutDashboard, Target, TrendingUp,
-    Briefcase, Clock
+    AlertTriangle, LayoutDashboard, TrendingUp,
+    Clock, FileText
 } from 'lucide-react'
 import { BottleneckDonutChart } from '../../components/reports/BottleneckDonutChart'
 
