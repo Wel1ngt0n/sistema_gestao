@@ -1,14 +1,97 @@
-from app.models import db, Store, TaskStep
-from sqlalchemy import func, case, or_
+from app.models import db, Store, TaskStep, SystemConfig
+from sqlalchemy import func, case, or_, and_
 from datetime import datetime, timedelta
+import json
 
 class AnalystsReportService:
-    
     # Corte: Considerar apenas lojas a partir de 01/01/2026
     CUTOFF_DATE = datetime(2026, 1, 1)
-    
+
     @staticmethod
-    def get_team_resume():
+    def _get_goal_metrics():
+        annual_mrr = 180000.0
+        config_mrr = SystemConfig.query.filter_by(key='annual_mrr_target').first()
+        if config_mrr:
+            try:
+                annual_mrr = float(config_mrr.value)
+            except ValueError:
+                pass
+        meta_semestral_mrr = annual_mrr / 2.0
+
+        implantadores_query = db.session.query(Store.implantador).distinct().filter(
+            Store.implantador.isnot(None), 
+            Store.implantador != '',
+            Store.status_norm != 'CANCELED'
+        ).filter(
+            or_(
+                Store.status_norm != 'DONE',
+                Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.created_at >= AnalystsReportService.CUTOFF_DATE
+            )
+        )
+        qtd_analistas = implantadores_query.count() or 1
+        
+        concluidas_2026 = Store.query.filter(
+            Store.status_norm == 'DONE',
+            or_(
+                Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
+                Store.finished_at >= AnalystsReportService.CUTOFF_DATE
+            )
+        ).all()
+        count_concluidas = len(concluidas_2026)
+        ticket_medio = sum((s.valor_mensalidade or 0.0) for s in concluidas_2026) / count_concluidas if count_concluidas > 0 else 1000.0
+        if ticket_medio == 0: ticket_medio = 1000.0
+        
+        meta_semestral_lojas = meta_semestral_mrr / ticket_medio
+        meta_individual_semestral = meta_semestral_lojas / qtd_analistas
+        meta_individual_mensal = meta_individual_semestral / 6.0
+        if meta_individual_mensal <= 0: meta_individual_mensal = 1.0
+
+        return {
+            "meta_semestral_mrr": meta_semestral_mrr,
+            "ticket_medio": round(ticket_medio, 2),
+            "meta_individual_mensal_lojas": round(meta_individual_mensal, 2),
+            "meta_individual_semestral_lojas": round(meta_individual_semestral, 2)
+        }
+
+    @staticmethod
+    def _calculate_score(metrics, goal_metrics):
+        pct_sla_c = metrics.get('pct_sla_concluidas', 0)
+        pct_sla_a = metrics.get('pct_sla_ativas', 0)
+        
+        idle_inv = max(0, 100 - (metrics.get('idle_medio', 0) * 10))
+        
+        meta_mensal = goal_metrics.get('meta_individual_mensal_lojas', 1) if isinstance(goal_metrics, dict) else goal_metrics
+        if meta_mensal <= 0: meta_mensal = 1
+        
+        entregas_norm = min(100, (metrics.get('entregas_mes', 0) / meta_mensal) * 100)
+        
+        retrabalho = metrics.get('pct_retrabalho', 0)
+        retrabalho_inv = max(0, 100 - (retrabalho * 2))
+        
+        score = (
+            (pct_sla_c * 0.30) +
+            (pct_sla_a * 0.25) +
+            (idle_inv * 0.20) +
+            (entregas_norm * 0.15) +
+            (retrabalho_inv * 0.10)
+        )
+        return {
+            "score_final": round(score, 1),
+            "eixos": {
+                "sla_concluidas": round(pct_sla_c, 1),
+                "sla_ativas": round(pct_sla_a, 1),
+                "idle_invertido": round(idle_inv, 1),
+                "entregas": round(entregas_norm, 1),
+                "qualidade": round(max(0, 100 - retrabalho), 1)
+            }
+        }
+
+    @staticmethod
+    def get_team_resume(start_date=None, end_date=None):
         """
         Retorna a Mesa Comparativa do time (Aba 1).
         Agrega métricas por implantador_.
@@ -33,6 +116,8 @@ class AnalystsReportService:
         implantadores = [i[0] for i in implantadores_query.all()]
         
         report = []
+        
+        goal_metrics = AnalystsReportService._get_goal_metrics()
         
         now = datetime.now()
         thirty_days_ago = now - timedelta(days=30)
@@ -74,11 +159,18 @@ class AnalystsReportService:
             # MRR Ativo
             mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
             
-            # Entregas Periodo (Mês Vigente)
-            first_day_of_month = datetime(now.year, now.month, 1)
-            
-            concluidas_mes = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= first_day_of_month]
+            # Entregas Periodo (De acordo com filtro)
+            if start_date and end_date:
+                concluidas_mes = [s for s in concluidas if s.effective_finished_at and start_date <= s.effective_finished_at <= end_date]
+            else:
+                first_day_of_month = datetime(now.year, now.month, 1)
+                concluidas_mes = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= first_day_of_month]
+                
             throughput_mes = len(concluidas_mes)
+            
+            # Se for buscar as SLA concluídas, queremos olhar apenas paras lojas concluídas NO PERÍODO.
+            if start_date and end_date:
+                concluidas = concluidas_mes
             
             # 1. SLA Concluídas
             sla_ok_concluidas = 0
@@ -119,7 +211,14 @@ class AnalystsReportService:
             idle_critico_count = sum(1 for i in idles if i > 7) # Mais de 7 dias sem atualização
             
             # Calculo de Gargalos (Desvios) - Simplificado na Visão 1
-            pass 
+            metrics_for_score = {
+                'pct_sla_concluidas': pct_sla_concluidas,
+                'pct_sla_ativas': pct_sla_ativas,
+                'idle_medio': idle_medio,
+                'entregas_mes': throughput_mes,
+                'pct_retrabalho': pct_retrabalho
+            }
+            score = AnalystsReportService._calculate_score(metrics_for_score, goal_metrics)
             
             report.append({
                 "implantador": imp,
@@ -134,18 +233,90 @@ class AnalystsReportService:
                 "pct_sla_ativas": round(pct_sla_ativas, 1),
                 "pct_retrabalho": pct_retrabalho,
                 "idle_medio": round(idle_medio, 1),
-                "idle_critico_count": idle_critico_count
+                "idle_critico_count": idle_critico_count,
+                "score": score
             })
             
         # Sort by Carga Ponderada Descending by default
         report.sort(key=lambda x: x['carga_ponderada'], reverse=True)
         
+        # Para calculo geral de MRR da empresa no período selecionado:
+        # 1. Churn MRR
+        churn_query = Store.query.filter(Store.status_norm == 'CANCELED')
+        if start_date:
+             churn_query = churn_query.filter(Store.effective_finished_at >= start_date)
+        if end_date:
+             churn_query = churn_query.filter(Store.effective_finished_at <= end_date)
+        churn_stores = churn_query.all()
+        churn_mrr = sum(s.valor_mensalidade or 0.0 for s in churn_stores)
+
+        # 2. Entregue MRR
+        delivered_query = Store.query.filter(Store.status_norm == 'DONE')
+        if start_date:
+             delivered_query = delivered_query.filter(Store.effective_finished_at >= start_date)
+        if end_date:
+             delivered_query = delivered_query.filter(Store.effective_finished_at <= end_date)
+        delivered_stores = delivered_query.all()
+        delivered_mrr = sum(s.valor_mensalidade or 0.0 for s in delivered_stores)
+        
+        # 3. Projetado MRR (Lojas ativas que tem data prevista DESTE periodo)
+        # Reutilizar lógica de previsão. Se a loja está IN_PROGRESS, e go_live_date cai no período
+        from app.services.forecast_service import ForecastService
+        from dateutil.relativedelta import relativedelta
+        projected_mrr = 0.0
+        todas_ativas = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE', Store.include_in_forecast == True).all()
+        for s in todas_ativas:
+            go_live_date = s.manual_go_live_date
+            if not go_live_date and s.effective_started_at:
+                days = s.tempo_contrato or 90
+                go_live_date = s.effective_started_at + relativedelta(days=days)
+            
+            if go_live_date:
+                # Checar se go_live_date cai no periodo
+                in_period = True
+                if start_date and go_live_date < start_date: in_period = False
+                if end_date and go_live_date > end_date: in_period = False
+                
+                if in_period:
+                     projected_mrr += (s.valor_mensalidade or 0.0)
+
+        # Buscar Limit/Meta
+        c_target = SystemConfig.query.filter_by(key="annual_mrr_target").first()
+        cs_target = SystemConfig.query.filter_by(key="monthly_cs_churn_limit").first()
+        
+        net_mrr_target = float(c_target.value) / 2 if c_target else 100000.0 # Ex: Semestral 100k
+        
+        cs_churn_monthly_limit = float(cs_target.value) if cs_target else 5000.0
+        # Adaptar churn target pelo período. (Se mensal, assume cs_churn_monthly_limit.)
+        # Por simplificação, passamos o base e o frontend calcula ou ajustamos por dt.
+        months_in_period = 1
+        if start_date and end_date:
+            delta = end_date - start_date
+            months_in_period = max(1, round(delta.days / 30.0))
+        else:
+            months_in_period = 6 # Default semestral
+            
+        period_churn_limit = cs_churn_monthly_limit * months_in_period
+
+        net_mrr_result = (delivered_mrr + projected_mrr) - churn_mrr
+
+        company_projection = {
+             "delivered_mrr": delivered_mrr,
+             "projected_mrr": projected_mrr,
+             "churn_mrr": churn_mrr,
+             "net_mrr_result": net_mrr_result,
+             "net_mrr_target": net_mrr_target,
+             "churn_limit": period_churn_limit,
+             "months_in_period": months_in_period
+        }
+        
         return {
-            "team": report
+            "team": report,
+            "company_projection": company_projection
         }
 
     @staticmethod
-    def get_analyst_details(implantador_name):
+    def get_analyst_details(implantador_name, start_date=None, end_date=None):
         """
         Retorna o Drill-down Individual do Implantador (Aba 3).
         """
@@ -173,7 +344,13 @@ class AnalystsReportService:
         
         now = datetime.now()
         thirty_days_ago = now - timedelta(days=30)
-        concluidas_30d = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= thirty_days_ago]
+        
+        if start_date and end_date:
+            concluidas_30d = [s for s in concluidas if s.effective_finished_at and start_date <= s.effective_finished_at <= end_date]
+            # Override concluidas to only analyze stores delivered in this period
+            concluidas = concluidas_30d
+        else:
+            concluidas_30d = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= thirty_days_ago]
         
         carga_ponderada = sum(1.0 if (s.tipo_loja and s.tipo_loja.lower() == 'matriz') else 0.5 for s in ativas)
         mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
@@ -256,10 +433,18 @@ class AnalystsReportService:
             c = AnalystsReportService._classify_store_delay(s, carga_ponderada)
             if c in causas_imp: causas_imp[c] += 1
 
-        # Lojas Concluídas no Mês (Lista formatada para PDF)
+        # Lojas Concluídas no Mês/Período
         concluidas_mes_list = []
         for s in concluidas:
-            if s.effective_finished_at and s.effective_finished_at.year == now.year and s.effective_finished_at.month == now.month:
+            in_period = False
+            if start_date and end_date:
+                if s.effective_finished_at and start_date <= s.effective_finished_at <= end_date:
+                    in_period = True
+            else:
+                if s.effective_finished_at and s.effective_finished_at.year == now.year and s.effective_finished_at.month == now.month:
+                    in_period = True
+            
+            if in_period:
                 concluidas_mes_list.append({
                     "id": s.id,
                     "name": s.store_name,
@@ -283,6 +468,17 @@ class AnalystsReportService:
             except:
                 pass
 
+        goal_metrics = AnalystsReportService._get_goal_metrics()
+        
+        metrics_for_score = {
+            "pct_sla_concluidas": pct_sla_concluidas,
+            "pct_sla_ativas": pct_sla_ativas,
+            "pct_retrabalho": pct_retrabalho,
+            "idle_medio": (total_idle_days / len(ativas)) if len(ativas) > 0 else 0,
+            "entregas_mes": len(concluidas_mes_list)
+        }
+        score = AnalystsReportService._calculate_score(metrics_for_score, goal_metrics)
+        
         return {
             "summary": {
                 "implantador": implantador_name,
@@ -294,13 +490,15 @@ class AnalystsReportService:
                 "pct_sla_concluidas": round(pct_sla_concluidas, 1),
                 "pct_sla_ativas": round(pct_sla_ativas, 1),
                 "pct_retrabalho": round(pct_retrabalho, 1),
-                "idle_medio": round((total_idle_days / len(ativas)) if len(ativas) > 0 else 0, 1),
+                "idle_medio": round(metrics_for_score["idle_medio"], 1),
                 "tempo": {
                     "execucao_pct": exec_pct,
                     "espera_pct": wait_pct
                 },
                 "etapas": avg_etapas,
-                "diagnostico_causas": causas_imp
+                "diagnostico_causas": causas_imp,
+                "score": score,
+                "meta_info": goal_metrics
             },
             "carteira_atual": carteira_atual,
             "concluidas_mes": concluidas_mes_list,
@@ -506,47 +704,70 @@ class AnalystsReportService:
         }
 
 
-        prompt = f"""Você é um analista de operações especializado em implantação de sistemas SaaS.
-Seu papel NÃO é avaliar o colaborador como pessoa, e sim diagnosticar a operação com base nos dados.
+        prompt = f"""📋 OBJETIVO
+A partir dos dados fornecidos, você deve:
+- Identificar padrões de desempenho
+- Detectar gargalos operacionais
+- Separar causas dos problemas
+- Sugerir ações práticas para o gestor
 
-OBJETIVO:
-Identificar padrões de baixa performance, entender as causas mais prováveis e sugerir ações práticas para o gestor.
+A sua análise deve permitir responder:
+"Onde está o problema e o que eu faço com isso?"
 
-REGRAS:
-- NÃO faça julgamentos pessoais (ex: "bom", "ruim")
-- NÃO apenas descreva os dados, interprete-os
-- NÃO use linguagem vaga
-- NÃO invente hipóteses sem base
-- SEMPRE analise:
-    1. **Documentação**: Os implantadores estão comentando? Os comentários são úteis ou apenas protocolares?
-    2. **Integração**: Há bloqueios técnicos mencionados?
-    3. **Qualidade**: Há menção de configurações faltando ou erros de checkout?
-    4. **Cadastro**: Foram cadastrados produtos na etapa correta?
-- FOCO: cadência de execução, concentração de idle, distribuição de carga, risco da carteira.
+⚠️ REGRAS CRÍTICAS
+- NÃO faça julgamentos pessoais (ex: "bom", "ruim", "fraco")
+- NÃO resuma os dados sem análise
+- NÃO use linguagem vaga ou genérica
+- NÃO invente hipóteses sem base nos dados
+- NÃO repita métricas sem interpretar
+- SEMPRE:
+  * explique causas (não só sintomas)
+  * conecte os dados entre si
+  * destaque o que realmente importa
+  * priorize clareza e objetividade
 
-DADOS PARA ANÁLISE:
+🧠 FOCO DA ANÁLISE
+Você deve focar principalmente em:
+- Cadência de execução (idle, movimentação)
+- Distribuição de carga (volume vs capacidade)
+- Risco da carteira
+- Padrões de atraso
+- Diferença entre tempo em espera vs execução
+- Concentração de problemas em etapas específicas
+
+🔍 DIAGNÓSTICO DE CAUSA (OBRIGATÓRIO)
+Você deve classificar e explicar os problemas considerando:
+- CLIENTE: espera, dependência externa, bloqueios
+- EXECUÇÃO INTERNA: baixa cadência, idle sem justificativa
+- CARGA: volume excessivo sob responsabilidade
+- ETAPA: gargalo estrutural em fase específica
+
+Use os dados fornecidos (inclusive diagnóstico do backend, se houver).
+Se houver ambiguidade, deixe claro.
+
+DADOS PARA ANÁLISE (ANALISTA INDIVIDUAL):
 {json.dumps(payload, indent=2)}
 
-ESTRUTURA OBRIGATÓRIA DA RESPOSTA (JSON):
+📊 ESTRUTURA DA RESPOSTA (JSON OBRIGATÓRIO)
 {{
-  "resumo_executivo": "Visão geral em poucas linhas",
-  "padroes_identificados": ["bullet 1", "bullet 2"],
+  "resumo_executivo": "1. Resumo Executivo: Explique em 3–5 linhas o cenário geral da operação do analista.",
+  "padroes_identificados": ["Alta permanência de idle em lojas sem pausa formal", "Concentração de atrasos na etapa X", "..."],
   "diagnostico_causa": {{
-      "cliente": "explicação",
-      "execucao_interna": "explicação",
-      "carga_trabalho": "explicação",
-      "fluxo_etapa": "explicação"
+      "cliente": "Explique se há impacto externo, espera ou dependências do cliente...",
+      "execucao_interna": "Explique se há baixa cadência, idle sem justificativa ou ineficiência...",
+      "carga": "Explique se o volume está acima da capacidade ou mal distribuído...",
+      "etapa": "Identifique se há bloqueios em alguma fase específica do fluxo..."
   }},
-  "gargalos_operacionais": ["onde trava"],
-  "riscos_identificados": ["riscos de SLA, etc"],
-  "acoes_recomendadas": ["ação 1", "ação 2"],
+  "gargalos_operacionais": ["Onde trava (ex: etapa específica, falta de avanço, acúmulo de risco)"],
+  "riscos_identificados": ["Atraso de SLA", "Acúmulo de fila", "Queda de throughput", "MRR travado"],
+  "acoes_recomendadas": ["Cobrar avanço em lojas sem movimentação", "Atuar nos clientes com alto tempo de espera", "..."],
   "auditoria_raio_x": {{
-      "qualidade_documentacao": "descrição",
-      "bloqueios_identificados": ["bloqueio 1"],
-      "conformidade_etapas": "descrição de problemas em Integração/Qualidade/Cadastro"
+      "qualidade_documentacao": "Qualidade dos comentários no ClickUp baseada nos dados verbais.",
+      "bloqueios_identificados": ["Lista de problemas específicos extraídos dos comentários"],
+      "conformidade_etapas": "Se os produtos estão fluindo na cadência correta."
   }}
 }}
-Responda APENAS o JSON.
+Responda APENAS o JSON válido.
 """
 
         llm = LLMService()
@@ -613,32 +834,58 @@ Responda APENAS o JSON.
         }
 
 
-        prompt = f"""Você é um analista de operações senior especializado em gestão de times de implantação SaaS.
-Analise os dados consolidados do time abaixo e produza um diagnóstico gerencial de alta performance.
+        prompt = f"""📋 OBJETIVO
+A partir dos dados fornecidos do TIME DE IMPLANTAÇÃO, você deve:
+- Identificar padrões de desempenho entre os analistas
+- Detectar gargalos operacionais sistêmicos
+- Separar causas dos problemas
+- Sugerir ações práticas para a gestão do time
 
-REGRAS:
-- NÃO avalie colaboradores individualmente como pessoas.
-- FOCO: Distribuição de carga, gargalos sistêmicos, riscos de throughput e saúde da operação.
-- ANALISE: Verifique se os 'alertas_verbais_criticos' indicam um problema comum (ex: muitos implantadores reclamando da mesma coisa/etapa).
-- RESPOSTA: Tom profissional, baseado em dados, com ações práticas para o gestor.
+A sua análise deve permitir responder:
+"Onde está o problema da equipe e o que o gestor deve fazer com isso?"
 
+⚠️ REGRAS CRÍTICAS
+- NÃO faça julgamentos pessoais (ex: "bom", "ruim", "fraco")
+- NÃO resuma os dados sem análise
+- NÃO use linguagem vaga ou genérica
+- NÃO invente hipóteses sem base nos dados
+- NÃO repita métricas sem interpretar
+- SEMPRE:
+  * explique causas (não só sintomas) conectando os dados
+  * destaque o que realmente importa no throughput e carga do time
+  * priorize clareza e objetividade
 
-DADOS DO TIME:
+🧠 FOCO DA ANÁLISE (TIME)
+Você deve focar principalmente em:
+- Distribuição de carga da equipe (volume vs capacidade)
+- Cadência de execução (analistas com idle fora da curva)
+- Risco consolidado e atrasos do time
+- Concentração de problemas em etapas estruturais
+
+🔍 DIAGNÓSTICO DE CAUSA (OBRIGATÓRIO)
+Classifique e explique os problemas gerais em:
+- CLIENTE: dependência externa que trava múltiplos projetos
+- EXECUÇÃO INTERNA: problemas de baixa performance em analistas específicos
+- CARGA: má distribuição ou volume excessivo para o time
+- ETAPA: gargalo sistêmico no processo (fluxo de implantação)
+
+DADOS DO TIME CONSOLIDADOS:
 {json.dumps(payload, indent=2)}
 
-ESTRUTURA OBRIGATÓRIA DA RESPOSTA (JSON):
+📊 ESTRUTURA DA RESPOSTA (JSON OBRIGATÓRIO)
 {{
-  "resumo_executivo": "Visão geral do time em poucas linhas",
-  "padroes_equipe": ["tendência 1", "tendência 2"],
+  "resumo_executivo": "1. Resumo Executivo: Explique em 3–5 linhas o cenário geral e saúde da operação da equipe.",
+  "padroes_equipe": ["Desvio padrão de carga entre analistas", "Atrasos em processos específicos do SLA", "..."],
   "diagnostico_causas": {{
-      "externas": "impacto do cliente no time",
-      "internas": "gargalos de execução do time",
-      "processo": "falhas no fluxo de etapas"
+      "cliente": "Explique tendências de bloqueios em clientes de risco...",
+      "execucao_interna": "Destaque deficiências de performance interna no time...",
+      "carga": "Apuros de capacidade ou desequilíbrio na distribuição...",
+      "etapa": "Onde ocorrem as travas de fluxo para toda equipe..."
   }},
-  "riscos_criticos": ["riscos de meta, turnover, etc"],
-  "sugestoes_gestao": ["redistribuição", "treinamento", "ajuste de fluxo"]
+  "riscos_criticos": ["Aumento massivo no SLA", "Churn eminente", "Queda drástica de taxa de entrega..."],
+  "sugestoes_gestao": ["Redistribuir X projetos", "Treinar analistas de baixa cadência", "Realinhar expectativas comerciais", "..."]
 }}
-Responda APENAS o JSON.
+Responda APENAS o JSON válido.
 """
         llm = LLMService()
         result = llm.call_openai_diagnostic(prompt)

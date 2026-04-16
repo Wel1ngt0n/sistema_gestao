@@ -5,6 +5,9 @@ import {
     ArrowLeft, UserIcon, BriefcaseIcon,
     Clock, Activity, Download, Sparkles, Loader2, CheckCircle
 } from 'lucide-react'
+import { PerformanceScoreBadge } from '../../components/reports/PerformanceScoreBadge'
+import { AnalystRadarChart } from '../../components/reports/AnalystRadarChart'
+import { PeriodFilter, DateRange } from '../../components/ui/PeriodFilter'
 
 export default function AnalystProfileView() {
     const { name } = useParams<{ name: string }>()
@@ -18,12 +21,25 @@ export default function AnalystProfileView() {
     const [aiResult, setAiResult] = useState<any>(null)
     const [aiLoading, setAiLoading] = useState(false)
 
+    const [period, setPeriod] = useState<DateRange>(() => {
+        const today = new Date();
+        return {
+            start: new Date(today.getFullYear(), today.getMonth(), 1),
+            end: new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59),
+            label: 'Mês Vigente'
+        };
+    })
+
     useEffect(() => {
         if (!name) return
         const fetchAnalyst = async () => {
             try {
                 setLoading(true)
-                const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}`)
+                let url = `/api/reports/implantadores/${encodeURIComponent(name)}`
+                if (period.start && period.end) {
+                    url += `?start=${period.start.toISOString()}&end=${period.end.toISOString()}`
+                }
+                const res = await api.get(url)
                 setData(res.data)
 
                 // Set initial AI Result from Cache if available
@@ -38,7 +54,7 @@ export default function AnalystProfileView() {
             }
         }
         fetchAnalyst()
-    }, [name])
+    }, [name, period])
 
     const handleAIAnalysis = async () => {
         if (!name) return
@@ -132,14 +148,18 @@ export default function AnalystProfileView() {
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-3">
                             <UserIcon className="text-orange-500" />
-                            Perfil Analítico: {data.implantador}
+                            Perfil Analítico: {data.summary?.implantador || name}
+                            {summary?.score && <PerformanceScoreBadge score={summary.score.score_final} size="lg" />}
                         </h1>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                            Raio-X de performance operacional individual
+                            Acompanhamento individual de metas, produtividade e Qualidade.
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <div className="hidden sm:block mr-2">
+                        <PeriodFilter value={period} onChange={setPeriod} />
+                    </div>
                     <button
                         onClick={handleExportCSV}
                         className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-750 transition-colors"
@@ -255,9 +275,30 @@ export default function AnalystProfileView() {
 
             </div>
 
-            {/* AI ANALYSIS BLOCK */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-4">
+            {/* RADAR & AI ANALYSIS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* RADAR CHART BLOCK */}
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col">
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Activity className="text-sky-500" />
+                        Radar de Performance
+                    </h3>
+                    <p className="text-sm text-zinc-500 mb-4">
+                        Distribuição das métricas de SLA, Retrabalho, Volume e Cadência.
+                    </p>
+                    <div className="flex-1 flex justify-center items-center min-h-[300px]">
+                        {summary?.score?.eixos ? (
+                            <AnalystRadarChart data={summary.score.eixos} />
+                        ) : (
+                            <span className="text-zinc-500">Dados insuficientes</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* AI ANALYSIS BLOCK */}
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold flex items-center gap-2">
                         <Sparkles className="text-orange-500" />
                         Diagnóstico Assistido por IA
@@ -407,6 +448,7 @@ export default function AnalystProfileView() {
                         {aiResult.error}
                     </div>
                 )}
+            </div>
             </div>
 
             {/* CARTEIRA ATUAL */}

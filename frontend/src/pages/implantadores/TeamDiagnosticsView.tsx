@@ -5,6 +5,11 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import TeamDiagnosticsDashboardView from './TeamDiagnosticsDashboardView'
+import { PeriodFilter, DateRange } from '../../components/ui/PeriodFilter'
+import { MRRNetProjectionWidget } from '../../components/reports/MRRNetProjectionWidget'
+import { PerformanceScoreBadge } from '../../components/reports/PerformanceScoreBadge'
+import { AlertSummaryBar } from '../../components/reports/AlertSummaryBar'
+import { TeamScoreBarChart } from '../../components/reports/TeamScoreBarChart'
 
 interface AnalystResume {
   implantador: string
@@ -20,6 +25,10 @@ interface AnalystResume {
   pct_retrabalho: number
   idle_medio: number
   idle_critico_count: number
+  score?: {
+      score_final: number;
+      eixos: any;
+  }
 }
 
 export default function TeamDiagnosticsView() {
@@ -27,8 +36,17 @@ export default function TeamDiagnosticsView() {
   const [data, setData] = useState<AnalystResume[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [companyProjection, setCompanyProjection] = useState<any>(null)
 
   const [activeTab, setActiveTab] = useState<'TABLE' | 'DASHBOARD'>('TABLE')
+  const [period, setPeriod] = useState<DateRange>(() => {
+    const today = new Date();
+    return {
+        start: new Date(today.getFullYear(), today.getMonth(), 1),
+        end: new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59),
+        label: 'Mês Vigente'
+    };
+  })
 
   // Sorters
   const [sortField, setSortField] = useState<keyof AnalystResume>('carga_ponderada')
@@ -36,13 +54,18 @@ export default function TeamDiagnosticsView() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [period])
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const res = await api.get('/api/reports/implantadores/resumo')
+      let url = '/api/reports/implantadores/resumo'
+      if (period.start && period.end) {
+          url += `?start=${period.start.toISOString()}&end=${period.end.toISOString()}`
+      }
+      const res = await api.get(url)
       setData(res.data.team || [])
+      setCompanyProjection(res.data.projection || null)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -60,8 +83,12 @@ export default function TeamDiagnosticsView() {
   }
 
   const sortedData = [...data].sort((a, b) => {
-    const valA = a[sortField]
-    const valB = b[sortField]
+    let valA: any = a[sortField]
+    let valB: any = b[sortField]
+    if (sortField === 'score') {
+        valA = a.score?.score_final || 0
+        valB = b.score?.score_final || 0
+    }
     if (valA < valB) return sortAsc ? -1 : 1
     if (valA > valB) return sortAsc ? 1 : -1
     return 0
@@ -133,6 +160,52 @@ export default function TeamDiagnosticsView() {
         </div>
       </div>
 
+      <div className="flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+        <div className="text-zinc-500 font-medium">Período de Análise Base:</div>
+        <PeriodFilter value={period} onChange={setPeriod} />
+      </div>
+
+      <div className="mb-2">
+         {companyProjection && <MRRNetProjectionWidget data={companyProjection} />}
+      </div>
+
+      {/* Alerts */}
+      {!loading && !error && data.length > 0 && (
+        <AlertSummaryBar teamData={data} />
+      )}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveTab('TABLE')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'TABLE' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
+        >
+          <List size={16} />
+          Visão Comparativa do Time
+        </button>
+        <button
+          onClick={() => setActiveTab('DASHBOARD')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'DASHBOARD' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
+        >
+          <LayoutDashboard size={16} />
+          Diagnóstico e Causa Raiz
+        </button>
+      </div>
+
+      <div className="flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+        <div className="text-zinc-500 font-medium">Período de Análise Base:</div>
+        <PeriodFilter value={period} onChange={setPeriod} />
+      </div>
+
+      <div className="mb-2">
+         {companyProjection && <MRRNetProjectionWidget data={companyProjection} />}
+      </div>
+
+      {/* Alerts */}
+      {!loading && !error && data.length > 0 && (
+        <AlertSummaryBar teamData={data} />
+      )}
+
       {/* Tabs */}
       <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl w-fit">
         <button
@@ -162,13 +235,23 @@ export default function TeamDiagnosticsView() {
           {error}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+             <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Ranking de Performance (Score)</h3>
+             <div className="h-64">
+               <TeamScoreBarChart data={data} />
+             </div>
+          </div>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
                   <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('implantador')}>
                     <div className="flex items-center gap-2">Implantador <ArrowUpDown size={14} /></div>
+                  </th>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('score')}>
+                    <div className="flex items-center gap-2">Score Final <ArrowUpDown size={14} /></div>
                   </th>
                   <th className="px-6 py-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50" onClick={() => handleSort('carga_ponderada')}>
                     <div className="flex items-center gap-2">Carga Ponderada <ArrowUpDown size={14} /></div>
@@ -208,6 +291,9 @@ export default function TeamDiagnosticsView() {
                   >
                     <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-100">
                       {item.implantador}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {item.score ? <PerformanceScoreBadge score={item.score.score_final} size="sm" /> : <span className="text-zinc-400">-</span>}
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400">
@@ -271,6 +357,7 @@ export default function TeamDiagnosticsView() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
     </div>

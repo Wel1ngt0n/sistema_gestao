@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.services.security_service import require_auth
 from app.services.analysts_report_service import AnalystsReportService
+from datetime import datetime
 
 analysts_reports_bp = Blueprint('analysts_reports', __name__, url_prefix='/api/reports/implantadores')
 
@@ -11,7 +12,12 @@ def get_analysts_resume(payload):
     Retorna a Visão Comparativa de todos os implantadores (Aba 1).
     """
     try:
-        data = AnalystsReportService.get_team_resume()
+        start_str = request.args.get('start')
+        end_str = request.args.get('end')
+        start_date = datetime.fromisoformat(start_str.replace('Z', '+00:00')).replace(tzinfo=None) if start_str else None
+        end_date = datetime.fromisoformat(end_str.replace('Z', '+00:00')).replace(tzinfo=None) if end_str else None
+        
+        data = AnalystsReportService.get_team_resume(start_date, end_date)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -111,7 +117,12 @@ def get_analyst_details(payload, implantador_name):
     Retorna o Drill-down Individual do Implantador (Aba 3).
     """
     try:
-        data = AnalystsReportService.get_analyst_details(implantador_name)
+        start_str = request.args.get('start')
+        end_str = request.args.get('end')
+        start_date = datetime.fromisoformat(start_str.replace('Z', '+00:00')).replace(tzinfo=None) if start_str else None
+        end_date = datetime.fromisoformat(end_str.replace('Z', '+00:00')).replace(tzinfo=None) if end_str else None
+
+        data = AnalystsReportService.get_analyst_details(implantador_name, start_date, end_date)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

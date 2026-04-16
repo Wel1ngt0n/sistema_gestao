@@ -3,6 +3,7 @@ import { api } from '../../services/api'
 import {
     PieChart, Sparkles, Loader2, Activity, CheckCircle
 } from 'lucide-react'
+import { BottleneckDonutChart } from '../../components/reports/BottleneckDonutChart'
 
 export default function TeamDiagnosticsDashboardView() {
     const [data, setData] = useState<any>(null)
@@ -88,25 +89,10 @@ export default function TeamDiagnosticsDashboardView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* DISTRIBUIÇÃO */}
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-zinc-700 dark:text-zinc-200">Gargalos Predominantes</h3>
-                        {Object.keys(causas_distribuicao).map(key => {
-                            const val = causas_distribuicao[key]
-                            const bg = colors[key as keyof typeof colors] || "bg-zinc-500"
-                            const p = total_analisado > 0 ? (val / total_analisado) * 100 : 0
-                            return (
-                                <div key={key} className="flex items-center gap-4">
-                                    <div className="w-48 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                                        {parseLabel(key)}
-                                    </div>
-                                    <div className="flex-1 flex items-center gap-3">
-                                        <div className="flex-1 h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                                            <div className={`h-full ${bg} rounded-full transition-all`} style={{ width: `${p}%` }}></div>
-                                        </div>
-                                        <span className="text-sm font-bold w-12 text-right">{p.toFixed(0)}%</span>
-                                    </div>
-                                </div>
-                            )
-                        })}
+                        <h3 className="font-semibold text-zinc-700 dark:text-zinc-200 mb-2">Gargalos Predominantes</h3>
+                        <div className="h-64">
+                            <BottleneckDonutChart data={causas_distribuicao} />
+                        </div>
                     </div>
 
                     {/* GARGALOS POR ETAPA */}
