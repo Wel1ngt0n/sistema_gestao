@@ -21,7 +21,7 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
     };
 
     const targetProgress = Math.min(100, Math.max(0, (data.net_mrr_result / data.net_mrr_target) * 100));
-    
+
     // Calcula Churn Alert Level (Se o churn passou de 80% do limite ou estourou)
     const churnPct = (data.churn_mrr / data.churn_limit) * 100;
     const isChurnCritical = churnPct >= 100;
@@ -56,7 +56,7 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
                     {/* Churn */}
                     <div className="space-y-1 relative pl-6 border-l border-[var(--border-color)]">
                         <p className="text-sm text-[var(--text-muted)] flex items-center gap-1">
-                            Churn MRR 
+                            Churn MRR
                             {(isChurnWarning || isChurnCritical) && (
                                 <AlertTriangle className={`w-3 h-3 ${isChurnCritical ? 'text-red-500' : 'text-yellow-500'}`} />
                             )}
@@ -65,7 +65,7 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
                             -{formatBRL(data.churn_mrr)}
                         </p>
                         <div className="w-full bg-[var(--bg-color)] rounded-full h-1.5 mt-2 overflow-hidden">
-                            <div 
+                            <div
                                 className={`h-full rounded-full ${isChurnCritical ? 'bg-red-500' : isChurnWarning ? 'bg-yellow-500' : 'bg-emerald-500'}`}
                                 style={{ width: `${Math.min(100, churnPct)}%` }}
                             />
@@ -91,7 +91,7 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
                         <span className="text-lg font-bold text-[var(--brand-primary)]">{targetProgress.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-[var(--bg-color)] rounded-full h-4 relative overflow-hidden ring-1 ring-inset ring-white/5">
-                        <div 
+                        <div
                             className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]/70 transition-all duration-1000 ease-out flex items-center justify-end pr-2 shadow-[0_0_10px_rgba(var(--brand-primary-rgb),0.5)]"
                             style={{ width: `${targetProgress}%` }}
                         >
