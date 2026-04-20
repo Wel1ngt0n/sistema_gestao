@@ -22,6 +22,46 @@ def get_analysts_resume(payload):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@analysts_reports_bp.route('/cockpit', methods=['GET'])
+@require_auth
+def get_team_cockpit(payload):
+    """
+    IA JARVIS: Retorna visão gerencial com heurísticas de decisão.
+    """
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Converter se necessário (simplificado: assume ISO se vier)
+        if start_date:
+            from dateutil.parser import parse
+            start_date = parse(start_date)
+        if end_date:
+            from dateutil.parser import parse
+            end_date = parse(end_date)
+
+        data = AnalystsReportService.get_team_cockpit(start_date, end_date)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@analysts_reports_bp.route('/jarvis/chat', methods=['POST'])
+@require_auth
+def jarvis_chat(payload):
+    """
+    IA JARVIS: Chat interativo de comando e consulta.
+    """
+    try:
+        from app.services.jarvis_command_service import JarvisCommandService
+        message = request.json.get('message')
+        if not message:
+            return jsonify({"error": "Mensagem vazia"}), 400
+            
+        response = JarvisCommandService.process_message(message)
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @analysts_reports_bp.route('/diagnostico', methods=['GET'])
 @require_auth
 def get_diagnostics(payload):

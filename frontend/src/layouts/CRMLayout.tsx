@@ -52,6 +52,7 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
                     label: 'Implantação',
                     icon: Rocket,
                     children: [
+                        { to: '/jarvis-cockpit', label: 'Cockpit Jarvis', icon: Sparkles },
                         { to: '/', label: 'Dashboard', icon: LayoutDashboard },
                         { to: '/monitor', label: 'Monitor', icon: LayoutList },
                         { to: '/analytics', label: 'Analytics', icon: BarChart },

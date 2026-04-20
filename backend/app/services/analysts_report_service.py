@@ -91,14 +91,92 @@ class AnalystsReportService:
         }
 
     @staticmethod
+    def get_team_cockpit(start_date=None, end_date=None):
+        """
+        Retorna os dados processados para o Cockpit Jarvis (Visão Gerencial v3.5).
+        Inclui heurísticas de performance, tendências e alertas proativos.
+        """
+        resume_data = AnalystsReportService.get_team_resume(start_date, end_date)
+        if not resume_data:
+            return {"alerts": [], "analysts": [], "summary": {}}
+
+        # 1. Calcular Médias do Time para Contexto
+        total_ativos = sum(a['ativas'] for a in resume_data)
+        total_entregues_mes = sum(a['entregas_mes'] for a in resume_data)
+        avg_sla = sum(a['pct_sla_concluidas'] for a in resume_data) / len(resume_data) if resume_data else 0
+        avg_throughput = total_entregues_mes / len(resume_data) if resume_data else 0
+
+        cockpit_analysts = []
+        alerts = []
+
+        for analyst in resume_data:
+            # Heurísticas Jarvis
+            score = 0
+            status = "HEALTHY"
+            recommendation = "Manter acompanhamento de rotina."
+            action_priority = "low"
+
+            # 🚨 ALERTA: Sobrecarga Crítica
+            if analyst['carga_ponderada'] > 15 and analyst['entregas_mes'] < (avg_throughput * 0.5):
+                status = "OVERLOADED"
+                recommendation = "Redistribuir novas lojas. Analista com carga alta e baixa vazão."
+                action_priority = "high"
+                alerts.append({
+                    "type": "danger",
+                    "msg": f"{analyst['implantador']} está com sobrecarga crítica ({analyst['carga_ponderada']} pts)."
+                })
+
+            # 🚀 ALERTA: Alta Performance
+            elif analyst['entregas_mes'] > avg_throughput and analyst['pct_sla_concluidas'] >= 85:
+                status = "HIGH_PERFORMANCE"
+                recommendation = "Reconhecer performance. Potencial para mentorar outros membros."
+                action_priority = "low"
+
+            # ⚠️ ALERTA: Idle/Estagnação
+            elif analyst['idle_medio'] > 7:
+                status = "WARNING"
+                recommendation = "Verificar bloqueios técnicos ou falta de engajamento do cliente."
+                action_priority = "medium"
+                alerts.append({
+                    "type": "warning",
+                    "msg": f"{analyst['implantador']} possui lojas paradas há mais de 7 dias em média."
+                })
+
+            # 📉 ALERTA: Baixa Entrega
+            elif analyst['entregas_mes'] == 0 and analyst['ativas'] > 0:
+                status = "CRITICAL_IDLE"
+                recommendation = "Ação imediata: Cobrar entregas ou entender motivo da trava total."
+                action_priority = "high"
+
+            cockpit_analysts.append({
+                **analyst,
+                "jarvis_status": status,
+                "recommendation": recommendation,
+                "action_priority": action_priority,
+                "is_top_performer": status == "HIGH_PERFORMANCE"
+            })
+
+        return {
+            "summary": {
+                "total_ativos": total_ativos,
+                "total_entregues_mes": total_entregues_mes,
+                "avg_sla": round(avg_sla, 1),
+                "team_health": "Good" if avg_sla > 80 else "Attention"
+            },
+            "alerts": alerts[:5], # Top 5 alertas mais urgentes
+            "analysts": cockpit_analysts
+        }
+
+    @staticmethod
     def get_team_resume(start_date=None, end_date=None):
         """
-        Retorna a Mesa Comparativa do time (Aba 1).
-        Agrega métricas por implantador_.
+        Retorna a Mesa Comparativa do time.
+        Agrega métricas por implantador. Suporta filtros de data.
         """
+        cutoff = start_date or AnalystsReportService.CUTOFF_DATE
+        limit = end_date or datetime.now()
         
-        # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES em 2026
-        # Isso garante que a Débora e o Derik apareçam sempre que tiverem trabalho ativo.
+        # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES no período
         implantadores_query = db.session.query(Store.implantador).distinct().filter(
             Store.implantador.isnot(None), 
             Store.implantador != '',
@@ -106,10 +184,10 @@ class AnalystsReportService:
         ).filter(
             or_(
                 Store.status_norm != 'DONE',
-                Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.created_at >= AnalystsReportService.CUTOFF_DATE
+                Store.manual_finished_at >= cutoff,
+                Store.end_real_at >= cutoff,
+                Store.finished_at >= cutoff,
+                Store.created_at >= cutoff
             )
         )
         
@@ -132,10 +210,10 @@ class AnalystsReportService:
             ).filter(
                 or_(
                     Store.status_norm != 'DONE',
-                    Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
-                    Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
-                    Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
-                    Store.created_at >= AnalystsReportService.CUTOFF_DATE
+                    Store.manual_finished_at >= cutoff,
+                    Store.end_real_at >= cutoff,
+                    Store.finished_at >= cutoff,
+                    Store.created_at >= cutoff
                 )
             ).all()
 
@@ -845,6 +923,7 @@ Responda APENAS o JSON válido.
         }
 
 
+<<<<<<< HEAD
         prompt = f"""📋 OBJETIVO
 A partir dos dados fornecidos do TIME DE IMPLANTAÇÃO, você deve:
 - Identificar padrões de desempenho entre os analistas
@@ -895,11 +974,44 @@ DADOS DO TIME CONSOLIDADOS:
   }},
   "riscos_criticos": ["Aumento massivo no SLA", "Churn eminente", "Queda drástica de taxa de entrega..."],
   "sugestoes_gestao": ["Redistribuir X projetos", "Treinar analistas de baixa cadência", "Realinhar expectativas comerciais", "..."]
+=======
+    @staticmethod
+    def generate_team_ai_analysis():
+        """
+        JARVIS: Diagnóstico consultivo do time para o gestor.
+        """
+        import json
+        from app.services.llm_service import LLMService
+        
+        cockpit_data = AnalystsReportService.get_team_cockpit()
+        
+        prompt = f"""
+Você é o JARVIS, o copiloto de inteligência operacional da Instabuy.
+Analise os dados do Cockpit e atue como um consultor estratégico de operações.
+
+DADOS DO COCKPIT:
+{json.dumps(cockpit_data, indent=2)}
+
+Sua missão:
+1. Identificar padrões de sobrecarga ou ociosidade.
+2. Sugerir movimentos práticos de gestão (Xadrez Operacional).
+3. Avaliar o clima de performance do time.
+
+Sua saída DEVE ser um JSON:
+{{
+  "jarvis_briefing": "Breve resumo executivo",
+  "insumos_decisao": [
+      {{ "titulo": "...", "descricao": "...", "impacto": "Alto/Médio" }}
+  ],
+  "xadrez_operacional": ["ação 1", "ação 2"],
+  "radar_de_risco": {{ "tecnico": "...", "financeiro": "...", "pessoas": "..." }},
+  "frase_do_copiloto": "Frase de encerramento estilo Jarvis"
+>>>>>>> 45c250b (feat: Cockpit Jarvis v3.5 - Inteligência Operacional)
 }}
 Responda APENAS o JSON válido.
 """
         llm = LLMService()
-        result = llm.call_openai_diagnostic(prompt)
+        result = llm.call_openai_diagnostic(prompt, system_role="Você é o JARVIS, copiloto de operações.")
         return result
 
     @staticmethod
@@ -926,13 +1038,30 @@ Responda APENAS o JSON válido.
         pdf.cell(0, 8, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="C")
         pdf.ln(8)
         
-        # Diagnostico de Causas
-        pdf.set_text_color(0, 0, 0)
+        # Visão Executiva JARVIS
+        cockpit = AnalystsReportService.get_team_cockpit()
+        summary = cockpit.get("summary", {})
+        alerts = cockpit.get("alerts", [])
+        
         pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 10, "Diagnostico Heuristico de Causas", ln=True)
+        pdf.set_text_color(255, 102, 0) # Orange
+        pdf.cell(0, 10, "Visao Executiva JARVIS", ln=True)
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 6, f"Total de {total} lojas ativas analisadas.", ln=True)
-        pdf.ln(4)
+        pdf.set_text_color(0, 0, 0)
+        
+        # Summary KPI line
+        pdf.cell(0, 6, f"Saude do Time: {summary.get('team_health')} | SLA Medio: {summary.get('avg_sla')}% | Entregas Mes: {summary.get('total_entregues_mes')}", ln=True)
+        pdf.ln(2)
+        
+        if alerts:
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 8, "Alertas Criticos de Gestao:", ln=True)
+            pdf.set_font("Helvetica", "", 9)
+            for a in alerts:
+                pdf.cell(0, 6, f"  [!] {a['msg']}", ln=True)
+        pdf.ln(8)
+        
+        # Diagnostico de Causas
         
         labels = {
             "CLIENTE": "Cliente / Fator Externo",

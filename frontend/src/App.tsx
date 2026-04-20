@@ -13,6 +13,7 @@ import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
 import TeamDiagnosticsView from './pages/implantadores/TeamDiagnosticsView'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
+import JarvisCockpit from './pages/implantadores/JarvisCockpit'
 
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import ForecastPage from './features/forecast/ForecastPage'
@@ -59,6 +60,7 @@ function App() {
                     </ProtectedRoute>
                 }>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/jarvis-cockpit" element={<JarvisCockpit />} />
                     <Route path="/monitor" element={<Monitor />} />
                     <Route path="/team-diagnostics" element={<TeamDiagnosticsView />} />
                     <Route path="/team-diagnostics/:name" element={<AnalystProfileView />} />
