@@ -48,7 +48,7 @@ Sua saída deve ser um JSON:
         """
         action = intent_data.get('action_type')
         target = intent_data.get('target_name')
-        params = intent_data.get('parameters', {})
+        _params = intent_data.get('parameters', {})
 
         if action == "CHANGE_STATUS" and target:
             # Tentar encontrar a loja (ajustado para store_name)
