@@ -922,59 +922,6 @@ Responda APENAS o JSON válido.
             ]
         }
 
-
-<<<<<<< HEAD
-        prompt = f"""📋 OBJETIVO
-A partir dos dados fornecidos do TIME DE IMPLANTAÇÃO, você deve:
-- Identificar padrões de desempenho entre os analistas
-- Detectar gargalos operacionais sistêmicos
-- Separar causas dos problemas
-- Sugerir ações práticas para a gestão do time
-
-A sua análise deve permitir responder:
-"Onde está o problema da equipe e o que o gestor deve fazer com isso?"
-
-⚠️ REGRAS CRÍTICAS
-- NÃO faça julgamentos pessoais (ex: "bom", "ruim", "fraco")
-- NÃO resuma os dados sem análise
-- NÃO use linguagem vaga ou genérica
-- NÃO invente hipóteses sem base nos dados
-- NÃO repita métricas sem interpretar
-- SEMPRE:
-  * explique causas (não só sintomas) conectando os dados
-  * destaque o que realmente importa no throughput e carga do time
-  * priorize clareza e objetividade
-
-🧠 FOCO DA ANÁLISE (TIME)
-Você deve focar principalmente em:
-- Distribuição de carga da equipe (volume vs capacidade)
-- Cadência de execução (analistas com idle fora da curva)
-- Risco consolidado e atrasos do time
-- Concentração de problemas em etapas estruturais
-
-🔍 DIAGNÓSTICO DE CAUSA (OBRIGATÓRIO)
-Classifique e explique os problemas gerais em:
-- CLIENTE: dependência externa que trava múltiplos projetos
-- EXECUÇÃO INTERNA: problemas de baixa performance em analistas específicos
-- CARGA: má distribuição ou volume excessivo para o time
-- ETAPA: gargalo sistêmico no processo (fluxo de implantação)
-
-DADOS DO TIME CONSOLIDADOS:
-{json.dumps(payload, indent=2)}
-
-📊 ESTRUTURA DA RESPOSTA (JSON OBRIGATÓRIO)
-{{
-  "resumo_executivo": "1. Resumo Executivo: Explique em 3–5 linhas o cenário geral e saúde da operação da equipe.",
-  "padroes_equipe": ["Desvio padrão de carga entre analistas", "Atrasos em processos específicos do SLA", "..."],
-  "diagnostico_causas": {{
-      "cliente": "Explique tendências de bloqueios em clientes de risco...",
-      "execucao_interna": "Destaque deficiências de performance interna no time...",
-      "carga": "Apuros de capacidade ou desequilíbrio na distribuição...",
-      "etapa": "Onde ocorrem as travas de fluxo para toda equipe..."
-  }},
-  "riscos_criticos": ["Aumento massivo no SLA", "Churn eminente", "Queda drástica de taxa de entrega..."],
-  "sugestoes_gestao": ["Redistribuir X projetos", "Treinar analistas de baixa cadência", "Realinhar expectativas comerciais", "..."]
-=======
     @staticmethod
     def generate_team_ai_analysis():
         """
@@ -1006,7 +953,7 @@ Sua saída DEVE ser um JSON:
   "xadrez_operacional": ["ação 1", "ação 2"],
   "radar_de_risco": {{ "tecnico": "...", "financeiro": "...", "pessoas": "..." }},
   "frase_do_copiloto": "Frase de encerramento estilo Jarvis"
->>>>>>> 45c250b (feat: Cockpit Jarvis v3.5 - Inteligência Operacional)
+
 }}
 Responda APENAS o JSON válido.
 """
