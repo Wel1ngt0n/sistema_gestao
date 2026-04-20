@@ -43,7 +43,7 @@ class LLMService:
             self.logger.error(f"Erro ao chamar OpenAI: {e}")
             return {"error": str(e)}
 
-    def analyze_risk_qualitative(self, store_data):
+    def analyze_store_risks(self, store_data):
         """
         Gera uma análise de risco qualitativa para uma loja usando o GPT-4o.
         """
@@ -85,7 +85,7 @@ class LLMService:
         {data.get('comments')}
         """
 
-    def generate_monthly_report(self, context_data):
+    def generate_monthly_report_summary(self, context_data, format_type="simple"):
         """
         Gera um relatório mensal consolidado.
         """
@@ -93,7 +93,7 @@ class LLMService:
             return "Erro: OpenAI API Key não configurada."
 
         try:
-            prompt = f"Gere um resumo executivo de implantação para os dados: {context_data}"
+            prompt = f"Gere um resumo executivo de implantação (formato: {format_type}) para os dados: {context_data}"
             
             res = self.openai_client.chat.completions.create(
                 model="gpt-4o",
