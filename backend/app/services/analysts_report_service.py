@@ -882,45 +882,6 @@ Responda APENAS o JSON válido.
         return result
 
 
-    @staticmethod
-    def generate_team_ai_analysis():
-        """Gera análise consultiva via OpenAI (GPT-4o) para o time inteiro."""
-        from app.services.llm_service import LLMService
-        import json
-        
-        team_data = AnalystsReportService.get_team_resume()
-
-        diagnostics = AnalystsReportService.get_diagnostics()
-        causas = diagnostics.get("causas_distribuicao", {})
-        
-        payload = {
-            "time": [
-                {
-                    "implantador": t['implantador'],
-                    "ativos": t['ativos'],
-                    "carga": t['carga_ponderada'],
-                    "entregas_mes": t['entregas_mes'],
-                    "sla_concluidas": t['pct_sla_concluidas'],
-                    "saude_carteira": t['pct_sla_ativas'],
-                    "idle_medio": t['idle_medio']
-                } for t in team_data
-            ],
-            "causas_macro": {
-                "cliente": causas.get('CLIENTE', 0),
-                "interno": causas.get('IMPLANTADOR', 0),
-                "fluxo": causas.get('ETAPA', 0),
-                "carga": causas.get('CARGA', 0),
-                "no_prazo": causas.get('NO_PRAZO', 0)
-            },
-            "alertas_verbais_criticos": [
-                {
-                    "loja": s.store_name,
-                    "implantador": s.implantador,
-                    "comentarios": s.last_comments
-                } for s in (Store.query.filter(Store.status_norm != 'DONE', Store.idle_days > 7).order_by(Store.idle_days.desc()).limit(10).all())
-                if s.last_comments
-            ]
-        }
 
     @staticmethod
     def generate_team_ai_analysis():
