@@ -111,7 +111,7 @@ class AnalystsReportService:
 
         for analyst in resume_data:
             # Heurísticas Jarvis
-            score = 0
+            # Calculando média de idle
             status = "HEALTHY"
             recommendation = "Manter acompanhamento de rotina."
             action_priority = "low"
@@ -341,7 +341,6 @@ class AnalystsReportService:
         
         # 3. Projetado MRR (Lojas ativas que tem data prevista DESTE periodo)
         # Reutilizar lógica de previsão. Se a loja está IN_PROGRESS, e go_live_date cai no período
-        from app.services.forecast_service import ForecastService
         from dateutil.relativedelta import relativedelta
         projected_mrr = 0.0
         todas_ativas = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE', Store.include_in_forecast == True).all()
