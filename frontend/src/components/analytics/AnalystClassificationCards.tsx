@@ -17,9 +17,10 @@ interface Analyst {
 
 interface AnalystClassificationCardsProps {
     analysts: Analyst[]
+    isVertical?: boolean
 }
 
-export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProps> = ({ analysts }) => {
+export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProps> = ({ analysts, isVertical = false }) => {
     const navigate = useNavigate()
 
     const getStatusConfig = (status: string) => {
@@ -70,13 +71,15 @@ export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProp
     })
 
     return (
-        <div className="space-y-4" aria-label="Classificação de Performance do Time">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <BarChart3 className="text-indigo-500" size={20} />
-                Classificação do Time
-            </h2>
+        <div className={`space-y-4 ${isVertical ? 'h-full flex flex-col' : ''}`} aria-label="Classificação de Performance do Time">
+            {!isVertical && (
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <BarChart3 className="text-indigo-500" size={20} />
+                    Classificação do Time
+                </h2>
+            )}
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid gap-4 ${isVertical ? 'grid-cols-1 flex-1 overflow-y-auto pr-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
                 {sortedAnalysts.map((analyst, idx) => {
                     const config = getStatusConfig(analyst.jarvis_status || '')
                     return (

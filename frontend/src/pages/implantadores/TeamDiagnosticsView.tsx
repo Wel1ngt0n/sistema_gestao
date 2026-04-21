@@ -125,7 +125,7 @@ export const TeamDiagnosticsView: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#EEF0F8] pb-20">
-            <div className="max-w-[1600px] mx-auto px-4 md:px-8 space-y-8 pt-8">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8 space-y-6 pt-8">
                 
                 {/* 1. TOP HEADER */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
@@ -191,9 +191,9 @@ export const TeamDiagnosticsView: React.FC = () => {
                 </div>
 
                 {/* 3. PROJECTION & ACTIONS GRID */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
                     {/* LEFT: PROJECTION */}
-                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm h-full" aria-label="Projeção de MRR">
+                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm flex flex-col" aria-label="Projeção de MRR">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="p-2 bg-emerald-50 rounded-xl">
                                 <TrendingUp size={20} className="text-emerald-600" />
@@ -203,7 +203,7 @@ export const TeamDiagnosticsView: React.FC = () => {
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-left">Faturamento Real vs Projetado (Matriz/Filial)</p>
                             </div>
                         </div>
-                        <div className="h-[300px]">
+                        <div className="flex-1 min-h-[300px]">
                             {companyProjection ? (
                                 <MRRNetProjectionWidget data={companyProjection} />
                             ) : (
@@ -213,128 +213,130 @@ export const TeamDiagnosticsView: React.FC = () => {
                     </div>
 
                     {/* RIGHT: QUICK ACTIONS */}
-                    <div className="xl:col-span-4 h-full">
-                        <TeamActionsBlock actions={teamActions} />
+                    <div className="xl:col-span-4 flex flex-col h-full">
+                        <TeamActionsBlock actions={teamActions} isVertical={true} />
                     </div>
                 </div>
 
-                {/* 4. TEAM CLASSIFICATION PANELS */}
-                <AnalystClassificationCards analysts={data} />
-
-                {/* 5. DIAGNOSTICS & COMPARATIVE TABLE */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-                    
-                    {/* TABLE SIDE */}
-                    <div className="xl:col-span-8 space-y-6">
-
-                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-                                <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                                    <LayoutDashboard className="text-slate-400" size={18} />
-                                    Mesa Comparativa de Performance
-                                </h3>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
-                                    <Search size={14} className="text-slate-400" />
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{data.length} Implantadores</span>
-                                </div>
-                            </div>
-                            
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-slate-50/50 border-b border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('implantador')}>Analista</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('score')}>Score</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('carga_ponderada')}>Carga</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('entregas_mes')}>Entregas</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('idle_medio')}>Idle</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {sortedData.map((item, idx) => (
-                                            <tr 
-                                                key={idx} 
-                                                onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
-                                                className="group hover:bg-slate-50 transition-all cursor-pointer"
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-[10px] border border-slate-200 group-hover:border-indigo-400 transition-colors">
-                                                            {item.implantador.substring(0, 2).toUpperCase()}
-                                                        </div>
-                                                        <span className="font-bold text-slate-700">{item.implantador}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
-                                                </td>
-                                                <td className={`px-6 py-4 text-right font-bold ${item.carga_ponderada === extremes?.maxCarga ? 'text-indigo-600 bg-indigo-50/30' : 'text-slate-600'}`}>
-                                                    {item.carga_ponderada.toFixed(1)}
-                                                </td>
-                                                <td className={`px-6 py-4 text-right font-bold ${item.entregas_mes === extremes?.maxEntregas ? 'text-emerald-600 bg-emerald-50/30' : 'text-slate-600'}`}>
-                                                    {item.entregas_mes}
-                                                </td>
-                                                <td className={`px-6 py-4 text-right font-bold ${item.idle_medio === extremes?.maxIdle ? 'text-rose-600 bg-rose-50/30' : 'text-slate-600'}`}>
-                                                    {item.idle_medio}d
-                                                </td>
-                                                <td className={`px-6 py-4 text-right font-bold ${item.pct_sla_concluidas === extremes?.minSla ? 'text-rose-600 bg-rose-50/30' : 'text-emerald-600'}`}>
-                                                    {item.pct_sla_concluidas}%
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* DIAGNOSTIC ROW (MOVED UP/RECONFIGURED) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                                    <Activity size={14} className="text-indigo-500" />
-                                    Diagnóstico por Causa
-                                </h4>
-                                <div className="h-64 relative flex items-center justify-center">
-                                    {diagnostics && <BottleneckDonutChart data={diagnostics.causas_distribuicao} />}
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                                    <Clock size={14} className="text-indigo-500" />
-                                    Gargalos por Etapa
-                                </h4>
-                                <div className="space-y-1">
-                                    {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-xl border border-transparent hover:border-indigo-500/20 transition-all group">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{g.etapa}</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-slate-900">{g.count}</span>
-                                                <ChevronRight size={12} className="text-slate-200 group-hover:text-indigo-500 transition-colors" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
+                {/* 4. PERFORMANCE ANALYSIS GRID: CLASSIFICATION + TABLE */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+                    {/* CLASSIFICATION (LEFT 4) */}
+                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
+                        <AnalystClassificationCards analysts={data} isVertical={true} />
                     </div>
 
-                    {/* INTELLIGENCE SIDE */}
-                    <div className="xl:col-span-4 sticky top-8">
+                    {/* TABLE (RIGHT 8) */}
+                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                        <div className="p-6 border-b border-slate-50 flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
+                                <LayoutDashboard className="text-slate-400" size={18} />
+                                Mesa Comparativa de Performance
+                            </h3>
+                            <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
+                                <Search size={14} className="text-slate-400" />
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{data.length} Implantadores</span>
+                            </div>
+                        </div>
+                        
+                        <div className="overflow-x-auto flex-1">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50/50 border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('implantador')}>Analista</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('score')}>Score</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('carga_ponderada')}>Carga</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('entregas_mes')}>Entregas</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('idle_medio')}>Idle</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {sortedData.map((item, idx) => (
+                                        <tr 
+                                            key={idx} 
+                                            onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
+                                            className="group hover:bg-slate-50 transition-all cursor-pointer"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-[10px] border border-slate-200 group-hover:border-indigo-400 transition-colors">
+                                                        {item.implantador.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <span className="font-bold text-slate-700">{item.implantador}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
+                                            </td>
+                                            <td className={`px-6 py-4 text-right font-bold ${item.carga_ponderada === extremes?.maxCarga ? 'text-indigo-600 bg-indigo-50/30' : 'text-slate-600'}`}>
+                                                {item.carga_ponderada.toFixed(1)}
+                                            </td>
+                                            <td className={`px-6 py-4 text-right font-bold ${item.entregas_mes === extremes?.maxEntregas ? 'text-emerald-600 bg-emerald-50/30' : 'text-slate-600'}`}>
+                                                {item.entregas_mes}
+                                            </td>
+                                            <td className={`px-6 py-4 text-right font-bold ${item.idle_medio === extremes?.maxIdle ? 'text-rose-600 bg-rose-50/30' : 'text-slate-600'}`}>
+                                                {item.idle_medio}d
+                                            </td>
+                                            <td className={`px-6 py-4 text-right font-bold ${item.pct_sla_concluidas === extremes?.minSla ? 'text-rose-600 bg-rose-50/30' : 'text-emerald-600'}`}>
+                                                {item.pct_sla_concluidas}%
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. DIAGNOSTICS & INTELLIGENCE GRID: 3 EQUAL COLUMNS */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                    {/* DIAGNOSTICO CAUSA */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                        <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                            <Activity size={14} className="text-indigo-500" />
+                            Diagnóstico por Causa
+                        </h4>
+                        <div className="flex-1 min-h-[250px] relative flex items-center justify-center">
+                            {diagnostics && <BottleneckDonutChart data={diagnostics.causas_distribuicao} />}
+                        </div>
+                    </div>
+
+                    {/* GARGALOS ETAPA */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                            <Clock size={14} className="text-indigo-500" />
+                            Gargalos por Etapa
+                        </h4>
+                        <div className="flex-1 space-y-1">
+                            {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-xl border border-transparent hover:border-indigo-500/20 transition-all group">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{g.etapa}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black text-slate-900">{g.count}</span>
+                                        <ChevronRight size={12} className="text-slate-200 group-hover:text-indigo-500 transition-colors" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* INTELLIGENCE JARVIS */}
+                    <div className="h-full">
                         <IntelligenceInsightBlock 
                             analysts={data}
                             avgMetrics={avgMetrics}
                         />
-                        
-                        {/* Quick Action Button for Full Export */}
-                        <button className="mt-6 w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-sm hover:shadow-md active:scale-[0.98] flex items-center justify-center gap-2">
-                            <Download size={14} />
-                            Gerar Relatório Estratégico
-                        </button>
                     </div>
-
                 </div>
+
+                {/* 6. BOTTOM ACTIONS */}
+                <div className="flex justify-end pt-4">
+                    <button className="px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2">
+                        <Download size={14} />
+                        Gerar Relatório Estratégico Completo
+                    </button>
+                </div>
+
 
             </div>
         </div>

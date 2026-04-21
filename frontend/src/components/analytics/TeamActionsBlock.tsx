@@ -12,9 +12,10 @@ interface TeamAction {
 
 interface TeamActionsBlockProps {
     actions: TeamAction[]
+    isVertical?: boolean
 }
 
-export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions }) => {
+export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions, isVertical = false }) => {
     if (!actions || actions.length === 0) {
         return (
             <div className="bg-white border border-emerald-100 rounded-2xl p-6 flex items-center gap-4">
@@ -59,7 +60,7 @@ export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions }) =
                 </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={`grid gap-4 ${isVertical ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
                 {actions.map((action, idx) => (
                     <div 
                         key={idx} 
