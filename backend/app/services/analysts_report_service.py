@@ -1,5 +1,5 @@
-from app.models import db, Store, TaskStep, SystemConfig
-from sqlalchemy import func, case, or_, and_
+from app.models import db, Store, SystemConfig
+from sqlalchemy import func, or_
 from datetime import datetime, timedelta
 import json
 
@@ -43,12 +43,14 @@ class AnalystsReportService:
         ).all()
         count_concluidas = len(concluidas_2026)
         ticket_medio = sum((s.valor_mensalidade or 0.0) for s in concluidas_2026) / count_concluidas if count_concluidas > 0 else 1000.0
-        if ticket_medio == 0: ticket_medio = 1000.0
+        if ticket_medio == 0:
+            ticket_medio = 1000.0
         
         meta_semestral_lojas = meta_semestral_mrr / ticket_medio
         meta_individual_semestral = meta_semestral_lojas / qtd_analistas
         meta_individual_mensal = meta_individual_semestral / 6.0
-        if meta_individual_mensal <= 0: meta_individual_mensal = 1.0
+        if meta_individual_mensal <= 0:
+            meta_individual_mensal = 1.0
 
         return {
             "meta_semestral_mrr": meta_semestral_mrr,
@@ -65,7 +67,8 @@ class AnalystsReportService:
         idle_inv = max(0, 100 - (metrics.get('idle_medio', 0) * 10))
         
         meta_mensal = goal_metrics.get('meta_individual_mensal_lojas', 1) if isinstance(goal_metrics, dict) else goal_metrics
-        if meta_mensal <= 0: meta_mensal = 1
+        if meta_mensal <= 0:
+            meta_mensal = 1
         
         entregas_norm = min(100, (metrics.get('entregas_mes', 0) / meta_mensal) * 100)
         
@@ -175,7 +178,6 @@ class AnalystsReportService:
         Agrega métricas por implantador. Suporta filtros de data.
         """
         cutoff = start_date or AnalystsReportService.CUTOFF_DATE
-        limit = end_date or datetime.now()
         
         # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES no período
         implantadores_query = db.session.query(Store.implantador).distinct().filter(
@@ -255,8 +257,10 @@ class AnalystsReportService:
             sla_ok_concluidas = 0
             sla_total_concluidas = 0
             for s in concluidas:
-                if not s.considerar_tempo_implantacao: continue
-                if not s.effective_started_at: continue
+                if not s.considerar_tempo_implantacao:
+                    continue
+                if not s.effective_started_at:
+                    continue
                 sla_total_concluidas += 1
                 sla_limit = s.tempo_contrato or 90
                 dias = s.dias_totais_implantacao or 0
@@ -269,8 +273,10 @@ class AnalystsReportService:
             sla_ok_ativas = 0
             sla_total_ativas = 0
             for s in ativas:
-                if not s.considerar_tempo_implantacao: continue
-                if not s.effective_started_at: continue
+                if not s.considerar_tempo_implantacao:
+                    continue
+                if not s.effective_started_at:
+                    continue
                 sla_total_ativas += 1
                 sla_limit = s.tempo_contrato or 90
                 dias = s.dias_em_progresso or 0
@@ -344,7 +350,7 @@ class AnalystsReportService:
         # Reutilizar lógica de previsão. Se a loja está IN_PROGRESS, e go_live_date cai no período
         from dateutil.relativedelta import relativedelta
         projected_mrr = 0.0
-        todas_ativas = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE', Store.include_in_forecast == True).all()
+        todas_ativas = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE', Store.include_in_forecast).all()
         for s in todas_ativas:
             go_live_date = s.manual_go_live_date
             if not go_live_date and s.effective_started_at:
@@ -354,8 +360,10 @@ class AnalystsReportService:
             if go_live_date:
                 # Checar se go_live_date cai no periodo
                 in_period = True
-                if start_date and go_live_date < start_date: in_period = False
-                if end_date and go_live_date > end_date: in_period = False
+                if start_date and go_live_date < start_date:
+                    in_period = False
+                if end_date and go_live_date > end_date:
+                    in_period = False
                 
                 if in_period:
                      projected_mrr += (s.valor_mensalidade or 0.0)
@@ -448,8 +456,10 @@ class AnalystsReportService:
         sla_total_concluidas = 0
         sla_ok_concluidas = 0
         for s in concluidas:
-            if not s.considerar_tempo_implantacao: continue
-            if not s.effective_started_at: continue
+            if not s.considerar_tempo_implantacao:
+                continue
+            if not s.effective_started_at:
+                continue
             sla_total_concluidas += 1
             sla_limit = s.tempo_contrato or 90
             dias = s.dias_totais_implantacao or 0
@@ -461,8 +471,10 @@ class AnalystsReportService:
         sla_total_ativas = 0
         sla_ok_ativas = 0
         for s in ativas:
-            if not s.considerar_tempo_implantacao: continue
-            if not s.effective_started_at: continue
+            if not s.considerar_tempo_implantacao:
+                continue
+            if not s.effective_started_at:
+                continue
             sla_total_ativas += 1
             sla_limit = s.tempo_contrato or 90
             dias = s.dias_em_progresso or 0
@@ -502,7 +514,8 @@ class AnalystsReportService:
             total_idle_days += (s.idle_days or 0)
             for step in s.steps:
                 name = (step.step_list_name or "Geral").upper()
-                if name not in steps_stats: steps_stats[name] = []
+                if name not in steps_stats:
+                    steps_stats[name] = []
                 # Considerar tempo total do step se fechado, ou tempo ate agora
                 val = step.total_time_days or 0
                 steps_stats[name].append(val)
@@ -554,7 +567,7 @@ class AnalystsReportService:
         if last_memory:
             try:
                 last_ai_analysis = json.loads(last_memory.ai_response)
-            except:
+            except Exception:
                 pass
 
         goal_metrics = AnalystsReportService._get_goal_metrics()
@@ -775,16 +788,16 @@ class AnalystsReportService:
             "diagnostico_backend": summ.get('diagnostico_causas', {}),
             "lojas_criticas": [
                 {
-                    "nome": l.get('name'),
-                    "etapa": l.get('status_name'),
-                    "idle_dias": l.get('idle_days'),
-                    "tempo_total": l.get('dias_em_progresso'),
-                    "tempo_limite": l.get('tempo_contrato'),
+                    "nome": loja.get('name'),
+                    "etapa": loja.get('status_name'),
+                    "idle_dias": loja.get('idle_days'),
+                    "tempo_total": loja.get('dias_em_progresso'),
+                    "tempo_limite": loja.get('tempo_contrato'),
                     "contexto_verbal": {
-                        "descricao": l.get('description'),
-                        "ultimos_comentarios": l.get('last_comments')
+                        "descricao": loja.get('description'),
+                        "ultimos_comentarios": loja.get('last_comments')
                     }
-                } for l in lojas_criticas
+                } for loja in lojas_criticas
             ],
             "feed_comentarios_recentes": [
                 s.last_comments for s in (Store.query.filter(Store.implantador == implantador_name, Store.status_norm != 'DONE').order_by(Store.idle_days.desc()).limit(5).all())
@@ -1040,7 +1053,6 @@ Responda APENAS o JSON válido.
         details = AnalystsReportService.get_analyst_details(implantador_name)
         summary = details.get("summary", {})
         carteira = details.get("carteira_atual", [])
-        concluidas = details.get("concluidas_mes", [])
         entregas_data = details.get("entregas", []) # Corrigido: Variável faltante
 
         
