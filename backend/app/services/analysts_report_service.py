@@ -285,7 +285,8 @@ class AnalystsReportService:
                 )
             ).all()
 
-            ativas = [s for s in stores if s.status_norm != 'DONE']
+            ativas = [s for s in stores if s.status_norm != 'DONE' and not s.is_scheduled]
+            programadas = [s for s in stores if s.status_norm != 'DONE' and s.is_scheduled]
 
             concluidas = [s for s in stores if s.status_norm == 'DONE']
             
@@ -372,7 +373,8 @@ class AnalystsReportService:
             
             report.append({
                 "implantador": imp,
-                "ativos": len(ativas),
+                "ativas": len(ativas),
+                "programadas": len(programadas),
                 "entregues": len(concluidas),
                 "carga_ponderada": carga_ponderada,
                 "matrizes_ativas": matrizes_ativas,
@@ -465,7 +467,8 @@ class AnalystsReportService:
 
         # Sumarização do Time
         summary = {
-            "total_ativos": sum(item['ativos'] for item in report),
+            "total_ativos": sum(item['ativas'] for item in report),
+            "total_programadas": sum(item['programadas'] for item in report),
             "total_entregues": sum(item['entregas_mes'] for item in report),
             "mrr_total_ativo": sum(item['mrr_ativo'] for item in report),
             "carga_media": (sum(item['carga_ponderada'] for item in report) / len(report)) if report else 0
@@ -506,7 +509,8 @@ class AnalystsReportService:
 
 
         
-        ativas = [s for s in stores if s.status_norm != 'DONE']
+        ativas = [s for s in stores if s.status_norm != 'DONE' and not s.is_scheduled]
+        programadas = [s for s in stores if s.status_norm != 'DONE' and s.is_scheduled]
         concluidas = [s for s in stores if s.status_norm == 'DONE']
         
         now = datetime.now()
@@ -568,9 +572,23 @@ class AnalystsReportService:
                 "dias_em_progresso": s.dias_em_progresso,
                 "tempo_contrato": s.tempo_contrato or 90,
                 "valor_mensalidade": s.valor_mensalidade,
-                "teve_retrabalho": s.teve_retrabalho
+                "teve_retrabalho": s.teve_retrabalho,
+                "is_scheduled": False
             })
             
+        programadas_list = []
+        for s in programadas:
+            programadas_list.append({
+                "id": s.id,
+                "name": s.store_name,
+                "status_name": "Programada",
+                "tipo_loja": s.tipo_loja,
+                "manual_start_date": s.manual_start_date.strftime('%d/%m/%Y') if s.manual_start_date else None,
+                "effective_started_at": s.effective_started_at.strftime('%d/%m/%Y') if s.effective_started_at else None,
+                "valor_mensalidade": s.valor_mensalidade,
+                "is_scheduled": True
+            })
+
         carteira_atual.sort(key=lambda x: x['idle_days'] or 0, reverse=True)
             
         # Tempos Médios por Etapa:
@@ -686,6 +704,7 @@ class AnalystsReportService:
             "summary": {
                 "implantador": implantador_name,
                 "ativos": len(ativas),
+                "programadas": len(programadas),
                 "entregue_mes": len(concluidas_mes_list),
                 "entregues_total": len(concluidas),
                 "carga_ponderada": carga_ponderada,
@@ -705,6 +724,7 @@ class AnalystsReportService:
                 "personal_actions": personal_actions
             },
             "carteira_atual": carteira_atual,
+            "programadas": programadas_list,
             "concluidas_mes": concluidas_mes_list,
             "ativas": carteira_atual, # Retrocompatibilidade com Frontend
             "entregas": [s.to_dict() for s in concluidas], # Retrocompatibilidade com Frontend
@@ -748,7 +768,13 @@ class AnalystsReportService:
         """
         Retorna o dashboard e agregados macro de causas do time (Aba 2).
         """
-        stores = Store.query.filter(Store.status_norm != 'CANCELED', Store.status_norm != 'DONE', Store.created_at >= AnalystsReportService.CUTOFF_DATE).all()
+        # Regra V6: Diagnóstico foca apenas no que está ATIVO (Ignora programadas e canceladas/concluídas)
+        all_potential = Store.query.filter(
+            Store.status_norm != 'CANCELED', 
+            Store.status_norm != 'DONE', 
+            Store.created_at >= AnalystsReportService.CUTOFF_DATE
+        ).all()
+        stores = [s for s in all_potential if not s.is_scheduled]
         
         # Pré-calcular cargas por implantador para a heurística
         cargas = {}

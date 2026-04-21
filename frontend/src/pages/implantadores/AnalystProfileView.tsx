@@ -110,6 +110,7 @@ export default function AnalystProfileView() {
 
     const summary = data?.summary || {}
     const ativas = data?.carteira_atual || []
+    const programadas = data?.programadas || []
     const entregas = data?.concluidas_mes || []
     const actions = summary?.personal_actions || []
 
@@ -430,6 +431,53 @@ export default function AnalystProfileView() {
                         </div>
                     </div>
                 </div>
+                
+                {/* 5.1. SCHEDULED PROJECTS (PROGRAMADAS) */}
+                {programadas.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
+                            <Activity className="text-amber-500" size={22} />
+                            Próximas Implantações ({programadas.length} Agendadas)
+                        </h2>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-amber-50/30 border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Loja</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Início Efetivo</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">MRR</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {programadas.map((loja: any, idx: number) => (
+                                        <tr key={idx} className="hover:bg-amber-50/20 transition-colors group">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-slate-900 group-hover:text-amber-600 transition-colors">{loja.name}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{loja.tipo_loja || 'Matriz'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-lg border border-amber-200">
+                                                        AGENDADA: {loja.manual_start_date || loja.effective_started_at}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-right font-black text-slate-500">
+                                                {formatMoney(loja.valor_mensalidade || 0)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                )}
 
                 {/* 6. RECENT DELIVERIES */}
                 <div className="space-y-4">

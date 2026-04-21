@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
 import AdminPanel from './AdminPanel';
 import { SkeletonLoader } from './monitor/MonitorComponents';
@@ -37,7 +37,7 @@ export default function MonitorV2() {
         isLate: false,
     });
 
-    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded'>('active');
+    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded' | 'scheduled'>('active');
 
     // Estado da Modal de Detalhes (Nova UI)
     const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);

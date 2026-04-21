@@ -114,6 +114,7 @@ class Store(db.Model):
     delivered_with_quality = db.Column(db.Boolean, default=True)
     
     # Controle de Datas Manual (V4)
+    manual_start_date = db.Column(db.DateTime, nullable=True)
     is_manual_start_date = db.Column(db.Boolean, default=False)
 
     # AI Cache
@@ -142,6 +143,17 @@ class Store(db.Model):
     logs = db.relationship('StoreSyncLog', backref='store', lazy=True, cascade="all, delete-orphan")
 
     @property
+    def is_scheduled(self):
+        """
+        Define se a loja está em estado programado (futuro).
+        Lojas programadas não contam para métricas de WIP/SLA.
+        """
+        start = self.effective_started_at
+        if not start:
+            return False
+        return start > datetime.now()
+
+    @property
     def effective_finished_at(self):
         # Prioridade: Manual > Real (Fim Etapa) > ClickUp Closed
         # Se estiver DONE mas sem data explícita, buscar a data da última subtarefa concluída
@@ -159,31 +171,42 @@ class Store(db.Model):
 
     @property
     def effective_started_at(self):
-        # Lógica de Início Implante (Prioridade à Ação Real):
-        # 1. start_real_at do ClickUp (se o analista clicou em Play/Start)
-        # 2. Earliest start_real_at das subtarefas
-        # 3. Earliest end_real_at das subtarefas (indicativo que pelo menos uma coisa foi feita)
-        # 4. created_at da tarefa (fallback final - pior caso)
+        # Regra V6:
+        # 1. Se existir manual_start_date, ela é a base.
+        # 2. Mas se houver início real detectado ANTES da data manual ou da criação, 
+        #    o início real prevalece (início operacional detectado).
         
-        candidates = []
+        # Início Real Detectado (ClickUp Start ou Primeira Ação em Etapa)
+        detected_candidates = []
         if self.start_real_at: 
-            candidates.append(self.start_real_at)
+            detected_candidates.append(self.start_real_at)
         
         if self.steps:
-            # Pegar menor data de início ou fim de qualquer subtarefa
             sub_starts = [s.start_real_at for s in self.steps if s.start_real_at]
             sub_ends = [s.end_real_at for s in self.steps if s.end_real_at]
+            if sub_starts: detected_candidates.append(min(sub_starts))
+            if sub_ends: detected_candidates.append(min(sub_ends))
             
-            if sub_starts: candidates.append(min(sub_starts))
-            if sub_ends: candidates.append(min(sub_ends))
+        detected_start = min(detected_candidates) if detected_candidates else None
         
-        if candidates:
-            return min(candidates)
+        # Data Base Definida (Manual ou Criação)
+        # Importante: Usamos created_at do ClickUp como fallback original.
+        base_start = self.manual_start_date or self.created_at
+        
+        if not base_start:
+            return detected_start
             
-        return self.created_at
+        if not detected_start:
+            return base_start
+            
+        # O início real "vence" se for anterior à base definida
+        return min(base_start, detected_start)
 
     @property
     def dias_em_progresso(self):
+        if self.is_scheduled:
+            return 0
+            
         end_date = self.effective_finished_at
         start_date = self.effective_started_at
         
@@ -253,7 +276,10 @@ class Store(db.Model):
             "tempo_contrato": self.tempo_contrato or 90,
             "valor_mensalidade": self.valor_mensalidade,
             "finished_at": self.effective_finished_at.isoformat() if self.effective_finished_at else None,
-            "started_at": self.effective_started_at.isoformat() if self.effective_started_at else None
+            "started_at": self.effective_started_at.isoformat() if self.effective_started_at else None,
+            "is_scheduled": self.is_scheduled,
+            "clickup_created_at": self.created_at.isoformat() if self.created_at else None,
+            "manual_start_date": self.manual_start_date.isoformat() if self.manual_start_date else None
         }
 
     def __repr__(self):

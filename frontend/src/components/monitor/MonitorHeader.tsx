@@ -1,12 +1,12 @@
-﻿import { FilterState } from './MonitorFilterPanel';
+import { FilterState } from './MonitorFilterPanel';
 
 interface MonitorHeaderProps {
     stats: { total: number; delayed: number; risk: number };
     isRefreshing: boolean;
     globalFilter: string;
     setGlobalFilter: (val: string) => void;
-    filterStatus: 'active' | 'concluded';
-    setFilterStatus: (val: 'active' | 'concluded') => void;
+    filterStatus: 'active' | 'concluded' | 'scheduled';
+    setFilterStatus: (val: 'active' | 'concluded' | 'scheduled') => void;
     isFilterPanelOpen: boolean;
     setIsFilterPanelOpen: (val: boolean) => void;
     advancedFilters: FilterState;
@@ -110,6 +110,15 @@ export default function MonitorHeader({
                                     }`}
                             >
                                 Ativas
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('scheduled')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filterStatus === 'scheduled'
+                                    ? 'bg-white text-amber-600 shadow-sm ring-1 ring-zinc-200'
+                                    : 'text-zinc-500 hover:text-zinc-700'
+                                    }`}
+                            >
+                                Agendadas
                             </button>
                             <button
                                 onClick={() => setFilterStatus('concluded')}

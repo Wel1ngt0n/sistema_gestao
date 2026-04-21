@@ -1,22 +1,21 @@
 from flask import Blueprint, jsonify, request, Response, stream_with_context
-from app.models import db, Store, StoreSyncLog
+from app.models import db, Store, StoreSyncLog, SystemConfig
 from app.services.metrics import MetricsService
 from app.services.sync_service import SyncService
 from app.services.security_service import require_auth, require_permission, log_audit
 from datetime import datetime
-from sqlalchemy import func, case
+from sqlalchemy import func
 
 # Blueprint principal mantido para health checks e estrutura futura
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-from app.routes_forecast import forecast_bp
+# from app.routes_forecast import forecast_bp # REMOVED: unused
 
 # --- Rotas da API (Backend React V2.5) ---
 
 @api_bp.route('/dashboard', methods=['GET'])
 @require_auth
 def get_dashboard_data(payload):
-    from app.models import SystemConfig
     from app.services.scoring_service import ScoringService
     
     # Filtro de Status (Query Param)
@@ -30,14 +29,19 @@ def get_dashboard_data(payload):
     try:
         cfg_m = SystemConfig.query.filter_by(key='weight_matriz').first()
         cfg_f = SystemConfig.query.filter_by(key='weight_filial').first()
-        if cfg_m: w_matriz = float(cfg_m.value)
-        if cfg_f: w_filial = float(cfg_f.value)
-    except: pass
+        if cfg_m:
+            w_matriz = float(cfg_m.value)
+        if cfg_f:
+            w_filial = float(cfg_f.value)
+    except Exception:
+        pass
 
     all_stores = Store.query.all()
     
     # Listas Globais para Cálculo de KPI
-    active_stores_global = [s for s in all_stores if not s.effective_finished_at]
+    # Regra V6: Ativas = Não concluídas E Início <= Hoje (ou detectado)
+    active_stores_global = [s for s in all_stores if not s.effective_finished_at and not s.is_scheduled]
+    
     # Filtrar entregas: somente a partir de 2026
     concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
 
@@ -105,8 +109,10 @@ def get_dashboard_data(payload):
     kpi_by_imp = {}
     for s in active_stores_global:
         imp = s.implantador
-        if not imp or imp not in active_implantadores: continue
-        if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
+        if not imp or imp not in active_implantadores:
+            continue
+        if imp not in kpi_by_imp:
+            kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
         
         if not s.effective_finished_at:
              kpi_by_imp[imp]["wip"] += 1
@@ -114,8 +120,10 @@ def get_dashboard_data(payload):
     # Contabilizar entregas 2026+ para implantadores ativos
     for s in concluded_stores_global:
         imp = s.implantador
-        if not imp or imp not in active_implantadores: continue
-        if imp not in kpi_by_imp: kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
+        if not imp or imp not in active_implantadores:
+            continue
+        if imp not in kpi_by_imp:
+            kpi_by_imp[imp] = {"wip": 0, "done": 0, "on_time": 0}
         kpi_by_imp[imp]["done"] += 1
         if s.dias_totais_implantacao <= (s.tempo_contrato or 90):
             kpi_by_imp[imp]["on_time"] += 1
@@ -137,8 +145,10 @@ def get_dashboard_data(payload):
     risk_list = []
     for s in scope_stores:
         # Se filter=active -> pega stores abertas. Se filter=concluded -> pega fechadas.
-        if status_filter == 'active' and s.effective_finished_at: continue
-        if status_filter == 'concluded' and not s.effective_finished_at: continue
+        if status_filter == 'active' and s.effective_finished_at:
+            continue
+        if status_filter == 'concluded' and not s.effective_finished_at:
+            continue
         
         risk_data = ScoringService.calculate_risk_score(s)
         
@@ -223,20 +233,26 @@ def get_stores(payload):
     status_filter = request.args.get('status', 'active') # Default active
     
     query = Store.query
+    today = datetime.now().date()
+    
     if status_filter == 'active':
-        # Active = Valendo None em todas as datas de fim
-        query = query.filter(Store.manual_finished_at == None, Store.end_real_at == None, Store.finished_at == None)
+        # Active = Não concluídas E (sem data manual ou data manual <= hoje)
+        query = query.filter(Store.manual_finished_at.is_(None), Store.end_real_at.is_(None), Store.finished_at.is_(None))
+        query = query.filter(or_(Store.manual_start_date.is_(None), func.date(Store.manual_start_date) <= today))
+    elif status_filter == 'scheduled':
+        # Scheduled = Não concluídas E data início manual no futuro
+        query = query.filter(Store.manual_finished_at.is_(None), Store.end_real_at.is_(None), Store.finished_at.is_(None))
+        query = query.filter(Store.manual_start_date.isnot(None), func.date(Store.manual_start_date) > today)
     elif status_filter == 'concluded':
         # Concluded = Pelo menos uma data de fim preenchida, somente 2026+
-        from datetime import date as dt_date
         cutoff = datetime(2026, 1, 1)
         query = query.filter(
-            or_(Store.manual_finished_at != None, Store.end_real_at != None, Store.finished_at != None)
+            or_(Store.manual_finished_at.isnot(None), Store.end_real_at.isnot(None), Store.finished_at.isnot(None))
         ).filter(
             or_(
-                and_(Store.manual_finished_at != None, Store.manual_finished_at >= cutoff),
-                and_(Store.manual_finished_at == None, Store.finished_at != None, Store.finished_at >= cutoff),
-                and_(Store.manual_finished_at == None, Store.finished_at == None, Store.end_real_at != None, Store.end_real_at >= cutoff)
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= cutoff),
+                and_(Store.manual_finished_at.is_(None), Store.finished_at.isnot(None), Store.finished_at >= cutoff),
+                and_(Store.manual_finished_at.is_(None), Store.finished_at.is_(None), Store.end_real_at.isnot(None), Store.end_real_at >= cutoff)
             )
         )
         
@@ -244,16 +260,42 @@ def get_stores(payload):
     limit = request.args.get('limit', type=int)
     
     if page and limit:
-        pagination = query.order_by(Store.created_at.desc()).paginate(page=page, per_page=limit, error_out=False)
-        stores = pagination.items
-        meta = {
-            "total": pagination.total,
-            "pages": pagination.pages,
-            "page": page,
-            "limit": limit
-        }
+        # Se for active ou scheduled, precisamos filtrar em Python por causa das properties
+        if status_filter in ['active', 'scheduled']:
+            all_potential = query.order_by(Store.created_at.desc()).all()
+            if status_filter == 'active':
+                filtered = [s for s in all_potential if not s.is_scheduled]
+            else:
+                filtered = [s for s in all_potential if s.is_scheduled]
+            
+            total = len(filtered)
+            start = (page - 1) * limit
+            end = start + limit
+            stores = filtered[start:end]
+            meta = {
+                "total": total,
+                "pages": (total + limit - 1) // limit,
+                "page": page,
+                "limit": limit
+            }
+        else:
+            pagination = query.order_by(Store.created_at.desc()).paginate(page=page, per_page=limit, error_out=False)
+            stores = pagination.items
+            meta = {
+                "total": pagination.total,
+                "pages": pagination.pages,
+                "page": page,
+                "limit": limit
+            }
     else:
-        stores = query.order_by(Store.created_at.desc()).all()
+        all_stores = query.order_by(Store.created_at.desc()).all()
+        if status_filter == 'active':
+            stores = [s for s in all_stores if not s.is_scheduled]
+        elif status_filter == 'scheduled':
+            stores = [s for s in all_stores if s.is_scheduled]
+        else:
+            stores = all_stores
+            
         meta = {
             "total": len(stores),
             "pages": 1,
@@ -298,8 +340,6 @@ def get_stores(payload):
             'data_previsao': fmt_date(s.data_previsao_implantacao),
             'dias_em_transito': s.dias_em_progresso, 
             'idle_days': s.idle_days,
-            'dias_em_transito': s.dias_em_progresso, 
-            'idle_days': s.idle_days,
             'risk_score': risk_score,
             'risk_level': risk_data['level'],
             'ai_risk_level': risk_data.get('ai_risk_level', risk_data['level']),
@@ -319,14 +359,15 @@ def get_stores(payload):
             'crm': s.crm,
             'valor_implantacao': s.valor_implantacao,
             'deep_sync_status': deep_status,
-            'deep_sync_status': deep_status,
             'rede': s.rede,
             'tipo_loja': s.tipo_loja,
             'parent_id': s.parent_id,
             'parent_name': s.matriz.store_name if s.matriz else None,
-            'parent_name': s.matriz.store_name if s.matriz else None,
             'delivered_with_quality': s.delivered_with_quality,
             'is_manual_start_date': s.is_manual_start_date,
+            'is_scheduled': s.is_scheduled,
+            'clickup_created_at': fmt_date(s.created_at),
+            'manual_start_date': fmt_date(s.manual_start_date),
             'total_paused_days': sum([(p.end_date - p.start_date).days for p in s.pauses if p.end_date]) if s.pauses else 0,
             'ai_prediction': analyzer.predict_store_completion(s.id),
             'dias_na_etapa': (datetime.now() - (
@@ -374,7 +415,8 @@ def delete_store(payload, id):
 def update_store(payload, id):
     store = Store.query.get_or_404(id)
     data = request.json
-    if not data: return jsonify({"error": "No data"}), 400
+    if not data:
+        return jsonify({"error": "No data"}), 400
         
     service = MetricsService()
         
@@ -418,32 +460,26 @@ def update_store(payload, id):
         service.log_change(store, 'matriz_id', store.parent_id, data['parent_id'], source='manual')
         store.parent_id = int(data['parent_id']) if data['parent_id'] else None
 
-    # Nova Lógica de Data Manual (V4)
+    # Nova Lógica de Data Manual (V6)
     if 'data_inicio' in data:
         date_str = data['data_inicio']
-        old_val = store.effective_started_at.strftime('%Y-%m-%d') if store.effective_started_at else None
+        old_val = store.manual_start_date.strftime('%Y-%m-%d') if store.manual_start_date else None
         
-        # Se veio uma data, atualizamos
         if date_str:
             try:
                 new_date = datetime.strptime(date_str, '%Y-%m-%d')
                 if old_val != date_str:
                      service.log_change(store, 'inicio_manual', old_val, date_str, source='manual')
                 
-                store.manual_started_at = new_date # Isso ainda nao existe no model base, usamos o campo do clickup?
-                # Como o sistema prioriza o clickup, precisamos de um campo manual real ou sobrescrever o clickup?
-                # O usuario pediu PARA SOBRESCREVER E TRAVAR.
-                # Entao vamos usar o start_real_at, mas precisamos impedir o sync de sobrescrever.
-                # Para isso serve o flag is_manual_start_date.
-                
-                store.start_real_at = new_date # Update direto
+                store.manual_start_date = new_date
                 store.is_manual_start_date = True
-            except: pass
+            except Exception:
+                pass
         else:
-             # Limpar? Se o usuario limpar, talvez queira voltar ao sync?
-             # Vamos assumir que limpar = voltar ao automatico
+             if old_val:
+                 service.log_change(store, 'inicio_manual', old_val, None, source='manual')
+             store.manual_start_date = None
              store.is_manual_start_date = False
-             # Nao limpamos a data imediatamente, o proximo sync vai corrigir.
 
     
     if 'manual_finished_at' in data:
@@ -455,7 +491,8 @@ def update_store(payload, id):
                 if old_val != date_str:
                     service.log_change(store, 'fim_manual', old_val, date_str, source='manual')
                 store.manual_finished_at = new_date
-            except: pass
+            except Exception:
+                pass
         else:
             if old_val is not None:
                 service.log_change(store, 'fim_manual', old_val, None, source='manual')
@@ -598,14 +635,14 @@ def get_store_logs(payload, id):
         # 1. Buscar Logs Físicos
         logs = StoreSyncLog.query.filter_by(store_id=id).all()
         formatted_logs = [{
-            'id': f"log_{l.id}",
-            'field': l.field_name,
-            'old': l.old_value,
-            'new': l.new_value,
-            'at_dt': l.changed_at,
-            'at': l.changed_at.strftime('%d/%m/%Y %H:%M'),
-            'source': l.source
-        } for l in logs]
+            'id': f"log_{log.id}",
+            'field': log.field_name,
+            'old': log.old_value,
+            'new': log.new_value,
+            'at_dt': log.changed_at,
+            'at': log.changed_at.strftime('%d/%m/%Y %H:%M'),
+            'source': log.source
+        } for log in logs]
 
         # 2. Buscar Loja para Data de Criação
         store = Store.query.get(id)
@@ -639,7 +676,8 @@ def get_store_logs(payload, id):
         formatted_logs.sort(key=lambda x: x['at_dt'], reverse=True)
         
         # Remover objeto auxiliar
-        for l in formatted_logs: del l['at_dt']
+        for log in formatted_logs:
+            del log['at_dt']
 
         return jsonify(formatted_logs), 200
     except Exception as e:
@@ -680,7 +718,7 @@ def analyze_store(payload, id):
             cached_data['_cached'] = True
             cached_data['_analyzed_at'] = store.ai_analyzed_at.strftime('%d/%m/%Y %H:%M') if store.ai_analyzed_at else None
             return jsonify(cached_data)
-        except:
+        except Exception:
              pass # Falha ao analisar cache, regenerar
 
     # 2. Buscar Comentários do ClickUp
@@ -766,9 +804,12 @@ def get_monthly_implantation_report(payload):
     try:
         cfg_mrr = SystemConfig.query.filter_by(key='annual_mrr_target').first()
         cfg_stores = SystemConfig.query.filter_by(key='annual_stores_target').first()
-        if cfg_mrr: mrr_target = float(cfg_mrr.value)
-        if cfg_stores: stores_target = int(cfg_stores.value)
-    except: pass
+        if cfg_mrr:
+            mrr_target = float(cfg_mrr.value)
+        if cfg_stores:
+            stores_target = int(cfg_stores.value)
+    except Exception:
+        pass
     
     w_matriz, w_filial = 1.0, 0.7
     SLA_TARGET = 90
@@ -824,7 +865,8 @@ def get_monthly_implantation_report(payload):
     est_stores_date = (now + relativedelta(months=months_to_stores_goal)).strftime('%Y-%m') if months_to_stores_goal > 0 else now.strftime('%Y-%m')
     
     # ── WIP Overview (Board Stages) ──
-    wip_stores = [s for s in all_stores if s.status_norm == 'IN_PROGRESS' and not s.manual_finished_at]
+    # Regra V6: WIP ignora programadas
+    wip_stores = [s for s in all_stores if s.status_norm == 'IN_PROGRESS' and not s.manual_finished_at and not s.is_scheduled]
     wip_count = len(wip_stores)
     mrr_backlog = sum(s.valor_mensalidade or 0 for s in wip_stores)
     
