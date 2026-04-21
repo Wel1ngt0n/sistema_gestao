@@ -478,6 +478,7 @@ class AnalystsReportService:
         """
         Retorna o Drill-down Individual do Implantador (Aba 3).
         """
+        last_ai_analysis = None
         # Obter todas as lojas do analista
         stores = Store.query.filter(
             or_(

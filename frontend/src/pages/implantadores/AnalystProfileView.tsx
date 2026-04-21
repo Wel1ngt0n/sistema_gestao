@@ -16,6 +16,7 @@ export default function AnalystProfileView() {
 
     const [data, setData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     
     // AI State
     const [aiResult, setAiResult] = useState<any>(null)
@@ -35,6 +36,7 @@ export default function AnalystProfileView() {
     const fetchAnalyst = async () => {
         try {
             setLoading(true)
+            setError(null)
             let url = `/api/reports/implantadores/${encodeURIComponent(name || '')}`
             
             const periodParam = period.label === 'Mês Vigente' ? 'month' : 
@@ -50,6 +52,7 @@ export default function AnalystProfileView() {
             }
         } catch (err: any) {
             console.error('Erro ao carregar perfil:', err)
+            setError('Não foi possível carregar os dados deste analista. Verifique a conexão ou se o nome está correto.')
         } finally {
             setLoading(false)
         }
@@ -77,6 +80,26 @@ export default function AnalystProfileView() {
             <div className="flex flex-col items-center justify-center h-[70vh] gap-4 bg-[#EEF0F8]">
                 <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
                 <p className="text-slate-500 font-bold animate-pulse">Mapeando Performance Individual...</p>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-6 bg-[#EEF0F8] px-8">
+                <div className="w-20 h-20 rounded-3xl bg-rose-50 flex items-center justify-center shadow-lg shadow-rose-100 border border-rose-100">
+                    <ShieldAlert size={40} className="text-rose-500" />
+                </div>
+                <div className="text-center space-y-2">
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Ops! Falha na Sincronização</h2>
+                    <p className="text-slate-500 font-bold max-w-md text-sm">{error}</p>
+                </div>
+                <button 
+                    onClick={fetchAnalyst}
+                    className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+                >
+                    Tentar Novamente
+                </button>
             </div>
         )
     }
