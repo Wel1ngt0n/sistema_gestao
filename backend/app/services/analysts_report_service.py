@@ -201,7 +201,6 @@ class AnalystsReportService:
         goal_metrics = AnalystsReportService._get_goal_metrics()
         
         now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
         for imp in implantadores:
             # Lojas Totais (Ativas vs Entregues)
             stores = Store.query.filter(
@@ -533,7 +532,8 @@ class AnalystsReportService:
         causas_imp = {"CLIENTE": 0, "IMPLANTADOR": 0, "FLUXO": 0, "CARGA": 0}
         for s in ativas:
             c = AnalystsReportService._classify_store_delay(s, carga_ponderada)
-            if c in causas_imp: causas_imp[c] += 1
+            if c in causas_imp:
+                causas_imp[c] += 1
 
         # Lojas Concluídas no Mês/Período
         concluidas_mes_list = []
