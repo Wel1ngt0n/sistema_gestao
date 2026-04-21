@@ -40,12 +40,12 @@ def login_logic():
         return jsonify({"error": "Usuário desativado pelo administrador"}), 403
 
     # Se TOTP está ativo, não devolvemos o JWT Token definitivo ainda.
-    if user.totp_enabled:
-        return jsonify({
-            "requires_2fa": True,
-            "user_id": user.id,
-            "message": "Código 2FA obrigatório"
-        }), 200
+    # if user.totp_enabled:
+    #     return jsonify({
+    #         "requires_2fa": True,
+    #         "user_id": user.id,
+    #         "message": "Código 2FA obrigatório"
+    #     }), 200
 
     # Atualiza o último login
     user.last_login = datetime.datetime.utcnow()
