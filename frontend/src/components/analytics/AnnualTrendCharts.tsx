@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Chart } from 'react-chartjs-2';
 import { AnnualTrendData } from './useAnalyticsData';
 import { InfoTooltip } from './InfoTooltip';
@@ -198,8 +198,8 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
-            <div className="bg-white dark:bg-zinc-800 p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
                     📈 Evolução MRR ({data.year})
                     <InfoTooltip
                         text="Acompanhe o MRR mensal entregue e a linha acumulada no ano para atingimento da meta."
@@ -211,8 +211,8 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-zinc-800 p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
                     🏪 Entregas de Lojas ({data.year})
                     <InfoTooltip
                         text="Acompanhe as lojas entregues por mês e a linha acumulada no ano contra a meta."

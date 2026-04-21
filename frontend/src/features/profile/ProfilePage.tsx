@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import {
@@ -120,18 +120,18 @@ export const ProfilePage = () => {
             </div>
 
             <header className="mb-8">
-                <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Meu Perfil</h1>
+                <h1 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Meu Perfil</h1>
                 <p className="text-zinc-500 mt-2">Gerencie suas informações pessoais e configurações de segurança da conta.</p>
             </header>
 
             {successMsg && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium rounded-xl flex items-center gap-2">
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-medium rounded-xl flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 shrink-0" /> {successMsg}
                 </div>
             )}
 
             {errorMsg && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-medium rounded-xl flex items-center gap-2">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 font-medium rounded-xl flex items-center gap-2">
                     <ShieldAlert className="w-5 h-5 shrink-0" /> {errorMsg}
                 </div>
             )}
@@ -141,9 +141,9 @@ export const ProfilePage = () => {
                 {/* Lateral Esquerda - Avatar & Segurança Básica */}
                 <div className="lg:col-span-1 space-y-6">
                     {/* AVATAR UPLOAD */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
                         <div className="relative group mb-4">
-                            <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-xl relative">
+                            <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-100 border-4 border-white shadow-xl relative">
                                 {profilePic ? (
                                     <img src={profilePic} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
@@ -166,12 +166,12 @@ export const ProfilePage = () => {
                                 onChange={handleImageUpload}
                             />
                         </div>
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white truncate w-full">{user?.name}</h3>
+                        <h3 className="text-lg font-bold text-zinc-900 truncate w-full">{user?.name}</h3>
                         <p className="text-sm text-zinc-500 flex items-center justify-center gap-1.5"><Mail className="w-4 h-4" /> {user?.email}</p>
 
                         <div className="mt-4 flex flex-wrap gap-2 justify-center">
                             {user?.roles.map(role => (
-                                <span key={role} className="px-2.5 py-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-bold rounded-md uppercase tracking-wider">
+                                <span key={role} className="px-2.5 py-1 bg-orange-500/10 text-orange-600 border border-orange-500/20 text-xs font-bold rounded-md uppercase tracking-wider">
                                     {role}
                                 </span>
                             ))}
@@ -179,7 +179,7 @@ export const ProfilePage = () => {
                     </div>
 
                     {/* STATUS 2FA */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                         <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4" /> Segurança (2FA)
                         </h4>
@@ -187,13 +187,13 @@ export const ProfilePage = () => {
                         {user?.totp_enabled ? (
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
                                 <ShieldCheck className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                                <h5 className="font-bold text-emerald-600 dark:text-emerald-400">2FA Ativado</h5>
+                                <h5 className="font-bold text-emerald-600">2FA Ativado</h5>
                                 <p className="text-xs text-emerald-600/70 mt-1">Sua conta está protegida por dupla validação.</p>
                             </div>
                         ) : (
                             <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 text-center">
                                 <ShieldAlert className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                                <h5 className="font-bold text-orange-600 dark:text-orange-400">2FA Desativado</h5>
+                                <h5 className="font-bold text-orange-600">2FA Desativado</h5>
                                 <p className="text-xs text-orange-600/70 mt-1 mb-4">Adicione uma camada extra de proteção.</p>
                                 <button
                                     onClick={handleSetup2FA}
@@ -208,7 +208,7 @@ export const ProfilePage = () => {
                     {/* LOGOUT */}
                     <button
                         onClick={logout}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-500 font-medium rounded-xl transition-colors border border-red-200 dark:border-red-500/20"
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-xl transition-colors border border-red-200"
                     >
                         <LogOut className="w-5 h-5" /> Sair da Conta
                     </button>
@@ -216,8 +216,8 @@ export const ProfilePage = () => {
 
                 {/* Área Principal - Forms */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-6">Informações Pessoais</h2>
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-8 shadow-sm">
+                        <h2 className="text-xl font-bold text-zinc-900 mb-6">Informações Pessoais</h2>
 
                         <form onSubmit={handleSaveProfile} className="space-y-5">
                             <div>
@@ -230,14 +230,14 @@ export const ProfilePage = () => {
                                         type="text"
                                         value={name}
                                         onChange={e => setName(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 dark:text-white font-medium transition-shadow"
+                                        className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 font-medium transition-shadow"
                                         required
                                     />
                                 </div>
                             </div>
 
-                            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
-                                <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-4">Alterar Senha</h3>
+                            <div className="pt-4 border-t border-zinc-100/50">
+                                <h3 className="text-sm font-bold text-zinc-900 mb-4">Alterar Senha</h3>
                                 <p className="text-xs text-zinc-500 mb-4">Deixe em branco caso não queira alterar sua senha atual.</p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -252,7 +252,7 @@ export const ProfilePage = () => {
                                                 value={password}
                                                 onChange={e => setPassword(e.target.value)}
                                                 placeholder="Nova Senha"
-                                                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 dark:text-white transition-shadow"
+                                                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-shadow"
                                             />
                                         </div>
                                     </div>
@@ -267,7 +267,7 @@ export const ProfilePage = () => {
                                                 value={confirmPassword}
                                                 onChange={e => setConfirmPassword(e.target.value)}
                                                 placeholder="Confirme a Senha"
-                                                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 dark:text-white transition-shadow"
+                                                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-shadow"
                                             />
                                         </div>
                                     </div>
@@ -278,7 +278,7 @@ export const ProfilePage = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    className="px-6 py-3 bg-zinc-900 text-white font-bold rounded-xl flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
                                 >
                                     {loading ? 'Salvando...' : (
                                         <>

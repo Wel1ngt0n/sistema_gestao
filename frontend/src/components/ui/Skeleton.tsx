@@ -17,7 +17,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className, width, height, co
                 <div
                     key={i}
                     className={clsx(
-                        "animate-pulse bg-slate-200 dark:bg-slate-700 rounded-md",
+                        "animate-pulse bg-slate-200 rounded-md",
                         className
                     )}
                     style={{

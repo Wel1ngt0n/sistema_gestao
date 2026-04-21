@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { X, User, Calendar, FileText, CheckSquare } from 'lucide-react';
 
@@ -52,15 +52,15 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50/50">
                     <div>
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white">Histórico de Alterações</h3>
+                        <h3 className="font-bold text-lg text-slate-900">Histórico de Alterações</h3>
                         <p className="text-sm text-slate-500">{storeName}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
                         <X size={20} className="text-slate-500" />
                     </button>
                 </div>
@@ -70,10 +70,10 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
                     {isLoading ? (
                         <div className="text-center text-slate-500 py-8">Carregando histórico...</div>
                     ) : history && history.length > 0 ? (
-                        <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 space-y-6">
+                        <div className="relative border-l-2 border-slate-200 ml-3 space-y-6">
                             {history.map((log: any) => (
                                 <div key={log.id} className="ml-6 relative">
-                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-blue-500 border-4 border-white dark:border-slate-800"></div>
+                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-blue-500 border-4 border-white"></div>
 
                                     <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
                                         <span>{new Date(log.changed_at).toLocaleString('pt-BR')}</span>
@@ -81,18 +81,18 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
                                         <span className="flex items-center gap-1"><User size={10} /> {log.actor}</span>
                                     </div>
 
-                                    <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                                        <div className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-200 text-sm mb-2">
+                                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200">
+                                        <div className="flex items-center gap-2 font-medium text-slate-700 text-sm mb-2">
                                             {getIcon(log.field)}
                                             {getFieldLabel(log.field)}
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs">
-                                            <span className="bg-red-100 dark:bg-red-900/30 text-red-600 px-2 py-0.5 rounded strike-through line-through opacity-70">
+                                            <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded strike-through line-through opacity-70">
                                                 {formatValue(log.field, log.old_value)}
                                             </span>
                                             <span className="text-slate-400">→</span>
-                                            <span className="bg-green-100 dark:bg-green-900/30 text-green-600 px-2 py-0.5 rounded font-bold">
+                                            <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">
                                                 {formatValue(log.field, log.new_value)}
                                             </span>
                                         </div>
@@ -108,8 +108,8 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-right">
-                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
+                <div className="p-4 border-t border-slate-200 bg-slate-50/50 text-right">
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
                         Fechar
                     </button>
                 </div>

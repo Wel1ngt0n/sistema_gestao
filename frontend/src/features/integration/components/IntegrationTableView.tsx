@@ -1,4 +1,4 @@
-// UX Audit: placeholder aria-label
+﻿// UX Audit: placeholder aria-label
 import { useState, useMemo, useEffect, DragEvent, CSSProperties } from 'react';
 import {
     useReactTable,
@@ -97,16 +97,16 @@ export default function IntegrationTableView({
     const [rowSelection, setRowSelection] = useState({});
 
     const getStepStatusColor = (status: string | null) => {
-        if (!status) return 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800';
+        if (!status) return 'text-zinc-500 bg-zinc-100';
         const s = status.toLowerCase();
-        if (s.includes('implantado')) return 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400';
-        if (s.includes('revisão') || s.includes('revisao')) return 'text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
-        if (s.includes('bloqueado')) return 'text-rose-700 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400';
-        if (s.includes('aguardando')) return 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400';
-        if (s.includes('progresso') || s.includes('contato')) return 'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
-        if (s.includes('backlog') || s.includes('não vão')) return 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400';
-        if (s.includes('produtos integrados') || s.includes('dados coletados')) return 'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
-        return 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400';
+        if (s.includes('implantado')) return 'text-emerald-700 bg-emerald-100';
+        if (s.includes('revisão') || s.includes('revisao')) return 'text-blue-700 bg-blue-100';
+        if (s.includes('bloqueado')) return 'text-rose-700 bg-rose-100';
+        if (s.includes('aguardando')) return 'text-amber-700 bg-amber-100';
+        if (s.includes('progresso') || s.includes('contato')) return 'text-orange-700 bg-orange-100';
+        if (s.includes('backlog') || s.includes('não vão')) return 'text-zinc-500 bg-zinc-100';
+        if (s.includes('produtos integrados') || s.includes('dados coletados')) return 'text-orange-700 bg-orange-100';
+        return 'text-zinc-600 bg-zinc-100';
     };
 
     // Columns Definition
@@ -120,7 +120,7 @@ export default function IntegrationTableView({
                     checked={table.getIsAllRowsSelected()}
                     ref={input => input && (input.indeterminate = table.getIsSomeRowsSelected())}
                     onChange={table.getToggleAllRowsSelectedHandler()}
-                    className="rounded border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700 cursor-pointer w-4 h-4 accent-orange-600 transition-all"
+                    className="rounded border-zinc-300 cursor-pointer w-4 h-4 accent-orange-600 transition-all"
                 />
             ),
             cell: ({ row }) => (
@@ -129,7 +129,7 @@ export default function IntegrationTableView({
                         type="checkbox"
                         checked={row.getIsSelected()}
                         onChange={row.getToggleSelectedHandler()}
-                        className="rounded border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700 cursor-pointer w-4 h-4 accent-orange-600 transition-all"
+                        className="rounded border-zinc-300 cursor-pointer w-4 h-4 accent-orange-600 transition-all"
                     />
                 </div>
             ),
@@ -147,7 +147,7 @@ export default function IntegrationTableView({
             header: 'Loja / Cliente',
             cell: info => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-zinc-900 dark:text-white text-sm hover:text-orange-600 dark:hover:text-orange-400 cursor-pointer transition-colors" onClick={() => onEdit(info.row.original)}>{info.getValue()}</span>
+                    <span className="font-bold text-zinc-900 text-sm hover:text-orange-600 cursor-pointer transition-colors" onClick={() => onEdit(info.row.original)}>{info.getValue()}</span>
                 </div>
             ),
             enablePinning: true,
@@ -165,12 +165,12 @@ export default function IntegrationTableView({
         }),
         columnHelper.accessor('assignee', {
             header: 'Integrador',
-            cell: info => <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">{info.getValue() || '--'}</span>,
+            cell: info => <span className="text-xs text-zinc-600 font-medium">{info.getValue() || '--'}</span>,
             size: 150,
         }),
         columnHelper.accessor('start_date', {
             header: 'Início',
-            cell: info => <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{formatDate(info.getValue())}</span>,
+            cell: info => <span className="text-xs text-zinc-500 font-mono">{formatDate(info.getValue())}</span>,
             size: 100,
         }),
         columnHelper.accessor('end_date', {
@@ -178,7 +178,7 @@ export default function IntegrationTableView({
             cell: info => {
                 const val = info.getValue();
                 return val
-                    ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-medium">{formatDate(val)}</span>
+                    ? <span className="text-xs text-emerald-600 font-mono font-medium">{formatDate(val)}</span>
                     : <span className="text-xs text-zinc-300">--</span>;
             },
             size: 100,
@@ -189,10 +189,10 @@ export default function IntegrationTableView({
                 const days = info.getValue() || 0;
                 const isDone = info.row.original.status === 'CONCLUÍDO';
                 const color = days > 60
-                    ? 'text-rose-600 dark:text-rose-400 font-bold'
+                    ? 'text-rose-600 font-bold'
                     : days > 45
-                        ? 'text-amber-600 dark:text-amber-400 font-medium'
-                        : 'text-zinc-600 dark:text-zinc-300';
+                        ? 'text-amber-600 font-medium'
+                        : 'text-zinc-600';
                 return (
                     <span className={`text-xs font-mono ${color}`}>
                         {days}d {!isDone && <span className="text-[9px] text-zinc-400">(ativo)</span>}
@@ -207,8 +207,8 @@ export default function IntegrationTableView({
                 const val = info.getValue();
                 if (val === null || val === undefined) return <span className="text-zinc-300 text-xs">--</span>;
                 return val
-                    ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">✅ No prazo</span>
-                    : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">⚠️ Atrasada</span>;
+                    ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">✅ No prazo</span>
+                    : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">⚠️ Atrasada</span>;
             },
             size: 100,
         }),
@@ -347,7 +347,7 @@ export default function IntegrationTableView({
     return (
         <div className="flex flex-col gap-4">
             <div className="flex justify-between items-end">
-                <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                <div className="text-sm text-zinc-500">
                     Mostrando <strong>{table.getRowModel().rows.length}</strong> registros
                 </div>
 
@@ -365,8 +365,8 @@ export default function IntegrationTableView({
                         <button
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${isColumnsOpen
-                                ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100'
-                                : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-orange-300'
+                                ? 'bg-zinc-100 border-zinc-300 text-zinc-900'
+                                : 'bg-white border-zinc-200 text-zinc-600 hover:border-orange-300'
                                 }`}
                         >
                             <span>Colunas</span>
@@ -374,8 +374,8 @@ export default function IntegrationTableView({
                         </button>
 
                         {isColumnsOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-800 z-50 overflow-hidden animate-in fade-in zoom-in-95">
-                                <div className="p-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-between items-center">
+                            <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95">
+                                <div className="p-3 border-b border-zinc-100 bg-zinc-50/50/50 flex justify-between items-center">
                                     <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Editar Colunas</h4>
                                     <button onClick={() => setIsColumnsOpen(false)} className="text-zinc-400 hover:text-zinc-900">✕</button>
                                 </div>
@@ -390,12 +390,12 @@ export default function IntegrationTableView({
                                                 onDragOver={(e) => handleMenuDragOver(e, column.id)}
                                                 onDrop={handleMenuDrop}
                                                 className={`flex items-center gap-3 p-2 rounded-lg border border-transparent transition-all cursor-move select-none ${menuDraggedId === column.id
-                                                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dashed opacity-50'
-                                                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700'
+                                                    ? 'bg-orange-50 border-orange-200 dashed opacity-50'
+                                                    : 'hover:bg-zinc-50 hover:border-zinc-200'
                                                     }`}
                                             >
                                                 <GripVertical className="w-4 h-4 text-zinc-300" />
-                                                <span className="flex-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 capitalize">
+                                                <span className="flex-1 text-xs font-medium text-zinc-700 capitalize">
                                                     {typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id}
                                                 </span>
                                                 <button
@@ -408,7 +408,7 @@ export default function IntegrationTableView({
                                         )
                                     })}
                                 </div>
-                                <div className="p-2 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50">
+                                <div className="p-2 border-t border-zinc-100 bg-zinc-50/50">
                                     <button
                                         onClick={() => table.toggleAllColumnsVisible(true)}
                                         className="w-full py-1 text-xs text-orange-600 font-semibold hover:bg-orange-50 rounded"
@@ -422,16 +422,16 @@ export default function IntegrationTableView({
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full max-w-full overflow-hidden">
-                <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm w-full max-w-full overflow-hidden">
+                <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-zinc-300">
                     <table className="w-full text-left border-collapse min-w-full">
-                        <thead className="bg-zinc-50 dark:bg-zinc-950/50 text-zinc-500 dark:text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
+                        <thead className="bg-zinc-50 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
                             {table.getHeaderGroups().map(headerGroup => (
                                 <tr key={headerGroup.id}>
                                     {headerGroup.headers.map(header => (
                                         <th
                                             key={header.id}
-                                            className={`px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 whitespace-nowrap bg-zinc-50 dark:bg-zinc-950`}
+                                            className={`px-4 py-3 border-b border-zinc-200 whitespace-nowrap bg-zinc-50`}
                                             style={{
                                                 width: header.column.getSize(),
                                                 ...getPinningStyle(header.column)
@@ -449,7 +449,7 @@ export default function IntegrationTableView({
                                 </tr>
                             ))}
                         </thead>
-                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                        <tbody className="divide-y divide-zinc-100">
                             {table.getRowModel().rows.length === 0 ? (
                                 <tr>
                                     <td colSpan={columns.length} className="py-12 text-center text-zinc-400">
@@ -458,11 +458,11 @@ export default function IntegrationTableView({
                                 </tr>
                             ) : (
                                 table.getRowModel().rows.map(row => (
-                                    <tr key={row.id} className="group hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-colors">
+                                    <tr key={row.id} className="group hover:bg-zinc-50/80/30 transition-colors">
                                         {row.getVisibleCells().map(cell => (
                                             <td
                                                 key={cell.id}
-                                                className="px-4 py-3 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-transparent"
+                                                className="px-4 py-3 bg-white group-hover:bg-zinc-50"
                                                 style={getPinningStyle(cell.column)}
                                             >
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -475,7 +475,7 @@ export default function IntegrationTableView({
                     </table>
                 </div>
 
-                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex justify-between items-center text-xs text-zinc-500">
+                <div className="p-4 border-t border-zinc-200 bg-zinc-50/50 flex justify-between items-center text-xs text-zinc-500">
                     <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}

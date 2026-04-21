@@ -1,4 +1,4 @@
-// UX Audit: placeholder aria-label
+﻿// UX Audit: placeholder aria-label
 import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import { Save, RefreshCw, Settings, AlertTriangle } from 'lucide-react'
@@ -55,17 +55,17 @@ export default function AdminSettingsPage() {
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
                         <Settings className="w-6 h-6 text-orange-500" />
                         Configurações do Sistema
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+                    <p className="text-zinc-500 mt-1">
                         Ajuste parâmetros globais do CRM. Cuidado: alterações afetam todos os usuários.
                     </p>
                 </div>
                 <button
                     onClick={fetchConfigs}
-                    className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                    className="p-2 text-zinc-400 hover:text-zinc-600 transition-colors"
                     title="Recarregar"
                 >
                     <RefreshCw size={20} />
@@ -75,8 +75,8 @@ export default function AdminSettingsPage() {
             {message && (
                 <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2
                     ${message.type === 'success'
-                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                        : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'bg-rose-50 text-rose-600'
                     }
                 `}>
                     {message.type === 'error' && <AlertTriangle size={16} />}
@@ -84,13 +84,13 @@ export default function AdminSettingsPage() {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+            <div className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm">
                 {loading ? (
                     <div className="p-12 flex justify-center">
                         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin"></div>
                     </div>
                 ) : (
-                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    <div className="divide-y divide-zinc-100">
                         {configs.length === 0 && (
                             <div className="p-8 text-center text-zinc-500">
                                 Nenhuma configuração encontrada. O sistema usará os padrões.
@@ -98,12 +98,12 @@ export default function AdminSettingsPage() {
                         )}
 
                         {configs.map((config) => (
-                            <div key={config.key} className="p-6 flex flex-col md:flex-row md:items-center gap-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                            <div key={config.key} className="p-6 flex flex-col md:flex-row md:items-center gap-4 hover:bg-zinc-50/50/20 transition-colors">
                                 <div className="flex-1">
-                                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono text-sm">
+                                    <h3 className="font-semibold text-zinc-900 font-mono text-sm">
                                         {config.key}
                                     </h3>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                    <p className="text-sm text-zinc-500 mt-0.5">
                                         {config.description || "Sem descrição"}
                                     </p>
                                 </div>
@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
                                         type="text"
                                         defaultValue={config.value}
                                         id={`input-${config.key}`}
-                                        className="flex-1 md:w-64 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                        className="flex-1 md:w-64 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                                     />
                                     <button
                                         onClick={() => {
@@ -120,7 +120,7 @@ export default function AdminSettingsPage() {
                                             handleSave(config.key, input.value)
                                         }}
                                         disabled={saving === config.key}
-                                        className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                                        className="p-2 bg-zinc-900 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
                                     >
                                         {saving === config.key ? (
                                             <RefreshCw size={18} className="animate-spin" />
@@ -138,9 +138,9 @@ export default function AdminSettingsPage() {
                 )}
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-4 flex items-start gap-3">
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-700 dark:text-blue-300">
+                <div className="text-sm text-blue-700">
                     <strong>Dica:</strong> As chaves de configuração mais comuns são:
                     <ul className="list-disc list-inside mt-1 ml-1 space-y-0.5 opacity-80">
                         <li><code>weight_matriz</code> (Peso para cálculo de pontos de Matriz)</li>

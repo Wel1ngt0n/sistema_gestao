@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { ArrowUpDown, Bug, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface IntegrationTeamMatrixProps {
@@ -95,37 +95,37 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
     );
 
     return (
-        <div className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200/50 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 dark:bg-zinc-900/50 text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider">
+                    <thead className="bg-slate-50/50 text-xs font-bold text-slate-5000 uppercase tracking-wider">
                         <tr>
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" onClick={() => handleSort('implantador')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('implantador')}>
                                 <div className="flex items-center gap-2">Integrador <SortIcon field="implantador" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('wip')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('wip')}>
                                 <div className="flex items-center justify-end gap-2">Carga Atual (WIP) <SortIcon field="wip" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('done')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('done')}>
                                 <div className="flex items-center justify-end gap-2">Entregas Totais <SortIcon field="done" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('sla')}>
-                                <div className="flex items-center justify-end gap-2 text-orange-600 dark:text-orange-400">SLA % <SortIcon field="sla" /></div>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('sla')}>
+                                <div className="flex items-center justify-end gap-2 text-orange-600">SLA % <SortIcon field="sla" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('bugs')}>
-                                <div className="flex items-center justify-end gap-2 text-rose-600 dark:text-rose-400">Bugs Totais <SortIcon field="bugs" /></div>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('bugs')}>
+                                <div className="flex items-center justify-end gap-2 text-rose-600">Bugs Totais <SortIcon field="bugs" /></div>
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-700/50">
+                    <tbody className="divide-y divide-slate-100">
                         {sortedData.map((row) => (
                             <tr
                                 key={row.implantador}
-                                className="hover:bg-slate-50 dark:hover:bg-zinc-700/20 transition-colors group cursor-default"
+                                className="hover:bg-slate-50/20 transition-colors group cursor-default"
                             >
                                 {/* Integrador */}
                                 <td className="px-6 py-4">
@@ -134,7 +134,7 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                                             {row.implantador.substring(0, 2).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-700 dark:text-zinc-200 text-sm group-hover:text-orange-500 transition-colors">
+                                            <p className="font-bold text-slate-700 text-sm group-hover:text-orange-500 transition-colors">
                                                 {row.implantador}
                                             </p>
                                         </div>
@@ -145,9 +145,9 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{row.wip} Lojas</span>
+                                            <span className="text-sm font-bold text-slate-700">{row.wip} Lojas</span>
                                         </div>
-                                        <div className="w-24 h-1.5 bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                        <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                             <div className="h-full bg-orange-500" style={{ width: `${Math.min(100, row.wip * 10)}%` }}></div>
                                         </div>
                                         {row.churn_risk > 0 && (
@@ -162,7 +162,7 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex justify-between items-baseline">
-                                            <span className="text-sm font-bold text-slate-800 dark:text-white">{row.done}</span>
+                                            <span className="text-sm font-bold text-slate-800">{row.done}</span>
                                         </div>
                                         <span className="text-xs text-slate-400">{row.done_points.toFixed(1)} pts</span>
                                     </div>
@@ -183,7 +183,7 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                                         <span className={`text-base font-black ${row.bugs > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                                             {row.bugs > 0 ? row.bugs : '-'}
                                         </span>
-                                        <div className={`p-1.5 rounded-lg ${row.bugs > 0 ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'}`}>
+                                        <div className={`p-1.5 rounded-lg ${row.bugs > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
                                             {row.bugs > 0 ? <Bug size={14} /> : <CheckCircle size={14} />}
                                         </div>
                                     </div>
@@ -194,7 +194,7 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                 </table>
             </div>
             {teamData.length === 0 && (
-                <div className="text-center py-12 text-slate-400 dark:text-zinc-500">
+                <div className="text-center py-12 text-slate-4000">
                     Nenhum dado atribuído a integradores.
                 </div>
             )}

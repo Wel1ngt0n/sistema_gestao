@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react';
+﻿import { useState, useMemo, Fragment } from 'react';
 import { Tab } from '@headlessui/react';
 import PerformanceDetailModal from './PerformanceDetailModal';
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
@@ -63,10 +63,10 @@ export default function AnalyticsV2() {
 
     if (loading && !kpiData) {
         return (
-            <div aria-label="Analytics View" className="w-full min-h-screen bg-slate-50 dark:bg-zinc-900 flex items-center justify-center">
+            <div aria-label="Analytics View" className="w-full min-h-screen bg-slate-50 flex items-center justify-center">
                 <div aria-label="Analytics View" className="flex flex-col items-center gap-4">
                     <div aria-label="Analytics View" className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-500 dark:text-zinc-500 font-mono text-sm animate-pulse">Carregando Analytics...</p>
+                    <p className="text-slate-5000 font-mono text-sm animate-pulse">Carregando Analytics...</p>
                 </div>
             </div>
         );
@@ -190,16 +190,16 @@ export default function AnalyticsV2() {
     };
 
     return (
-        <div aria-label="Analytics View" className="min-h-screen w-full bg-slate-50 dark:bg-zinc-900 font-sans selection:bg-orange-500/30 selection:text-orange-500 transition-colors duration-300">
+        <div aria-label="Analytics View" className="min-h-screen w-full bg-slate-50 font-sans selection:bg-orange-500/30 selection:text-orange-500 transition-colors duration-300">
 
             {/* Header Sticky */}
-            <div aria-label="Analytics View" className="sticky top-0 z-30 bg-slate-50/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800">
+            <div aria-label="Analytics View" className="sticky top-0 z-30 bg-slate-50/80/80 backdrop-blur-md border-b border-slate-200">
                 <div aria-label="Analytics View" className="w-full px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                        <h1 className="text-3xl font-black tracking-tight text-slate-900">
                             Analytics<span className="text-orange-500">.</span>
                         </h1>
-                        <p className="text-slate-500 dark:text-zinc-400 font-medium text-xs tracking-wide uppercase">
+                        <p className="text-slate-500 font-medium text-xs tracking-wide uppercase">
                             Deep Dive Visual
                         </p>
                     </div>
@@ -215,7 +215,7 @@ export default function AnalyticsV2() {
 
             <div aria-label="Analytics View" className="w-full px-6 lg:px-8 py-8">
                 <Tab.Group>
-                    <Tab.List className="flex space-x-2 rounded-2xl bg-slate-200/50 dark:bg-zinc-800/50 p-1.5 mb-10 max-w-xl mx-auto md:mx-0">
+                    <Tab.List className="flex space-x-2 rounded-2xl bg-slate-200/50/50 p-1.5 mb-10 max-w-xl mx-auto md:mx-0">
                         {['Visão Geral', 'Eficiência & Risco', 'Time & Performance'].map((tab) => (
                             <Tab as={Fragment} key={tab}>
                                 {({ selected }) => (
@@ -223,8 +223,8 @@ export default function AnalyticsV2() {
                                         className={classNames(
                                             'w-full rounded-xl py-3 text-sm font-bold leading-5 transition-all duration-200',
                                             selected
-                                                ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-md scale-105 ring-1 ring-black/5 dark:ring-white/10'
-                                                : 'text-slate-500 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-800'
+                                                ? 'bg-white text-slate-900 shadow-md scale-105 ring-1 ring-black/5'
+                                                : 'text-slate-5000 hover:text-slate-700 hover:bg-white/50'
                                         )}
                                     >
                                         {tab}
@@ -240,22 +240,22 @@ export default function AnalyticsV2() {
                             {/* KPIs Executivos */}
                             {kpiData && (
                                 <div aria-label="Analytics View" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <KPICard label="WIP" value={kpiData.wip_stores} color="orange" icon="🚀" subtext="Pipeline Ativo" tooltip="Work In Progress" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="Entregas" value={kpiData.throughput_period} color="green" icon="✅" subtext="No Período" tooltip="Concluídos" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="MRR Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon="💰" subtext="Potencial" tooltip="Receita futura" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="amber" icon="📈" subtext="Realizado" tooltip="Receita nova" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="Pontos" value={kpiData.total_points_done} color="yellow" icon="🏅" subtext="Score Total" tooltip="Soma de pontos" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
-                                    <KPICard label="Cycle Time" value={`${kpiData.cycle_time_avg || 0}d`} color="slate" icon="⏱️" subtext="Média" tooltip="Tempo médio de entrega" className="bg-white dark:bg-zinc-800 rounded-3xl border-slate-200 dark:border-zinc-700/50 shadow-sm" />
+                                    <KPICard label="WIP" value={kpiData.wip_stores} color="orange" icon="🚀" subtext="Pipeline Ativo" tooltip="Work In Progress" className="bg-white rounded-3xl border-slate-200/50 shadow-sm" />
+                                    <KPICard label="Entregas" value={kpiData.throughput_period} color="green" icon="✅" subtext="No Período" tooltip="Concluídos" className="bg-white rounded-3xl border-slate-200/50 shadow-sm" />
+                                    <KPICard label="MRR Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon="💰" subtext="Potencial" tooltip="Receita futura" className="bg-white rounded-3xl border-slate-200/50 shadow-sm" />
+                                    <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="amber" icon="📈" subtext="Realizado" tooltip="Receita nova" className="bg-white rounded-3xl border-slate-200/50 shadow-sm" />
+                                    <KPICard label="Pontos" value={kpiData.total_points_done} color="yellow" icon="🏅" subtext="Score Total" tooltip="Soma de pontos" className="bg-white rounded-3xl border-slate-200/50 shadow-sm" />
+                                    <KPICard label="Cycle Time" value={`${kpiData.cycle_time_avg || 0}d`} color="slate" icon="⏱️" subtext="Média" tooltip="Tempo médio de entrega" className="bg-white rounded-3xl border-slate-200/50 shadow-sm" />
                                 </div>
                             )}
 
                             <div aria-label="Analytics View" className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                                 {/* Forecast Financeiro */}
-                                {forecastData && <FinancialForecastChart data={forecastData} className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm p-8" />}
+                                {forecastData && <FinancialForecastChart data={forecastData} className="bg-white rounded-3xl border border-slate-200/50 shadow-sm p-8" />}
 
                                 {/* Evolução de Entregas */}
-                                <div aria-label="Analytics View" className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm min-h-[400px]">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                                <div aria-label="Analytics View" className="bg-white p-8 rounded-3xl border border-slate-200/50 shadow-sm min-h-[400px]">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
                                         <TrendingUp size={18} className="text-orange-500" />
                                         Evolução de Entregas
                                     </h3>
@@ -270,20 +270,20 @@ export default function AnalyticsV2() {
                         <Tab.Panel className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 focus:outline-none">
                             {kpiData && (
                                 <div aria-label="Analytics View" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <KPICard label="OTD %" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="No Prazo" className="bg-white dark:bg-zinc-800 rounded-3xl" />
-                                    <KPICard label="Risco Médio" value={kpiData.avg_risk_score} color="red" icon="🔥" subtext="Score Preditivo" className="bg-white dark:bg-zinc-800 rounded-3xl" />
-                                    <KPICard label="Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias" className="bg-white dark:bg-zinc-800 rounded-3xl" />
-                                    <KPICard label="Mix M/F" value={`${kpiData.matrix_count}/${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Matriz vs Filial" className="bg-white dark:bg-zinc-800 rounded-3xl" />
+                                    <KPICard label="OTD %" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="No Prazo" className="bg-white rounded-3xl" />
+                                    <KPICard label="Risco Médio" value={kpiData.avg_risk_score} color="red" icon="🔥" subtext="Score Preditivo" className="bg-white rounded-3xl" />
+                                    <KPICard label="Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias" className="bg-white rounded-3xl" />
+                                    <KPICard label="Mix M/F" value={`${kpiData.matrix_count}/${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Matriz vs Filial" className="bg-white rounded-3xl" />
                                 </div>
                             )}
 
                             <div aria-label="Analytics View" className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                <div aria-label="Analytics View" className="h-full bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 p-6 shadow-sm">
+                                <div aria-label="Analytics View" className="h-full bg-white rounded-3xl border border-slate-200/50 p-6 shadow-sm">
                                     <RiskScatterPlot />
                                 </div>
 
-                                <div aria-label="Analytics View" className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm h-full max-h-[500px]">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                                <div aria-label="Analytics View" className="bg-white p-8 rounded-3xl border border-slate-200/50 shadow-sm h-full max-h-[500px]">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
                                         <Zap size={18} className="text-yellow-500" />
                                         Eficiência (Cycle Time vs OTD)
                                     </h3>
@@ -304,16 +304,16 @@ export default function AnalyticsV2() {
                             </div>
 
                             {/* Gargalos */}
-                            <div aria-label="Analytics View" className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm overflow-hidden">
-                                <div aria-label="Analytics View" className="p-8 border-b border-slate-100 dark:border-zinc-700/50">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                            <div aria-label="Analytics View" className="bg-white rounded-3xl border border-slate-200/50 shadow-sm overflow-hidden">
+                                <div aria-label="Analytics View" className="p-8 border-b border-slate-100/50">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
                                         <AlertTriangle size={18} className="text-red-500" />
                                         Gargalos de Processo
                                     </h3>
                                 </div>
                                 <div aria-label="Analytics View" className="overflow-x-auto">
                                     <table className="w-full text-left">
-                                        <thead className="bg-slate-50 dark:bg-zinc-900/50 text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider">
+                                        <thead className="bg-slate-50/50 text-xs font-bold text-slate-5000 uppercase tracking-wider">
                                             <tr>
                                                 <th className="px-8 py-4">Etapa</th>
                                                 <th className="px-8 py-4">Tempo Acumulado</th>
@@ -321,23 +321,23 @@ export default function AnalyticsV2() {
                                                 <th className="px-8 py-4 text-center">Retrabalhos</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-700/50">
+                                        <tbody className="divide-y divide-slate-100">
                                             {(Array.isArray(bottleneckData) ? bottleneckData : []).slice(0, 8).map((b, i) => (
-                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-zinc-700/20 transition-colors group">
+                                                <tr key={i} className="hover:bg-slate-50/20 transition-colors group">
                                                     <td className="px-8 py-5">
-                                                        <p className="font-bold text-slate-700 dark:text-zinc-200 text-sm">{b.step_name}</p>
-                                                        <div aria-label="Analytics View" className="w-full bg-slate-100 dark:bg-zinc-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                                                        <p className="font-bold text-slate-700 text-sm">{b.step_name}</p>
+                                                        <div aria-label="Analytics View" className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
                                                             <div aria-label="Analytics View" className="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" style={{ width: `${Math.min(100, (b.avg_days / 15) * 100)}%` }}></div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5 text-slate-600 dark:text-zinc-400 text-sm font-mono">{b.total_days}d</td>
-                                                    <td className="px-8 py-5 text-sm font-bold text-slate-800 dark:text-white">{b.avg_days}d</td>
+                                                    <td className="px-8 py-5 text-slate-600 text-sm font-mono">{b.total_days}d</td>
+                                                    <td className="px-8 py-5 text-sm font-bold text-slate-800">{b.avg_days}d</td>
                                                     <td className="px-8 py-5 text-center">
                                                         {b.reopens > 0 ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
                                                                 {b.reopens}
                                                             </span>
-                                                        ) : <span className="text-slate-300 dark:text-zinc-600">-</span>}
+                                                        ) : <span className="text-slate-300">-</span>}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -354,12 +354,12 @@ export default function AnalyticsV2() {
 
                             {/* View Switcher Controls */}
                             <div aria-label="Analytics View" className="flex justify-end mb-4">
-                                <div aria-label="Analytics View" className="bg-slate-200 dark:bg-zinc-800 p-1 rounded-lg flex items-center gap-1">
+                                <div aria-label="Analytics View" className="bg-slate-200 p-1 rounded-lg flex items-center gap-1">
                                     <button
                                         onClick={() => setPerformanceViewMode('cards')}
                                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${performanceViewMode === 'cards'
-                                            ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-sm'
-                                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700'
+                                            ? 'bg-white text-slate-900 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
                                             }`}
                                     >
                                         🧩 Cards
@@ -367,8 +367,8 @@ export default function AnalyticsV2() {
                                     <button
                                         onClick={() => setPerformanceViewMode('matrix')}
                                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${performanceViewMode === 'matrix'
-                                            ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-sm'
-                                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700'
+                                            ? 'bg-white text-slate-900 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
                                             }`}
                                     >
                                         📅 Matriz
@@ -379,10 +379,10 @@ export default function AnalyticsV2() {
                             {performanceViewMode === 'cards' ? (
                                 <>
                                     <div aria-label="Analytics View" className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                        {capacityData && <TeamCapacityWidget data={capacityData} className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm" />}
+                                        {capacityData && <TeamCapacityWidget data={capacityData} className="bg-white rounded-3xl border border-slate-200/50 shadow-sm" />}
 
-                                        <div aria-label="Analytics View" className="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm">
-                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                                        <div aria-label="Analytics View" className="bg-white p-8 rounded-3xl border border-slate-200/50 shadow-sm">
+                                            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
                                                 <Trophy size={18} className="text-yellow-500" />
                                                 Performance do Time
                                             </h3>
@@ -393,38 +393,38 @@ export default function AnalyticsV2() {
                                     </div>
 
                                     <div aria-label="Analytics View" className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                                        <div aria-label="Analytics View" className="xl:col-span-1 bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm flex flex-col overflow-hidden">
-                                            <div aria-label="Analytics View" className="p-6 border-b border-slate-100 dark:border-zinc-700/50 bg-slate-50/50 dark:bg-zinc-900/30">
-                                                <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2 uppercase tracking-wide">
+                                        <div aria-label="Analytics View" className="xl:col-span-1 bg-white rounded-3xl border border-slate-200/50 shadow-sm flex flex-col overflow-hidden">
+                                            <div aria-label="Analytics View" className="p-6 border-b border-slate-100/50 bg-slate-50/50/30">
+                                                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
                                                     🏆 Top Ranking
                                                 </h3>
                                             </div>
                                             <div aria-label="Analytics View" className="overflow-auto flex-1 p-4 space-y-2 custom-scrollbar">
                                                 {safePerformanceData.slice(0, 6).map((p, idx) => (
-                                                    <div key={p.implantador} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-700/20 border border-slate-100 dark:border-zinc-700/30 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-700/40 transition-all cursor-pointer group" onClick={() => setSelectedImplantador(p.implantador)}>
+                                                    <div key={p.implantador} className="flex items-center justify-between p-4 bg-slate-50/20 border border-slate-100/30 rounded-2xl hover:bg-slate-100/40 transition-all cursor-pointer group" onClick={() => setSelectedImplantador(p.implantador)}>
                                                         <div aria-label="Analytics View" className="flex items-center gap-4">
-                                                            <div aria-label="Analytics View" className={`flex items-center justify-center w-8 h-8 rounded-xl font-bold text-sm shadow-sm ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500 dark:text-black' : 'bg-slate-200 text-slate-600 dark:bg-zinc-600 dark:text-zinc-300'}`}>
+                                                            <div aria-label="Analytics View" className={`flex items-center justify-center w-8 h-8 rounded-xl font-bold text-sm shadow-sm ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-600'}`}>
                                                                 #{idx + 1}
                                                             </div>
                                                             <div>
-                                                                <div aria-label="Analytics View" className="font-bold text-sm text-slate-700 dark:text-zinc-200 group-hover:text-orange-500 transition-colors">
+                                                                <div aria-label="Analytics View" className="font-bold text-sm text-slate-700 group-hover:text-orange-500 transition-colors">
                                                                     {p.implantador}
                                                                 </div>
-                                                                <div aria-label="Analytics View" className="flex items-center gap-3 mt-0.5 text-xs text-slate-500 dark:text-zinc-500">
+                                                                <div aria-label="Analytics View" className="flex items-center gap-3 mt-0.5 text-xs text-slate-5000">
                                                                     <span>Score: <b className="text-emerald-500">{p.score.toFixed(1)}</b></span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div aria-label="Analytics View" className="text-right">
-                                                            <p className="text-lg font-black text-slate-800 dark:text-white">{p.done}</p>
+                                                            <p className="text-lg font-black text-slate-800">{p.done}</p>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        <div aria-label="Analytics View" className="xl:col-span-2 bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm">
-                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
+                                        <div aria-label="Analytics View" className="xl:col-span-2 bg-white p-8 rounded-3xl border border-slate-200/50 shadow-sm">
+                                            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-wide text-sm opacity-80">
                                                 Histórico de Pontuação
                                             </h3>
                                             <div aria-label="Analytics View" className="h-[350px]">

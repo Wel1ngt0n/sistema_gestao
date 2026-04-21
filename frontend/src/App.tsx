@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginScreen from './pages/LoginScreen'
@@ -25,21 +25,7 @@ import UserManagementPage from './features/admin/UserManagementPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 
 function App() {
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark')
     const [showDictionary, setShowDictionary] = useState(false)
-
-    // Lógica de Alternância de Tema
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-    }, [theme])
-
-    const toggleTheme = () => {
-        setTheme(prev => prev === 'dark' ? 'light' : 'dark')
-    }
 
     return (
         <>
@@ -50,11 +36,7 @@ function App() {
                 {/* Rotas Protegidas pelo AuthContext */}
                 <Route element={
                     <ProtectedRoute>
-                        <CRMLayout
-                            theme={theme}
-                            toggleTheme={toggleTheme}
-                            setShowDictionary={setShowDictionary}
-                        />
+                        <CRMLayout setShowDictionary={setShowDictionary} />
                     </ProtectedRoute>
                 }>
                     <Route path="/" element={<Dashboard />} />
@@ -83,7 +65,7 @@ function App() {
                     {/* User Profile */}
                     <Route path="/profile" element={<ProfilePage />} />
 
-                    {/* Catch all (Captura tudo) */}
+                    {/* Catch all */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
             </Routes>

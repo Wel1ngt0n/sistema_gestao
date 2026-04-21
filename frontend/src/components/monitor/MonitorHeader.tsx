@@ -1,4 +1,4 @@
-import { FilterState } from './MonitorFilterPanel';
+﻿import { FilterState } from './MonitorFilterPanel';
 
 interface MonitorHeaderProps {
     stats: { total: number; delayed: number; risk: number };
@@ -34,7 +34,7 @@ export default function MonitorHeader({
     const hasActiveFilters = Object.values(advancedFilters).some(v => Array.isArray(v) ? v.length > 0 : !!v);
 
     return (
-        <header className="flex-none bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 z-30 sticky top-0 transition-all duration-300">
+        <header className="flex-none bg-white/80/80 backdrop-blur-xl border-b border-zinc-200 z-30 sticky top-0 transition-all duration-300">
             <div className="px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
 
@@ -46,10 +46,10 @@ export default function MonitorHeader({
                                 <span className="text-white text-xl">📊</span>
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                                <h1 className="text-xl font-bold tracking-tight text-zinc-900">
                                     Monitor de Implantação
                                 </h1>
-                                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                                <p className="text-xs font-medium text-zinc-500 flex items-center gap-2">
                                     Visão Operacional
                                     {isRefreshing && (
                                         <span className="flex items-center gap-1 text-orange-500 animate-pulse ml-2 bg-orange-500/10 px-1.5 py-0.5 rounded-full">
@@ -62,21 +62,21 @@ export default function MonitorHeader({
                         </div>
 
                         {/* Divider */}
-                        <div className="hidden md:block w-px h-10 bg-zinc-200 dark:bg-zinc-800"></div>
+                        <div className="hidden md:block w-px h-10 bg-zinc-200"></div>
 
                         {/* Bento Stats (Clean) */}
                         <div className="hidden md:flex items-center gap-3">
-                            <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                            <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-zinc-50/50 transition-colors">
                                 <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Total</span>
-                                <span className="text-lg font-bold text-zinc-700 dark:text-zinc-200 leading-none">{stats.total}</span>
+                                <span className="text-lg font-bold text-zinc-700 leading-none">{stats.total}</span>
                             </div>
-                            <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors border border-transparent hover:border-rose-100 dark:hover:border-rose-900/20">
+                            <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-100">
                                 <span className="text-[10px] uppercase font-bold text-rose-500/80 tracking-wider">Atrasados</span>
-                                <span className="text-lg font-bold text-rose-600 dark:text-rose-400 leading-none">{stats.delayed}</span>
+                                <span className="text-lg font-bold text-rose-600 leading-none">{stats.delayed}</span>
                             </div>
-                            <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors border border-transparent hover:border-amber-100 dark:hover:border-amber-900/20">
+                            <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-amber-50 transition-colors border border-transparent hover:border-amber-100">
                                 <span className="text-[10px] uppercase font-bold text-amber-500/80 tracking-wider">Risco</span>
-                                <span className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-none">{stats.risk}</span>
+                                <span className="text-lg font-bold text-amber-600 leading-none">{stats.risk}</span>
                             </div>
                         </div>
                     </div>
@@ -96,17 +96,17 @@ export default function MonitorHeader({
                                 placeholder="Buscar..."
                                 value={globalFilter}
                                 onChange={(e) => setGlobalFilter(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all shadow-sm"
+                                className="w-full pl-10 pr-4 py-2 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all shadow-sm"
                             />
                         </div>
 
                         {/* Status Toggle (Pill Switch) */}
-                        <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl gap-1 border border-zinc-200 dark:border-zinc-700/50">
+                        <div className="flex bg-zinc-100 p-1 rounded-xl gap-1 border border-zinc-200/50">
                             <button
                                 onClick={() => setFilterStatus('active')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filterStatus === 'active'
-                                    ? 'bg-white dark:bg-zinc-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600'
-                                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-zinc-200'
+                                    : 'text-zinc-500 hover:text-zinc-700'
                                     }`}
                             >
                                 Ativas
@@ -114,8 +114,8 @@ export default function MonitorHeader({
                             <button
                                 onClick={() => setFilterStatus('concluded')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filterStatus === 'concluded'
-                                    ? 'bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600'
-                                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-zinc-200'
+                                    : 'text-zinc-500 hover:text-zinc-700'
                                     }`}
                             >
                                 Concluídas
@@ -126,8 +126,8 @@ export default function MonitorHeader({
                         <button
                             onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
                             className={`h-full px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${isFilterPanelOpen || hasActiveFilters
-                                ? 'bg-orange-50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800 ring-2 ring-orange-500/10'
-                                : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-orange-300 dark:hover:border-orange-700 hover:text-orange-600 dark:hover:text-orange-400'
+                                ? 'bg-orange-50 text-orange-700 border-orange-200 ring-2 ring-orange-500/10'
+                                : 'bg-white text-zinc-600 border-zinc-200 hover:border-orange-300 hover:text-orange-600'
                                 }`}
                         >
                             <span>Filtros</span>
@@ -139,20 +139,20 @@ export default function MonitorHeader({
                             )}
                         </button>
 
-                        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+                        <div className="w-px h-6 bg-zinc-200 mx-1"></div>
 
                         {/* Settings & Export */}
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setAdminOpen(true)}
-                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
                                 title="Configurações Admin"
                             >
                                 ⚙️
                             </button>
                             <button
                                 onClick={handleExportCSV}
-                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
                                 title="Exportar CSV"
                             >
                                 📥
@@ -173,8 +173,8 @@ export default function MonitorHeader({
                             key={view.id}
                             onClick={() => setViewMode(view.id as any)}
                             className={`pb-3 text-sm font-medium transition-all relative ${viewMode === view.id
-                                ? 'text-orange-600 dark:text-orange-500'
-                                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+                                ? 'text-orange-600'
+                                : 'text-zinc-500 hover:text-zinc-800'
                                 }`}
                         >
                             <span className="flex items-center gap-2">

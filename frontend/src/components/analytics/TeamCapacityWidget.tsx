@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { CapacityData } from './useAnalyticsData';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -13,16 +13,16 @@ export const TeamCapacityWidget: React.FC<TeamCapacityWidgetProps> = ({ data, cl
 
 
     return (
-        <div className={`bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ${className}`}>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+        <div className={`bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${className}`}>
+            <h3 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
                 ⚡ Gestão de Capacidade (Semestral)
                 <InfoTooltip
                     text={`Visualiza o esforço total do semestre (Concluídas + Em Progresso). A barra colorida indica a lotação ATUAL (Risco de Burnout), enquanto o valor numérico mostra o equilíbrio a longo prazo.`}
                 />
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 flex items-center gap-2">
+            <p className="text-sm text-slate-500 mb-6 flex items-center gap-2">
                 <span>Ordenado por esforço total acumulado no semestre.</span>
-                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs px-2 py-0.5 rounded-full font-bold">
+                <span className="bg-emerald-100 text-emerald-600 text-xs px-2 py-0.5 rounded-full font-bold">
                     Equilíbrio
                 </span>
             </p>
@@ -39,9 +39,9 @@ export const TeamCapacityWidget: React.FC<TeamCapacityWidgetProps> = ({ data, cl
                         <div key={d.implantador} className="group">
                             <div className="flex items-center justify-between text-sm mb-1.5">
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-slate-700 dark:text-slate-300 text-base">{d.implantador}</span>
+                                    <span className="font-bold text-slate-700 text-base">{d.implantador}</span>
                                     <span className="text-xs text-slate-400">
-                                        Total: <b className="text-slate-600 dark:text-slate-200">{d.total_semester_points} pts</b>
+                                        Total: <b className="text-slate-600">{d.total_semester_points} pts</b>
                                         {' '}({d.finished_points_semester} já entregues)
                                     </span>
                                 </div>
@@ -60,7 +60,7 @@ export const TeamCapacityWidget: React.FC<TeamCapacityWidgetProps> = ({ data, cl
                             </div>
 
                             {/* Barra de Progresso Atual (Capacity Risk) */}
-                            <div className="relative h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="relative h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                 {/* Marker de limite (opcional) */}
                                 <div className="absolute top-0 bottom-0 w-0.5 bg-white/20 z-10" style={{ left: '100%' }}></div>
 
@@ -76,14 +76,14 @@ export const TeamCapacityWidget: React.FC<TeamCapacityWidgetProps> = ({ data, cl
                             {/* Sub-barra de Progresso Semestral (indicador visual de volume) */}
                             {d.total_semester_points > 0 && (
                                 <div className="mt-2 flex items-center gap-2">
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                                    <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
                                         Entregue:
                                     </span>
-                                    <div className="h-1.5 flex-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex border border-slate-200 dark:border-slate-700">
+                                    <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
                                         <div className="h-full bg-emerald-500" style={{ width: `${donePct}%` }}></div>
                                         <div className="h-full bg-blue-400/30" style={{ width: `${100 - donePct}%` }}></div>
                                     </div>
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">{Math.round(donePct)}%</span>
+                                    <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">{Math.round(donePct)}%</span>
                                 </div>
                             )}
                         </div>

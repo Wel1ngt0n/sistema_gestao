@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getSortedRowModel, getFilteredRowModel } from '@tanstack/react-table';
 import { Edit2, Check, X, History } from 'lucide-react';
 import ForecastHistoryModal from './ForecastHistoryModal';
@@ -82,7 +82,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
             header: 'Cliente / Rede',
             cell: info => (
                 <div className="flex flex-col">
-                    <span className="font-semibold text-slate-800 dark:text-gray-100">{info.getValue()}</span>
+                    <span className="font-semibold text-slate-800">{info.getValue()}</span>
                     {(info.row.original.rede && info.row.original.rede !== info.getValue()) && (
                         <span className="text-xs text-slate-400">Rede: {info.row.original.rede}</span>
                     )}
@@ -91,7 +91,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
         }),
         columnHelper.accessor('implantador', {
             header: 'Implantador',
-            cell: info => <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{info.getValue() || 'N/A'}</span>
+            cell: info => <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{info.getValue() || 'N/A'}</span>
         }),
         columnHelper.accessor('state_uf', {
             header: 'UF',
@@ -103,9 +103,9 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
             cell: info => {
                 const val = info.getValue();
                 let color = 'bg-slate-100 text-slate-600';
-                if (val === 'GO_LIVE') color = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-                if (val === 'ATRASADA') color = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-                if (val === 'DENTRO_PRAZO') color = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+                if (val === 'GO_LIVE') color = 'bg-emerald-100 text-emerald-700';
+                if (val === 'ATRASADA') color = 'bg-red-100 text-red-700';
+                if (val === 'DENTRO_PRAZO') color = 'bg-blue-100 text-blue-700';
 
                 return (
                     <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${color}`}>
@@ -123,7 +123,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                         <select
                             value={editValues.deployment_type || 'MIGRAÇÃO'}
                             onChange={e => setEditValues({ ...editValues, deployment_type: e.target.value })}
-                            className="text-xs border rounded p-1 dark:bg-slate-800 dark:border-slate-600"
+                            className="text-xs border rounded p-1"
                         >
                             <option value="NOVA">Nova</option>
                             <option value="MIGRAÇÃO">Migração</option>
@@ -142,7 +142,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                         <div className="flex flex-col gap-1 w-20">
                             <input
                                 type="number"
-                                className="text-xs border rounded p-1 w-full dark:bg-slate-800 dark:border-slate-600"
+                                className="text-xs border rounded p-1 w-full"
                                 value={editValues.projected_orders}
                                 onChange={e => setEditValues({ ...editValues, projected_orders: Number(e.target.value) })}
                                 placeholder="Qtd"
@@ -166,7 +166,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                     return (
                         <input
                             type="date"
-                            className="text-xs border rounded p-1 w-28 dark:bg-slate-800 dark:border-slate-600"
+                            className="text-xs border rounded p-1 w-28"
                             value={editValues.manual_go_live_date ? format(new Date(editValues.manual_go_live_date), 'yyyy-MM-dd') : ''}
                             onChange={e => setEditValues({ ...editValues, manual_go_live_date: e.target.value })}
                         />
@@ -204,7 +204,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                     return (
                         <input
                             type="text"
-                            className="text-xs border rounded p-1 w-24 dark:bg-slate-800 dark:border-slate-600"
+                            className="text-xs border rounded p-1 w-24"
                             value={editValues.previous_platform || ''}
                             onChange={e => setEditValues({ ...editValues, previous_platform: e.target.value })}
                             placeholder="Ex: Vtex"
@@ -247,14 +247,14 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                     <div className="flex gap-1">
                         <button
                             onClick={() => startEdit(info.row.original)}
-                            className="p-1 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-blue-500 hover:bg-slate-100 rounded transition-colors"
                             title="Editar Previsão"
                         >
                             <Edit2 size={14} />
                         </button>
                         <button
                             onClick={() => setHistoryStore({ id: info.row.original.id, name: info.row.original.store_name })}
-                            className="p-1 text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-amber-500 hover:bg-slate-100 rounded transition-colors"
                             title="Ver Histórico"
                         >
                             <History size={14} />
@@ -276,23 +276,23 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 dark:bg-slate-700 text-xs uppercase text-slate-500 dark:text-slate-300 font-semibold">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-semibold">
                     {table.getHeaderGroups().map(headerGroup => (
                         <tr key={headerGroup.id}>
                             {headerGroup.headers.map(header => (
-                                <th key={header.id} className="p-3 border-b border-slate-200 dark:border-slate-600 whitespace-nowrap">
+                                <th key={header.id} className="p-3 border-b border-slate-200 whitespace-nowrap">
                                     {flexRender(header.column.columnDef.header, header.getContext())}
                                 </th>
                             ))}
                         </tr>
                     ))}
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                <tbody className="divide-y divide-slate-100">
                     {table.getRowModel().rows.length > 0 ? (
                         table.getRowModel().rows.map(row => (
-                            <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                            <tr key={row.id} className="hover:bg-slate-50/50 transition-colors group">
                                 {row.getVisibleCells().map(cell => (
-                                    <td key={cell.id} className="p-3 text-sm text-slate-700 dark:text-slate-200 align-middle">
+                                    <td key={cell.id} className="p-3 text-sm text-slate-700 align-middle">
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </td>
                                 ))}

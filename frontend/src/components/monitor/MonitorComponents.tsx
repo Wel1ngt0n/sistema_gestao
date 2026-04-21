@@ -1,4 +1,4 @@
-import { FC } from 'react';
+﻿import { FC } from 'react';
 import { Column } from '@tanstack/react-table';
 import { formatDate } from './monitorUtils';
 
@@ -113,7 +113,7 @@ export const Filter = ({ column, table }: { column: Column<any, unknown>; table:
                 <select
                     onChange={e => column.setFilterValue(e.target.value || undefined)}
                     value={(columnFilterValue ?? '') as string}
-                    className="w-full text-[10px] border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none p-1 h-6 shadow-sm focus:ring-1 focus:ring-orange-500"
+                    className="w-full text-[10px] border border-slate-300 rounded bg-white text-slate-700 outline-none p-1 h-6 shadow-sm focus:ring-1 focus:ring-orange-500"
                 >
                     <option value="">Todos</option>
                     {sortedUniqueValues.map((value: any) => (
@@ -132,9 +132,9 @@ export const SkeletonLoader = () => (
     <div className="w-full max-w-[1920px] p-6 space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+                <div key={i} className="h-24 bg-slate-200 rounded-xl"></div>
             ))}
         </div>
-        <div className="h-[600px] bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+        <div className="h-[600px] bg-slate-200 rounded-xl"></div>
     </div>
 );

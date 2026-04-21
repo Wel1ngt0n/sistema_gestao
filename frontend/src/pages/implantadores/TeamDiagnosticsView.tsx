@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { api } from '../../services/api'
 import {
     Users, Download, 
@@ -161,18 +161,18 @@ export default function TeamDiagnosticsView() {
                         <Brain size={14} className="animate-pulse" />
                         Jarvis Intelligence Core
                     </div>
-                    <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-white">
+                    <h1 className="text-4xl font-black tracking-tight text-zinc-900">
                         Gestão Operacional do Time
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-lg">
+                    <p className="text-zinc-500 text-lg">
                         Métricas consolidadas e análise preditiva do time de implantação.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-zinc-200 shadow-sm">
                     <PeriodFilter value={period} onChange={setPeriod} />
                     <div className="flex gap-2">
-                         <button className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl hover:bg-zinc-100 transition-colors">
+                         <button className="p-3 bg-zinc-50 rounded-xl hover:bg-zinc-100 transition-colors">
                              <Download size={18} />
                          </button>
                     </div>
@@ -185,14 +185,14 @@ export default function TeamDiagnosticsView() {
                     {companyProjection && <MRRNetProjectionWidget data={companyProjection} />}
                 </div>
                 <div className="xl:col-span-4 grid grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center">
+                    <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm flex flex-col justify-center">
                         <span className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">Total Ativos</span>
                         <span className="text-3xl font-black">{summary?.total_ativos || 0}</span>
                         <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 mt-2">
                              <TrendingUp size={10} /> +5% vs mês ant.
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center">
+                    <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm flex flex-col justify-center">
                         <span className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">SLA Médio</span>
                         <span className={`text-3xl font-black ${summary?.avg_sla > 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
                             {summary?.avg_sla || 0}%
@@ -222,7 +222,7 @@ export default function TeamDiagnosticsView() {
                                          <div className="p-2 bg-red-500/10 text-red-500 rounded-lg">
                                              <Activity size={18} />
                                          </div>
-                                         <p className="text-sm font-medium text-red-700 dark:text-red-400 leading-relaxed">
+                                         <p className="text-sm font-medium text-red-700 leading-relaxed">
                                              {alert.msg}
                                          </p>
                                      </div>
@@ -232,19 +232,19 @@ export default function TeamDiagnosticsView() {
                     )}
 
                     {/* TABLE: PERFORMANCE MATRIX */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
-                        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+                    <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-xl">
+                        <div className="p-6 border-b border-zinc-100 flex justify-between items-center">
                             <h3 className="font-bold text-xl flex items-center gap-2">
                                 <Users className="text-zinc-400" size={20} />
                                 Ranking de Performance do Time
                             </h3>
-                            <div className="text-[10px] font-black uppercase px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-full tracking-widest">
+                            <div className="text-[10px] font-black uppercase px-3 py-1 bg-zinc-100 text-zinc-500 rounded-full tracking-widest">
                                 {data.length} Analistas
                             </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="text-[10px] text-zinc-400 uppercase font-black bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 tracking-widest">
+                                <thead className="text-[10px] text-zinc-400 uppercase font-black bg-zinc-50/50/50 border-b border-zinc-100 tracking-widest">
                                     <tr>
                                         <th className="px-6 py-5 cursor-pointer hover:text-orange-500 transition-colors" onClick={() => handleSort('implantador')}>Implantador</th>
                                         <th className="px-6 py-5 text-center cursor-pointer hover:text-orange-500 transition-colors" onClick={() => handleSort('score')}>Score</th>
@@ -256,21 +256,21 @@ export default function TeamDiagnosticsView() {
                                         <th className="px-6 py-5 text-right cursor-pointer hover:text-orange-500 transition-colors" onClick={() => handleSort('mrr_ativo')}>MRR</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
+                                <tbody className="divide-y divide-zinc-50">
                                     {sortedData.map((item, idx) => {
                                         const status = getStatusLabel(item.jarvis_status || '');
                                         return (
                                             <tr 
                                                 key={idx} 
                                                 onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
-                                                className="group hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-all cursor-pointer"
+                                                className="group hover:bg-zinc-50/80/30 transition-all cursor-pointer"
                                             >
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-black text-zinc-400 text-xs border border-zinc-200 dark:border-zinc-700 group-hover:border-orange-500 transition-colors">
+                                                        <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-black text-zinc-400 text-xs border border-zinc-200 group-hover:border-orange-500 transition-colors">
                                                             {item.implantador.substring(0, 2).toUpperCase()}
                                                         </div>
-                                                        <span className="font-bold text-zinc-900 dark:text-zinc-100">{item.implantador}</span>
+                                                        <span className="font-bold text-zinc-900">{item.implantador}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
@@ -286,7 +286,7 @@ export default function TeamDiagnosticsView() {
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 text-right font-black text-zinc-700 dark:text-zinc-300">
+                                                <td className="px-6 py-5 text-right font-black text-zinc-700">
                                                     {item.carga_ponderada.toFixed(1)} <span className="text-[10px] font-medium text-zinc-400">pts</span>
                                                 </td>
                                                 <td className="px-6 py-5 text-right">
@@ -318,7 +318,7 @@ export default function TeamDiagnosticsView() {
 
                     {/* CAUSE DIAGNOSTICS & BOTTLENECKS */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-5 bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                        <div className="md:col-span-5 bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm">
                             <h4 className="font-bold mb-4 flex items-center gap-2">
                                 <Activity size={18} className="text-orange-500" />
                                 Diagnóstico por Causa
@@ -327,16 +327,16 @@ export default function TeamDiagnosticsView() {
                                 {diagnostics && <BottleneckDonutChart data={diagnostics.causas_distribuicao} />}
                             </div>
                         </div>
-                        <div className="md:col-span-7 bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                            <h4 className="font-black mb-4 flex items-center gap-2 text-orange-600 dark:text-orange-500 uppercase text-xs tracking-widest">
+                        <div className="md:col-span-7 bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
+                            <h4 className="font-black mb-4 flex items-center gap-2 text-orange-600 uppercase text-xs tracking-widest">
                                 <Clock size={18} />
                                 Gargalos por Etapa
                             </h4>
                             <div className="space-y-2">
                                 {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
-                                    <div key={i} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-transparent hover:border-orange-500/20 transition-all">
-                                        <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-tight">{g.etapa}</span>
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white">{g.count} <span className="text-[9px] font-bold text-zinc-400">LOJAS</span></span>
+                                    <div key={i} className="flex items-center justify-between p-3 bg-zinc-50/50 rounded-xl border border-transparent hover:border-orange-500/20 transition-all">
+                                        <span className="text-xs font-bold text-zinc-600 uppercase tracking-tight">{g.etapa}</span>
+                                        <span className="text-sm font-black text-zinc-900">{g.count} <span className="text-[9px] font-bold text-zinc-400">LOJAS</span></span>
                                     </div>
                                 ))}
                             </div>

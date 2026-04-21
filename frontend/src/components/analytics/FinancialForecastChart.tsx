@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Chart } from 'react-chartjs-2';
 import { ForecastData } from './useAnalyticsData';
 import { InfoTooltip } from './InfoTooltip';
@@ -106,15 +106,15 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
     };
 
     return (
-        <div className={`bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm hover:shadow-md transition-shadow ${className}`}>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+        <div className={`bg-white p-8 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow ${className}`}>
+            <h3 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
                 🔮 Forecast de Ativação (MRR)
                 <InfoTooltip
                     text="Projeção de receita (MRR) futura. 'Realizado' são lojas já concluídas. 'Projetado' são lojas em andamento alocadas na data estimada de conclusão (Data Início + Cycle Time Médio)."
                     position="left"
                 />
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            <p className="text-sm text-slate-500 mb-6">
                 Projeção de entrada de receita baseada no ritmo atual e data estimada de conclusão.
             </p>
             <div className="h-[300px]">

@@ -1,4 +1,4 @@
-import { InfoTooltip } from './InfoTooltip';
+﻿import { InfoTooltip } from './InfoTooltip';
 import React, { useMemo } from 'react';
 import { EChartWrapper } from './EChartWrapper';
 import { useAnalyticsData } from './useAnalyticsData';
@@ -150,21 +150,21 @@ export const RiskScatterPlot: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-zinc-700/50 h-full hover:shadow-md transition-shadow duration-300">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/50 h-full hover:shadow-md transition-shadow duration-300">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-700 flex items-center gap-2">
                     <span>🎯</span> Matriz de Risco vs. Tempo
                     <InfoTooltip text="Eixo Y: Score de Risco Calculado. Eixo X: Dias parado no gargalo atual. Bolha: Valor do Contrato (MRR)." />
                 </h3>
             </div>
-            <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">
+            <p className="text-xs text-slate-5000 mb-4">
                 Lojas no topo (risco) e à direita (tempo parado) são críticas. Bolha indica MRR.
             </p>
 
             <div className="relative w-full h-[400px]">
                 {(!chartData || chartData.length === 0) && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 dark:bg-zinc-800/80 z-10 backdrop-blur-sm rounded-xl">
-                        <span className="text-sm font-medium text-slate-500 dark:text-zinc-400">Aguardando dados...</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50/80 z-10 backdrop-blur-sm rounded-xl">
+                        <span className="text-sm font-medium text-slate-500">Aguardando dados...</span>
                     </div>
                 )}
                 <EChartWrapper option={option} height="100%" />

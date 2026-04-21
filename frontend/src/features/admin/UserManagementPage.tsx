@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import { Users, UserPlus, Search, Shield, MoreVertical, XCircle, Mail } from 'lucide-react'
 
@@ -69,17 +69,17 @@ export default function UserManagementPage() {
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
                         <Users className="w-6 h-6 text-orange-500" />
                         Gestão de Usuários
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+                    <p className="text-zinc-500 mt-1">
                         Controle quem tem acesso ao CRM e seus níveis de permissão.
                     </p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 text-white rounded-xl font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
                 >
                     <UserPlus size={18} />
                     Novo Usuário
@@ -94,7 +94,7 @@ export default function UserManagementPage() {
                     placeholder="Buscar por nome, email ou função..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                 />
             </div>
 
@@ -102,20 +102,20 @@ export default function UserManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {loading ? (
                     [...Array(6)].map((_, i) => (
-                        <div key={i} className="h-40 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl animate-pulse"></div>
+                        <div key={i} className="h-40 bg-zinc-100/50 rounded-2xl animate-pulse"></div>
                     ))
                 ) : filteredUsers.map(user => (
-                    <div key={user.id} className="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+                    <div key={user.id} className="group bg-white border border-zinc-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4">
                             <span className={`inline-flex w-2.5 h-2.5 rounded-full ${user.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} title={user.is_active ? "Ativo" : "Inativo"}></span>
                         </div>
 
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 rounded-xl flex items-center justify-center text-zinc-500 font-bold text-xl uppercase">
+                            <div className="w-12 h-12 bg-gradient-to-br from-zinc-100 to-zinc-200 rounded-xl flex items-center justify-center text-zinc-500 font-bold text-xl uppercase">
                                 {user.name.substring(0, 2)}
                             </div>
                             <div>
-                                <h3 className="font-bold text-lg text-zinc-900 dark:text-white leading-tight">{user.name}</h3>
+                                <h3 className="font-bold text-lg text-zinc-900 leading-tight">{user.name}</h3>
                                 {user.email && (
                                     <div className="flex items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
                                         <Mail size={12} /> {user.email}
@@ -125,7 +125,7 @@ export default function UserManagementPage() {
                         </div>
 
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-300 flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700 uppercase tracking-wide">
+                            <div className="px-2.5 py-1 rounded-lg bg-zinc-100 text-xs font-semibold text-zinc-600 flex items-center gap-1.5 border border-zinc-200 uppercase tracking-wide">
                                 <Shield size={12} />
                                 {user.role}
                             </div>
@@ -136,17 +136,17 @@ export default function UserManagementPage() {
                             )}
                         </div>
 
-                        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 flex items-center justify-between">
+                        <div className="border-t border-zinc-100 pt-3 flex items-center justify-between">
                             <button
                                 onClick={() => toggleStatus(user)}
                                 className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${user.is_active
-                                    ? 'border-red-100 text-red-600 hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-900/20'
-                                    : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
+                                    ? 'border-red-100 text-red-600 hover:bg-red-50'
+                                    : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50'
                                     }`}
                             >
                                 {user.is_active ? 'Desativar Acesso' : 'Reativar Acesso'}
                             </button>
-                            <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+                            <button className="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors">
                                 <MoreVertical size={16} />
                             </button>
                         </div>
@@ -157,10 +157,10 @@ export default function UserManagementPage() {
             {/* Create Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 transform scale-100 animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-200 transform scale-100 animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold dark:text-white">Convidar Usuário</h2>
-                            <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                            <h2 className="text-xl font-bold">Convidar Usuário</h2>
+                            <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
                                 <XCircle className="text-zinc-400" />
                             </button>
                         </div>
@@ -170,7 +170,7 @@ export default function UserManagementPage() {
                                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Nome Completo</label>
                                 <input
                                     required
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                                     value={newUser.name}
                                     onChange={e => setNewUser({ ...newUser, name: e.target.value })}
                                     placeholder="ex: João Silva"
@@ -180,7 +180,7 @@ export default function UserManagementPage() {
                                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Email</label>
                                 <input
                                     type="email"
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                                     value={newUser.email}
                                     onChange={e => setNewUser({ ...newUser, email: e.target.value })}
                                     placeholder="joao@instabuy.com.br"
@@ -191,7 +191,7 @@ export default function UserManagementPage() {
                                 <input
                                     type="password"
                                     required
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                                     value={newUser.password}
                                     onChange={e => setNewUser({ ...newUser, password: e.target.value })}
                                     placeholder="******"
@@ -200,7 +200,7 @@ export default function UserManagementPage() {
                             <div>
                                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Função</label>
                                 <select
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                                     value={newUser.role}
                                     onChange={e => setNewUser({ ...newUser, role: e.target.value })}
                                 >
@@ -212,7 +212,7 @@ export default function UserManagementPage() {
 
                             <button
                                 type="submit"
-                                className="w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl mt-4 hover:opacity-90 transition-opacity shadow-lg"
+                                className="w-full py-3.5 bg-zinc-900 text-white font-bold rounded-xl mt-4 hover:opacity-90 transition-opacity shadow-lg"
                             >
                                 Criar Usuário
                             </button>

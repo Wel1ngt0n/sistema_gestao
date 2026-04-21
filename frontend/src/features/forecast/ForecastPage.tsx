@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { RefreshCw, Download, Filter } from 'lucide-react';
@@ -67,14 +67,14 @@ export default function ForecastPage() {
     };
 
     return (
-        <div className="p-6 space-y-6 bg-slate-50 min-h-screen text-slate-900 dark:bg-slate-900 dark:text-white">
+        <div className="p-6 space-y-6 bg-slate-50 min-h-screen text-slate-900">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
                         Forecast de Entregas & CS
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                    <p className="text-slate-500 text-sm mt-1">
                         Visão consolidada de Go-Live, Projeção de Pedidos e Ativação Operacional.
                     </p>
                 </div>
@@ -82,7 +82,7 @@ export default function ForecastPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => refetch()}
-                        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm"
+                        className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm"
                     >
                         <RefreshCw size={16} /> Atualizar
                     </button>
@@ -96,7 +96,7 @@ export default function ForecastPage() {
             </div>
 
             {/* Warning */}
-            <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded text-amber-800 dark:text-amber-200 text-sm">
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded text-amber-800 text-sm">
                 ⚠️ <strong>Atenção:</strong> Valores estimados com base em projeções operacionais. Datas manuais têm prioridade sobre SLA contratual.
             </div>
 
@@ -104,7 +104,7 @@ export default function ForecastPage() {
             <div className="overflow-x-auto pb-2">
                 {loadingSummary ? (
                     <div className="flex gap-4">
-                        {[1, 2, 3].map(i => <div key={i} className="w-64 h-32 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />)}
+                        {[1, 2, 3].map(i => <div key={i} className="w-64 h-32 bg-slate-200 rounded-xl animate-pulse" />)}
                     </div>
                 ) : (
                     <ForecastCards summary={summaryData || []} />
@@ -112,8 +112,8 @@ export default function ForecastPage() {
             </div>
 
             {/* Filters & Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-4 items-center">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                <div className="p-4 border-b border-slate-200 flex flex-wrap gap-4 items-center">
                     <div className="flex items-center gap-2 text-slate-500">
                         <Filter size={18} />
                         <span className="font-medium text-sm">Filtros:</span>
@@ -122,13 +122,13 @@ export default function ForecastPage() {
                     <input
                         type="number"
                         placeholder="Ano (Ex: 2025)"
-                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 dark:bg-slate-900 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none w-32"
+                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none w-32"
                         onChange={e => setFilters({ ...filters, year: e.target.value })}
                         value={filters.year}
                     />
 
                     <select
-                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 dark:bg-slate-900 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
                         onChange={e => setFilters({ ...filters, month: e.target.value })}
                         value={filters.month}
                     >
@@ -150,7 +150,7 @@ export default function ForecastPage() {
                     <input
                         type="text"
                         placeholder="Filtrar por Rede..."
-                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 dark:bg-slate-900 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
                         onChange={e => setFilters({ ...filters, rede: e.target.value })}
                         value={filters.rede}
                     />
@@ -158,7 +158,7 @@ export default function ForecastPage() {
                     <input
                         type="text"
                         placeholder="Filtrar por Implantador..."
-                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 dark:bg-slate-900 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="px-3 py-1.5 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
                         onChange={e => setFilters({ ...filters, implantador: e.target.value })}
                         value={filters.implantador}
                     />

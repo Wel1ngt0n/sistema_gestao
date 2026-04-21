@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
 import { Select } from '../../components/ui/Select';
 import { DatePicker } from '../../components/ui/DatePicker';
@@ -47,7 +47,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
             <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className={`h-9 w-9 flex items-center justify-center bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors shadow-sm ${isRefreshing ? 'animate-spin cursor-not-allowed opacity-70' : ''}`}
+                className={`h-9 w-9 flex items-center justify-center bg-white text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors shadow-sm ${isRefreshing ? 'animate-spin cursor-not-allowed opacity-70' : ''}`}
                 title="Atualizar Dados"
             >
                 <RefreshCw className="w-4 h-4" />
@@ -58,7 +58,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                 onClick={() => setIsOpen(!isOpen)}
                 className={`h-9 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all shadow-sm ${isOpen || hasActiveFilters
                     ? 'bg-orange-600 text-white border-orange-600 shadow-orange-500/20 ring-2 ring-orange-500/20'
-                    : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-orange-400/50 hover:text-orange-600 dark:hover:text-orange-400'
+                    : 'bg-white text-zinc-700 border-zinc-200 hover:border-orange-400/50 hover:text-orange-600'
                     }`}
             >
                 <ListFilter className="w-4 h-4" />
@@ -71,7 +71,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
             {/* Export Button */}
             <button
                 onClick={handleExportCSV}
-                className="h-9 w-9 flex items-center justify-center bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors shadow-sm hover:text-orange-600 dark:hover:text-orange-400"
+                className="h-9 w-9 flex items-center justify-center bg-white text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors shadow-sm hover:text-orange-600"
                 title="Exportar Excel"
             >
                 <Download className="w-4 h-4" />
@@ -82,20 +82,20 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                 <>
                     <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" onClick={() => setIsOpen(false)} />
 
-                    <div className="absolute right-0 top-full mt-2 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-80 p-5 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                        <div className="flex justify-between items-center mb-5 pb-3 border-b border-zinc-100 dark:border-zinc-800/50">
-                            <h3 className="font-bold text-zinc-900 dark:text-white text-sm flex items-center gap-2">
+                    <div className="absolute right-0 top-full mt-2 z-50 bg-white/90/90 backdrop-blur-xl border border-zinc-200 rounded-2xl shadow-2xl w-80 p-5 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                        <div className="flex justify-between items-center mb-5 pb-3 border-b border-zinc-100/50">
+                            <h3 className="font-bold text-zinc-900 text-sm flex items-center gap-2">
                                 <ListFilter className="w-4 h-4 text-orange-500" />
                                 Configurar Vista
                             </h3>
-                            <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+                            <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
 
                         <div className="space-y-5">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Base Temporal</label>
+                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-4000">Base Temporal</label>
                                 <Select
                                     label=""
                                     options={baseTemporalOptions}
@@ -106,7 +106,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Início</label>
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-4000">Início</label>
                                     <DatePicker
                                         label=""
                                         date={filters.startDate}
@@ -115,7 +115,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Fim</label>
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-4000">Fim</label>
                                     <DatePicker
                                         label=""
                                         date={filters.endDate}
@@ -126,7 +126,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Filtrar por Implantador</label>
+                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-4000">Filtrar por Implantador</label>
                                 <Select
                                     label=""
                                     options={implantadorOptions}
@@ -143,7 +143,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                                         updateFilter('endDate', null);
                                         updateFilter('implantador', null);
                                     }}
-                                    className="w-full mt-2 py-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/10 dark:text-rose-400 rounded-xl transition-colors border border-rose-100 dark:border-rose-900/20 hover:shadow-sm"
+                                    className="w-full mt-2 py-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors border border-rose-100 hover:shadow-sm"
                                 >
                                     Limpar Filtros Ativos
                                 </button>

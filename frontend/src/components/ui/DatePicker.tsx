@@ -5,11 +5,7 @@ import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import clsx from 'clsx';
-import 'react-day-picker/dist/style.css'; // Import default styles
-
-// Custom CSS to override default react-day-picker styles for Tailwind compatibility nicely
-// In a real project we would add this to global.css, but here we keep it scoped or rely on default + wrappers.
-// We will use inline style overrides via classNames prop of DayPicker.
+import 'react-day-picker/dist/style.css';
 
 interface DatePickerProps {
     date: Date | null;
@@ -32,21 +28,21 @@ export const DatePicker: React.FC<DatePickerProps> = ({ date, onChange, label, p
                     <>
                         <Popover.Button
                             className={clsx(
-                                "flex items-center justify-between w-full rounded-lg bg-white dark:bg-slate-800 py-2 pl-3 pr-3 text-left shadow-md border border-slate-200 dark:border-slate-700 sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500",
+                                "flex items-center justify-between w-full rounded-lg bg-white py-2 pl-3 pr-3 text-left shadow-sm border border-slate-200 sm:text-sm hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500",
                                 !date && "text-slate-400"
                             )}
                         >
                             <span className="flex items-center gap-2 truncate">
-                                <CalendarIcon className="h-4 w-4 text-slate-500" />
+                                <CalendarIcon className="h-4 w-4 text-slate-400" />
                                 {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : placeholder}
                             </span>
                             {date && (
                                 <div
                                     onClick={(e) => {
-                                        e.stopPropagation(); // Prevent opening popover
+                                        e.stopPropagation();
                                         onChange(undefined);
                                     }}
-                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                                    className="p-1 hover:bg-slate-200 rounded-full transition-colors"
                                 >
                                     <X className="h-3 w-3 text-slate-400" />
                                 </div>
@@ -62,21 +58,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({ date, onChange, label, p
                             leaveTo="opacity-0 translate-y-1"
                         >
                             <Popover.Panel className="absolute left-0 z-50 mt-2 transform px-4 sm:px-0 lg:max-w-3xl">
-                                <div className="overflow-hidden rounded-lg shadow-lg ring-1 ring-black/5 bg-white dark:bg-slate-800 p-2">
+                                <div className="overflow-hidden rounded-xl shadow-lg border border-slate-200 bg-white p-2">
                                     <DayPicker
                                         mode="single"
                                         selected={date || undefined}
-                                        onSelect={(d) => {
-                                            onChange(d);
-                                            // Close popover logic would need ref to button, but headless ui usually handles outside click.
-                                            // To auto-close on select, we might need manual control, but standard behavior is fine.
-                                        }}
+                                        onSelect={(d) => { onChange(d); }}
                                         locale={ptBR}
                                         showOutsideDays
                                         className="border-0"
                                         modifiersClassNames={{
-                                            selected: 'bg-orange-600 text-white rounded-full hover:bg-orange-700',
-                                            today: 'text-orange-600 font-bold'
+                                            selected: 'bg-blue-600 text-white rounded-full hover:bg-blue-700',
+                                            today: 'text-blue-600 font-bold'
                                         }}
                                         styles={{
                                             head_cell: { width: '40px' },

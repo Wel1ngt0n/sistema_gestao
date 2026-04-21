@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { ChevronDown, ChevronUp, Download, FileText, Users, CheckCircle, Clock, Target, TrendingUp, TrendingDown, BarChart3, Building2, Layers, Bug } from 'lucide-react';
 
@@ -290,20 +290,20 @@ export default function IntegrationReports() {
     };
 
     return (
-        <div className="p-0 space-y-8 bg-zinc-50 dark:bg-[#09090b] min-h-screen text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+        <div className="p-0 space-y-8 bg-zinc-50#09090b] min-h-screen text-zinc-900 transition-colors duration-300">
             <header className="px-6 md:px-10 pt-6 flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                 <div>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-rose-600">
                         Relatório Mensal de Integração
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-2">
+                    <p className="text-zinc-500 mt-2">
                         Histórico de entregas, qualidade técnica (Bugs) e eficiência.
                     </p>
                 </div>
 
                 <button
                     onClick={handleExportGeneral}
-                    className="flex items-center gap-2 px-5 py-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                    className="flex items-center gap-2 px-5 py-3 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                     <Download size={20} />
                     Exportar Base Excel
@@ -312,24 +312,24 @@ export default function IntegrationReports() {
 
             {/* ═══ ANNUAL GOALS ═══ */}
             <div className="px-6 md:px-10">
-                <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                <div className="bg-white rounded-3xl border border-zinc-200 p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-5">
                         <Target className="text-orange-500" size={20} />
-                        <h2 className="text-lg font-bold text-zinc-800 dark:text-white">Metas Anuais 2026 (Integração)</h2>
+                        <h2 className="text-lg font-bold text-zinc-800">Metas Anuais 2026 (Integração)</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Stores Goal */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-baseline">
-                                <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">Integrações Concluídas</span>
+                                <span className="text-sm font-semibold text-zinc-600">Integrações Concluídas</span>
                                 <span className="text-xs text-zinc-500">Meta: {goals.stores_target} lojas</span>
                             </div>
-                            <div className="relative h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="relative h-4 bg-zinc-200 rounded-full overflow-hidden">
                                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-1000"
                                     style={{ width: `${Math.min(goals.stores_pct, 100)}%` }} />
                             </div>
                             <div className="flex justify-between text-xs text-zinc-500">
-                                <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                <span className="font-semibold text-orange-600">
                                     {goals.stores_ytd} lojas ({goals.stores_pct}%)
                                 </span>
                                 <span>Projeção: {projLabel(goals.projection_stores)}</span>
@@ -339,28 +339,28 @@ export default function IntegrationReports() {
                         {/* Pontos YTD */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-baseline">
-                                <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">Pontos Acumulados</span>
+                                <span className="text-sm font-semibold text-zinc-600">Pontos Acumulados</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <BarChart3 size={24} className="text-orange-500" />
-                                <span className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">{goals.points_ytd}</span>
+                                <span className="text-2xl font-bold text-zinc-800">{goals.points_ytd}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* WIP */}
-                    <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-wrap gap-6">
+                    <div className="mt-6 pt-4 border-t border-zinc-100 flex flex-wrap gap-6">
                         {wip && (
                             <>
                                 <div className="flex items-center gap-2">
                                     <Layers size={14} className="text-zinc-500" />
                                     <span className="text-sm text-zinc-500">Em Integração:</span>
-                                    <span className="font-bold text-zinc-800 dark:text-zinc-200">{wip.wip_count} lojas</span>
+                                    <span className="font-bold text-zinc-800">{wip.wip_count} lojas</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Building2 size={14} className="text-zinc-500" />
                                     <span className="text-sm text-zinc-500">MRR Backlog:</span>
-                                    <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                                    <span className="font-bold text-zinc-800">
                                         R$ {wip.mrr_backlog.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
@@ -369,11 +369,11 @@ export default function IntegrationReports() {
                     </div>
 
                     {wip && wip.board_stages.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
                             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Estágios</p>
                             <div className="flex flex-wrap gap-2">
                                 {wip.board_stages.map(st => (
-                                    <span key={st.stage} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                    <span key={st.stage} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-lg text-xs font-medium text-zinc-700">
                                         <span className="w-2 h-2 rounded-full bg-orange-500" />
                                         {st.stage}: <strong>{st.count}</strong>
                                     </span>
@@ -387,20 +387,20 @@ export default function IntegrationReports() {
             {/* ═══ MONTHS ═══ */}
             <div className="space-y-6 px-6 md:px-10 pb-10">
                 {data.map((monthData) => (
-                    <div key={monthData.month} className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={monthData.month} className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         <div
                             className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer group"
                             onClick={() => toggleMonth(monthData.month)}
                         >
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+                                <div className="p-2 bg-orange-100 rounded-xl text-orange-600 group-hover:scale-110 transition-transform">
                                     <FileText size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-semibold capitalize text-zinc-900 dark:text-white">
+                                    <h3 className="text-xl font-semibold capitalize text-zinc-900">
                                         {new Date(monthData.month + '-02').toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                                     </h3>
-                                    <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
+                                    <div className="flex items-center gap-3 text-sm text-zinc-500">
                                         <span>{monthData.stores.length} lojas integradas</span>
                                         {monthData.variation && (
                                             <span className={`flex items-center gap-0.5 text-xs font-semibold ${monthData.variation.stores_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -421,13 +421,13 @@ export default function IntegrationReports() {
                                 </div>
                                 <div className="text-right hidden sm:block">
                                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">No Prazo</p>
-                                    <p className={`text-lg font-bold ${monthData.stats.on_time_pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : monthData.stats.on_time_pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                                    <p className={`text-lg font-bold ${monthData.stats.on_time_pct >= 70 ? 'text-emerald-600' : monthData.stats.on_time_pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
                                         {monthData.stats.on_time_pct}%
                                     </p>
                                 </div>
                                 <div className="text-right hidden sm:block">
                                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Tempo Médio</p>
-                                    <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{monthData.stats.avg_days} dias</p>
+                                    <p className="text-lg font-bold text-orange-600">{monthData.stats.avg_days} dias</p>
                                 </div>
                                 <div className="ml-2">
                                     {expandedMonth === monthData.month ? <ChevronUp className="text-zinc-400" /> : <ChevronDown className="text-zinc-400" />}
@@ -436,11 +436,11 @@ export default function IntegrationReports() {
                         </div>
 
                         {expandedMonth === monthData.month && (
-                            <div className="border-t border-zinc-100 dark:border-zinc-800 p-6 bg-zinc-50/50 dark:bg-zinc-800/10 animation-fade-in">
+                            <div className="border-t border-zinc-100 p-6 bg-zinc-50/50/10 animation-fade-in">
                                 {/* Action Buttons */}
                                 <div className="flex justify-end mb-6">
                                     <button onClick={(e) => { e.stopPropagation(); handleExportMonthCsv(monthData); }}
-                                        className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors">
+                                        className="flex items-center gap-2 px-4 py-2 bg-zinc-200 text-zinc-800 rounded-xl hover:bg-zinc-300 transition-colors">
                                         <Download size={18} /> Exportar CSV
                                     </button>
                                 </div>
@@ -448,14 +448,14 @@ export default function IntegrationReports() {
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
                                     {[
-                                        { label: 'Integrações', value: monthData.stats.total_stores, color: 'text-zinc-800 dark:text-zinc-200' },
-                                        { label: 'Bugs', value: monthData.stats.total_bugs, color: monthData.stats.total_bugs > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' },
-                                        { label: 'No Prazo', value: `${monthData.stats.on_time_count}/${monthData.stats.total_stores}`, color: monthData.stats.on_time_pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' },
-                                        { label: 'Média Dias', value: monthData.stats.avg_days, color: 'text-zinc-800 dark:text-zinc-200' },
-                                        { label: 'MRR Entregue', value: `R$ ${(monthData.stats.total_mrr / 1000).toFixed(1)}k`, color: 'text-emerald-600 dark:text-emerald-400' },
-                                        { label: 'Matriz/Filial', value: `${monthData.type_breakdown.matriz_count}/${monthData.type_breakdown.filial_count}`, color: 'text-cyan-600 dark:text-cyan-400' },
+                                        { label: 'Integrações', value: monthData.stats.total_stores, color: 'text-zinc-800' },
+                                        { label: 'Bugs', value: monthData.stats.total_bugs, color: monthData.stats.total_bugs > 0 ? 'text-rose-600' : 'text-emerald-600' },
+                                        { label: 'No Prazo', value: `${monthData.stats.on_time_count}/${monthData.stats.total_stores}`, color: monthData.stats.on_time_pct >= 70 ? 'text-emerald-600' : 'text-amber-600' },
+                                        { label: 'Média Dias', value: monthData.stats.avg_days, color: 'text-zinc-800' },
+                                        { label: 'MRR Entregue', value: `R$ ${(monthData.stats.total_mrr / 1000).toFixed(1)}k`, color: 'text-emerald-600' },
+                                        { label: 'Matriz/Filial', value: `${monthData.type_breakdown.matriz_count}/${monthData.type_breakdown.filial_count}`, color: 'text-cyan-600' },
                                     ].map(item => (
-                                        <div key={item.label} className="bg-white dark:bg-zinc-900 p-3 rounded-2xl text-center border border-zinc-100 dark:border-zinc-800">
+                                        <div key={item.label} className="bg-white p-3 rounded-2xl text-center border border-zinc-100">
                                             <p className="text-[10px] text-zinc-500 uppercase font-semibold">{item.label}</p>
                                             <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
                                         </div>
@@ -465,27 +465,27 @@ export default function IntegrationReports() {
                                 {/* Ranking por Integrador */}
                                 {monthData.integradores && monthData.integradores.length > 0 && (
                                     <div className="mb-6">
-                                        <h4 className="text-sm font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <h4 className="text-sm font-semibold text-zinc-600 uppercase tracking-wider mb-3 flex items-center gap-2">
                                             <Users size={16} /> Ranking por Integrador
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {monthData.integradores.map((imp, idx) => (
-                                                <div key={imp.name} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors">
+                                                <div key={imp.name} className="bg-white p-4 rounded-2xl border border-zinc-100 hover:border-orange-300 transition-colors">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div className="flex items-center gap-2">
                                                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-zinc-400' : idx === 2 ? 'bg-orange-600' : 'bg-zinc-600'}`}>
                                                                 {idx + 1}
                                                             </span>
-                                                            <span className="font-semibold text-zinc-800 dark:text-zinc-200">{imp.name}</span>
+                                                            <span className="font-semibold text-zinc-800">{imp.name}</span>
                                                         </div>
-                                                        <span className="text-sm font-bold text-zinc-800 dark:text-zinc-300">
+                                                        <span className="text-sm font-bold text-zinc-800">
                                                             {imp.stores} {imp.stores === 1 ? 'loja' : 'lojas'}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+                                                    <div className="flex items-center gap-4 text-xs text-zinc-500">
                                                         <span className={`flex items-center gap-1 ${imp.bugs > 0 ? 'text-rose-500' : 'text-emerald-500'}`}><Bug size={12} />{imp.bugs} Bugs</span>
                                                         <span className="flex items-center gap-1"><Clock size={12} />{imp.avg_days} dias</span>
-                                                        <span className={`flex items-center gap-1 ${imp.on_time_pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : imp.on_time_pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                                                        <span className={`flex items-center gap-1 ${imp.on_time_pct >= 70 ? 'text-emerald-600' : imp.on_time_pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
                                                             <CheckCircle size={12} />{imp.on_time_pct}%
                                                         </span>
                                                     </div>
@@ -498,7 +498,7 @@ export default function IntegrationReports() {
                                 {/* Store Table */}
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-100 dark:bg-zinc-800/50 rounded-lg">
+                                        <thead className="text-xs text-zinc-500 uppercase bg-zinc-100/50 rounded-lg">
                                             <tr>
                                                 <th className="px-4 py-3 rounded-l-lg">Loja</th>
                                                 <th className="px-4 py-3">Integrador</th>
@@ -512,30 +512,30 @@ export default function IntegrationReports() {
                                         </thead>
                                         <tbody>
                                             {monthData.stores.map((store) => (
-                                                <tr key={store.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800/30 transition-colors">
-                                                    <td className="px-4 py-3 font-medium text-zinc-800 dark:text-zinc-200">{store.name}</td>
-                                                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{store.integrador}</td>
-                                                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{store.rede}</td>
-                                                    <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">
+                                                <tr key={store.id} className="border-b border-zinc-100 hover:bg-white/30 transition-colors">
+                                                    <td className="px-4 py-3 font-medium text-zinc-800">{store.name}</td>
+                                                    <td className="px-4 py-3 text-zinc-600">{store.integrador}</td>
+                                                    <td className="px-4 py-3 text-zinc-600">{store.rede}</td>
+                                                    <td className="px-4 py-3 text-right text-zinc-600">
                                                         {new Date(store.finished_at).toLocaleDateString('pt-BR')}
                                                     </td>
-                                                    <td className="px-4 py-3 text-right font-medium text-zinc-700 dark:text-zinc-300">{store.days.toFixed(1)}</td>
+                                                    <td className="px-4 py-3 text-right font-medium text-zinc-700">{store.days.toFixed(1)}</td>
                                                     <td className="px-4 py-3 text-center">
                                                         {store.bugs > 0 ? (
-                                                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">{store.bugs}</span>
+                                                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-rose-100 text-rose-700">{store.bugs}</span>
                                                         ) : (
-                                                            <span className="text-zinc-300 dark:text-zinc-600">-</span>
+                                                            <span className="text-zinc-300">-</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
                                                         {store.on_time ? (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">✅ Sim</span>
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">✅ Sim</span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">⚠️ Não</span>
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">⚠️ Não</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${store.doc_status === 'Ok' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${store.doc_status === 'Ok' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                                             {store.doc_status || '-'}
                                                         </span>
                                                     </td>

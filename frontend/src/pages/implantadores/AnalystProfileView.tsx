@@ -1,4 +1,4 @@
-// UX Audit: placeholder aria-label
+﻿// UX Audit: placeholder aria-label
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
@@ -142,9 +142,9 @@ export default function AnalystProfileView() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/team-diagnostics')}
-                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-700"
+                        className="p-2 hover:bg-zinc-100 rounded-lg transition-colors border border-zinc-200"
                     >
-                        <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+                        <ArrowLeft className="w-5 h-5 text-zinc-600" />
                     </button>
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -152,7 +152,7 @@ export default function AnalystProfileView() {
                             Perfil Analítico: {data.summary?.implantador || name}
                             {summary?.score && <PerformanceScoreBadge score={summary.score.score_final} size="lg" />}
                         </h1>
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                        <p className="text-sm text-zinc-500 mt-1">
                             Acompanhamento individual de metas, produtividade e Qualidade.
                         </p>
                     </div>
@@ -163,7 +163,7 @@ export default function AnalystProfileView() {
                     </div>
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-750 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm font-medium hover:bg-zinc-50 transition-colors"
                     >
                         <Download size={16} />
                         CSV
@@ -180,14 +180,14 @@ export default function AnalystProfileView() {
 
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
+                <div className="bg-white border border-zinc-200 p-5 rounded-2xl">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-lg">
+                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
                             <BriefcaseIcon className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Carga Ponderada</span>
                     </div>
-                    <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                    <div className="text-3xl font-black text-zinc-900">
                         {cargaPonderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
                     </div>
                     <div className="text-xs text-zinc-500 mt-2">
@@ -196,12 +196,12 @@ export default function AnalystProfileView() {
                 </div>
 
                 {/* ENTREGA NO SLA */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+                <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                            <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="p-2 bg-emerald-50 rounded-lg">
+                            <Activity className="w-5 h-5 text-emerald-600" />
                         </div>
-                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
+                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                             SLA & Conformidade
                         </h3>
                     </div>
@@ -210,9 +210,9 @@ export default function AnalystProfileView() {
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <span className="text-xs text-zinc-500 text-left">Lojas Entregues (Geral)</span>
-                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{pctSlaConcluidas}%</span>
+                                <span className="text-xl font-bold text-zinc-900">{pctSlaConcluidas}%</span>
                             </div>
-                            <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
                                     style={{ width: `${pctSlaConcluidas}%` }}
@@ -223,9 +223,9 @@ export default function AnalystProfileView() {
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <span className="text-xs text-zinc-500 text-left">Saúde da Carteira (Ativas)</span>
-                                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{pctSlaAtivas}%</span>
+                                <span className="text-xl font-bold text-zinc-900">{pctSlaAtivas}%</span>
                             </div>
-                            <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-blue-500 rounded-full transition-all duration-1000"
                                     style={{ width: `${pctSlaAtivas}%` }}
@@ -233,43 +233,43 @@ export default function AnalystProfileView() {
                             </div>
                         </div>
                     </div>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-4 leading-relaxed">
+                    <p className="text-[10px] text-zinc-5000 mt-4 leading-relaxed">
                         Percentual de conformidade com o prazo contratual.
                     </p>
                 </div>
 
                 {/* ENTREGA (MÊS) */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+                <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                            <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="p-2 bg-emerald-50 rounded-lg">
+                            <CheckCircle className="w-5 h-5 text-emerald-600" />
                         </div>
-                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
+                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                             Entregas (Mês)
                         </h3>
                     </div>
-                    <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    <span className="text-3xl font-bold text-zinc-900 tracking-tight">
                         {entregueMes}
                     </span>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
+                    <p className="text-[10px] text-zinc-5000 mt-2 leading-relaxed">
                         Total de {entreguesTotal2026} lojas entregues desde o início.
                     </p>
                 </div>
 
                 {/* MRR RETIDO */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+                <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
-                            <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                            <Clock className="w-5 h-5 text-blue-600" />
                         </div>
-                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-600 uppercase tracking-wider">
+                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                             MRR Ativo
                         </h3>
                     </div>
-                    <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    <span className="text-3xl font-bold text-zinc-900 tracking-tight">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrrAtivo)}
                     </span>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
+                    <p className="text-[10px] text-zinc-5000 mt-2 leading-relaxed">
                         Faturamento em implantação nas {ativosCount} lojas ativas.
                     </p>
                 </div>
@@ -280,8 +280,8 @@ export default function AnalystProfileView() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* RADAR CHART BLOCK */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col">
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col">
+                    <h3 className="text-lg font-bold text-zinc-900 mb-2 flex items-center gap-2">
                         <Activity className="text-sky-500" />
                         Radar de Performance
                     </h3>
@@ -298,7 +298,7 @@ export default function AnalystProfileView() {
                 </div>
 
                 {/* AI ANALYSIS BLOCK */}
-                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+                <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold flex items-center gap-2">
                         <Sparkles className="text-orange-500" />
@@ -323,21 +323,21 @@ export default function AnalystProfileView() {
                 {aiResult && !aiResult.error && (
                     <div className="space-y-6 text-sm">
                         {/* 1. Resumo Executivo */}
-                        <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-100 dark:border-orange-500/20">
-                            <h3 className="font-bold text-orange-800 dark:text-orange-300 mb-2 flex items-center gap-2">
+                        <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                            <h3 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
                                 <Activity size={16} />
                                 1. Resumo Executivo
                             </h3>
-                            <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+                            <p className="text-zinc-700 leading-relaxed font-medium">
                                 {aiResult.resumo_executivo}
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* 2. Padrões */}
-                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3">2. Principais Padrões Identificados</h3>
-                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                            <div className="bg-zinc-50/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 mb-3">2. Principais Padrões Identificados</h3>
+                                <ul className="space-y-2 text-zinc-600">
                                     {aiResult.padroes_identificados?.map((p: string, i: number) => (
                                         <li key={i} className="flex gap-2">
                                             <span className="text-orange-500">•</span>
@@ -348,22 +348,22 @@ export default function AnalystProfileView() {
                             </div>
 
                             {/* 3. Diagnóstico de Causa */}
-                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3">3. Diagnóstico de Causa</h3>
+                            <div className="bg-zinc-50/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 mb-3">3. Diagnóstico de Causa</h3>
                                 <div className="space-y-3">
                                     {aiResult.diagnostico_causa && Object.entries(aiResult.diagnostico_causa).map(([key, val]: [string, any]) => (
                                         <div key={key}>
                                             <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">{key.replace('_', ' ')}</span>
-                                            <p className="text-zinc-600 dark:text-zinc-400">{val}</p>
+                                            <p className="text-zinc-600">{val}</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             {/* 4. Gargalos */}
-                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3 text-red-600 dark:text-red-400">4. Gargalos Operacionais</h3>
-                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                            <div className="bg-zinc-50/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 mb-3 text-red-600">4. Gargalos Operacionais</h3>
+                                <ul className="space-y-2 text-zinc-600">
                                     {aiResult.gargalos_operacionais?.map((g: string, i: number) => (
                                         <li key={i} className="flex gap-2">
                                             <span className="text-red-500">•</span>
@@ -374,9 +374,9 @@ export default function AnalystProfileView() {
                             </div>
 
                             {/* 5. Riscos */}
-                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 dark:text-zinc-200 mb-3 text-amber-600 dark:text-amber-500">5. Riscos</h3>
-                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                            <div className="bg-zinc-50/50 p-4 rounded-xl">
+                                <h3 className="font-bold text-zinc-700 mb-3 text-amber-600">5. Riscos</h3>
+                                <ul className="space-y-2 text-zinc-600">
                                     {aiResult.riscos_identificados?.map((r: string, i: number) => (
                                         <li key={i} className="flex gap-2">
                                             <span className="text-amber-500">•</span>
@@ -389,7 +389,7 @@ export default function AnalystProfileView() {
 
                         {/* Raio-X Audit (Deep Analysis) */}
                         {aiResult.auditoria_raio_x && (
-                            <div className="bg-zinc-900 dark:bg-black text-white p-5 rounded-2xl border border-zinc-800 shadow-xl">
+                            <div className="bg-zinc-900 text-white p-5 rounded-2xl border border-zinc-800 shadow-xl">
                                 <h3 className="font-bold text-orange-400 mb-4 flex items-center gap-2 text-base">
                                     <Sparkles size={18} />
                                     Raio-X: Auditoria Qualitativa (ClickUp)
@@ -427,12 +427,12 @@ export default function AnalystProfileView() {
 
 
                         {/* 6. Ações */}
-                        <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
-                            <h3 className="font-bold text-emerald-800 dark:text-emerald-300 mb-3 flex items-center gap-2">
+                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <h3 className="font-bold text-emerald-800 mb-3 flex items-center gap-2">
                                 <CheckCircle size={16} />
                                 6. Ações Recomendadas para Gestão
                             </h3>
-                            <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
+                            <ul className="space-y-2 text-zinc-700">
                                 {aiResult.acoes_recomendadas?.map((a: string, i: number) => (
                                     <li key={i} className="flex gap-2 font-medium">
                                         <span className="bg-emerald-500 w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" />
@@ -445,7 +445,7 @@ export default function AnalystProfileView() {
                 )}
 
                 {aiResult?.error && (
-                    <div className="p-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg text-sm">
+                    <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
                         {aiResult.error}
                     </div>
                 )}
@@ -457,10 +457,10 @@ export default function AnalystProfileView() {
                 <BriefcaseIcon size={20} className="text-orange-500" />
                 Carteira Ativa ({ativas.length} Projetos)
             </h2>
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
+                        <thead className="text-xs text-zinc-500 uppercase bg-zinc-50/50 border-b border-zinc-200">
                             <tr>
                                 <th className="px-6 py-4">Loja</th>
                                 <th className="px-6 py-4">Tipo</th>
@@ -470,18 +470,18 @@ export default function AnalystProfileView() {
                                 <th className="px-6 py-4 text-right">MRR</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                        <tbody className="divide-y divide-zinc-100">
                             {ativas.map((loja: any) => (
-                                <tr key={loja.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                                    <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                <tr key={loja.id} className="hover:bg-zinc-50/50">
+                                    <td className="px-6 py-4 font-semibold text-zinc-900">
                                         {loja.name}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
+                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 text-zinc-600 font-medium">
                                             {loja.tipo_loja || 'Indefinido'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-zinc-700 dark:text-zinc-300">
+                                    <td className="px-6 py-4 font-medium text-zinc-700">
                                         {loja.status_name}
                                     </td>
                                     <td className="px-6 py-4">
@@ -514,10 +514,10 @@ export default function AnalystProfileView() {
                 <CheckCircle size={20} className="text-emerald-500" />
                 Histórico de Entregas (Desde 2026) - {entregas.length} Lojas
             </h2>
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
+                        <thead className="text-xs text-zinc-500 uppercase bg-zinc-50/50 border-b border-zinc-200">
                             <tr>
                                 <th className="px-6 py-4">Loja</th>
                                 <th className="px-6 py-4">Tipo</th>
@@ -527,14 +527,14 @@ export default function AnalystProfileView() {
                                 <th className="px-6 py-4 text-right">MRR</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                        <tbody className="divide-y divide-zinc-100">
                             {entregas.map((loja: any) => (
-                                <tr key={loja.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                                    <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                <tr key={loja.id} className="hover:bg-zinc-50/50">
+                                    <td className="px-6 py-4 font-semibold text-zinc-900">
                                         {loja.name}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
+                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 text-zinc-600 font-medium">
                                             {loja.tipo_loja || 'Indefinido'}
                                         </span>
                                     </td>

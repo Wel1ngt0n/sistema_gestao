@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Settings, Target, Scale, Clock, Bell, Send, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
 
@@ -91,14 +91,14 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-zinc-200 dark:border-zinc-800 max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl border border-zinc-200 max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center shrink-0">
-                    <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <div className="p-6 border-b border-zinc-200 flex justify-between items-center shrink-0">
+                    <h2 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
                         <Settings className="text-teal-500" size={22} />
                         Configurações do Sistema
                     </h2>
-                    <button onClick={onClose} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                    <button onClick={onClose} className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -120,14 +120,14 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {items.map(item => (
-                                            <div key={item.key} className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-100 dark:border-zinc-800">
-                                                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                                            <div key={item.key} className="bg-zinc-50/50 rounded-xl p-3 border border-zinc-100">
+                                                <label className="block text-xs font-semibold text-zinc-600 mb-1">
                                                     {item.description || item.key}
                                                 </label>
                                                 {isToggle(item.key) ? (
                                                     <button
                                                         onClick={() => updateValue(item.key, editValues[item.key] === 'true' ? 'false' : 'true')}
-                                                        className={`relative w-12 h-6 rounded-full transition-colors ${editValues[item.key] === 'true' ? 'bg-teal-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                                                        className={`relative w-12 h-6 rounded-full transition-colors ${editValues[item.key] === 'true' ? 'bg-teal-500' : 'bg-zinc-300'}`}
                                                     >
                                                         <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${editValues[item.key] === 'true' ? 'left-6' : 'left-0.5'}`} />
                                                     </button>
@@ -135,14 +135,14 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
                                                     <input
                                                         type="url"
                                                         placeholder="https://hooks.slack.com/..."
-                                                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 font-mono text-zinc-800 dark:text-zinc-200"
+                                                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 font-mono text-zinc-800"
                                                         value={editValues[item.key] || ''}
                                                         onChange={e => updateValue(item.key, e.target.value)}
                                                     />
                                                 ) : (
                                                     <input
                                                         type="text"
-                                                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 font-mono text-zinc-800 dark:text-zinc-200"
+                                                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 font-mono text-zinc-800"
                                                         value={editValues[item.key] || ''}
                                                         onChange={e => updateValue(item.key, e.target.value)}
                                                     />
@@ -164,7 +164,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
                                                     key={btn.key}
                                                     onClick={() => handleTestNotification(btn.key)}
                                                     disabled={testingNotif !== null}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-teal-400 dark:hover:border-teal-600 transition-colors disabled:opacity-50"
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-zinc-200 text-zinc-700 hover:border-teal-400 transition-colors disabled:opacity-50"
                                                 >
                                                     {testingNotif === btn.key ? <Loader2 size={12} className="animate-spin" /> : btn.icon}
                                                     {btn.label}
@@ -179,7 +179,7 @@ export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
+                <div className="p-6 border-t border-zinc-200 flex items-center justify-between shrink-0">
                     {msg && (
                         <div className={`flex items-center gap-2 text-sm font-medium ${msg.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>
                             {msg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}

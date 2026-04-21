@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
 import AdminPanel from './AdminPanel';
 import { SkeletonLoader } from './monitor/MonitorComponents';
@@ -257,7 +257,7 @@ export default function MonitorV2() {
     if (loading && data.length === 0) return <SkeletonLoader />;
 
     return (
-        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden">
+        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen bg-zinc-50#09090b] text-zinc-900 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden">
 
             <MonitorAIModal
                 isOpen={aiModalOpen}

@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react';
+﻿import { useState, useMemo, Fragment } from 'react';
 import { Tab } from '@headlessui/react';
 import { Skeleton } from '../ui/Skeleton';
 import PerformanceDetailModal from './PerformanceDetailModal';
@@ -71,7 +71,7 @@ export default function DashboardAnalytics() {
         return (
             <div aria-label="Dashboard Analytics" className="w-full">
                 {/* Header Skeleton */}
-                <div aria-label="Dashboard Analytics" className="bg-white dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700/50 sticky top-0 z-30 shadow-sm px-6 py-5">
+                <div aria-label="Dashboard Analytics" className="bg-white border-b border-slate-200/50 sticky top-0 z-30 shadow-sm px-6 py-5">
                     <div aria-label="Dashboard Analytics" className="flex justify-between items-center">
                         <div aria-label="Dashboard Analytics" className="space-y-2">
                             <Skeleton width={200} height={32} />
@@ -212,14 +212,14 @@ export default function DashboardAnalytics() {
     };
 
     return (
-        <div aria-label="Dashboard Analytics" className="min-h-screen w-full bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 p-0 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
+        <div aria-label="Dashboard Analytics" className="min-h-screen w-full bg-zinc-50#09090b] text-zinc-900 p-0 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
             {/* Header: Nexus Style */}
             <header className="mb-8 flex flex-col md:flex-row justify-between items-end">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900">
                         Sistema de Gestão de Operações
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm tracking-wide mt-1 uppercase">
+                    <p className="text-zinc-500 font-medium text-sm tracking-wide mt-1 uppercase">
                         Deep Dive Operacional & Performance
                     </p>
                 </div>
@@ -233,7 +233,7 @@ export default function DashboardAnalytics() {
             </header>
 
             <Tab.Group>
-                <Tab.List className="flex space-x-2 rounded-full bg-zinc-200/50 dark:bg-zinc-800/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5 dark:shadow-black/20">
+                <Tab.List className="flex space-x-2 rounded-full bg-zinc-200/50/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-zinc-200 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5">
                     {['Visão Geral', 'Eficiência & Risco', 'Time & Performance'].map((tabName) => (
                         <Tab as={Fragment} key={tabName}>
                             {({ selected }) => (
@@ -243,7 +243,7 @@ export default function DashboardAnalytics() {
                                         'focus:outline-none focus:ring-2 focus:ring-orange-500/20',
                                         selected
                                             ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105'
-                                            : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-700/50'
+                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-white/50/50'
                                     )}
                                 >
                                     {tabName}
@@ -273,8 +273,8 @@ export default function DashboardAnalytics() {
                             {forecastData && <FinancialForecastChart data={forecastData} />}
 
                             {/* Evolução de Entregas */}
-                            <div aria-label="Dashboard Analytics" className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow duration-300">
-                                <h3 className="text-xl font-bold text-zinc-800 dark:text-white mb-6 flex items-center gap-2">
+                            <div aria-label="Dashboard Analytics" className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
                                     Evolução de Entregas
                                     <InfoTooltip text="Número absoluto de lojas implantadas (status DONE) por mês." />
                                 </h3>
@@ -311,8 +311,8 @@ export default function DashboardAnalytics() {
                             </div>
 
                             {/* Eficiência Operacional */}
-                            <div aria-label="Dashboard Analytics" className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
-                                <h3 className="text-xl font-bold text-zinc-800 dark:text-white mb-6 flex items-center gap-2">
+                            <div aria-label="Dashboard Analytics" className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
+                                <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
                                     Eficiência Operacional
                                     <InfoTooltip text="Combinação de Cycle Time e OTD ao longo do tempo." />
                                 </h3>
@@ -333,9 +333,9 @@ export default function DashboardAnalytics() {
                         </div>
 
                         {/* 3. Gargalos (Visual Moderno - Progress List) */}
-                        <div aria-label="Dashboard Analytics" className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden animate-fade-in-up animation-delay-300 opacity-0 hover:shadow-md transition-shadow duration-300">
-                            <div aria-label="Dashboard Analytics" className="p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
-                                <h3 className="text-xl font-bold text-zinc-800 dark:text-white flex items-center gap-2">
+                        <div aria-label="Dashboard Analytics" className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden animate-fade-in-up animation-delay-300 opacity-0 hover:shadow-md transition-shadow duration-300">
+                            <div aria-label="Dashboard Analytics" className="p-8 border-b border-zinc-100 bg-zinc-50/50/50">
+                                <h3 className="text-xl font-bold text-zinc-800 flex items-center gap-2">
                                     <span className="text-amber-500">⏳</span> Gargalos de Processo
                                     <InfoTooltip text="Etapas onde os projetos passam mais tempo parados." />
                                 </h3>
@@ -343,10 +343,10 @@ export default function DashboardAnalytics() {
 
                             <div aria-label="Dashboard Analytics" className="p-6 grid grid-cols-1 gap-4">
                                 {(Array.isArray(bottleneckData) ? bottleneckData : []).slice(0, 8).map((b, i) => (
-                                    <div key={i} className="group relative flex items-center gap-4 p-4 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all cursor-default border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700/50">
+                                    <div key={i} className="group relative flex items-center gap-4 p-4 rounded-xl hover:bg-zinc-50/30 transition-all cursor-default border border-transparent hover:border-zinc-200/50">
 
                                         {/* Rank Number */}
-                                        <div aria-label="Dashboard Analytics" className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 font-bold text-sm">
+                                        <div aria-label="Dashboard Analytics" className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100/50 text-zinc-500 font-bold text-sm">
                                             {i + 1}
                                         </div>
 
@@ -356,10 +356,10 @@ export default function DashboardAnalytics() {
                                             {/* Name & Progress */}
                                             <div aria-label="Dashboard Analytics" className="md:col-span-6">
                                                 <div aria-label="Dashboard Analytics" className="flex justify-between mb-2">
-                                                    <span className="font-bold text-zinc-700 dark:text-zinc-200 text-sm">{b.step_name}</span>
-                                                    <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{b.avg_days}d média</span>
+                                                    <span className="font-bold text-zinc-700 text-sm">{b.step_name}</span>
+                                                    <span className="text-xs font-mono text-zinc-500">{b.avg_days}d média</span>
                                                 </div>
-                                                <div aria-label="Dashboard Analytics" className="w-full bg-zinc-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden shadow-inner">
+                                                <div aria-label="Dashboard Analytics" className="w-full bg-zinc-100 h-2.5 rounded-full overflow-hidden shadow-inner">
                                                     <div
                                                         className="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.4)] transition-all duration-1000 ease-out group-hover:brightness-110"
                                                         style={{ width: `${Math.min(100, (b.avg_days / 15) * 100)}%` }}
@@ -368,21 +368,21 @@ export default function DashboardAnalytics() {
                                             </div>
 
                                             {/* Stats */}
-                                            <div aria-label="Dashboard Analytics" className="md:col-span-3 flex flex-col items-center md:items-start pl-4 border-l border-zinc-100 dark:border-zinc-800/50">
-                                                <span className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-bold">Tempo Total</span>
-                                                <span className="text-zinc-700 dark:text-zinc-300 font-mono font-bold">{b.total_days}d</span>
+                                            <div aria-label="Dashboard Analytics" className="md:col-span-3 flex flex-col items-center md:items-start pl-4 border-l border-zinc-100/50">
+                                                <span className="text-[10px] uppercase tracking-wider text-zinc-4000 font-bold">Tempo Total</span>
+                                                <span className="text-zinc-700 font-mono font-bold">{b.total_days}d</span>
                                             </div>
 
                                             {/* Retrabalhos */}
                                             <div aria-label="Dashboard Analytics" className="md:col-span-3 flex justify-end">
                                                 {b.reopens > 0 ? (
-                                                    <div aria-label="Dashboard Analytics" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20">
+                                                    <div aria-label="Dashboard Analytics" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-100">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400">{b.reopens} Retrabalhos</span>
+                                                        <span className="text-xs font-bold text-rose-600">{b.reopens} Retrabalhos</span>
                                                     </div>
                                                 ) : (
-                                                    <div aria-label="Dashboard Analytics" className="px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 opacity-50">
-                                                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Fluido</span>
+                                                    <div aria-label="Dashboard Analytics" className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 opacity-50">
+                                                        <span className="text-xs font-bold text-emerald-600">Fluido</span>
                                                     </div>
                                                 )}
                                             </div>

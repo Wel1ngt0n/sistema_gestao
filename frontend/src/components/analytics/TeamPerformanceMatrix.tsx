@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { CapacityData, PerformanceData } from './useAnalyticsData';
 import { ArrowUpDown, AlertCircle, CheckCircle, TrendingUp, Zap } from 'lucide-react';
 
@@ -119,21 +119,21 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
     );
 
     return (
-        <div className="bg-white dark:bg-zinc-800 rounded-3xl border border-slate-200 dark:border-zinc-700/50 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200/50 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 dark:bg-zinc-900/50 text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider">
+                    <thead className="bg-slate-50/50 text-xs font-bold text-slate-5000 uppercase tracking-wider">
                         <tr>
                             <th className="px-6 py-4 text-center w-16">#</th>
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" onClick={() => handleSort('implantador')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('implantador')}>
                                 <div className="flex items-center gap-2">Implantador <SortIcon field="implantador" /></div>
                             </th>
 
                             {/* New Workload Index Column */}
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('workload_index')}>
-                                <div className="flex items-center justify-end gap-2 text-orange-600 dark:text-orange-400 group relative">
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('workload_index')}>
+                                <div className="flex items-center justify-end gap-2 text-orange-600 group relative">
                                     Índice de Esforço (Período) <SortIcon field="workload_index" />
-                                    <div className="absolute bottom-full mb-2 hidden group-hover:block w-max rounded-md bg-zinc-800 dark:bg-zinc-900 px-3 py-2 text-xs font-medium text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none right-0">
+                                    <div className="absolute bottom-full mb-2 hidden group-hover:block w-max rounded-md bg-zinc-800 px-3 py-2 text-xs font-medium text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none right-0">
                                         Soma dos pontos de WIP atual e entregas no período selecionado.
                                     </div>
                                 </div>
@@ -141,24 +141,24 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
 
                             <th className="px-6 py-4 text-center">Status (Risco)</th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('wip_current')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('wip_current')}>
                                 <div className="flex items-center justify-end gap-2">Carga Atual (WIP) <SortIcon field="wip_current" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" onClick={() => handleSort('done_semester')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('done_semester')}>
                                 <div className="flex items-center gap-2">Entregas do Semestre <SortIcon field="done_semester" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('score')}>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('score')}>
                                 <div className="flex items-center justify-end gap-2">Score Total <SortIcon field="score" /></div>
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-700/50">
+                    <tbody className="divide-y divide-slate-100">
                         {sortedData.map((row) => (
                             <tr
                                 key={row.implantador}
-                                className={`hover:bg-slate-50 dark:hover:bg-zinc-700/20 transition-colors group cursor-pointer ${row.officialRank === 1 ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                                className={`hover:bg-slate-50/20 transition-colors group cursor-pointer ${row.officialRank === 1 ? 'bg-amber-50/50' : ''
                                     }`}
                                 onClick={() => onSelectImplantador?.(row.implantador)}
                             >
@@ -176,11 +176,11 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 {/* Implantador */}
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-xs shadow-sm bg-gradient-to-br from-slate-200 to-slate-300 dark:from-zinc-700 dark:to-zinc-600 text-slate-700 dark:text-zinc-200`}>
+                                        <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-xs shadow-sm bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700`}>
                                             {row.implantador.substring(0, 2).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-700 dark:text-zinc-200 text-sm group-hover:text-orange-500 transition-colors">
+                                            <p className="font-bold text-slate-700 text-sm group-hover:text-orange-500 transition-colors">
                                                 {row.implantador}
                                             </p>
                                         </div>
@@ -190,7 +190,7 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 {/* Workload Index */}
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex flex-col items-end">
-                                        <span className="text-base font-black text-orange-600 dark:text-orange-500">
+                                        <span className="text-base font-black text-orange-600">
                                             {row.total_stores_semester || 0} Lojas
                                         </span>
                                         <div className="flex flex-col items-end">
@@ -206,9 +206,9 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
 
                                 {/* Status / Risco */}
                                 <td className="px-6 py-4 text-center">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${row.risk === 'CRITICAL' ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30' :
-                                        row.risk === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30' :
-                                            'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30'
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${row.risk === 'CRITICAL' ? 'bg-red-50 text-red-700 border-red-100' :
+                                        row.risk === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                            'bg-emerald-50 text-emerald-700 border-emerald-100'
                                         }`}>
                                         {row.risk === 'CRITICAL' ? <AlertCircle size={12} /> :
                                             row.risk === 'HIGH' ? <TrendingUp size={12} /> :
@@ -221,10 +221,10 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{row.wip_current_count} Lojas</span>
+                                            <span className="text-sm font-bold text-slate-700">{row.wip_current_count} Lojas</span>
                                             <span className="text-[10px] text-slate-400">({row.wip_current_points?.toFixed(0)} pts)</span>
                                         </div>
-                                        <div className="w-24 h-1.5 bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                        <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                             <div className="h-full bg-orange-500" style={{ width: `${Math.min(100, row.wip_current_count * 5)}%` }}></div>
                                         </div>
                                     </div>
@@ -235,10 +235,10 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                     <div className="flex flex-col gap-1">
                                         <div className="flex justify-between items-baseline">
                                             {/* Show Semester TOTAL points here */}
-                                            <span className="text-sm font-bold text-slate-800 dark:text-white">{(row.capacity_semester_done || 0).toFixed(1)} pts</span>
+                                            <span className="text-sm font-bold text-slate-800">{(row.capacity_semester_done || 0).toFixed(1)} pts</span>
                                             <span className="text-xs text-slate-400">Semestre</span>
                                         </div>
-                                        <div className="w-full h-2 bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden flex">
+                                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
                                             <div className="h-full bg-lime-500" style={{ width: `${Math.min(100, (row.capacity_semester_done / (row.capacity_semester_total || 1)) * 100)}%` }}></div>
                                         </div>
                                     </div>
@@ -247,10 +247,10 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <div className="flex flex-col items-end">
-                                            <span className="text-base font-black text-slate-900 dark:text-white">{row.score?.toFixed(1)}</span>
+                                            <span className="text-base font-black text-slate-900">{row.score?.toFixed(1)}</span>
                                             <span className="text-[10px] text-lime-500 font-bold uppercase tracking-wider">Points</span>
                                         </div>
-                                        <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-600 dark:text-yellow-400">
+                                        <div className="p-2 bg-yellow-50 rounded-lg text-yellow-600">
                                             <Zap size={16} fill="currentColor" />
                                         </div>
                                     </div>
@@ -261,7 +261,7 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                 </table>
             </div>
             {mergedData.length === 0 && (
-                <div className="text-center py-12 text-slate-400 dark:text-zinc-500">
+                <div className="text-center py-12 text-slate-4000">
                     Nenhum dado de performance disponível para exibir.
                 </div>
             )}

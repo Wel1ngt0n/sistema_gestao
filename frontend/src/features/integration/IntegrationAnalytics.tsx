@@ -1,4 +1,4 @@
-// UX Audit: placeholder aria-label
+﻿// UX Audit: placeholder aria-label
 import { useState, Fragment, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -48,26 +48,26 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
     };
 
     const textColors: any = {
-        orange: 'text-orange-600 dark:text-orange-400',
-        green: 'text-emerald-600 dark:text-emerald-400',
-        blue: 'text-blue-600 dark:text-blue-400',
-        amber: 'text-amber-600 dark:text-amber-400',
-        yellow: 'text-amber-600 dark:text-amber-400',
-        slate: 'text-slate-600 dark:text-slate-400',
-        red: 'text-rose-600 dark:text-rose-400'
+        orange: 'text-orange-600',
+        green: 'text-emerald-600',
+        blue: 'text-blue-600',
+        amber: 'text-amber-600',
+        yellow: 'text-amber-600',
+        slate: 'text-slate-600',
+        red: 'text-rose-600'
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+        <div className="bg-white border border-zinc-200 p-6 rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
             <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 blur-xl transition-transform group-hover:scale-150 ${bgColors[color]}`}></div>
 
             <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className="flex items-center gap-2">
                     <span className="text-2xl">{icon}</span>
-                    <h3 className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">{label}</h3>
+                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{label}</h3>
                 </div>
                 {tooltip && (
-                    <div className="text-zinc-300 dark:text-zinc-600 cursor-help" title={tooltip}>
+                    <div className="text-zinc-300 cursor-help" title={tooltip}>
                         ℹ️
                     </div>
                 )}
@@ -77,7 +77,7 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
                 <div className={`text-4xl font-extrabold tracking-tight mb-2 ${textColors[color]}`}>
                     {value}
                 </div>
-                {subtext && <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{subtext}</p>}
+                {subtext && <p className="text-xs font-medium text-zinc-500">{subtext}</p>}
             </div>
         </div>
     );
@@ -243,21 +243,21 @@ export default function IntegrationAnalytics() {
     };
 
     return (
-        <div className="min-h-screen w-full text-zinc-900 dark:text-zinc-100 p-0 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
+        <div className="min-h-screen w-full text-zinc-900 p-0 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
             {/* Header: Nexus Style */}
             <header className="mb-8 flex flex-col md:flex-row justify-between items-end">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900">
                         Analytics de Integração
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm tracking-wide mt-1 uppercase">
+                    <p className="text-zinc-500 font-medium text-sm tracking-wide mt-1 uppercase">
                         Deep Dive Operacional & Qualidade
                     </p>
                 </div>
             </header>
 
             <Tab.Group>
-                <Tab.List className="flex space-x-2 rounded-full bg-zinc-200/50 dark:bg-zinc-800/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5 dark:shadow-black/20">
+                <Tab.List className="flex space-x-2 rounded-full bg-zinc-200/50/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-zinc-200 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5">
                     {['Visão Geral', 'Eficiência', 'Time & Performance'].map((tabName) => (
                         <Tab as={Fragment} key={tabName}>
                             {({ selected }) => (
@@ -267,7 +267,7 @@ export default function IntegrationAnalytics() {
                                         'focus:outline-none focus:ring-2 focus:ring-orange-500/20',
                                         selected
                                             ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105'
-                                            : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
+                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50'
                                     )}
                                 >
                                     {tabName}
@@ -289,8 +289,8 @@ export default function IntegrationAnalytics() {
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200">
-                            <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow duration-300 xl:col-span-2">
-                                <h3 className="text-xl font-bold text-zinc-800 dark:text-white mb-6 flex items-center gap-2">
+                            <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-md transition-shadow duration-300 xl:col-span-2">
+                                <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
                                     Evolução Mensal (Integração vs Bugs)
                                 </h3>
                                 <div className="h-[350px]">
@@ -318,8 +318,8 @@ export default function IntegrationAnalytics() {
 
                     {/* --- ABA 2: EFICIÊNCIA --- */}
                     <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
-                            <h3 className="text-xl font-bold text-zinc-800 dark:text-white mb-6 flex items-center gap-2">
+                        <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
+                            <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
                                 Lead Time de Integração
                             </h3>
                             <div className="h-[400px]">

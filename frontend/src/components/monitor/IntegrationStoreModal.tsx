@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Store, IntegrationData } from './types';
 
@@ -151,27 +151,27 @@ export default function IntegrationStoreModal({
     const ReadOnlyField = ({ label, value, className = "" }: { label: string, value: string | number | null | undefined, className?: string }) => (
         <div className={className}>
             <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">{label}</span>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 break-words">{value ?? '-'}</span>
+            <span className="text-sm font-medium text-slate-700 break-words">{value ?? '-'}</span>
         </div>
     );
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
             <div
-                className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300"
+                className="bg-white text-slate-900 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
 
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center shrink-0">
+                <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-orange-100 dark:bg-orange-500/10 rounded-lg">
+                        <div className="p-2 bg-orange-100 rounded-lg">
                             <span className="text-2xl">🔌</span>
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-none">{localData.name}</h2>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-slate-200 dark:bg-slate-800 text-slate-500">
+                                <h2 className="text-xl font-bold text-slate-900 leading-none">{localData.name}</h2>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-slate-200 text-slate-500">
                                     #{localData.id}
                                 </span>
                             </div>
@@ -181,28 +181,28 @@ export default function IntegrationStoreModal({
                                         href={fullStore.clickup_url}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1"
+                                        className="text-orange-600 hover:underline flex items-center gap-1"
                                     >
                                         🔗 Abrir no ClickUp (#{fullStore.clickup_id})
                                     </a>
                                 )}
                                 <span>|</span>
-                                <span>Rede: <strong className="text-slate-700 dark:text-slate-300">{localData.rede || 'N/A'}</strong></span>
+                                <span>Rede: <strong className="text-slate-700">{localData.rede || 'N/A'}</strong></span>
                                 <span>|</span>
-                                <span>Integrador: <strong className="text-slate-700 dark:text-slate-300">{localData.integrador || 'N/D'}</strong></span>
+                                <span>Integrador: <strong className="text-slate-700">{localData.integrador || 'N/D'}</strong></span>
                             </div>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-500 hover:text-slate-900 transition-colors"
                     >
                         ✕
                     </button>
                 </div>
 
                 {/* Tabs Switcher */}
-                <div className="flex px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 overflow-x-auto">
+                <div className="flex px-6 border-b border-slate-200 bg-white shrink-0 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('info')}
                         className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'info'
@@ -239,8 +239,8 @@ export default function IntegrationStoreModal({
                             {/* LEFT COLUMN: Main Info & Status */}
                             <div className="space-y-6 lg:col-span-2">
                                 {/* Datas e Prazos */}
-                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-                                    <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase mb-4 flex items-center gap-2">
+                                <div className="bg-slate-50/30 rounded-xl p-5 border border-slate-200">
+                                    <h4 className="text-xs font-bold text-orange-600 uppercase mb-4 flex items-center gap-2">
                                         📅 Datas da Integração
                                     </h4>
                                     <div className="grid grid-cols-2 gap-6">
@@ -248,7 +248,7 @@ export default function IntegrationStoreModal({
                                             <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Data Início</span>
                                             <input
                                                 type="date"
-                                                className="w-full bg-transparent border-b border-orange-200 dark:border-orange-800 text-sm font-bold text-orange-700 dark:text-orange-400 outline-none focus:border-orange-500 transition-colors py-0.5"
+                                                className="w-full bg-transparent border-b border-orange-200 text-sm font-bold text-orange-700 outline-none focus:border-orange-500 transition-colors py-0.5"
                                                 value={localData.start_date ? localData.start_date.split('T')[0] : ''}
                                                 onChange={(e) => setLocalData({ ...localData, start_date: e.target.value })}
                                             />
@@ -257,7 +257,7 @@ export default function IntegrationStoreModal({
                                             <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Data Fim (Go-Live)</span>
                                             <input
                                                 type="date"
-                                                className="w-full bg-transparent border-b border-orange-200 dark:border-orange-800 text-sm font-bold text-orange-700 dark:text-orange-400 outline-none focus:border-orange-500 transition-colors py-0.5"
+                                                className="w-full bg-transparent border-b border-orange-200 text-sm font-bold text-orange-700 outline-none focus:border-orange-500 transition-colors py-0.5"
                                                 value={localData.end_date ? localData.end_date.split('T')[0] : ''}
                                                 onChange={(e) => setLocalData({ ...localData, end_date: e.target.value })}
                                             />
@@ -271,7 +271,7 @@ export default function IntegrationStoreModal({
 
                                 {/* Configurações Editáveis (Formulário Principal) */}
                                 <div className="space-y-4">
-                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                    <h4 className="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2">
                                         ✏️ Edição & Métricas
                                     </h4>
 
@@ -280,7 +280,7 @@ export default function IntegrationStoreModal({
                                             <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Integrador Responsável</label>
                                             <input
                                                 type="text"
-                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                                                className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-orange-500"
                                                 value={localData.integrador || ''}
                                                 onChange={e => setLocalData({ ...localData, integrador: e.target.value })}
                                             />
@@ -289,7 +289,7 @@ export default function IntegrationStoreModal({
                                         <div>
                                             <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Status da Documentação</label>
                                             <select
-                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                                                className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-orange-500"
                                                 value={localData.doc_status}
                                                 onChange={e => setLocalData({ ...localData, doc_status: e.target.value as any })}
                                             >
@@ -303,14 +303,14 @@ export default function IntegrationStoreModal({
                                             <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Bugs Pós-Live (30 dias)</label>
                                             <input
                                                 type="number"
-                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                                                className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-orange-500"
                                                 value={localData.bugs}
                                                 onChange={e => setLocalData({ ...localData, bugs: parseInt(e.target.value) || 0 })}
                                             />
                                         </div>
 
                                         <div className="flex items-end">
-                                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 w-full">
+                                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 w-full">
                                                 <input
                                                     type="checkbox"
                                                     id="checkChurn"
@@ -318,7 +318,7 @@ export default function IntegrationStoreModal({
                                                     checked={localData.churn_risk}
                                                     onChange={e => setLocalData({ ...localData, churn_risk: e.target.checked })}
                                                 />
-                                                <label htmlFor="checkChurn" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                                                <label htmlFor="checkChurn" className="text-sm font-bold text-slate-700 cursor-pointer">
                                                     Risco de Churn (Sinalizar)
                                                 </label>
                                             </div>
@@ -329,13 +329,13 @@ export default function IntegrationStoreModal({
 
                             {/* RIGHT COLUMN: Actions */}
                             <div className="space-y-6">
-                                <div className="bg-white dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
                                     <h4 className="text-xs font-bold text-slate-400 uppercase mb-4">Ações</h4>
 
                                     <button
                                         onClick={() => localData.id && onDeepSync(localData.id)}
                                         disabled={isDeepSyncing || saving}
-                                        className="w-full py-3 mb-3 bg-orange-100 hover:bg-orange-200 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 font-bold rounded-lg border border-orange-200 dark:border-orange-800 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="w-full py-3 mb-3 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold rounded-lg border border-orange-200 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {isDeepSyncing ? <span className="animate-spin">🔄</span> : '⚡'}
                                         {isDeepSyncing ? 'Sincronizando...' : 'Rodar Deep Sync'}
@@ -351,7 +351,7 @@ export default function IntegrationStoreModal({
                                     </button>
                                 </div>
 
-                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+                                <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-200 text-xs text-slate-500">
                                     <p className="mb-2">⚡ <strong>Deep Sync:</strong> Força a atualização completa de logs e histórico do ClickUp.</p>
                                     <p>ℹ️ As datas de início e fim são sincronizadas automaticamente com o ClickUp, mas podem ser ajustadas manualmente aqui.</p>
                                 </div>
@@ -359,7 +359,7 @@ export default function IntegrationStoreModal({
                         </div>
                     ) : activeTab === 'steps' ? (
                         <div className="space-y-4 max-w-5xl mx-auto">
-                            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-6">
+                            <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-6">
                                 ⚡ Etapas da Integração (ClickUp)
                             </h4>
 
@@ -369,14 +369,14 @@ export default function IntegrationStoreModal({
                                     <p className="text-slate-400 text-sm font-medium">Carregando etapas...</p>
                                 </div>
                             ) : steps.length === 0 ? (
-                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                <div className="bg-slate-50/30 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
                                     <span className="text-4xl mb-3 block">🏜️</span>
                                     <p className="text-slate-500 font-medium">Nenhuma etapa encontrada nesta loja.</p>
                                 </div>
                             ) : (
-                                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="bg-slate-100 dark:bg-slate-900/50 text-xs uppercase text-slate-500 font-bold border-b border-slate-200 dark:border-slate-700">
+                                        <thead className="bg-slate-100/50 text-xs uppercase text-slate-500 font-bold border-b border-slate-200">
                                             <tr>
                                                 <th className="px-4 py-3">Fase</th>
                                                 <th className="px-4 py-3">Tarefa</th>
@@ -386,18 +386,18 @@ export default function IntegrationStoreModal({
                                                 <th className="px-4 py-3 text-right">Duração</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        <tbody className="divide-y divide-slate-100">
                                             {steps
                                                 // Optional: Filter only integration steps if desired. Currently showing all.
                                                 // .filter(s => s.list_name === 'INTEGRACAO') 
                                                 .map(step => (
-                                                    <tr key={step.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <tr key={step.id} className="hover:bg-slate-50/50 transition-colors">
                                                         <td className="px-4 py-3">
-                                                            <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded uppercase tracking-wider font-bold">
+                                                            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded uppercase tracking-wider font-bold">
                                                                 {step.list_name}
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                                                        <td className="px-4 py-3 font-medium text-slate-700">
                                                             {step.step_name}
                                                         </td>
                                                         <td className="px-4 py-3">
@@ -408,13 +408,13 @@ export default function IntegrationStoreModal({
                                                                 {step.status}
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-400">
+                                                        <td className="px-4 py-3 text-xs font-mono text-slate-600">
                                                             {step.end_date || '-'}
                                                         </td>
                                                         <td className="px-4 py-3 text-slate-500 text-xs">
                                                             {step.assignee || '-'}
                                                         </td>
-                                                        <td className="px-4 py-3 text-right font-mono text-xs text-orange-600 dark:text-orange-400">
+                                                        <td className="px-4 py-3 text-right font-mono text-xs text-orange-600">
                                                             {step.duration > 0 ? `${step.duration}d` : '-'}
                                                         </td>
                                                     </tr>
@@ -426,7 +426,7 @@ export default function IntegrationStoreModal({
                         </div>
                     ) : (
                         <div className="space-y-4 max-w-4xl mx-auto">
-                            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-6">
+                            <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-6">
                                 📜 Histórico de Alterações
                             </h4>
 
@@ -436,27 +436,27 @@ export default function IntegrationStoreModal({
                                     <p className="text-slate-400 text-sm font-medium">Carregando histórico...</p>
                                 </div>
                             ) : logs.length === 0 ? (
-                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                <div className="bg-slate-50/30 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
                                     <span className="text-4xl mb-3 block">🏜️</span>
                                     <p className="text-slate-500 font-medium">Nenhum histórico registrado.</p>
                                 </div>
                             ) : (
-                                <div className="relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                                <div className="relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                                     {logs.map((log) => (
                                         <div key={log.id} className="relative pl-10 pb-8 last:pb-0">
-                                            <div className="absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900 z-10 shadow-sm bg-orange-100 text-orange-600">
+                                            <div className="absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white z-10 shadow-sm bg-orange-100 text-orange-600">
                                                 📝
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                                    <span className="text-xs font-bold text-slate-700">
                                                         {log.field}
                                                     </span>
                                                     <span className="text-[10px] text-slate-400">
                                                         {new Date(log.at).toLocaleString()}
                                                     </span>
                                                 </div>
-                                                <div className="text-xs bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700">
+                                                <div className="text-xs bg-slate-50/50 p-2 rounded border border-slate-200">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-red-400 line-through">{log.old || 'Vazio'}</span>
                                                         <span className="text-slate-400">➔</span>

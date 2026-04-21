@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Settings, Target, Scale, Clock, Bell, Send, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
 
@@ -81,7 +81,7 @@ export default function SettingsPage() {
     const isUrl = (key: string) => key.includes('url');
 
     return (
-        <div className="p-6 md:p-10 space-y-8 min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100">
+        <div className="p-6 md:p-10 space-y-8 min-h-screen bg-zinc-50#09090b] text-zinc-900">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                         <Settings className="text-teal-500" size={28} />
                         Configurações do Sistema
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-2">
+                    <p className="text-zinc-500 mt-2">
                         Gerencie metas, pesos, prazos e notificações do sistema.
                     </p>
                 </div>
@@ -106,8 +106,8 @@ export default function SettingsPage() {
             {/* Toast */}
             {msg && (
                 <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border ${msg.type === 'success'
-                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-red-50 text-red-700 border-red-200'
                     }`}>
                     {msg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
                     {msg.text}
@@ -125,9 +125,9 @@ export default function SettingsPage() {
                         const items = configs[cat] || [];
                         if (items.length === 0) return null;
                         return (
-                            <div key={cat} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div key={cat} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                 {/* Category Header */}
-                                <div className="px-6 pt-5 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                                <div className="px-6 pt-5 pb-3 border-b border-zinc-100">
                                     <h3 className={`text-base font-bold flex items-center gap-2 ${meta.color}`}>
                                         {meta.icon} {meta.label}
                                     </h3>
@@ -138,14 +138,14 @@ export default function SettingsPage() {
                                 <div className="p-6 space-y-4">
                                     {items.map(item => (
                                         <div key={item.key}>
-                                            <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1.5">
+                                            <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
                                                 {item.description || item.key}
                                             </label>
                                             {isToggle(item.key) ? (
                                                 <div className="flex items-center gap-3">
                                                     <button
                                                         onClick={() => updateValue(item.key, editValues[item.key] === 'true' ? 'false' : 'true')}
-                                                        className={`relative w-12 h-6 rounded-full transition-colors ${editValues[item.key] === 'true' ? 'bg-teal-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                                                        className={`relative w-12 h-6 rounded-full transition-colors ${editValues[item.key] === 'true' ? 'bg-teal-500' : 'bg-zinc-300'}`}
                                                     >
                                                         <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${editValues[item.key] === 'true' ? 'left-[26px]' : 'left-0.5'}`} />
                                                     </button>
@@ -157,14 +157,14 @@ export default function SettingsPage() {
                                                 <input
                                                     type="url"
                                                     placeholder="https://hooks.slack.com/services/..."
-                                                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 dark:text-zinc-200 transition-all"
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 transition-all"
                                                     value={editValues[item.key] || ''}
                                                     onChange={e => updateValue(item.key, e.target.value)}
                                                 />
                                             ) : (
                                                 <input
                                                     type="text"
-                                                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 dark:text-zinc-200 transition-all"
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 transition-all"
                                                     value={editValues[item.key] || ''}
                                                     onChange={e => updateValue(item.key, e.target.value)}
                                                 />
@@ -174,7 +174,7 @@ export default function SettingsPage() {
 
                                     {/* Notification Test Buttons */}
                                     {cat === 'notifications' && (
-                                        <div className="pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-800">
+                                        <div className="pt-3 mt-3 border-t border-zinc-100">
                                             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Testar Notificações</p>
                                             <div className="flex flex-wrap gap-2">
                                                 {[
@@ -187,7 +187,7 @@ export default function SettingsPage() {
                                                         key={btn.key}
                                                         onClick={() => handleTestNotification(btn.key)}
                                                         disabled={testingNotif !== null}
-                                                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400 transition-all disabled:opacity-50"
+                                                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-700 hover:border-teal-400 hover:text-teal-600 transition-all disabled:opacity-50"
                                                     >
                                                         {testingNotif === btn.key ? <Loader2 size={13} className="animate-spin" /> : btn.icon}
                                                         {btn.label}

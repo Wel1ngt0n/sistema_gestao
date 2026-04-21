@@ -1,4 +1,4 @@
-// UX Audit: placeholder aria-label
+﻿// UX Audit: placeholder aria-label
 import { useMemo, useState, DragEvent } from 'react';
 import { Store } from './types';
 import { getStatusColor, formatDate } from './monitorUtils';
@@ -93,17 +93,17 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
             {KANBAN_COLUMNS.map(col => (
                 <div
                     key={col.id}
-                    className="flex-none w-80 flex flex-col bg-slate-100/40 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800 backdrop-blur-sm"
+                    className="flex-none w-80 flex flex-col bg-slate-100/40/40 rounded-xl border border-slate-200/60 backdrop-blur-sm"
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, col.id)}
                 >
                     {/* Column Header */}
-                    <div className="p-3 border-b border-slate-200/60 dark:border-slate-800 flex justify-between items-center bg-slate-100/40 dark:bg-slate-900/40 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
-                        <h4 className="font-bold text-slate-700 dark:text-slate-200 text-xs uppercase tracking-wider flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                    <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-100/40/40 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
+                        <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-orange-500' : 'bg-slate-300'}`}></div>
                             {col.title}
                         </h4>
-                        <span className="text-[10px] font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full text-slate-500 border border-slate-200 shadow-sm">
                             {columns[col.id]?.length || 0}
                         </span>
                     </div>
@@ -117,8 +117,8 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                 onDragStart={(e) => handleDragStart(e, store.id)}
                                 onClick={() => onEdit(store)}
                                 className={`
-                                    bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 
-                                    cursor-grab active:cursor-grabbing hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500 transition-all group relative
+                                    bg-white p-3.5 rounded-xl border border-slate-200 
+                                    cursor-grab active:cursor-grabbing hover:shadow-md hover:border-orange-300 transition-all group relative
                                     ${draggedStoreId === store.id ? 'opacity-40 ring-2 ring-orange-500 rotate-2 scale-95 shadow-xl bg-orange-50' : 'shadow-sm'}
                                 `}
                             >
@@ -128,39 +128,39 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                 )}
 
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{store.id}</span>
+                                    <span className="text-[10px] font-mono text-slate-400">#{store.id}</span>
                                 </div>
 
-                                <h5 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug mb-3 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                                <h5 className="font-bold text-slate-800 text-sm leading-snug mb-3 group-hover:text-orange-600 transition-colors">
                                     {store.name}
                                 </h5>
 
                                 {/* Tags Row */}
                                 <div className="flex flex-wrap items-center gap-1.5 mb-3">
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium truncate max-w-[120px] border ${getStatusColor(store.status).includes('emerald')
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
-                                        : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700/50 dark:text-slate-300 dark:border-slate-600'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                        : 'bg-slate-50 text-slate-600 border-slate-100/50'
                                         }`}>
                                         {store.status}
                                     </span>
                                     {store.financeiro_status === 'Devendo' && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 border border-amber-100">
                                             $ Devendo
                                         </span>
                                     )}
                                 </div>
 
                                 {/* Footer (Implantador & Date) */}
-                                <div className="flex justify-between items-end pt-2 border-t border-slate-50 dark:border-slate-700/50 mt-1">
+                                <div className="flex justify-between items-end pt-2 border-t border-slate-50/50 mt-1">
                                     <div className="flex flex-col">
                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Responsável</span>
                                         <div className="flex items-center gap-1 mt-0.5">
                                             {store.implantador ? (
                                                 <>
-                                                    <div className="w-4 h-4 rounded-full bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 flex items-center justify-center text-[8px] font-bold border border-orange-50 dark:border-orange-800">
+                                                    <div className="w-4 h-4 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[8px] font-bold border border-orange-50">
                                                         {store.implantador.substring(0, 1)}
                                                     </div>
-                                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300 truncate max-w-[80px]">
+                                                    <span className="text-xs font-medium text-slate-600 truncate max-w-[80px]">
                                                         {store.implantador.split(' ')[0]}
                                                     </span>
                                                 </>
@@ -172,7 +172,7 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
 
                                     <div className="flex flex-col items-end">
                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Previsão</span>
-                                        <span className={`text-xs font-mono font-medium mt-0.5 ${(store.days_late_predicted || 0) > 0 ? 'text-rose-500 font-bold' : 'text-slate-600 dark:text-slate-300'}`}>
+                                        <span className={`text-xs font-mono font-medium mt-0.5 ${(store.days_late_predicted || 0) > 0 ? 'text-rose-500 font-bold' : 'text-slate-600'}`}>
                                             {formatDate(store.data_previsao)}
                                         </span>
                                     </div>
@@ -185,15 +185,15 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
 
             {/* Unmapped Column (Ghost) */}
             {columns['others']?.length > 0 && (
-                <div className="flex-none w-80 flex flex-col bg-slate-50/30 dark:bg-slate-900/20 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 opacity-70 hover:opacity-100 transition-opacity">
-                    <div className="p-3 border-b border-dashed border-slate-300 dark:border-slate-800 flex justify-between items-center bg-transparent">
+                <div className="flex-none w-80 flex flex-col bg-slate-50/30/20 rounded-xl border border-dashed border-slate-300 opacity-70 hover:opacity-100 transition-opacity">
+                    <div className="p-3 border-b border-dashed border-slate-300 flex justify-between items-center bg-transparent">
                         <h4 className="font-bold text-slate-400 text-xs uppercase tracking-wider">Outros / Não Mapeado</h4>
-                        <span className="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">{columns['others'].length}</span>
+                        <span className="text-xs font-mono bg-slate-200 px-2 py-0.5 rounded text-slate-500">{columns['others'].length}</span>
                     </div>
                     <div className="p-2 space-y-2">
                         {columns['others'].map(store => (
-                            <div key={store.id} onClick={() => onEdit(store)} className="cursor-pointer bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-white hover:shadow-sm transition-all">
-                                <h5 className="font-medium text-sm text-slate-600 dark:text-slate-400">{store.name}</h5>
+                            <div key={store.id} onClick={() => onEdit(store)} className="cursor-pointer bg-white/50/50 p-3 rounded-lg border border-slate-200 hover:bg-white hover:shadow-sm transition-all">
+                                <h5 className="font-medium text-sm text-slate-600">{store.name}</h5>
                                 <span className="text-[10px] text-slate-400">{store.status}</span>
                             </div>
                         ))}

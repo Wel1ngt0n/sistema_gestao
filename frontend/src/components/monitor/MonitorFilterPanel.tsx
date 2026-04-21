@@ -1,4 +1,4 @@
-import { FC } from 'react';
+﻿import { FC } from 'react';
 
 export interface FilterState {
     startDate: string;
@@ -48,12 +48,12 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
     };
 
     return (
-        <div className="absolute top-16 right-4 z-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-xl p-6 w-80 animate-in slide-in-from-right-10 fade-in duration-200">
-            <div className="flex justify-between items-center mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-3">
-                <h3 className="font-bold text-zinc-800 dark:text-white flex items-center gap-2">
+        <div className="absolute top-16 right-4 z-40 bg-white border border-zinc-200 shadow-2xl rounded-xl p-6 w-80 animate-in slide-in-from-right-10 fade-in duration-200">
+            <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-3">
+                <h3 className="font-bold text-zinc-800 flex items-center gap-2">
                     ⚡ Filtros Avançados
                 </h3>
-                <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors">
+                <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 transition-colors">
                     ✕
                 </button>
             </div>
@@ -67,14 +67,14 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                             type="date"
                             value={filters.startDate}
                             onChange={(e) => handleChange('startDate', e.target.value)}
-                            className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                            className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                         />
                         <span className="self-center text-zinc-400">-</span>
                         <input
                             type="date"
                             value={filters.endDate}
                             onChange={(e) => handleChange('endDate', e.target.value)}
-                            className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                            className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                         />
                     </div>
                 </div>
@@ -87,14 +87,14 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                             type="date"
                             value={filters.finishStartDate}
                             onChange={(e) => handleChange('finishStartDate', e.target.value)}
-                            className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                            className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                         />
                         <span className="self-center text-zinc-400">-</span>
                         <input
                             type="date"
                             value={filters.finishEndDate}
                             onChange={(e) => handleChange('finishEndDate', e.target.value)}
-                            className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                            className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                         />
                     </div>
                 </div>
@@ -105,7 +105,7 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                     <select
                         value={filters.status[0] || ''}
                         onChange={(e) => handleChange('status', e.target.value ? [e.target.value] : [])}
-                        className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                        className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                     >
                         <option value="">Todos</option>
                         {uniqueStatuses.map(s => (
@@ -120,7 +120,7 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                     <select
                         value={filters.assignee}
                         onChange={(e) => handleChange('assignee', e.target.value)}
-                        className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                        className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                     >
                         <option value="">Todos</option>
                         {uniqueAssignees.map(a => (
@@ -135,7 +135,7 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                     <select
                         value={filters.financialStatus}
                         onChange={(e) => handleChange('financialStatus', e.target.value)}
-                        className="w-full text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 dark:text-white outline-none focus:border-orange-500"
+                        className="w-full text-xs p-2 rounded border border-zinc-200 bg-zinc-50 outline-none focus:border-orange-500"
                     >
                         <option value="">Todos</option>
                         <option value="Em dia">Em dia</option>
@@ -146,26 +146,26 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                 </div>
 
                 {/* Quick Toggles */}
-                <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-700">
+                <div className="space-y-2 pt-2 border-t border-zinc-100">
                     <label className="text-xs font-bold uppercase text-zinc-500 tracking-wider">Filtros Rápidos</label>
                     <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1.5 rounded transition-colors">
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50/50 p-1.5 rounded transition-colors">
                             <input
                                 type="checkbox"
                                 checked={!!filters.isHighRisk}
                                 onChange={(e) => handleChange('isHighRisk', e.target.checked)}
                                 className="rounded text-orange-600 focus:ring-orange-500"
                             />
-                            <span className="text-xs text-zinc-700 dark:text-zinc-300">🔥 Alto Risco (&gt;20)</span>
+                            <span className="text-xs text-zinc-700">🔥 Alto Risco (&gt;20)</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1.5 rounded transition-colors">
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50/50 p-1.5 rounded transition-colors">
                             <input
                                 type="checkbox"
                                 checked={!!filters.isLate}
                                 onChange={(e) => handleChange('isLate', e.target.checked)}
                                 className="rounded text-orange-600 focus:ring-orange-500"
                             />
-                            <span className="text-xs text-zinc-700 dark:text-zinc-300">⚠️ Atrasados</span>
+                            <span className="text-xs text-zinc-700">⚠️ Atrasados</span>
                         </label>
                     </div>
                 </div>
@@ -173,7 +173,7 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                 <div className="pt-4 flex gap-2">
                     <button
                         onClick={handleClear}
-                        className="flex-1 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 rounded-lg transition-colors"
+                        className="flex-1 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 bg-zinc-100 rounded-lg transition-colors"
                     >
                         Limpar
                     </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import {
     Trophy,
@@ -113,11 +113,11 @@ export default function SuperAdminDashboard() {
         <div className="max-w-7xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
                         <Trophy className="w-6 h-6 text-yellow-500" />
                         Gestão de Performance e Bônus
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+                    <p className="text-zinc-500 mt-1">
                         Acompanhamento de Metas (Coletiva/Individual/Comportamental)
                     </p>
                 </div>
@@ -126,18 +126,18 @@ export default function SuperAdminDashboard() {
                         type="month"
                         value={selectedCycle}
                         onChange={e => setSelectedCycle(e.target.value)}
-                        className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm dark:text-white"
+                        className="bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm"
                     />
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-1 bg-zinc-100 dark:bg-zinc-900/50 p-1 rounded-xl w-fit">
+            <div className="flex space-x-1 bg-zinc-100/50 p-1 rounded-xl w-fit">
                 <button
                     onClick={() => setActiveTab('integration')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'integration'
-                        ? 'bg-white dark:bg-zinc-800 text-orange-600 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-700'
                         }`}
                 >
                     Integração
@@ -145,8 +145,8 @@ export default function SuperAdminDashboard() {
                 <button
                     onClick={() => setActiveTab('implantation')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'implantation'
-                        ? 'bg-white dark:bg-zinc-800 text-orange-600 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-700'
                         }`}
                 >
                     Implantação (Standby)
@@ -154,7 +154,7 @@ export default function SuperAdminDashboard() {
             </div>
 
             {activeTab === 'implantation' ? (
-                <div className="h-64 flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                <div className="h-64 flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 rounded-3xl">
                     <Briefcase size={48} className="mb-4 opacity-50" />
                     <p>Módulo de Bônus de Implantação em Standby.</p>
                 </div>
@@ -183,9 +183,9 @@ export default function SuperAdminDashboard() {
                     )}
 
                     {/* Users Table */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
+                    <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 uppercase font-semibold text-xs border-b border-zinc-200 dark:border-zinc-800">
+                            <thead className="bg-zinc-50/50 text-zinc-500 uppercase font-semibold text-xs border-b border-zinc-200">
                                 <tr>
                                     <th className="px-6 py-4">Colaborador</th>
                                     <th className="px-6 py-4 text-center">Coletivo (40%)</th>
@@ -196,13 +196,13 @@ export default function SuperAdminDashboard() {
                                     <th className="px-6 py-4 text-center">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            <tbody className="divide-y divide-zinc-100">
                                 {loading && (
                                     <tr><td colSpan={7} className="p-8 text-center text-zinc-500">Calculando Scores...</td></tr>
                                 )}
                                 {data?.collaborators.map(user => (
-                                    <tr key={user.username} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
-                                        <td className="px-6 py-4 font-bold text-zinc-900 dark:text-zinc-100">
+                                    <tr key={user.username} className="hover:bg-zinc-50/50/30">
+                                        <td className="px-6 py-4 font-bold text-zinc-900">
                                             {user.username}
                                             <div className="text-xs text-zinc-500 font-normal">{user.role}</div>
                                         </td>
@@ -222,7 +222,7 @@ export default function SuperAdminDashboard() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="text-lg font-bold text-zinc-900 dark:text-white">{user.scores.final}%</span>
+                                            <span className="text-lg font-bold text-zinc-900">{user.scores.final}%</span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             {user.metrics.churns > 0 ? (
@@ -234,7 +234,7 @@ export default function SuperAdminDashboard() {
                                         <td className="px-6 py-4 text-center">
                                             <button
                                                 onClick={() => openReview(user)}
-                                                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-colors"
+                                                className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-500 transition-colors"
                                             >
                                                 <Edit2 size={16} />
                                             </button>
@@ -250,14 +250,14 @@ export default function SuperAdminDashboard() {
             {/* Modal Review */}
             {reviewModalOpen && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800">
-                        <h2 className="text-lg font-bold mb-1 dark:text-white">Avaliação Comportamental</h2>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-200">
+                        <h2 className="text-lg font-bold mb-1">Avaliação Comportamental</h2>
                         <p className="text-sm text-zinc-500 mb-6">Colaborador: {selectedUser.username}</p>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
-                                    Comunicação (0-100) <span className="text-zinc-900 dark:text-white">{reviewForm.comm}</span>
+                                    Comunicação (0-100) <span className="text-zinc-900">{reviewForm.comm}</span>
                                 </label>
                                 <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.comm} onChange={e => setReviewForm({ ...reviewForm, comm: Number(e.target.value) })}
@@ -265,7 +265,7 @@ export default function SuperAdminDashboard() {
                             </div>
                             <div>
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
-                                    Processos (0-100) <span className="text-zinc-900 dark:text-white">{reviewForm.proc}</span>
+                                    Processos (0-100) <span className="text-zinc-900">{reviewForm.proc}</span>
                                 </label>
                                 <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.proc} onChange={e => setReviewForm({ ...reviewForm, proc: Number(e.target.value) })}
@@ -273,28 +273,28 @@ export default function SuperAdminDashboard() {
                             </div>
                             <div>
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
-                                    Responsabilidade (0-100) <span className="text-zinc-900 dark:text-white">{reviewForm.resp}</span>
+                                    Responsabilidade (0-100) <span className="text-zinc-900">{reviewForm.resp}</span>
                                 </label>
                                 <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.resp} onChange={e => setReviewForm({ ...reviewForm, resp: Number(e.target.value) })}
                                 />
                             </div>
 
-                            <hr className="border-zinc-100 dark:border-zinc-800 my-4" />
+                            <hr className="border-zinc-100 my-4" />
 
                             <div>
                                 <label className="text-xs uppercase font-bold text-rose-500 flex items-center gap-2">
                                     <AlertTriangle size={14} /> Churn Count
                                 </label>
                                 <p className="text-[10px] text-zinc-400 mb-2">Cada churn reduz 50% da nota comportamental.</p>
-                                <input type="number" className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 dark:text-white"
+                                <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
                                     value={reviewForm.churns} onChange={e => setReviewForm({ ...reviewForm, churns: Number(e.target.value) })}
                                 />
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-2 mt-8">
-                            <button onClick={() => setReviewModalOpen(false)} className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg">Cancelar</button>
+                            <button onClick={() => setReviewModalOpen(false)} className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 rounded-lg">Cancelar</button>
                             <button onClick={saveReview} className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">Salvar Avaliação</button>
                         </div>
                     </div>

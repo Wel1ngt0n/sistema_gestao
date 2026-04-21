@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, DragEvent, CSSProperties } from 'react';
+﻿import { useState, useMemo, useEffect, DragEvent, CSSProperties } from 'react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -189,7 +189,7 @@ export default function MonitorTableView({
                     // @ts-ignore
                     ref={input => input && (input.indeterminate = table.getIsSomeRowsSelected())}
                     onChange={table.getToggleAllRowsSelectedHandler()}
-                    className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer w-4 h-4 accent-orange-600"
+                    className="rounded border-slate-300 cursor-pointer w-4 h-4 accent-orange-600"
                 />
             ),
             cell: ({ row }) => (
@@ -199,7 +199,7 @@ export default function MonitorTableView({
                         checked={row.getIsSelected()}
                         disabled={!row.getCanSelect()}
                         onChange={row.getToggleSelectedHandler()}
-                        className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer w-4 h-4 accent-orange-600"
+                        className="rounded border-slate-300 cursor-pointer w-4 h-4 accent-orange-600"
                     />
                 </div>
             ),
@@ -252,14 +252,14 @@ export default function MonitorTableView({
         }),
         columnHelper.accessor('custom_id', {
             header: 'ID',
-            cell: info => <span className="font-mono text-xs text-slate-600 dark:text-slate-400">{info.getValue() || '--'}</span>,
+            cell: info => <span className="font-mono text-xs text-slate-600">{info.getValue() || '--'}</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('name', {
             header: 'Loja',
             cell: info => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap cursor-pointer hover:underline" onClick={() => onEdit(info.row.original)}>{info.getValue()}</span>
+                    <span className="font-bold text-slate-900 text-sm whitespace-nowrap cursor-pointer hover:underline" onClick={() => onEdit(info.row.original)}>{info.getValue()}</span>
                     {info.row.original.rede && <span className="text-[10px] text-slate-400 truncate max-w-[150px]">{info.row.original.rede}</span>}
                 </div>
             ),
@@ -268,7 +268,7 @@ export default function MonitorTableView({
         columnHelper.accessor('tipo_loja', {
             header: 'Tipo de Loja',
             size: 80,
-            cell: info => <span className="text-xs text-slate-500 dark:text-slate-400">{info.getValue() || '-'}</span>,
+            cell: info => <span className="text-xs text-slate-500">{info.getValue() || '-'}</span>,
         }),
         columnHelper.accessor('status', {
             header: 'Status Atual',
@@ -293,13 +293,13 @@ export default function MonitorTableView({
             header: 'Responsável',
             cell: info => {
                 const val = info.getValue();
-                if (val) return <span className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">{val}</span>;
+                if (val) return <span className="text-xs text-slate-700 whitespace-nowrap">{val}</span>;
 
                 if (recommendedImplantador) {
                     return (
                         <div className="flex flex-col gap-0.5">
                             <span className="text-[10px] text-slate-400 italic">Sem responsável</span>
-                            <span className="text-[10px] bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-800 w-fit font-semibold" title="Sugestão baseada em menor esforço semestral">
+                            <span className="text-[10px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded border border-orange-100 w-fit font-semibold" title="Sugestão baseada em menor esforço semestral">
                                 ✨ Sugestão: {recommendedImplantador}
                             </span>
                         </div>
@@ -321,13 +321,13 @@ export default function MonitorTableView({
                     return (
                         <div className="flex flex-col">
                             <span className="font-mono text-xs text-slate-400 line-through decoration-slate-400">{days}d</span>
-                            <span className="text-[10px] text-yellow-600 dark:text-yellow-500 flex items-center gap-1" title={info.row.original.justificativa_tempo || 'Sem justificativa'}>
+                            <span className="text-[10px] text-yellow-600 flex items-center gap-1" title={info.row.original.justificativa_tempo || 'Sem justificativa'}>
                                 ⚠️ Ignorado
                             </span>
                         </div>
                     )
                 }
-                return <span className={`font-mono text-xs ${isOver ? 'text-red-600 dark:text-red-400 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>{days}d</span>
+                return <span className={`font-mono text-xs ${isOver ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{days}d</span>
             },
             enablePinning: true,
         }),
@@ -336,7 +336,7 @@ export default function MonitorTableView({
             cell: info => {
                 const val = info.getValue();
                 if (!val) return '-';
-                const style = val > 5 ? 'text-red-600 dark:text-red-500 font-bold' : 'text-slate-500 dark:text-slate-400';
+                const style = val > 5 ? 'text-red-600 font-bold' : 'text-slate-500';
                 return <span className={`text-xs ${style}`}>{val}d</span>
             },
             enablePinning: true,
@@ -346,23 +346,23 @@ export default function MonitorTableView({
             cell: info => {
                 const val = info.getValue();
                 const isOk = val === 'Em dia' || val === 'Pago';
-                return <span className={`text-xs whitespace-nowrap ${isOk ? 'text-emerald-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>{val || '-'}</span>
+                return <span className={`text-xs whitespace-nowrap ${isOk ? 'text-emerald-600' : 'text-yellow-600'}`}>{val || '-'}</span>
             },
             enablePinning: true,
         }),
         columnHelper.accessor('valor_mensalidade', {
             header: 'Mensalidade',
-            cell: info => <span className="text-xs text-orange-600 dark:text-orange-300">{formatCurrency(info.getValue() || 0)}</span>,
+            cell: info => <span className="text-xs text-orange-600">{formatCurrency(info.getValue() || 0)}</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('data_inicio', {
             header: 'Data de Início',
-            cell: info => <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(info.getValue())}</span>,
+            cell: info => <span className="text-xs text-slate-500 whitespace-nowrap">{formatDate(info.getValue())}</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('data_previsao', {
             header: 'Prazo Contratual',
-            cell: info => <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(info.getValue())}</span>,
+            cell: info => <span className="text-xs text-slate-500 whitespace-nowrap">{formatDate(info.getValue())}</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('data_previsao', {
@@ -376,7 +376,7 @@ export default function MonitorTableView({
                     const isLate = ai.days_late_predicted > 0;
                     return (
                         <div className="flex flex-col leading-none">
-                            <span className={`text-xs whitespace-nowrap ${isLate ? 'text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                            <span className={`text-xs whitespace-nowrap ${isLate ? 'text-orange-600 font-bold' : 'text-slate-500'}`}>
                                 {formatDate(ai.predicted_date)}
                             </span>
                             {isLate && <span className="text-[9px] text-red-500">+{Math.round(ai.days_late_predicted)}d (AI)</span>}
@@ -384,29 +384,29 @@ export default function MonitorTableView({
                     )
                 }
 
-                return <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(val)}</span>
+                return <span className="text-xs text-slate-500 whitespace-nowrap">{formatDate(val)}</span>
             },
             enablePinning: true,
         }),
         columnHelper.accessor('data_fim', {
             header: 'Data de Conclusão',
-            cell: info => <span className="text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{formatDate(info.getValue())}</span>,
+            cell: info => <span className="text-xs text-emerald-600 whitespace-nowrap">{formatDate(info.getValue())}</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('tempo_contrato', {
             header: 'Prazo Contrato (Dias)',
-            cell: info => <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{info.getValue() || '-'}d</span>,
+            cell: info => <span className="text-xs text-slate-500 font-mono">{info.getValue() || '-'}d</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('erp', {
             header: 'ERP',
-            cell: info => <span className="text-xs text-slate-600 dark:text-slate-400">{info.getValue() || '-'}</span>,
+            cell: info => <span className="text-xs text-slate-600">{info.getValue() || '-'}</span>,
             enablePinning: true,
             size: 140,
         }),
         columnHelper.accessor('crm', {
             header: 'CRM',
-            cell: info => <span className="text-xs text-slate-600 dark:text-slate-400">{info.getValue() || '-'}</span>,
+            cell: info => <span className="text-xs text-slate-600">{info.getValue() || '-'}</span>,
             enablePinning: true,
             size: 140,
         }),
@@ -535,7 +535,7 @@ export default function MonitorTableView({
     };
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 shadow-xl overflow-hidden flex flex-col min-h-[600px] relative">
+        <div className="bg-slate-50 rounded-xl border border-slate-300 shadow-xl overflow-hidden flex flex-col min-h-[600px] relative">
 
 
 
@@ -584,19 +584,19 @@ export default function MonitorTableView({
             )}
 
             {/* Toolbar */}
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50/50">
                 <div className="relative w-full md:w-96">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
                     <input
                         value={globalFilter ?? ''}
                         onChange={e => setGlobalFilter(e.target.value)}
                         placeholder="Buscar loja, ID, status..."
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                        className="w-full bg-white border border-slate-300 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                     />
                 </div>
 
                 <div className="flex gap-2 items-center">
-                    <div className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 text-xs text-orange-700 dark:text-orange-400 font-mono">
+                    <div className="px-3 py-1 rounded-full bg-orange-100 border border-orange-200 text-xs text-orange-700 font-mono">
                         {table.getFilteredRowModel().rows.length} lojas filtradas
                     </div>
 
@@ -605,7 +605,7 @@ export default function MonitorTableView({
                     <div className="relative">
                         <button
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
-                            className={`bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs transition-colors flex items-center gap-2 ${isColumnsOpen ? 'ring-2 ring-orange-500/50' : ''}`}
+                            className={`bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg border border-slate-300 text-xs transition-colors flex items-center gap-2 ${isColumnsOpen ? 'ring-2 ring-orange-500/50' : ''}`}
                         >
                             <span>Colunas</span>
                             <span className="text-[10px]">▼</span>
@@ -613,17 +613,17 @@ export default function MonitorTableView({
 
                         {/* Dropdown Menu */}
                         {isColumnsOpen && (
-                            <div className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-2xl p-4 w-64 max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                                <div className="flex justify-between items-center mb-2 border-b border-slate-200 dark:border-slate-700 pb-2">
-                                    <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Visibilidade</h4>
-                                    <button onClick={() => setIsColumnsOpen(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+                            <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 w-64 max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                                <div className="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
+                                    <h4 className="text-xs font-bold uppercase text-slate-500">Visibilidade</h4>
+                                    <button onClick={() => setIsColumnsOpen(false)} className="text-slate-400 hover:text-slate-900">✕</button>
                                 </div>
                                 <div className="space-y-1">
                                     {table.getAllLeafColumns().map(column => {
                                         if (column.id === 'actions' || column.id === 'row_index') return null;
                                         return (
-                                            <label key={column.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded cursor-pointer transition-colors">
-                                                <span className="text-xs text-slate-600 dark:text-slate-300 truncate flex-1 capitalize">{column.id.replace(/_/g, ' ')}</span>
+                                            <label key={column.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-slate-50/50 rounded cursor-pointer transition-colors">
+                                                <span className="text-xs text-slate-600 truncate flex-1 capitalize">{column.id.replace(/_/g, ' ')}</span>
                                                 <input
                                                     type="checkbox"
                                                     checked={column.getIsVisible()}
@@ -637,7 +637,7 @@ export default function MonitorTableView({
                             </div>
                         )}
                     </div>
-                    <button onClick={() => setAdminOpen(true)} className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs transition-colors" title="Super Admin">
+                    <button onClick={() => setAdminOpen(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg border border-slate-300 text-xs transition-colors" title="Super Admin">
                         ⚙️ Config
                     </button>
                     <button
@@ -653,8 +653,8 @@ export default function MonitorTableView({
 
             {/* Table Area */}
             <div className="flex-1 overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300 border-collapse relative">
-                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 uppercase text-[10px] md:text-xs font-semibold whitespace-nowrap shadow-sm">
+                <table className="w-full text-left text-sm text-slate-600 border-collapse relative">
+                    <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] md:text-xs font-semibold whitespace-nowrap shadow-sm">
                         {table.getHeaderGroups().map(headerGroup => (
                             <tr key={headerGroup.id}>
                                 {headerGroup.headers.map(header => {
@@ -662,7 +662,7 @@ export default function MonitorTableView({
                                     return (
                                         <th
                                             key={header.id}
-                                            className={`px-3 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 group hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors
+                                            className={`px-3 py-3 bg-slate-100 border-b border-slate-200 group hover:bg-slate-200 transition-colors
                                             sticky top-0 
                                             ${header.column.getIsPinned() ? 'z-30 shadow-lg' : 'z-20'} 
                                             ${draggedColumnId === header.column.id ? 'opacity-50 border-2 border-dashed border-orange-500' : ''}
@@ -681,7 +681,7 @@ export default function MonitorTableView({
                                                 <div className="flex items-center justify-between gap-2">
                                                     {/* Drag Handle */}
                                                     <div
-                                                        className="cursor-move text-slate-400 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors p-1"
+                                                        className="cursor-move text-slate-400 hover:text-slate-900 transition-colors p-1"
                                                         draggable={true}
                                                         onDragStart={(e) => handleDragStart(e, header.column.id)}
                                                     >
@@ -692,7 +692,7 @@ export default function MonitorTableView({
 
                                                     {/* Sort & Title */}
                                                     <div
-                                                        className="flex items-center gap-1 cursor-pointer hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex-1"
+                                                        className="flex items-center gap-1 cursor-pointer hover:text-orange-500 transition-colors flex-1"
                                                         onClick={header.column.getToggleSortingHandler()}
                                                         title="Clique para ordenar"
                                                     >
@@ -709,7 +709,7 @@ export default function MonitorTableView({
                                                             const isPinned = header.column.getIsPinned();
                                                             header.column.pin(isPinned ? false : 'left');
                                                         }}
-                                                        className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ${header.column.getIsPinned() ? 'text-orange-500 dark:text-orange-400 opacity-100' : 'text-slate-400 dark:text-slate-600 opacity-0 group-hover:opacity-100'}`}
+                                                        className={`p-1 rounded hover:bg-slate-200 transition-colors ${header.column.getIsPinned() ? 'text-orange-500 opacity-100' : 'text-slate-400 opacity-0 group-hover:opacity-100'}`}
                                                     >
                                                         📌
                                                     </button>
@@ -729,14 +729,14 @@ export default function MonitorTableView({
                             </tr>
                         ))}
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                    <tbody className="divide-y divide-slate-200">
                         {table.getRowModel().rows.length === 0 ? (
                             <tr>
                                 <td colSpan={table.getAllLeafColumns().length} className="py-20 text-center">
                                     <div className="flex flex-col items-center justify-center opacity-50">
                                         <div className="text-6xl mb-4">🎉</div>
-                                        <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300">Nenhum resultado encontrado</h3>
-                                        <p className="text-slate-500 dark:text-slate-400 max-w-xs mt-2 text-sm">
+                                        <h3 className="text-xl font-bold text-slate-700">Nenhum resultado encontrado</h3>
+                                        <p className="text-slate-500 max-w-xs mt-2 text-sm">
                                             Não encontramos nenhuma loja com os filtros atuais.
                                         </p>
                                     </div>
@@ -744,13 +744,13 @@ export default function MonitorTableView({
                             </tr>
                         ) : (
                             table.getRowModel().rows.map(row => (
-                                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                                <tr key={row.id} className="hover:bg-slate-50/50 transition-colors group">
                                     {row.getVisibleCells().map(cell => {
                                         const style = getPinningStyle(cell.column);
                                         return (
                                             <td
                                                 key={cell.id}
-                                                className={`px-3 py-3 whitespace-nowrap border-r border-slate-200 dark:border-slate-700/50 last:border-0 bg-white dark:bg-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-700/50 transition-colors hover:z-[100]`}
+                                                className={`px-3 py-3 whitespace-nowrap border-r border-slate-200/50 last:border-0 bg-white group-hover:bg-slate-50 transition-colors hover:z-[100]`}
                                                 style={style}
                                             >
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -765,7 +765,7 @@ export default function MonitorTableView({
             </div>
 
             {/* PAGINATION TOOLBAR */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex justify-between items-center text-xs md:text-sm text-slate-600 dark:text-slate-300">
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center text-xs md:text-sm text-slate-600">
                 <div className="flex gap-2 items-center">
                     <span>Página</span>
                     <strong>{table.getState().pagination.pageIndex + 1} de {table.getPageCount()}</strong>
@@ -773,28 +773,28 @@ export default function MonitorTableView({
 
                 <div className="flex gap-2">
                     <button
-                        className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
+                        className="bg-white border border-slate-300 px-3 py-1 rounded hover:bg-slate-100 disabled:opacity-50"
                         onClick={() => table.setPageIndex(0)}
                         disabled={!table.getCanPreviousPage()}
                     >
                         {'<<'}
                     </button>
                     <button
-                        className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
+                        className="bg-white border border-slate-300 px-3 py-1 rounded hover:bg-slate-100 disabled:opacity-50"
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
                     >
                         {'<'}
                     </button>
                     <button
-                        className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
+                        className="bg-white border border-slate-300 px-3 py-1 rounded hover:bg-slate-100 disabled:opacity-50"
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
                     >
                         {'>'}
                     </button>
                     <button
-                        className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
+                        className="bg-white border border-slate-300 px-3 py-1 rounded hover:bg-slate-100 disabled:opacity-50"
                         onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                         disabled={!table.getCanNextPage()}
                     >
@@ -809,7 +809,7 @@ export default function MonitorTableView({
                         onChange={e => {
                             table.setPageSize(Number(e.target.value))
                         }}
-                        className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none"
+                        className="bg-white border border-slate-300 rounded px-2 py-1 outline-none"
                     >
                         {[10, 20, 30, 50, 100].map(pageSize => (
                             <option key={pageSize} value={pageSize}>
