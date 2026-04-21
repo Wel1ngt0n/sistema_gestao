@@ -314,25 +314,21 @@ class SyncService:
             # 2. Steps
             yield "data: 📦 Buscando etapas modificadas...\n\n"
             all_steps = []
+            all_steps = []
             father_field_id = self.clickup.get_father_field_id()
             
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                future_to_list = {
-                    executor.submit(self.clickup.fetch_tasks_from_list, list_id, last_ts): name 
-                    for name, list_id in Config.LIST_IDS_STEPS.items()
-                }
-                for future in as_completed(future_to_list):
-                    try:
-                        res = future.result()
-                        if res:
-                            # Injetar Nome da Lista
-                            list_name = future_to_list[future]
-                            for t in res: t['step_type_name'] = list_name
-                            
-                            all_steps.extend(res)
-                        yield f"data: 📥 Lista '{future_to_list[future]}' parcial: {len(res)} itens.\n\n"
-                    except Exception as e:
-                        self.logger.error(str(e))
+            for list_name, list_id in Config.LIST_IDS_STEPS.items():
+                try:
+                    yield f"data: 📥 Iniciando busca da lista '{list_name}'...\n\n"
+                    for batch in self.clickup.fetch_tasks_from_list_generator(list_id, last_ts):
+                        if batch:
+                            for t in batch: 
+                                t['step_type_name'] = list_name
+                            all_steps.extend(batch)
+                            yield f"data: 📦 Lista '{list_name}' parcial: +{len(batch)} itens baixados...\n\n"
+                except Exception as e:
+                    self.logger.error(str(e))
+                    yield f"data: ⚠️ Erro ao buscar lista '{list_name}': {str(e)}\n\n"
     
             # Map steps
             steps_map = {}
