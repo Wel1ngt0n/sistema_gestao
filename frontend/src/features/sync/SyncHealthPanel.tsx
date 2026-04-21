@@ -1,7 +1,7 @@
 // UX Audit: placeholder aria-label
 import { api } from '../../services/api';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, CheckCircle, Clock, AlertTriangle, XCircle, Activity, Database } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, Activity, Database } from 'lucide-react';
 
 // API_URL removido pois já está no serviço api.ts
 
