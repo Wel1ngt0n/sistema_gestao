@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from app.models import db, User
 from app.services.security_service import (
     generate_jwt_token, verify_password,
-    generate_totp_secret, generate_totp_uri, verify_totp_code, require_auth, hash_password,
+    generate_totp_secret, generate_totp_uri, verify_totp_code, require_auth,
     log_audit
 )
 import datetime
