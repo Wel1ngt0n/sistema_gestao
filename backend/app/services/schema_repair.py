@@ -37,7 +37,9 @@ def repair_database_schema():
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS manual_go_live_date TIMESTAMP WITHOUT TIME ZONE;",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS forecast_obs TEXT;",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS include_in_forecast BOOLEAN DEFAULT TRUE;",
-        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS integrador VARCHAR(100);"
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS integrador VARCHAR(100);",
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS assignees_json TEXT;",
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS total_time_tracked INTEGER DEFAULT 0;"
     ]
 
     
