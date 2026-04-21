@@ -84,7 +84,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
     ]
 
     return (
-        <div className="flex min-h-screen bg-slate-100 text-slate-900">
+        <div className="flex min-h-screen bg-[#EEF0F8] text-slate-900">
             {/* SEO Metadata */}
             <div className="hidden" aria-hidden="true">
                 <meta name="description" content="CRM Instabuy - Gestão Operacional de E-commerce" />
@@ -106,11 +106,11 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
 
                     {!collapsed && (
                         <div className="flex flex-col overflow-hidden whitespace-nowrap">
-                            <h2 className="text-sm font-bold tracking-tight text-slate-900 leading-none">
-                                CRM <span className="text-orange-500">Instabuy</span>
+                            <h2 className="text-sm font-black tracking-tighter text-slate-900 leading-none">
+                                FLOW<span className="text-indigo-600">TECH</span>
                             </h2>
-                            <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase mt-0.5">
-                                v3.0 Evolution
+                            <span className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
+                                Operational Intelligence
                             </span>
                         </div>
                     )}
@@ -161,7 +161,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                                 className={({ isActive }) => `
                                                                     flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ml-2
                                                                     ${isActive
-                                                                        ? 'bg-blue-50 text-blue-700 font-semibold'
+                                                                        ? 'bg-indigo-50 text-indigo-700 font-bold'
                                                                         : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                                                                     }
                                                                 `}
@@ -187,7 +187,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                                     className={({ isActive }) => `
                                                                         flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
                                                                         ${isActive
-                                                                            ? 'bg-blue-50 text-blue-700 font-semibold'
+                                                                            ? 'bg-indigo-50 text-indigo-700 font-bold'
                                                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                                                         }
                                                                     `}
@@ -212,7 +212,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                 className={({ isActive }) => `
                                                     flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
                                                     ${isActive
-                                                        ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm ring-1 ring-blue-200'
+                                                        ? 'bg-indigo-50 text-indigo-700 font-bold shadow-sm ring-1 ring-indigo-200'
                                                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                                     }
                                                     ${collapsed ? 'justify-center' : ''}
@@ -271,7 +271,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                         to="/profile"
                         className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-slate-200"
                     >
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-50 flex items-center justify-center text-blue-600 font-bold ring-2 ring-blue-500/20">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold ring-2 ring-indigo-500/20">
                             {user?.profile_picture ? (
                                 <img src={user.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (

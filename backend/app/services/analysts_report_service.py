@@ -160,6 +160,60 @@ class AnalystsReportService:
                 "is_top_performer": status == "HIGH_PERFORMANCE"
             })
 
+        # Build structured team_actions (top 3 decision priorities)
+        team_actions = []
+
+        overloaded = [a for a in cockpit_analysts if a['action_priority'] == 'high'
+                      and a['jarvis_status'] == 'OVERLOADED']
+        critical_idle = [a for a in cockpit_analysts if a['jarvis_status'] == 'CRITICAL_IDLE']
+        warning_idle = [a for a in cockpit_analysts if a['jarvis_status'] == 'WARNING']
+
+        if overloaded:
+            team_actions.append({
+                "priority": 1,
+                "type": "overload",
+                "title": "Redistribuir Carga",
+                "description": f"{len(overloaded)} analista(s) com sobrecarga e baixa vazão de entregas.",
+                "affected": [a['implantador'] for a in overloaded],
+                "impact": "alto"
+            })
+
+        if critical_idle:
+            team_actions.append({
+                "priority": 2 if not overloaded else 1,
+                "type": "idle",
+                "title": "Lojas sem Entrega",
+                "description": f"{len(critical_idle)} analista(s) com lojas ativas e zero entregas no período.",
+                "affected": [a['implantador'] for a in critical_idle],
+                "impact": "alto"
+            })
+
+        if warning_idle:
+            team_actions.append({
+                "priority": 3,
+                "type": "warning",
+                "title": "Reduzir Idle Prolongado",
+                "description": f"{len(warning_idle)} analista(s) com lojas paradas acima de 7 dias.",
+                "affected": [a['implantador'] for a in warning_idle],
+                "impact": "medio"
+            })
+
+        if avg_sla < 75 and not team_actions:
+            team_actions.append({
+                "priority": 1,
+                "type": "sla",
+                "title": "SLA do Time em Risco",
+                "description": f"Média do time de {round(avg_sla, 1)}% está abaixo da meta de 85%.",
+                "affected": [],
+                "impact": "medio"
+            })
+
+        # Sort by priority ascending
+        team_actions = sorted(team_actions, key=lambda x: x['priority'])[:3]
+
+        avg_carga = sum(a['carga_ponderada'] for a in analysts_list) / len(analysts_list) if analysts_list else 0
+        avg_idle = sum(a['idle_medio'] for a in analysts_list) / len(analysts_list) if analysts_list else 0
+
         return {
             "summary": {
                 "total_ativos": total_ativos,
@@ -167,9 +221,17 @@ class AnalystsReportService:
                 "avg_sla": round(avg_sla, 1),
                 "team_health": "Good" if avg_sla > 80 else "Attention"
             },
-            "alerts": alerts[:5], # Top 5 alertas mais urgentes
+            "avg_metrics": {
+                "avg_carga": round(avg_carga, 1),
+                "avg_idle": round(avg_idle, 1),
+                "avg_throughput": round(avg_throughput, 1),
+                "avg_sla": round(avg_sla, 1)
+            },
+            "alerts": alerts[:5],
+            "team_actions": team_actions,
             "analysts": cockpit_analysts
         }
+
 
     @staticmethod
     def get_team_resume(start_date=None, end_date=None):
@@ -581,6 +643,36 @@ class AnalystsReportService:
         }
         score = AnalystsReportService._calculate_score(metrics_for_score, goal_metrics)
         
+        # Heurística de Ações Pessoais (Cockpit Individial)
+        personal_actions = []
+        # 1. Idle Crítico
+        critical_idle = [s for s in ativas if s.idle_days > 7]
+        for s in critical_idle[:2]:
+            personal_actions.append({
+                "type": "CRITICAL_IDLE",
+                "priority": "HIGH",
+                "description": f"A loja {s.store_name} está parada há {s.idle_days} dias no status {s.status}.",
+                "impact": "Risco de Churn"
+            })
+        
+        # 2. SLA Baixo
+        if pct_sla_concluidas < 75:
+            personal_actions.append({
+                "type": "SLA_ALERT",
+                "priority": "HIGH",
+                "description": "SLA de entregas está crítico. Analisar motivos de atraso.",
+                "impact": "KPI Operacional"
+            })
+            
+        # 3. Sobrecarga
+        if carga_ponderada > 15:
+            personal_actions.append({
+                "type": "OVERLOAD",
+                "priority": "MEDIUM",
+                "description": "Carga ponderada acima de 15 pontos. Risco de queda na qualidade.",
+                "impact": "Saúde do Analista"
+            })
+        
         return {
             "summary": {
                 "implantador": implantador_name,
@@ -600,7 +692,8 @@ class AnalystsReportService:
                 "etapas": avg_etapas,
                 "diagnostico_causas": causas_imp,
                 "score": score,
-                "meta_info": goal_metrics
+                "meta_info": goal_metrics,
+                "personal_actions": personal_actions
             },
             "carteira_atual": carteira_atual,
             "concluidas_mes": concluidas_mes_list,

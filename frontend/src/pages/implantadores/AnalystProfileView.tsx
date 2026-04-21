@@ -1,10 +1,10 @@
-﻿// UX Audit: placeholder aria-label
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
 import {
-    ArrowLeft, UserIcon, BriefcaseIcon,
-    Clock, Activity, Download, Sparkles, Loader2, CheckCircle
+    ArrowLeft, User, Briefcase,
+    Activity, Download, Sparkles, Loader2, CheckCircle,
+    ShieldAlert, Target, HelpCircle
 } from 'lucide-react'
 import { PerformanceScoreBadge } from '../../components/reports/PerformanceScoreBadge'
 import { AnalystRadarChart } from '../../components/reports/AnalystRadarChart'
@@ -16,52 +16,50 @@ export default function AnalystProfileView() {
 
     const [data, setData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-
+    
     // AI State
     const [aiResult, setAiResult] = useState<any>(null)
     const [aiLoading, setAiLoading] = useState(false)
 
-    const [period, setPeriod] = useState<DateRange>(() => {
-        const today = new Date();
-        return {
-            start: new Date(today.getFullYear(), today.getMonth(), 1),
-            end: new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59),
-            label: 'Mês Vigente'
-        };
+    const [period, setPeriod] = useState<DateRange>({
+        start: null,
+        end: null,
+        label: 'Todo o Período'
     })
 
     useEffect(() => {
         if (!name) return
-        const fetchAnalyst = async () => {
-            try {
-                setLoading(true)
-                let url = `/api/reports/implantadores/${encodeURIComponent(name)}`
-                if (period.start && period.end) {
-                    url += `?start=${period.start.toISOString()}&end=${period.end.toISOString()}`
-                }
-                const res = await api.get(url)
-                setData(res.data)
-
-                // Set initial AI Result from Cache if available
-                if (res.data.last_ai_analysis) {
-                    setAiResult(res.data.last_ai_analysis)
-                }
-            } catch (err: any) {
-
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }
         fetchAnalyst()
     }, [name, period])
+
+    const fetchAnalyst = async () => {
+        try {
+            setLoading(true)
+            let url = `/api/reports/implantadores/${encodeURIComponent(name || '')}`
+            
+            const periodParam = period.label === 'Mês Vigente' ? 'month' : 
+                               period.label === 'Semestre Atual' ? 'semester' : 
+                               period.label === 'YTD (Ano atual)' ? 'year' : 'all'
+            
+            url += `?period=${periodParam}`
+            
+            const res = await api.get(url)
+            setData(res.data)
+            if (res.data.last_ai_analysis) {
+                setAiResult(res.data.last_ai_analysis)
+            }
+        } catch (err: any) {
+            console.error('Erro ao carregar perfil:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleAIAnalysis = async () => {
         if (!name) return
         try {
             setAiLoading(true)
-            const res = await api.post(`/api/reports/implantadores/analyze/${encodeURIComponent(name)}`)
+            const res = await api.post(`/api/reports/implantadores/analyze/${encodeURIComponent(name || '')}`)
             setAiResult(res.data)
         } catch (err: any) {
             setAiResult({ error: err.message })
@@ -70,501 +68,388 @@ export default function AnalystProfileView() {
         }
     }
 
-    const handleExportCSV = async () => {
-        if (!name) return
-        try {
-            const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}/export-csv`, { responseType: 'blob' })
-            const url = window.URL.createObjectURL(new Blob([res.data]))
-            const link = document.createElement('a')
-            link.href = url
-            link.setAttribute('download', `diagnostico_${name}.csv`)
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch {
-            alert('Erro ao exportar CSV')
-        }
-    }
-
-    const handleExportPDF = async () => {
-        if (!name) return
-        try {
-            const res = await api.get(`/api/reports/implantadores/${encodeURIComponent(name)}/export-pdf`, { responseType: 'blob' })
-            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
-            const link = document.createElement('a')
-            link.href = url
-            link.setAttribute('download', `diagnostico_${name}.pdf`)
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch {
-            alert('Erro ao exportar PDF')
-        }
-    }
-
     const formatMoney = (val: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
     }
 
-    if (loading) {
+    if (loading && !data) {
         return (
-            <div className="flex items-center justify-center p-12">
-                <div className="w-8 h-8 rounded-full border-4 border-zinc-200 border-t-orange-500 animate-spin"></div>
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-4 bg-[#EEF0F8]">
+                <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                <p className="text-slate-500 font-bold animate-pulse">Mapeando Performance Individual...</p>
             </div>
         )
     }
 
-    if (error || !data) {
-        return (
-            <div className="p-4 bg-red-50 text-red-600 rounded-xl">
-                {error || "Dados não encontrados"}
-            </div>
-        )
-    }
+    if (!data) return null
 
     const summary = data?.summary || {}
-    const ativas = data?.carteira_atual || data?.ativas || []
-    const entregas = data?.entregas || []
-
-    // Constantes seguras para renderização
-    const cargaPonderada = summary?.carga_ponderada ?? 0
-    const pctSlaConcluidas = summary?.pct_sla_concluidas ?? 0
-    const pctSlaAtivas = summary?.pct_sla_ativas ?? 0
-    const entregueMes = summary?.entregue_mes ?? 0
-    const entreguesTotal2026 = summary?.entregues_total ?? 0
-    const mrrAtivo = summary?.mrr_ativo ?? 0
-    const ativosCount = summary?.ativos ?? 0
+    const ativas = data?.carteira_atual || []
+    const entregas = data?.concluidas_mes || []
+    const actions = summary?.personal_actions || []
 
     return (
-        <div className="space-y-6">
-            {/* HEADER */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/team-diagnostics')}
-                        className="p-2 hover:bg-zinc-100 rounded-lg transition-colors border border-zinc-200"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-zinc-600" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
-                            <UserIcon className="text-orange-500" />
-                            Perfil Analítico: {data.summary?.implantador || name}
-                            {summary?.score && <PerformanceScoreBadge score={summary.score.score_final} size="lg" />}
-                        </h1>
-                        <p className="text-sm text-zinc-500 mt-1">
-                            Acompanhamento individual de metas, produtividade e Qualidade.
-                        </p>
-                    </div>
-                </div>
-                <div className="flex gap-2 items-center">
-                    <div className="hidden sm:block mr-2">
-                        <PeriodFilter value={period} onChange={setPeriod} />
-                    </div>
-                    <button
-                        onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm font-medium hover:bg-zinc-50 transition-colors"
-                    >
-                        <Download size={16} />
-                        CSV
-                    </button>
-                    <button
-                        onClick={handleExportPDF}
-                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
-                    >
-                        <Download size={16} />
-                        PDF
-                    </button>
-                </div>
-            </div>
-
-            {/* KPI CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white border border-zinc-200 p-5 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
-                            <BriefcaseIcon className="w-5 h-5" />
-                        </div>
-                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Carga Ponderada</span>
-                    </div>
-                    <div className="text-3xl font-black text-zinc-900">
-                        {cargaPonderada.toFixed(1)} <span className="text-base text-zinc-400 font-medium">pts</span>
-                    </div>
-                    <div className="text-xs text-zinc-500 mt-2">
-                        Base: {ativosCount} Projetos. (Matriz: 1.0pt | Filial: 0.5pt)
-                    </div>
-                </div>
-
-                {/* ENTREGA NO SLA */}
-                <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-emerald-50 rounded-lg">
-                            <Activity className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                            SLA & Conformidade
-                        </h3>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <div className="flex justify-between items-end mb-1">
-                                <span className="text-xs text-zinc-500 text-left">Lojas Entregues (Geral)</span>
-                                <span className="text-xl font-bold text-zinc-900">{pctSlaConcluidas}%</span>
-                            </div>
-                            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
-                                    style={{ width: `${pctSlaConcluidas}%` }}
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="flex justify-between items-end mb-1">
-                                <span className="text-xs text-zinc-500 text-left">Saúde da Carteira (Ativas)</span>
-                                <span className="text-xl font-bold text-zinc-900">{pctSlaAtivas}%</span>
-                            </div>
-                            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                    style={{ width: `${pctSlaAtivas}%` }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <p className="text-[10px] text-zinc-5000 mt-4 leading-relaxed">
-                        Percentual de conformidade com o prazo contratual.
-                    </p>
-                </div>
-
-                {/* ENTREGA (MÊS) */}
-                <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-emerald-50 rounded-lg">
-                            <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                            Entregas (Mês)
-                        </h3>
-                    </div>
-                    <span className="text-3xl font-bold text-zinc-900 tracking-tight">
-                        {entregueMes}
-                    </span>
-                    <p className="text-[10px] text-zinc-5000 mt-2 leading-relaxed">
-                        Total de {entreguesTotal2026} lojas entregues desde o início.
-                    </p>
-                </div>
-
-                {/* MRR RETIDO */}
-                <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <Clock className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                            MRR Ativo
-                        </h3>
-                    </div>
-                    <span className="text-3xl font-bold text-zinc-900 tracking-tight">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrrAtivo)}
-                    </span>
-                    <p className="text-[10px] text-zinc-5000 mt-2 leading-relaxed">
-                        Faturamento em implantação nas {ativosCount} lojas ativas.
-                    </p>
-                </div>
-
-            </div>
-
-            {/* RADAR & AI ANALYSIS */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="min-h-screen bg-[#EEF0F8] pb-20">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8 space-y-8 pt-8">
                 
-                {/* RADAR CHART BLOCK */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col">
-                    <h3 className="text-lg font-bold text-zinc-900 mb-2 flex items-center gap-2">
-                        <Activity className="text-sky-500" />
-                        Radar de Performance
-                    </h3>
-                    <p className="text-sm text-zinc-500 mb-4">
-                        Distribuição das métricas de SLA, Retrabalho, Volume e Cadência.
-                    </p>
-                    <div className="flex-1 flex justify-center items-center min-h-[300px]">
-                        {summary?.score?.eixos ? (
-                            <AnalystRadarChart data={summary.score.eixos} />
-                        ) : (
-                            <span className="text-zinc-500">Dados insuficientes</span>
-                        )}
+                {/* 1. TOP HEADER */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/team-diagnostics')}
+                            className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm group"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                        </button>
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">
+                                <User size={14} />
+                                Perfil Analítico Individual
+                            </div>
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+                                {summary?.implantador || name}
+                                {summary?.score && <PerformanceScoreBadge score={summary.score.score_final} size="lg" />}
+                            </h1>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex items-center">
+                            <PeriodFilter value={period} onChange={setPeriod} />
+                        </div>
+                        <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+                            <Download size={18} className="text-slate-500" />
+                        </button>
                     </div>
                 </div>
 
-                {/* AI ANALYSIS BLOCK */}
-                <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                        <Sparkles className="text-orange-500" />
-                        Diagnóstico Assistido por IA
-                    </h2>
-                    <button
-                        onClick={handleAIAnalysis}
-                        disabled={aiLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                    >
-                        {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles size={16} />}
-                        {aiLoading ? 'Analisando...' : 'Gerar Diagnóstico'}
-                    </button>
+                {/* 2. KPI GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Carga Ponderada</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-black text-slate-900">{summary?.carga_ponderada?.toFixed(1) || 0}</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">pontos</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">SLA (Entregas)</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className={`text-3xl font-black ${summary?.pct_sla_concluidas >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                {summary?.pct_sla_concluidas || 0}%
+                            </span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">MRR em Gestão</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-black text-slate-900">{formatMoney(summary?.mrr_ativo || 0)}</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Entregas no Período</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-black text-slate-900">{summary?.entregue_mes || 0}</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">lojas</span>
+                        </div>
+                    </div>
                 </div>
 
-                {!aiResult && !aiLoading && (
-                    <p className="text-sm text-zinc-400 italic">
-                        Clique em "Gerar Diagnóstico" para que a IA analise os dados operacionais deste analista.
-                    </p>
-                )}
-
-                {aiResult && !aiResult.error && (
-                    <div className="space-y-6 text-sm">
-                        {/* 1. Resumo Executivo */}
-                        <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
-                            <h3 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
-                                <Activity size={16} />
-                                1. Resumo Executivo
-                            </h3>
-                            <p className="text-zinc-700 leading-relaxed font-medium">
-                                {aiResult.resumo_executivo}
-                            </p>
+                {/* 3. INDIVIDUAL ACTION PLAN (PRIORITY) */}
+                {actions.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-5">
+                            <Target size={120} className="text-indigo-600" />
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* 2. Padrões */}
-                            <div className="bg-zinc-50/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 mb-3">2. Principais Padrões Identificados</h3>
-                                <ul className="space-y-2 text-zinc-600">
-                                    {aiResult.padroes_identificados?.map((p: string, i: number) => (
-                                        <li key={i} className="flex gap-2">
-                                            <span className="text-orange-500">•</span>
-                                            {p}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            {/* 3. Diagnóstico de Causa */}
-                            <div className="bg-zinc-50/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 mb-3">3. Diagnóstico de Causa</h3>
-                                <div className="space-y-3">
-                                    {aiResult.diagnostico_causa && Object.entries(aiResult.diagnostico_causa).map(([key, val]: [string, any]) => (
-                                        <div key={key}>
-                                            <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">{key.replace('_', ' ')}</span>
-                                            <p className="text-zinc-600">{val}</p>
-                                        </div>
-                                    ))}
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
+                                    <Activity size={20} className="text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Plano de Ação Individual</h2>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Prioridades para {name}</p>
                                 </div>
                             </div>
 
-                            {/* 4. Gargalos */}
-                            <div className="bg-zinc-50/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 mb-3 text-red-600">4. Gargalos Operacionais</h3>
-                                <ul className="space-y-2 text-zinc-600">
-                                    {aiResult.gargalos_operacionais?.map((g: string, i: number) => (
-                                        <li key={i} className="flex gap-2">
-                                            <span className="text-red-500">•</span>
-                                            {g}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            {/* 5. Riscos */}
-                            <div className="bg-zinc-50/50 p-4 rounded-xl">
-                                <h3 className="font-bold text-zinc-700 mb-3 text-amber-600">5. Riscos</h3>
-                                <ul className="space-y-2 text-zinc-600">
-                                    {aiResult.riscos_identificados?.map((r: string, i: number) => (
-                                        <li key={i} className="flex gap-2">
-                                            <span className="text-amber-500">•</span>
-                                            {r}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Raio-X Audit (Deep Analysis) */}
-                        {aiResult.auditoria_raio_x && (
-                            <div className="bg-zinc-900 text-white p-5 rounded-2xl border border-zinc-800 shadow-xl">
-                                <h3 className="font-bold text-orange-400 mb-4 flex items-center gap-2 text-base">
-                                    <Sparkles size={18} />
-                                    Raio-X: Auditoria Qualitativa (ClickUp)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Qualidade Doc */}
-                                    <div className="space-y-1.5">
-                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Documentação</span>
-                                        <p className="text-sm text-zinc-300 leading-relaxed italic">
-                                            "{aiResult.auditoria_raio_x.qualidade_documentacao}"
-                                        </p>
-                                    </div>
-                                    {/* Bloqueios Reais */}
-                                    <div className="space-y-1.5">
-                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Bloqueios Detectados</span>
-                                        <ul className="space-y-1">
-                                            {aiResult.auditoria_raio_x.bloqueios_identificados?.map((b: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-red-400 flex items-start gap-2">
-                                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500/50 flex-shrink-0" />
-                                                    {b}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    {/* Conformidade Etapas */}
-                                    <div className="space-y-1.5">
-                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Procedimento/Etapas</span>
-                                        <p className="text-sm text-zinc-300 leading-relaxed text-balance">
-                                            {aiResult.auditoria_raio_x.conformidade_etapas}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-
-                        {/* 6. Ações */}
-                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                            <h3 className="font-bold text-emerald-800 mb-3 flex items-center gap-2">
-                                <CheckCircle size={16} />
-                                6. Ações Recomendadas para Gestão
-                            </h3>
-                            <ul className="space-y-2 text-zinc-700">
-                                {aiResult.acoes_recomendadas?.map((a: string, i: number) => (
-                                    <li key={i} className="flex gap-2 font-medium">
-                                        <span className="bg-emerald-500 w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" />
-                                        {a}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                )}
-
-                {aiResult?.error && (
-                    <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                        {aiResult.error}
-                    </div>
-                )}
-            </div>
-            </div>
-
-            {/* CARTEIRA ATUAL */}
-            <h2 className="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
-                <BriefcaseIcon size={20} className="text-orange-500" />
-                Carteira Ativa ({ativas.length} Projetos)
-            </h2>
-            <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-zinc-500 uppercase bg-zinc-50/50 border-b border-zinc-200">
-                            <tr>
-                                <th className="px-6 py-4">Loja</th>
-                                <th className="px-6 py-4">Tipo</th>
-                                <th className="px-6 py-4">Status Atual</th>
-                                <th className="px-6 py-4">Tempo (Dias)</th>
-                                <th className="px-6 py-4">Idle (Espera)</th>
-                                <th className="px-6 py-4 text-right">MRR</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-100">
-                            {ativas.map((loja: any) => (
-                                <tr key={loja.id} className="hover:bg-zinc-50/50">
-                                    <td className="px-6 py-4 font-semibold text-zinc-900">
-                                        {loja.name}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 text-zinc-600 font-medium">
-                                            {loja.tipo_loja || 'Indefinido'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-zinc-700">
-                                        {loja.status_name}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`font-medium ${loja.dias_em_progresso > loja.tempo_contrato ? 'text-red-500' : ''}`}>
-                                            {loja.dias_em_progresso}d / {loja.tempo_contrato}d
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`font-bold ${loja.idle_days > 7 ? 'text-red-500' : loja.idle_days > 4 ? 'text-amber-500' : 'text-zinc-600'}`}>
-                                            {loja.idle_days}d
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-zinc-500 text-right">
-                                        {formatMoney(loja.valor_mensalidade || 0)}
-                                    </td>
-                                </tr>
-                            ))}
-                            {ativas.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500 italic">Nenhuma loja ativa no momento.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* ENTREGAS */}
-            <h2 className="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
-                <CheckCircle size={20} className="text-emerald-500" />
-                Histórico de Entregas (Desde 2026) - {entregas.length} Lojas
-            </h2>
-            <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-zinc-500 uppercase bg-zinc-50/50 border-b border-zinc-200">
-                            <tr>
-                                <th className="px-6 py-4">Loja</th>
-                                <th className="px-6 py-4">Tipo</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Tempo Total (SLA)</th>
-                                <th className="px-6 py-4">Data Entrega</th>
-                                <th className="px-6 py-4 text-right">MRR</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-100">
-                            {entregas.map((loja: any) => (
-                                <tr key={loja.id} className="hover:bg-zinc-50/50">
-                                    <td className="px-6 py-4 font-semibold text-zinc-900">
-                                        {loja.name}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-xs px-2 py-1 rounded bg-zinc-100 text-zinc-600 font-medium">
-                                            {loja.tipo_loja || 'Indefinido'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-emerald-600">
-                                        Entregue
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className={`font-bold ${loja.dias_em_progresso > loja.tempo_contrato ? 'text-red-500' : 'text-emerald-500'}`}>
-                                                {loja.dias_em_progresso}d <span className="text-[10px] text-zinc-400 font-normal">SLA: {loja.tempo_contrato}d</span>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {actions.map((action: any, idx: number) => (
+                                    <div key={idx} className="group p-5 bg-slate-50 border border-slate-100 rounded-2xl hover:border-indigo-200 hover:bg-white hover:shadow-md transition-all">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border ${
+                                                action.priority === 'HIGH' ? 'text-rose-600 bg-rose-50 border-rose-100' : 'text-amber-600 bg-amber-50 border-amber-100'
+                                            }`}>
+                                                {action.priority}
                                             </span>
-                                            {loja.dias_em_progresso > loja.tempo_contrato && (
-                                                <span className="text-[10px] text-red-500 font-medium">Atraso: {loja.dias_em_progresso - loja.tempo_contrato}d</span>
-                                            )}
+                                            <div className="p-1.5 bg-white rounded-lg border border-slate-100 text-indigo-600">
+                                                <Target size={14} />
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-zinc-500">
-                                        {loja.finished_at ? new Date(loja.finished_at).toLocaleDateString('pt-BR') : 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-zinc-500 text-right">
-                                        {formatMoney(loja.valor_mensalidade || 0)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                        <h4 className="text-sm font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">
+                                            {action.description}
+                                        </h4>
+                                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                                            <ShieldAlert size={10} />
+                                            IMPACTO: {action.impact}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
+                {/* 4. PERFORMANCE RADAR & INTELLIGENCE */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+                    
+                    {/* RADAR SIDE */}
+                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm flex flex-col">
+                        <h3 className="font-bold text-slate-900 mb-2 flex items-center gap-2 uppercase tracking-tight">
+                            <Activity className="text-indigo-500" size={18} />
+                            Radar de Equilíbrio
+                        </h3>
+                        <p className="text-xs text-slate-400 font-medium mb-8">Distribuição de competências operacionais</p>
+                        <div className="flex-1 flex justify-center items-center min-h-[350px]">
+                            {summary?.score?.eixos ? (
+                                <AnalystRadarChart data={summary.score.eixos} />
+                            ) : (
+                                <div className="text-slate-300 font-bold text-sm uppercase tracking-widest">Sem dados suficientes</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* AI DIAGNOSTIC SIDE */}
+                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                    <Sparkles size={18} className="text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Diagnóstico Jarvis DeepView</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Análise Qualitativa Automatizada</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleAIAnalysis}
+                                disabled={aiLoading}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                            >
+                                {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                {aiLoading ? 'Analisando...' : 'Gerar Novo Diagnóstico'}
+                            </button>
+                        </div>
+
+                        <div className="p-8">
+                            {!aiResult && !aiLoading && (
+                                <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/30">
+                                    <HelpCircle size={40} className="text-slate-200 mb-4" />
+                                    <p className="text-sm text-slate-400 font-bold text-center max-w-xs uppercase tracking-widest">
+                                        Clique no botão acima para iniciar a análise profunda deste analista
+                                    </p>
+                                </div>
+                            )}
+
+                            {aiResult && !aiResult.error && (
+                                <div className="space-y-8">
+                                    {/* Executive Summary */}
+                                    <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100/50">
+                                        <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                                            <Target size={12} />
+                                            Parecer Executivo
+                                        </h3>
+                                        <p className="text-slate-800 text-lg font-bold leading-snug">
+                                            {aiResult.resumo_executivo}
+                                        </p>
+                                    </div>
+
+                                    {/* Grid Details */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Patterns */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Padrões Detectados</h3>
+                                            <div className="space-y-2">
+                                                {aiResult.padroes_identificados?.map((p: string, i: number) => (
+                                                    <div key={i} className="flex gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                                        <span className="text-sm text-slate-700 font-medium">{p}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Bottlenecks */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gargalos Operacionais</h3>
+                                            <div className="space-y-2">
+                                                {aiResult.gargalos_operacionais?.map((g: string, i: number) => (
+                                                    <div key={i} className="flex gap-3 p-3 bg-rose-50/50 rounded-xl border border-rose-100/50">
+                                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                                                        <span className="text-sm text-slate-700 font-medium">{g}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Raio-X Audit (High Contrast Panel) */}
+                                    {aiResult.auditoria_raio_x && (
+                                        <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl relative overflow-hidden" aria-label="Auditoria de Processos">
+                                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                                <ShieldAlert size={80} className="text-white" />
+                                            </div>
+                                            <h3 className="font-black text-indigo-400 mb-6 flex items-center gap-2 text-sm uppercase tracking-widest">
+                                                <Sparkles size={18} />
+                                                Raio-X: Auditoria de Processos
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                <div className="space-y-2">
+                                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Doc. ClickUp</span>
+                                                    <p className="text-sm text-slate-300 italic">"{aiResult.auditoria_raio_x.qualidade_documentacao}"</p>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Bloqueios Reais</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {aiResult.auditoria_raio_x.bloqueios_identificados?.map((b: string, idx: number) => (
+                                                            <span key={idx} className="px-2 py-1 bg-rose-500/20 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/30">
+                                                                {b}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Conformidade</span>
+                                                    <p className="text-sm text-slate-300">{aiResult.auditoria_raio_x.conformidade_etapas}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {aiResult?.error && (
+                                <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100 text-sm font-bold flex items-center gap-3">
+                                    <ShieldAlert size={18} />
+                                    {aiResult.error}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. ACTIVE PORTFOLIO TABLE */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
+                            <Briefcase className="text-indigo-500" size={22} />
+                            Carteira Ativa ({ativas.length} Projetos)
+                        </h2>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50/50 border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Loja</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tempo (SLA)</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Idle</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">MRR</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {ativas.map((loja: any, idx: number) => (
+                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{loja.name}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{loja.tipo_loja || 'Matriz'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black uppercase rounded-lg border border-slate-200">
+                                                    {loja.status_name}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <div className="flex flex-col items-center">
+                                                    <span className={`font-black ${loja.dias_em_progresso > loja.tempo_contrato ? 'text-rose-500' : 'text-slate-700'}`}>
+                                                        {loja.dias_em_progresso}d
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Meta: {loja.tempo_contrato}d</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-right font-black">
+                                                <span className={`px-2 py-1 rounded-lg ${loja.idle_days > 7 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-slate-600'}`}>
+                                                    {loja.idle_days}d
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right font-black text-slate-500">
+                                                {formatMoney(loja.valor_mensalidade || 0)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {ativas.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="px-8 py-12 text-center text-slate-400 font-bold uppercase tracking-widest italic">Nenhum projeto ativo</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 6. RECENT DELIVERIES */}
+                <div className="space-y-4">
+                    <h2 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
+                        <CheckCircle className="text-emerald-500" size={22} />
+                        Entregas Recentes ({entregas.length})
+                    </h2>
+                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50/50 border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Loja</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Dias</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Entrega</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Impacto Financeiro</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {entregas.map((loja: any, idx: number) => (
+                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-700">{loja.name}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">{loja.tipo_loja}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <span className={`font-black ${loja.tempo_total > 90 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                                    {loja.tempo_total} dias
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-slate-500 font-medium">
+                                                {loja.finished_at}
+                                            </td>
+                                            <td className="px-8 py-5 text-right font-black text-slate-900">
+                                                {formatMoney(loja.valor_mensalidade || 0)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     )
 }
-
