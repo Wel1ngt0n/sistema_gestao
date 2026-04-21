@@ -1,4 +1,4 @@
-﻿// UX Audit: placeholder aria-label
+// UX Audit: placeholder aria-label
 import { api } from '../../services/api';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle, XCircle, Activity, Database } from 'lucide-react';
@@ -20,7 +20,16 @@ export default function SyncHealthPanel() {
     if (error) return <div className="p-4 text-center text-rose-500 bg-rose-50 rounded-xl">Erro ao carregar status do sync.</div>;
     if (!health) return null;
 
-    const { last_run, is_stale, stale_hours, recent_errors } = health;
+    const { last_run, is_stale, stale_hours } = health;
+
+    const formatDateTime = (dateStr: string | null | undefined) => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return null;
+        return date;
+    };
+
+    const lastRunDate = formatDateTime(last_run?.finished_at);
 
     return (
         <div className="w-full max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -28,10 +37,10 @@ export default function SyncHealthPanel() {
             {/* Header Status Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Last Run Card (Glass) */}
-                <div className={`flex-1 p-6 rounded-3xl border transition-all duration-300 relative overflow-hidden group
+                <div className={`flex-1 p-6 rounded-[2.5rem] border transition-all duration-300 relative overflow-hidden group
                     ${is_stale
-                        ? 'bg-amber-50/50 border-amber-200'
-                        : 'bg-white/60/50 backdrop-blur-xl border-zinc-200'
+                        ? 'bg-amber-50/80 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'
+                        : 'bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl border-zinc-200 dark:border-zinc-800'
                     } shadow-sm hover:shadow-md`}>
 
                     {/* Background glow for staleness */}
@@ -43,14 +52,14 @@ export default function SyncHealthPanel() {
                                 <Clock className={`w-4 h-4 ${is_stale ? 'text-amber-500' : 'text-zinc-400'}`} />
                                 <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Última Sincronização</p>
                             </div>
-                            <h3 className="text-3xl font-black tracking-tighter text-zinc-900">
-                                {last_run?.finished_at ? (
-                                    <span>{new Date(last_run.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <h3 className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-white">
+                                {lastRunDate ? (
+                                    <span>{lastRunDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 ) : (
                                     <span className="text-zinc-400 text-xl">--:--</span>
                                 )}
                                 <span className="text-sm font-medium text-zinc-400 ml-2">
-                                    {last_run?.finished_at ? new Date(last_run.finished_at).toLocaleDateString() : ''}
+                                    {lastRunDate ? lastRunDate.toLocaleDateString() : ''}
                                 </span>
                             </h3>
 
@@ -90,71 +99,31 @@ export default function SyncHealthPanel() {
                     )}
                 </div>
 
-                {/* Error Stats Card (Glass) */}
-                <div className="flex-1 bg-white/60/50 backdrop-blur-xl p-6 rounded-3xl border border-zinc-200 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-zinc-300 transition-colors">
+                {/* Status System Card (Glass) */}
+                <div className="flex-1 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
                     <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <AlertCircle size={80} />
+                        <Activity size={80} />
                     </div>
 
                     <div className="flex items-center gap-4 relative z-10">
-                        <div className={`p-4 rounded-2xl shadow-sm border ${recent_errors.length > 0
-                            ? 'bg-rose-100 text-rose-600 border-rose-200'
-                            : 'bg-zinc-100 text-zinc-400 border-zinc-200'
+                        <div className={`p-4 rounded-2xl shadow-sm border ${!is_stale
+                            ? 'bg-emerald-100 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+                            : 'bg-zinc-100 text-zinc-400 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700'
                             }`}>
-                            <AlertCircle size={24} strokeWidth={2.5} />
+                            <Activity size={24} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Erros Recentes</p>
-                            <h3 className={`text-3xl font-black tracking-tighter mt-1 ${recent_errors.length > 0 ? 'text-rose-600' : 'text-zinc-900'}`}>
-                                {recent_errors.length}
+                            <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Saúde do Motor</p>
+                            <h3 className={`text-3xl font-black tracking-tighter mt-1 ${!is_stale ? 'text-emerald-600' : 'text-zinc-900 dark:text-white'}`}>
+                                {is_stale ? 'ATENÇÃO' : 'OPERACIONAL'}
                             </h3>
                         </div>
                     </div>
-                    <p className="text-xs font-medium text-zinc-400 mt-4 pl-1">Falhas registradas nos últimos 10 processos.</p>
+                    <p className="text-xs font-medium text-zinc-400 mt-4 pl-1">Monitoramento em tempo real do Jarvis Sync Engine.</p>
                 </div>
             </div>
 
-            {/* Error Table (Modern) */}
-            {recent_errors.length > 0 && (
-                <div className="bg-white/80/80 backdrop-blur-xl rounded-3xl border border-zinc-200 overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-zinc-100 bg-zinc-50/50/50 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                            <h4 className="font-bold text-sm text-zinc-700">Histórico de Falhas</h4>
-                        </div>
-                        <span className="text-[10px] bg-zinc-200 text-zinc-600 px-2 py-0.5 rounded-md font-mono">LATEST 10</span>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 bg-zinc-50/80/80">
-                                <tr>
-                                    <th className="px-6 py-3">Data</th>
-                                    <th className="px-6 py-3">Loja (ID)</th>
-                                    <th className="px-6 py-3">Erro</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-100">
-                                {recent_errors.map((err: any) => (
-                                    <tr key={err.id} className="hover:bg-zinc-50/30 transition-colors group">
-                                        <td className="px-6 py-4 text-zinc-500 font-mono text-xs whitespace-nowrap">{err.at}</td>
-                                        <td className="px-6 py-4 font-semibold text-zinc-700">
-                                            {err.store_id ? (
-                                                <span className="bg-zinc-100 px-2 py-1 rounded text-xs border border-zinc-200">#{err.store_id}</span>
-                                            ) : '-'}
-                                        </td>
-                                        <td className="px-6 py-4 text-rose-600 w-full font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <XCircle size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                {err.msg}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+            {/* Error History Removed per User Request (Logs are now in Render) */}
 
             {/* Last Error Summary (Fatal) */}
             {last_run?.error_summary && (
