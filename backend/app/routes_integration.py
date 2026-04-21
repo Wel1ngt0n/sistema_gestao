@@ -470,6 +470,7 @@ def export_integration_report(payload):
 
 @integration_bp.route('/sync', methods=['POST'])
 @require_auth
+@require_permission('manage_sync')
 def sync_integration_tasks(payload):
     """
     Dispara sincronização manual apenas da fase de Integração.

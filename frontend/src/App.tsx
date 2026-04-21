@@ -55,7 +55,11 @@ function App() {
                     <Route path="/analytics" element={<DashboardAnalytics />} />
                     <Route path="/forecast" element={<ForecastPage />} />
                     <Route path="/reports" element={<MonthlyReport />} />
-                    <Route path="/sync" element={<SyncPage />} />
+                    <Route path="/sync" element={
+                        <ProtectedRoute requiredPermission="manage_sync">
+                            <SyncPage />
+                        </ProtectedRoute>
+                    } />
 
                     {/* Rotas de Admin */}
                     <Route path="/admin/performance" element={<SuperAdminDashboard />} />

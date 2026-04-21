@@ -17,7 +17,8 @@ class SyncService:
         Busca descrição e comentários recentes para enriquecer a IA (Raio-X).
         """
         task_id = task_data.get('id')
-        if not task_id: return
+        if not task_id: 
+            return
         
         # 1. Descrição
         # Às vezes a descrição já vem no task_data, se não, buscaríamos (ClickUp API cost)
@@ -107,7 +108,8 @@ class SyncService:
                      if res:
                          # Inject List Name
                          list_name = future_to_list[future]
-                         for t in res: t['step_type_name'] = list_name
+                         for t in res:
+                             t['step_type_name'] = list_name
                          
                          all_steps.extend(res)
             
@@ -122,7 +124,8 @@ class SyncService:
                         f_val = cf.get('value')
                         break
                 if f_val:
-                    if f_val not in steps_map: steps_map[f_val] = []
+                    if f_val not in steps_map: 
+                        steps_map[f_val] = []
                     steps_map[f_val].append(task)
             
             processed_count = 0
@@ -282,8 +285,8 @@ class SyncService:
                 db.session.commit()
             return {"error": str(e)}
 
-    def run_sync_stream(self, force_full=False):
-        """Gerador para SSE com Lógica Incremental e Logging V2.5"""
+    def run_sync_stream(self, force_full=False, vital_only=False):
+        """Gerador para SSE com Lógica Incremental e Logging V3.0 (Modular)"""
         from app.models import SyncRun, SyncError
         import traceback
         
@@ -293,7 +296,8 @@ class SyncService:
         db.session.commit()
         
         try:
-            yield f"data: 🚀 Iniciando Sync V2.5 ({'COMPLETO' if force_full else 'INCREMENTAL'})...\n\n"
+            mode_str = "VITAL" if vital_only else "DEEP"
+            yield f"data: 🚀 Iniciando Sync V3.0 ({mode_str} - {'COMPLETO' if force_full else 'INCREMENTAL'})...\n\n"
             
             last_ts = self.get_last_sync_ts()
             if force_full:
@@ -303,109 +307,115 @@ class SyncService:
             last_date_str = datetime.fromtimestamp(last_ts/1000).strftime('%d/%m %H:%M') if last_ts else "INÍCIO (Tudo)"
             yield f"data: 🕒 Filtro: desde {last_date_str}\n\n"
             
-            # 1. Stores
-            yield "data: 🔍 Buscando lojas modificadas...\n\n"
-            parent_tasks = []
+            # 1. Stores (Processamento em Tempo Real)
+            yield "data: 🔍 Buscando e processando lojas...\n\n"
+            stores_processed = 0
             for batch in self.clickup.fetch_parent_tasks_generator(date_updated_gt=last_ts):
-                parent_tasks.extend(batch)
-                yield f"data: 📦 Baixando {len(parent_tasks)} lojas...\n\n"
-            yield f"data: ✅ {len(parent_tasks)} lojas para atualizar.\n\n"
+                if batch:
+                    for p_task in batch:
+                        try:
+                            # Sincronizar Contexto Verbal (Raio-X) apenas se NÃO for Vital
+                            if not vital_only:
+                                self._sync_verbal_context(p_task)
+                                
+                                # Capturar Time Tracking (V6)
+                                try:
+                                    tt_data = self.clickup.get_task_time_tracking(p_task.get('id'))
+                                    total_ms = sum(int(entry.get('duration', 0)) for entry in tt_data)
+                                    p_task['total_time_tracked'] = int(total_ms / 1000) # s
+                                except (ValueError, TypeError, Exception): 
+                                    pass
+                            
+                            store_db = self.metrics.process_store_data(p_task)
+                            
+                            # Se tivermos time tracked no p_task, atualizar no model
+                            if p_task.get('total_time_tracked') is not None:
+                                store_db.total_time_tracked = p_task['total_time_tracked']
+                                
+                                # Capturar Time In Status (Histórico de Métricas V6)
+                                try:
+                                    status_data = self.clickup.get_task_history(p_task.get('id'))
+                                    if status_data:
+                                        from app.models import TimeInStatusCache
+                                        # Limpar e atualizar
+                                        TimeInStatusCache.query.filter_by(store_id=store_db.id).delete()
+                                        for item in status_data.get('status_history', []):
+                                            status_name = item.get('status')
+                                            total_min = item.get('total_time', {}).get('by_minute', 0)
+                                            if total_min:
+                                                cache = TimeInStatusCache(
+                                                    store_id=store_db.id,
+                                                    status_name=status_name,
+                                                    total_seconds=int(total_min) * 60,
+                                                    total_days=round((int(total_min) * 60) / 86400, 2)
+                                                )
+                                                db.session.add(cache)
+                                except (ValueError, TypeError, Exception): 
+                                    pass
+                            
+                            db.session.commit()
+                            stores_processed += 1
+                        except Exception as e:
+                            db.session.rollback()
+                            self.logger.error(f"Erro store {p_task.get('name')}: {e}")
+                            err = SyncError(
+                                sync_run_id=run_record.id,
+                                task_id=p_task.get('id'),
+                                error_msg=f"Update Store: {str(e)}",
+                                traceback=traceback.format_exc()
+                            )
+                            db.session.add(err)
+                            db.session.commit()
+                    
+                    yield f"data: ⏳ Processadas {stores_processed} lojas...\n\n"
+                    batch = None # GC
+
+            yield f"data: ✅ {stores_processed} lojas sincronizadas.\n\n"
             
-            # 2. Steps
-            yield "data: 📦 Buscando etapas modificadas...\n\n"
-            all_steps = []
-            all_steps = []
+            # 2. Steps (Processamento em Tempo Real por Batch)
+            yield "data: 📦 Buscando e processando etapas...\n\n"
+            steps_processed = 0
             father_field_id = self.clickup.get_father_field_id()
+            from app.models import Store
             
             for list_name, list_id in Config.LIST_IDS_STEPS.items():
                 try:
                     yield f"data: 📥 Iniciando busca da lista '{list_name}'...\n\n"
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, last_ts):
                         if batch:
-                            for t in batch: 
-                                t['step_type_name'] = list_name
-                            all_steps.extend(batch)
-                            yield f"data: 📦 Lista '{list_name}' parcial: +{len(batch)} itens baixados...\n\n"
+                            for s_task in batch:
+                                try:
+                                    # Encontrar Store via Custom Field
+                                    custom_id = None
+                                    for cf in s_task.get('custom_fields', []):
+                                        if cf['id'] == father_field_id:
+                                            custom_id = cf.get('value')
+                                            break
+                                    
+                                    if custom_id:
+                                        store_db = Store.query.filter_by(custom_store_id=custom_id).first()
+                                        if store_db:
+                                            s_task['step_type_name'] = list_name
+                                            # Sincronizar Contexto Verbal apenas se NÃO for Vital
+                                            if not vital_only:
+                                                self._sync_verbal_context(s_task)
+                                                
+                                            self.metrics.process_step_data(store_db, s_task)
+                                            # Aplicar regra de treinamento
+                                            self.metrics.apply_training_completion_rule(store_db)
+                                            db.session.commit()
+                                            steps_processed += 1
+                                except Exception as inner_e:
+                                    db.session.rollback()
+                                    self.logger.error(f"Erro na etapa {s_task.get('id')}: {inner_e}")
+                            
+                            yield f"data: 📦 Lista '{list_name}' parcial: {steps_processed} etapas processadas...\n\n"
+                            batch = None # GC
                 except Exception as e:
                     self.logger.error(str(e))
                     yield f"data: ⚠️ Erro ao buscar lista '{list_name}': {str(e)}\n\n"
-    
-            # Map steps
-            steps_map = {}
-            for task in all_steps:
-                f_val = None
-                for cf in task.get('custom_fields', []):
-                    if cf['id'] == father_field_id:
-                        f_val = cf.get('value')
-                        break
-                if f_val:
-                    if f_val not in steps_map: steps_map[f_val] = []
-                    steps_map[f_val].append(task)
-            
-            # 3. Process Stores
-            count = 0
-            for p_task in parent_tasks:
-                try:
-                    # Sincronizar Contexto Verbal (Raio-X)
-                    self._sync_verbal_context(p_task)
-                    
-                    self.metrics.process_store_data(p_task)
 
-                    db.session.commit()
-                    count += 1
-                    
-                    if count % 5 == 0:
-                        yield f"data: ⏳ Processadas {count}/{len(parent_tasks)} lojas...\n\n"
-                except Exception as e:
-                    db.session.rollback()
-                    self.logger.error(f"Erro store {p_task.get('name')}: {e}")
-                    # Registrar Erro
-                    err = SyncError(
-                        sync_run_id=run_record.id,
-                        task_id=p_task.get('id'),
-                        error_msg=f"Update Store: {str(e)}",
-                        traceback=traceback.format_exc()
-                    )
-                    db.session.add(err)
-                    db.session.commit()
-
-            yield f"data: 🔄 Lojas processadas: {count}\n\n"
-            
-            # 4. Processar Etapas
-            from app.models import Store
-            steps_processed = 0
-            
-            for custom_id, s_tasks in steps_map.items():
-                try:
-                    store_db = Store.query.filter_by(custom_store_id=custom_id).first()
-                    if store_db:
-                        for s_task in s_tasks:
-                                # Sincronizar Contexto Verbal para Etapa
-                                self._sync_verbal_context(s_task)
-                                
-                                self.metrics.process_step_data(store_db, s_task)
-
-                        
-                        self.metrics.apply_training_completion_rule(store_db)
-                        db.session.commit()
-                        steps_processed += len(s_tasks)
-                        
-                        if steps_processed % 20 == 0:
-                            yield f"data: ⏳ Processadas {steps_processed} etapas...\n\n"
-                except Exception as e:
-                    db.session.rollback()
-                    self.logger.error(f"Erro ao processar steps para loja {custom_id}: {e}")
-                    # Log Error
-                    err = SyncError(
-                        sync_run_id=run_record.id,
-                        store_id=(store_db.id if store_db else None),
-                        error_msg=f"Update Steps: {str(e)}",
-                        traceback=traceback.format_exc()
-                    )
-                    db.session.add(err)
-                    db.session.commit()
-            
-            yield f"data: 🔄 Etapas processadas: {steps_processed}\n\n"
+                    yield f"data: 🔄 Etapas processadas: {steps_processed}\n\n"
     
             self.metrics.commit()
             self.update_sync_state(success=True)
@@ -413,11 +423,11 @@ class SyncService:
             # Atualizar Registro de Execução (Sucesso)
             run_record.finished_at = datetime.now()
             run_record.status = "SUCCESS"
-            run_record.items_processed = len(parent_tasks)
-            run_record.items_updated = count + steps_processed
+            run_record.items_processed = stores_processed
+            run_record.items_updated = stores_processed + steps_processed
             db.session.commit()
             
-            yield "data: ✨ Sync V2.5 Finalizado!\n\n"
+            yield "data: ✨ Sync V3.0 Finalizado!\n\n"
             yield "data: [DONE]\n\n"
 
         except Exception as e:
@@ -553,7 +563,8 @@ class SyncService:
                      res = future.result()
                      if res:
                          list_name = future_to_list[future]
-                         for t in res: t['step_type_name'] = list_name
+                         for t in res:
+                             t['step_type_name'] = list_name
                          all_steps.extend(res)
             
             if not all_steps:

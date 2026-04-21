@@ -133,6 +133,10 @@ class Store(db.Model):
     forecast_obs = db.Column(db.Text, nullable=True)
     include_in_forecast = db.Column(db.Boolean, default=True)
 
+    # Inteligência de Tarefa (V6)
+    assignees_json = db.Column(db.Text, nullable=True) # JSON de membros/avatares
+    total_time_tracked = db.Column(db.Integer, default=0) # Total em segundos
+
     
     # Relacionamentos
     steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")
@@ -184,8 +188,10 @@ class Store(db.Model):
         if self.steps:
             sub_starts = [s.start_real_at for s in self.steps if s.start_real_at]
             sub_ends = [s.end_real_at for s in self.steps if s.end_real_at]
-            if sub_starts: detected_candidates.append(min(sub_starts))
-            if sub_ends: detected_candidates.append(min(sub_ends))
+            if sub_starts: 
+                detected_candidates.append(min(sub_starts))
+            if sub_ends: 
+                detected_candidates.append(min(sub_ends))
             
         detected_start = min(detected_candidates) if detected_candidates else None
         

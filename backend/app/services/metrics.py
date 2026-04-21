@@ -1,5 +1,6 @@
 from datetime import datetime
-from app.models import db, Store, TaskStep, StatusEvent, StoreSyncLog
+import json
+from app.models import db, Store, TaskStep, StoreSyncLog
 from app.services.status_normalizer import StatusNormalizer
 
 class MetricsService:
@@ -28,7 +29,8 @@ class MetricsService:
                      if 'id' in field.get('name', '').lower() or 'código' in field.get('name', '').lower():
                         custom_id = val
                         break
-        if not custom_id: custom_id = "N/A"
+        if not custom_id: 
+            custom_id = "N/A"
 
         store = Store.query.filter_by(clickup_task_id=clickup_id).first()
         is_new = False
@@ -86,6 +88,13 @@ class MetricsService:
         current_assignee = None
         if assignees:
             current_assignee = assignees[0]['username']
+            # Salvar JSON completo (V6)
+            store.assignees_json = json.dumps([{
+                'id': a.get('id'),
+                'username': a.get('username'),
+                'avatar': a.get('profilePicture'),
+                'initials': a.get('initials')
+            } for a in assignees])
             
         store.implantador = current_assignee
         store.implantador_atual = current_assignee
@@ -101,22 +110,27 @@ class MetricsService:
         for field in task_data.get('custom_fields', []):
             fname = field.get('name', '').lower()
             fvalue = field.get('value')
-            if fvalue is None: continue
+            if fvalue is None: 
+                continue
             
             val_str = str(fvalue)
             
             if 'mensalidade' in fname:
                 try: 
                     new_val = float(val_str)
-                    if not is_new: self.log_change(store, 'valor_mensalidade', old_mrr, new_val, timestamp=updated_at_ts)
+                    if not is_new:
+                        self.log_change(store, 'valor_mensalidade', old_mrr, new_val, timestamp=updated_at_ts)
                     store.valor_mensalidade = new_val
-                except: pass
+                except (ValueError, TypeError): 
+                    pass
             elif 'implantação' in fname:
                 try: 
                     new_val = float(val_str)
-                    if not is_new: self.log_change(store, 'valor_implantacao', old_impl, new_val, timestamp=updated_at_ts)
+                    if not is_new:
+                        self.log_change(store, 'valor_implantacao', old_impl, new_val, timestamp=updated_at_ts)
                     store.valor_implantacao = new_val
-                except: pass
+                except (ValueError, TypeError): 
+                    pass
             elif 'erp' in fname:
                 store.erp = val_str
             elif 'cnpj' in fname:
@@ -170,7 +184,7 @@ class MetricsService:
                 last_finished_step = TaskStep.query.filter(
                     TaskStep.store_id == store_db.id, 
                     TaskStep.id != step.id, 
-                    TaskStep.end_real_at != None,
+                    TaskStep.end_real_at.isnot(None),
                     TaskStep.end_real_at <= limit_date
                 ).order_by(TaskStep.end_real_at.desc()).first()
                 if last_finished_step:

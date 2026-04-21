@@ -529,6 +529,7 @@ def sync_clickup(payload):
 
 @api_bp.route('/implantacao/sync', methods=['POST'])
 @require_auth
+@require_permission('manage_sync')
 def sync_implantacao(payload):
     service = SyncService()
     try:
@@ -694,6 +695,7 @@ def deep_sync_store(payload, id):
 
 @api_bp.route('/sync/stream', methods=['GET'])
 @require_auth
+@require_permission('manage_sync')
 def sync_stream(payload):
     full = request.args.get('full', 'false').lower() == 'true'
     service = SyncService()

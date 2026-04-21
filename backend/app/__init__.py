@@ -50,6 +50,12 @@ def create_app():
     db.init_app(app)
     migrate = Migrate(app, db)
     
+    # Inicializar Scheduler (Automação de Sync)
+    from app.scheduler import init_scheduler
+    # No Render, queremos evitar múltiplas instâncias rodando scheduler se houver múltiplos workers
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or os.environ.get('FLASK_ENV') == 'production':
+        init_scheduler(app)
+    
     # Garantir que as tabelas existem (Caminho CLI local)
     with app.app_context():
         # create_all já é chamado no create_app()

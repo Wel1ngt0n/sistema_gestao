@@ -246,3 +246,12 @@ class ClickUpService:
         if data and 'comments' in data:
             return data['comments']
         return []
+
+    def get_task_time_tracking(self, task_id):
+        """
+        Busca o tempo total registrado em uma tarefa.
+        """
+        data = self._get(f"task/{task_id}/time")
+        if data and 'data' in data:
+            return data['data']
+        return []
