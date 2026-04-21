@@ -29,7 +29,7 @@ export const Select: React.FC<SelectProps> = ({ value, onChange, options, placeh
             )}
             <Listbox value={value || ''} onChange={onChange}>
                 <div className="relative mt-1">
-                    <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white dark:bg-slate-800 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm border border-slate-200 dark:border-slate-700">
+                    <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white dark:bg-slate-800 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm border border-slate-200 dark:border-slate-700">
                         <span className={clsx("block truncate", !selectedOption && "text-slate-400")}>
                             {selectedOption ? selectedOption.label : placeholder}
                         </span>
@@ -51,7 +51,7 @@ export const Select: React.FC<SelectProps> = ({ value, onChange, options, placeh
                                 <Listbox.Option
                                     key={personIdx}
                                     className={({ active }) =>
-                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-900 dark:text-indigo-100' : 'text-slate-900 dark:text-slate-100'
+                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100' : 'text-slate-900 dark:text-slate-100'
                                         }`
                                     }
                                     value={option.value}
@@ -65,7 +65,7 @@ export const Select: React.FC<SelectProps> = ({ value, onChange, options, placeh
                                                 {option.label}
                                             </span>
                                             {selected ? (
-                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600 dark:text-indigo-400">
+                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-orange-600 dark:text-orange-400">
                                                     <Check className="h-4 w-4" aria-hidden="true" />
                                                 </span>
                                             ) : null}

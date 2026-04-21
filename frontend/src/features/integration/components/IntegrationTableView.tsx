@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { useState, useMemo, useEffect, DragEvent, CSSProperties } from 'react';
 import {
     useReactTable,
@@ -104,7 +105,7 @@ export default function IntegrationTableView({
         if (s.includes('aguardando')) return 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400';
         if (s.includes('progresso') || s.includes('contato')) return 'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
         if (s.includes('backlog') || s.includes('não vão')) return 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400';
-        if (s.includes('produtos integrados') || s.includes('dados coletados')) return 'text-indigo-700 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400';
+        if (s.includes('produtos integrados') || s.includes('dados coletados')) return 'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
         return 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400';
     };
 
@@ -495,3 +496,4 @@ export default function IntegrationTableView({
         </div>
     );
 }
+

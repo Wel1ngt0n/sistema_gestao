@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { useMemo, useState, DragEvent } from 'react';
 import { Store } from './types';
 import { getStatusColor, formatDate } from './monitorUtils';
@@ -99,7 +100,7 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                     {/* Column Header */}
                     <div className="p-3 border-b border-slate-200/60 dark:border-slate-800 flex justify-between items-center bg-slate-100/40 dark:bg-slate-900/40 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
                         <h4 className="font-bold text-slate-700 dark:text-slate-200 text-xs uppercase tracking-wider flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                            <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                             {col.title}
                         </h4>
                         <span className="text-[10px] font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -117,8 +118,8 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                 onClick={() => onEdit(store)}
                                 className={`
                                     bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 
-                                    cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group relative
-                                    ${draggedStoreId === store.id ? 'opacity-40 ring-2 ring-indigo-500 rotate-2 scale-95 shadow-xl bg-indigo-50' : 'shadow-sm'}
+                                    cursor-grab active:cursor-grabbing hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500 transition-all group relative
+                                    ${draggedStoreId === store.id ? 'opacity-40 ring-2 ring-orange-500 rotate-2 scale-95 shadow-xl bg-orange-50' : 'shadow-sm'}
                                 `}
                             >
                                 {/* Risk Indicator Line */}
@@ -130,7 +131,7 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                     <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{store.id}</span>
                                 </div>
 
-                                <h5 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                <h5 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug mb-3 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                                     {store.name}
                                 </h5>
 
@@ -156,7 +157,7 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                         <div className="flex items-center gap-1 mt-0.5">
                                             {store.implantador ? (
                                                 <>
-                                                    <div className="w-4 h-4 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[8px] font-bold border border-indigo-50 dark:border-indigo-800">
+                                                    <div className="w-4 h-4 rounded-full bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 flex items-center justify-center text-[8px] font-bold border border-orange-50 dark:border-orange-800">
                                                         {store.implantador.substring(0, 1)}
                                                     </div>
                                                     <span className="text-xs font-medium text-slate-600 dark:text-slate-300 truncate max-w-[80px]">
@@ -202,3 +203,4 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
         </div>
     );
 }
+

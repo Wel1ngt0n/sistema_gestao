@@ -189,7 +189,7 @@ export default function MonitorTableView({
                     // @ts-ignore
                     ref={input => input && (input.indeterminate = table.getIsSomeRowsSelected())}
                     onChange={table.getToggleAllRowsSelectedHandler()}
-                    className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer w-4 h-4 accent-violet-600"
+                    className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer w-4 h-4 accent-orange-600"
                 />
             ),
             cell: ({ row }) => (
@@ -199,7 +199,7 @@ export default function MonitorTableView({
                         checked={row.getIsSelected()}
                         disabled={!row.getCanSelect()}
                         onChange={row.getToggleSelectedHandler()}
-                        className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer w-4 h-4 accent-violet-600"
+                        className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer w-4 h-4 accent-orange-600"
                     />
                 </div>
             ),
@@ -226,7 +226,7 @@ export default function MonitorTableView({
 
                 let ring = "";
                 if (ai && ai.risk_level === 'CRITICAL' && !ai.is_concluded) {
-                    ring = "ring-2 ring-violet-500 ring-offset-1";
+                    ring = "ring-2 ring-orange-500 ring-offset-1";
                 }
 
                 return (
@@ -299,7 +299,7 @@ export default function MonitorTableView({
                     return (
                         <div className="flex flex-col gap-0.5">
                             <span className="text-[10px] text-slate-400 italic">Sem responsável</span>
-                            <span className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 w-fit font-semibold" title="Sugestão baseada em menor esforço semestral">
+                            <span className="text-[10px] bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-800 w-fit font-semibold" title="Sugestão baseada em menor esforço semestral">
                                 ✨ Sugestão: {recommendedImplantador}
                             </span>
                         </div>
@@ -352,7 +352,7 @@ export default function MonitorTableView({
         }),
         columnHelper.accessor('valor_mensalidade', {
             header: 'Mensalidade',
-            cell: info => <span className="text-xs text-indigo-600 dark:text-indigo-300">{formatCurrency(info.getValue() || 0)}</span>,
+            cell: info => <span className="text-xs text-orange-600 dark:text-orange-300">{formatCurrency(info.getValue() || 0)}</span>,
             enablePinning: true,
         }),
         columnHelper.accessor('data_inicio', {
@@ -376,7 +376,7 @@ export default function MonitorTableView({
                     const isLate = ai.days_late_predicted > 0;
                     return (
                         <div className="flex flex-col leading-none">
-                            <span className={`text-xs whitespace-nowrap ${isLate ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                            <span className={`text-xs whitespace-nowrap ${isLate ? 'text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {formatDate(ai.predicted_date)}
                             </span>
                             {isLate && <span className="text-[9px] text-red-500">+{Math.round(ai.days_late_predicted)}d (AI)</span>}
@@ -418,14 +418,14 @@ export default function MonitorTableView({
                 <div className="flex gap-2">
                     <button
                         onClick={() => onAiAnalyze(props.row.original)}
-                        className="bg-violet-600 hover:bg-violet-500 text-white px-2 py-1 rounded text-xs transition-colors shadow-sm flex items-center gap-1"
+                        className="bg-orange-600 hover:bg-orange-500 text-white px-2 py-1 rounded text-xs transition-colors shadow-sm flex items-center gap-1"
                         title="Gerar Análise com IA"
                     >
                         🤖 <span className="hidden sm:inline">Análise</span>
                     </button>
                     <button
                         onClick={() => onEdit(props.row.original)}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-xs transition-colors shadow-sm"
+                        className="bg-orange-600 hover:bg-orange-500 text-white px-2 py-1 rounded text-xs transition-colors shadow-sm"
                     >
                         Detalhes
                     </button>
@@ -541,14 +541,14 @@ export default function MonitorTableView({
 
             {/* Action Bar (Bulk Link) */}
             {Object.keys(rowSelection).length > 0 && (
-                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-50 bg-violet-600 text-white rounded-xl p-3 font-bold shadow-2xl animate-in slide-in-from-bottom-4 flex items-center justify-between border border-violet-500/50 backdrop-blur-sm ring-1 ring-black/20">
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-50 bg-orange-600 text-white rounded-xl p-3 font-bold shadow-2xl animate-in slide-in-from-bottom-4 flex items-center justify-between border border-orange-500/50 backdrop-blur-sm ring-1 ring-black/20">
                     <div className="flex items-center gap-4 flex-wrap">
                         <span className="font-bold text-sm">{Object.keys(rowSelection).length} selecionadas:</span>
 
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] uppercase opacity-80">Vínculo:</span>
                             <select
-                                className="bg-violet-700 border-violet-500 rounded text-xs px-2 py-1 outline-none focus:ring-2 focus:ring-white min-w-[150px]"
+                                className="bg-orange-700 border-orange-500 rounded text-xs px-2 py-1 outline-none focus:ring-2 focus:ring-white min-w-[150px]"
                                 value={bulkMatrizId}
                                 onChange={e => setBulkMatrizId(e.target.value)}
                             >
@@ -562,7 +562,7 @@ export default function MonitorTableView({
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] uppercase opacity-80">Tipo:</span>
                             <select
-                                className="bg-violet-700 border-violet-500 rounded text-xs px-2 py-1 outline-none focus:ring-2 focus:ring-white"
+                                className="bg-orange-700 border-orange-500 rounded text-xs px-2 py-1 outline-none focus:ring-2 focus:ring-white"
                                 value={bulkTipoLoja}
                                 onChange={e => setBulkTipoLoja(e.target.value)}
                             >
@@ -574,12 +574,12 @@ export default function MonitorTableView({
 
                         <button
                             onClick={handleBulkUpdate}
-                            className="bg-white text-violet-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-violet-50 transition-all shadow-lg active:scale-95 ml-2"
+                            className="bg-white text-orange-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-orange-50 transition-all shadow-lg active:scale-95 ml-2"
                         >
                             Aplicar em Massa
                         </button>
                     </div>
-                    <button onClick={() => setRowSelection({})} className="text-white hover:bg-violet-500 p-1 rounded">Cancelar</button>
+                    <button onClick={() => setRowSelection({})} className="text-white hover:bg-orange-500 p-1 rounded">Cancelar</button>
                 </div>
             )}
 
@@ -591,12 +591,12 @@ export default function MonitorTableView({
                         value={globalFilter ?? ''}
                         onChange={e => setGlobalFilter(e.target.value)}
                         placeholder="Buscar loja, ID, status..."
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                     />
                 </div>
 
                 <div className="flex gap-2 items-center">
-                    <div className="px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-400 font-mono">
+                    <div className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 text-xs text-orange-700 dark:text-orange-400 font-mono">
                         {table.getFilteredRowModel().rows.length} lojas filtradas
                     </div>
 
@@ -605,7 +605,7 @@ export default function MonitorTableView({
                     <div className="relative">
                         <button
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
-                            className={`bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs transition-colors flex items-center gap-2 ${isColumnsOpen ? 'ring-2 ring-indigo-500/50' : ''}`}
+                            className={`bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs transition-colors flex items-center gap-2 ${isColumnsOpen ? 'ring-2 ring-orange-500/50' : ''}`}
                         >
                             <span>Colunas</span>
                             <span className="text-[10px]">▼</span>
@@ -628,7 +628,7 @@ export default function MonitorTableView({
                                                     type="checkbox"
                                                     checked={column.getIsVisible()}
                                                     onChange={column.getToggleVisibilityHandler()}
-                                                    className="accent-indigo-500 cursor-pointer w-4 h-4 rounded border-slate-300"
+                                                    className="accent-orange-500 cursor-pointer w-4 h-4 rounded border-slate-300"
                                                 />
                                             </label>
                                         )
@@ -665,7 +665,7 @@ export default function MonitorTableView({
                                             className={`px-3 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 group hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors
                                             sticky top-0 
                                             ${header.column.getIsPinned() ? 'z-30 shadow-lg' : 'z-20'} 
-                                            ${draggedColumnId === header.column.id ? 'opacity-50 border-2 border-dashed border-indigo-500' : ''}
+                                            ${draggedColumnId === header.column.id ? 'opacity-50 border-2 border-dashed border-orange-500' : ''}
                                         `}
                                             style={{
                                                 ...style,
@@ -692,7 +692,7 @@ export default function MonitorTableView({
 
                                                     {/* Sort & Title */}
                                                     <div
-                                                        className="flex items-center gap-1 cursor-pointer hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors flex-1"
+                                                        className="flex items-center gap-1 cursor-pointer hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex-1"
                                                         onClick={header.column.getToggleSortingHandler()}
                                                         title="Clique para ordenar"
                                                     >
@@ -709,7 +709,7 @@ export default function MonitorTableView({
                                                             const isPinned = header.column.getIsPinned();
                                                             header.column.pin(isPinned ? false : 'left');
                                                         }}
-                                                        className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ${header.column.getIsPinned() ? 'text-indigo-500 dark:text-indigo-400 opacity-100' : 'text-slate-400 dark:text-slate-600 opacity-0 group-hover:opacity-100'}`}
+                                                        className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ${header.column.getIsPinned() ? 'text-orange-500 dark:text-orange-400 opacity-100' : 'text-slate-400 dark:text-slate-600 opacity-0 group-hover:opacity-100'}`}
                                                     >
                                                         📌
                                                     </button>

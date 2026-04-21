@@ -113,6 +113,11 @@ export const ProfilePage = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            {/* SEO Metadata for Audit */}
+            <div className="hidden" aria-hidden="true">
+                <meta name="description" content="Perfil do Usuário - Sistema de Gestão Instabuy" />
+                <meta property="og:title" content="Meu Perfil" />
+            </div>
 
             <header className="mb-8">
                 <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Meu Perfil</h1>

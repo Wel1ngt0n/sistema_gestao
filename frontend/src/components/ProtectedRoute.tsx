@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children, requiredPermission }: ProtectedRouteProps) =
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-900 text-zinc-100">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                     <p>Autenticando...</p>
                 </div>
             </div>
@@ -46,7 +46,7 @@ const ProtectedRoute = ({ children, requiredPermission }: ProtectedRouteProps) =
                     </p>
                     <button
                         onClick={() => window.history.back()}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-medium transition-colors"
+                        className="px-6 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white font-medium transition-colors"
                     >
                         Voltar
                     </button>

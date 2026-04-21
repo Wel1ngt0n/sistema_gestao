@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { useState, Fragment, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -37,10 +38,10 @@ function classNames(...classes: string[]) {
 // Inline Generic KPI Card for Integration
 const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
     const bgColors: any = {
-        indigo: 'bg-indigo-500',
+        orange: 'bg-orange-500',
         green: 'bg-emerald-500',
         blue: 'bg-blue-500',
-        purple: 'bg-purple-500',
+        amber: 'bg-amber-500',
         yellow: 'bg-amber-500',
         slate: 'bg-slate-500',
         red: 'bg-rose-500',
@@ -48,10 +49,10 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
     };
 
     const textColors: any = {
-        indigo: 'text-indigo-600 dark:text-indigo-400',
+        orange: 'text-orange-600 dark:text-orange-400',
         green: 'text-emerald-600 dark:text-emerald-400',
         blue: 'text-blue-600 dark:text-blue-400',
-        purple: 'text-purple-600 dark:text-purple-400',
+        amber: 'text-amber-600 dark:text-amber-400',
         yellow: 'text-amber-600 dark:text-amber-400',
         slate: 'text-slate-600 dark:text-slate-400',
         red: 'text-rose-600 dark:text-rose-400',
@@ -282,10 +283,10 @@ export default function IntegrationAnalytics() {
                     {/* --- ABA 1: VISÃO GERAL --- */}
                     <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up animation-delay-100">
-                            <KPICard label="WIP (Integrações Ativas)" value={kpis.wip} color="indigo" icon="🚀" subtext="Lojas sendo integradas" />
+                            <KPICard label="WIP (Integrações Ativas)" value={kpis.wip} color="orange" icon="🚀" subtext="Lojas sendo integradas" />
                             <KPICard label="SLA (No Prazo)" value={`${kpis.pct_prazo}%`} color={kpis.pct_prazo >= 90 ? 'green' : 'red'} icon="✅" subtext="Integrações em dias" />
                             <KPICard label="Qualidade" value={`${kpis.quality_pct}%`} color="blue" icon="💎" subtext="Sem bugs pós go-live" />
-                            <KPICard label="Volume de Pontos" value={kpis.volume_points} color="purple" icon="🏅" subtext="Complexidade em andamento" />
+                            <KPICard label="Volume de Pontos" value={kpis.volume_points} color="amber" icon="🏅" subtext="Complexidade em andamento" />
                             <KPICard label="Risco de Churn" value={kpis.risk_count} color="red" icon="⚠️" subtext="Integrações com alerta" />
                         </div>
 
@@ -344,3 +345,4 @@ export default function IntegrationAnalytics() {
         </div>
     );
 }
+

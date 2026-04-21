@@ -32,7 +32,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ date, onChange, label, p
                     <>
                         <Popover.Button
                             className={clsx(
-                                "flex items-center justify-between w-full rounded-lg bg-white dark:bg-slate-800 py-2 pl-3 pr-3 text-left shadow-md border border-slate-200 dark:border-slate-700 sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500",
+                                "flex items-center justify-between w-full rounded-lg bg-white dark:bg-slate-800 py-2 pl-3 pr-3 text-left shadow-md border border-slate-200 dark:border-slate-700 sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500",
                                 !date && "text-slate-400"
                             )}
                         >
@@ -75,8 +75,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({ date, onChange, label, p
                                         showOutsideDays
                                         className="border-0"
                                         modifiersClassNames={{
-                                            selected: 'bg-indigo-600 text-white rounded-full hover:bg-indigo-700',
-                                            today: 'text-indigo-600 font-bold'
+                                            selected: 'bg-orange-600 text-white rounded-full hover:bg-orange-700',
+                                            today: 'text-orange-600 font-bold'
                                         }}
                                         styles={{
                                             head_cell: { width: '40px' },

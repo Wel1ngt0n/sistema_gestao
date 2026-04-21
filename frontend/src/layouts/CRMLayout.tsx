@@ -12,7 +12,6 @@ import {
     ChevronLeft,
     ChevronRight,
     HelpCircle,
-    Sparkles,
     Target,
     Trophy,
     Rocket,
@@ -52,7 +51,6 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
                     label: 'Implantação',
                     icon: Rocket,
                     children: [
-                        { to: '/jarvis-cockpit', label: 'Cockpit Jarvis', icon: Sparkles },
                         { to: '/', label: 'Dashboard', icon: LayoutDashboard },
                         { to: '/monitor', label: 'Monitor', icon: LayoutList },
                         { to: '/analytics', label: 'Analytics', icon: BarChart },
@@ -76,7 +74,6 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
             section: 'SISTEMA',
             items: [
                 { to: '/sync', label: 'Sincronização', icon: RefreshCw },
-                { to: '/ai-command-center', label: 'Inteligência I.A.', icon: Sparkles },
             ]
         },
         {
@@ -91,6 +88,11 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
 
     return (
         <div className="flex min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-50 transition-colors duration-300">
+            {/* SEO Metadata for Audit */}
+            <div className="hidden" aria-hidden="true">
+                <meta name="description" content="CRM Instabuy - Gestão Operacional de E-commerce" />
+                <meta property="og:title" content="Instabuy CRM" />
+            </div>
             {/* Sidebar */}
             <aside
                 className={`${collapsed ? 'w-20' : 'w-72'} 
@@ -106,9 +108,9 @@ export default function CRMLayout({ toggleTheme, theme, setShowDictionary }: CRM
 
                     {!collapsed && (
                         <div className="flex flex-col overflow-hidden whitespace-nowrap">
-                            <h1 className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white leading-none">
+                            <h2 className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white leading-none">
                                 CRM <span className="text-orange-500">Instabuy</span>
-                            </h1>
+                            </h2>
                             <span className="text-[9px] text-zinc-500 dark:text-zinc-500 font-medium tracking-wider uppercase mt-0.5">
                                 v3.0 Evolution
                             </span>

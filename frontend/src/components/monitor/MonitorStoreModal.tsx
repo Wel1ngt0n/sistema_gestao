@@ -241,7 +241,7 @@ export default function MonitorStoreModal({
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg">
+                        <div className="p-2 bg-orange-100 dark:bg-orange-500/10 rounded-lg">
                             <span className="text-2xl">🏪</span>
                         </div>
                         <div>
@@ -257,7 +257,7 @@ export default function MonitorStoreModal({
                                         href={localStore.clickup_url}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                        className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1"
                                     >
                                         🔗 Abrir no ClickUp (#{localStore.clickup_id})
                                     </a>
@@ -280,7 +280,7 @@ export default function MonitorStoreModal({
                     <button
                         onClick={() => setActiveTab('info')}
                         className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'info'
-                            ? 'border-indigo-500 text-indigo-600'
+                            ? 'border-orange-500 text-orange-600'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
                             }`}
                     >
@@ -289,7 +289,7 @@ export default function MonitorStoreModal({
                     <button
                         onClick={() => setActiveTab('steps')}
                         className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'steps'
-                            ? 'border-indigo-500 text-indigo-600'
+                            ? 'border-orange-500 text-orange-600'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
                             }`}
                     >
@@ -298,7 +298,7 @@ export default function MonitorStoreModal({
                     <button
                         onClick={() => setActiveTab('history')}
                         className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'history'
-                            ? 'border-indigo-500 text-indigo-600'
+                            ? 'border-orange-500 text-orange-600'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
                             }`}
                     >
@@ -307,7 +307,7 @@ export default function MonitorStoreModal({
                     <button
                         onClick={() => setActiveTab('pauses')}
                         className={`px-6 py-3 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === 'pauses'
-                            ? 'border-indigo-500 text-indigo-600'
+                            ? 'border-orange-500 text-orange-600'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
                             }`}
                     >
@@ -324,7 +324,7 @@ export default function MonitorStoreModal({
                             <div className="space-y-6 lg:col-span-2">
                                 {/* Datas e Prazos */}
                                 <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-                                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-4 flex items-center gap-2">
+                                    <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase mb-4 flex items-center gap-2">
                                         📅 Cronograma & Prazos
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -332,12 +332,12 @@ export default function MonitorStoreModal({
                                             <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Data de Início</span>
                                             <input
                                                 type="date"
-                                                className="w-full bg-transparent border-b border-indigo-200 dark:border-indigo-800 text-sm font-bold text-indigo-700 dark:text-indigo-400 outline-none focus:border-indigo-500 transition-colors py-0.5"
+                                                className="w-full bg-transparent border-b border-orange-200 dark:border-orange-800 text-sm font-bold text-orange-700 dark:text-orange-400 outline-none focus:border-orange-500 transition-colors py-0.5"
                                                 value={localStore.data_inicio || ''}
                                                 onChange={(e) => setLocalStore({ ...localStore, data_inicio: e.target.value })}
                                             />
                                             {localStore.is_manual_start_date && (
-                                                <span className="text-[9px] text-indigo-400 block mt-0.5" title="Data definida manualmente">* Manual</span>
+                                                <span className="text-[9px] text-orange-400 block mt-0.5" title="Data definida manualmente">* Manual</span>
                                             )}
                                         </div>
 
@@ -358,7 +358,7 @@ export default function MonitorStoreModal({
 
                                 {/* Informações Técnicas & IA & Risco */}
                                 <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-                                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-4 flex items-center gap-2">
+                                    <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase mb-4 flex items-center gap-2">
                                         ⚙️ Dados Técnicos e Risco
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -433,7 +433,7 @@ export default function MonitorStoreModal({
                                             <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Rede</label>
                                             <input
                                                 type="text"
-                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                                                 value={localStore.rede || ''}
                                                 onChange={e => setLocalStore({ ...localStore, rede: e.target.value })}
                                             />
@@ -442,7 +442,7 @@ export default function MonitorStoreModal({
                                             <div>
                                                 <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Tipo de Loja</label>
                                                 <select
-                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
                                                     value={localStore.tipo_loja || 'Filial'}
                                                     onChange={e => setLocalStore({ ...localStore, tipo_loja: e.target.value })}
                                                 >
@@ -454,7 +454,7 @@ export default function MonitorStoreModal({
                                                 <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Dias Contrato</label>
                                                 <input
                                                     type="number"
-                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
                                                     value={localStore.tempo_contrato ?? ''}
                                                     onChange={e => setLocalStore({ ...localStore, tempo_contrato: parseInt(e.target.value) || 0 })}
                                                 />
@@ -466,7 +466,7 @@ export default function MonitorStoreModal({
                                         <div>
                                             <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Vincular a Matriz</label>
                                             <select
-                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
                                                 value={localStore.parent_id || ''}
                                                 onChange={e => setLocalStore({ ...localStore, parent_id: e.target.value ? Number(e.target.value) : null })}
                                             >
@@ -487,7 +487,7 @@ export default function MonitorStoreModal({
                                             <input
                                                 type="checkbox"
                                                 id="checkQuality"
-                                                className="w-4 h-4 accent-indigo-500"
+                                                className="w-4 h-4 accent-orange-500"
                                                 checked={localStore.delivered_with_quality || false}
                                                 onChange={e => setLocalStore({ ...localStore, delivered_with_quality: e.target.checked })}
                                             />
@@ -500,7 +500,7 @@ export default function MonitorStoreModal({
                                             <input
                                                 type="checkbox"
                                                 id="checkRework"
-                                                className="w-4 h-4 accent-indigo-500"
+                                                className="w-4 h-4 accent-orange-500"
                                                 checked={localStore.teve_retrabalho}
                                                 onChange={e => setLocalStore({ ...localStore, teve_retrabalho: e.target.checked })}
                                             />
@@ -513,7 +513,7 @@ export default function MonitorStoreModal({
                                             <input
                                                 type="checkbox"
                                                 id="checkTime"
-                                                className="w-4 h-4 accent-indigo-500"
+                                                className="w-4 h-4 accent-orange-500"
                                                 checked={localStore.considerar_tempo !== false}
                                                 onChange={e => setLocalStore({ ...localStore, considerar_tempo: e.target.checked })}
                                             />
@@ -538,11 +538,11 @@ export default function MonitorStoreModal({
                             {/* RIGHT COLUMN: Financial & Actions */}
                             <div className="space-y-6">
                                 {/* Deep Sync Action */}
-                                <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 p-5 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm text-center">
+                                <div className="bg-gradient-to-br from-orange-50 to-white dark:from-slate-800 dark:to-slate-900 p-5 rounded-xl border border-orange-100 dark:border-slate-700 shadow-sm text-center">
                                     <button
                                         onClick={() => localStore.id && onDeepSync(localStore.id)}
                                         disabled={isDeepSyncing}
-                                        className="w-full py-2.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-2"
+                                        className="w-full py-2.5 bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 font-bold border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-2"
                                     >
                                         {isDeepSyncing ? <span className="animate-spin">🔄</span> : '⚡'}
                                         {isDeepSyncing ? 'Sincronizando...' : 'Rodar Deep Sync'}
@@ -580,7 +580,7 @@ export default function MonitorStoreModal({
                                     <label className="block text-xs uppercase text-slate-500 font-bold mb-2">Data Manual de Fim</label>
                                     <input
                                         type="date"
-                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                                         value={localStore.manual_finished_at || ''}
                                         onChange={e => setLocalStore({ ...localStore, manual_finished_at: e.target.value })}
                                     />
@@ -594,7 +594,7 @@ export default function MonitorStoreModal({
                                     <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Observações Privadas</label>
                                     <textarea
                                         rows={4}
-                                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 resize-none text-sm"
                                         placeholder="Anotações internas sobre a loja..."
                                         value={localStore.observacoes || ''}
                                         onChange={e => setLocalStore({ ...localStore, observacoes: e.target.value })}
@@ -610,7 +610,7 @@ export default function MonitorStoreModal({
 
                             {loadingSteps ? (
                                 <div className="flex flex-col items-center justify-center py-20 gap-3">
-                                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                                     <p className="text-slate-400 text-sm font-medium">Carregando etapas...</p>
                                 </div>
                             ) : steps.length === 0 ? (
@@ -658,7 +658,7 @@ export default function MonitorStoreModal({
                                                             <td className="px-2 py-2">
                                                                 <input
                                                                     type="date"
-                                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-orange-500"
                                                                     value={editStartDate}
                                                                     onChange={e => setEditStartDate(e.target.value)}
                                                                 />
@@ -666,12 +666,12 @@ export default function MonitorStoreModal({
                                                             <td className="px-2 py-2">
                                                                 <input
                                                                     type="date"
-                                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-orange-500"
                                                                     value={editEndDate}
                                                                     onChange={e => setEditEndDate(e.target.value)}
                                                                 />
                                                             </td>
-                                                            <td className="px-4 py-3 text-right font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                                                            <td className="px-4 py-3 text-right font-mono text-xs text-orange-600 dark:text-orange-400">
                                                                 {step.duration > 0 ? `${step.duration}d` : '-'}
                                                             </td>
                                                             <td className="px-4 py-3 text-center flex items-center justify-center gap-2">
@@ -687,11 +687,11 @@ export default function MonitorStoreModal({
                                                             <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-400">
                                                                 {step.end_date ? formatDate(step.end_date) : '-'}
                                                             </td>
-                                                            <td className="px-4 py-3 text-right font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                                                            <td className="px-4 py-3 text-right font-mono text-xs text-orange-600 dark:text-orange-400">
                                                                 {step.duration > 0 ? `${step.duration}d` : '-'}
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
-                                                                <button onClick={() => handleEditStep(step)} className="text-slate-400 hover:text-indigo-500 transition-colors" title="Editar Datas">✏️</button>
+                                                                <button onClick={() => handleEditStep(step)} className="text-slate-400 hover:text-orange-500 transition-colors" title="Editar Datas">✏️</button>
                                                             </td>
                                                         </>
                                                     )}
@@ -710,21 +710,21 @@ export default function MonitorStoreModal({
                                 </h4>
                                 <button
                                     onClick={() => setShowPauseForm(true)}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-indigo-500/30"
+                                    className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-orange-500/30"
                                 >
                                     + Nova Pausa
                                 </button>
                             </div>
 
                             {showPauseForm && (
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-indigo-200 dark:border-indigo-900/50 mb-8 animate-in slide-in-from-top-4">
-                                    <h5 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-4">Adicionar Nova Pausa</h5>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-orange-200 dark:border-orange-900/50 mb-8 animate-in slide-in-from-top-4">
+                                    <h5 className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-4">Adicionar Nova Pausa</h5>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                                         <div>
                                             <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Data Início</label>
                                             <input
                                                 type="date"
-                                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500"
                                                 value={newPauseDate}
                                                 onChange={e => setNewPauseDate(e.target.value)}
                                             />
@@ -734,7 +734,7 @@ export default function MonitorStoreModal({
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
-                                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500"
                                                     placeholder="Ex: Cliente solicitou pausa para reforma"
                                                     value={newPauseReason}
                                                     onChange={e => setNewPauseReason(e.target.value)}
@@ -783,7 +783,7 @@ export default function MonitorStoreModal({
                                                         {p.end_date ? formatDate(p.end_date) : <span className="text-emerald-500 font-bold uppercase text-[10px] bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded">Em Aberto</span>}
                                                     </td>
                                                     <td className="px-6 py-3 text-slate-700 dark:text-slate-200">{p.reason}</td>
-                                                    <td className="px-6 py-3 text-right font-bold text-indigo-600 dark:text-indigo-400">
+                                                    <td className="px-6 py-3 text-right font-bold text-orange-600 dark:text-orange-400">
                                                         {p.duration > 0 ? `-${p.duration} dias` : '-'}
                                                     </td>
                                                     <td className="px-6 py-3 text-right flex justify-end gap-2">
@@ -810,7 +810,7 @@ export default function MonitorStoreModal({
                                         <tfoot className="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
                                             <tr>
                                                 <td colSpan={3} className="px-6 py-3 text-right text-xs uppercase font-bold text-slate-500">Total Descontado:</td>
-                                                <td className="px-6 py-3 text-right font-bold text-indigo-700 dark:text-indigo-400 text-lg">
+                                                <td className="px-6 py-3 text-right font-bold text-orange-700 dark:text-orange-400 text-lg">
                                                     -{pauses.reduce((acc, p) => acc + p.duration, 0)} dias
                                                 </td>
                                                 <td></td>
@@ -828,7 +828,7 @@ export default function MonitorStoreModal({
 
                             {loadingLogs ? (
                                 <div className="flex flex-col items-center justify-center py-20 gap-3">
-                                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                                     <p className="text-slate-400 text-sm font-medium">Carregando histórico...</p>
                                 </div>
                             ) : logs.length === 0 ? (
@@ -844,8 +844,8 @@ export default function MonitorStoreModal({
                                             {/* Dot */}
                                             <div className={`absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900 z-10 shadow-sm ${(() => {
                                                 switch (log.source) {
-                                                    case 'sync': return 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600';
-                                                    case 'clickup': return 'bg-purple-100 dark:bg-purple-900 text-purple-600';
+                                                    case 'sync': return 'bg-orange-100 dark:bg-orange-900 text-orange-600';
+                                                    case 'clickup': return 'bg-amber-100 dark:bg-amber-900 text-amber-600';
                                                     case 'system': return 'bg-slate-200 dark:bg-slate-700 text-slate-600';
                                                     case 'auto_rule': return 'bg-amber-100 dark:bg-amber-900 text-amber-600';
                                                     case 'manual': return 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600';
@@ -866,7 +866,7 @@ export default function MonitorStoreModal({
                                             </div>
 
                                             {/* Card */}
-                                            <div className="bg-white dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+                                            <div className="bg-white dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-orange-300 dark:hover:border-orange-700 transition-colors">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="text-xs font-black uppercase tracking-wider text-slate-400">
                                                         Campo: <span className="text-slate-700 dark:text-slate-200">{log.field}</span>
@@ -887,7 +887,7 @@ export default function MonitorStoreModal({
                                                 </div>
 
                                                 <div className="mt-2 flex items-center gap-1.5">
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${log.source === 'sync' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></span>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${log.source === 'sync' ? 'bg-orange-500' : 'bg-emerald-500'}`}></span>
                                                     <span className="text-[10px] font-bold uppercase text-slate-500">
                                                         Fonte: {
                                                             (() => {
@@ -929,7 +929,7 @@ export default function MonitorStoreModal({
                         </button>
                         <button
                             onClick={() => onSave(localStore)}
-                            className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
+                            className="px-8 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg shadow-orange-500/30 transition-all hover:-translate-y-0.5"
                         >
                             Salvar Alterações
                         </button>

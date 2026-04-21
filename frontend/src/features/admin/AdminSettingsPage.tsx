@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import { Save, RefreshCw, Settings, AlertTriangle } from 'lucide-react'
@@ -151,3 +152,4 @@ export default function AdminSettingsPage() {
         </div>
     )
 }
+

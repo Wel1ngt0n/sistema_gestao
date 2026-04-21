@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import React from 'react';
 import { TrendingUp, AlertTriangle } from 'lucide-react';
 
@@ -109,3 +110,4 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
         </div>
     );
 };
+

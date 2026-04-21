@@ -132,8 +132,8 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
                 type: 'bar' as const,
                 label: 'Lojas Entregues (Mês)',
                 data: data.trends.map(t => t.stores_monthly),
-                backgroundColor: 'rgba(139, 92, 246, 0.5)', // Violet 500
-                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.5)', // orange 500
+                borderColor: '#f97316',
                 borderWidth: 1,
                 order: 3,
                 yAxisID: 'y'

@@ -104,7 +104,7 @@ const ScoringRulesPage: React.FC = () => {
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-slate-800 dark:text-white">🧠 Inteligência Artificial & Priorização</h2>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold">Camada Preditiva</span>
+                        <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">Camada Preditiva</span>
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                         A IA monitora padrões e pode agravar o nível de risco independentemente da pontuação base.

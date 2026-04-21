@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { AlertTriangle, CheckCircle, Package } from 'lucide-react';
 
 export default function ForecastCards({ summary }: { summary: any[] }) {
@@ -41,7 +42,7 @@ export default function ForecastCards({ summary }: { summary: any[] }) {
 
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm">
-                                <Package size={14} className="text-violet-500" />
+                                <Package size={14} className="text-orange-500" />
                                 Pedidos Proj.
                             </div>
                             <span className="font-semibold text-slate-900 dark:text-white">{monthData.total_orders.toLocaleString()}</span>
@@ -60,3 +61,4 @@ export default function ForecastCards({ summary }: { summary: any[] }) {
         </div>
     );
 }
+

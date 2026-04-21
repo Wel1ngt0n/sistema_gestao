@@ -77,7 +77,7 @@ const LoginScreen = () => {
                 <div>
                     <div className="flex items-center gap-3 mb-16">
                         <img src={logo} alt="Instabuy" className="w-10 h-10 rounded-lg drop-shadow-md brightness-0 invert" />
-                        <h1 className="text-2xl font-black tracking-tight text-white uppercase">Instabuy<span className="text-orange-200">Operações</span></h1>
+                        <span className="text-2xl font-black tracking-tight text-white uppercase">Instabuy<span className="text-orange-200">Operações</span></span>
                     </div>
 
                     <h2 className="text-5xl font-bold leading-tight mb-6 text-white">
@@ -103,7 +103,7 @@ const LoginScreen = () => {
                         <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center shadow-lg">
                             <img src={logo} alt="Instabuy" className="w-8 h-8 object-contain brightness-0 invert" />
                         </div>
-                        <h1 className="text-xl font-black tracking-tight text-white uppercase">Instabuy<br /><span className="text-orange-500 text-2xl">Operações</span></h1>
+                        <span className="text-xl font-black tracking-tight text-white uppercase text-center">Instabuy<br /><span className="text-orange-500 text-2xl">Operações</span></span>
                     </div>
 
                     <div className="bg-[#121214] border border-zinc-800/50 p-8 rounded-2xl shadow-2xl">

@@ -177,7 +177,7 @@ export default function SyncPage() {
                             className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2
             ${loading
                                     ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-wait'
-                                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5'
+                                    : 'bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-400 hover:to-orange-400 text-white shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5'
                                 }`}
                         >
                             {loading ? 'Aguarde...' : 'Sync Rápido (Integração)'}
@@ -187,7 +187,7 @@ export default function SyncPage() {
 
                 {/* Control Card: Implantação Sync */}
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-between gap-6 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-900/10 pointer-events-none group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-900/10 pointer-events-none group-hover:opacity-100 transition-opacity duration-500"></div>
 
                     <div className="text-center relative z-10">
                         <h3 className="font-bold text-lg text-zinc-900 dark:text-white">Sync Implantação</h3>
@@ -195,9 +195,9 @@ export default function SyncPage() {
                     </div>
 
                     <div className="relative group/icon">
-                        <div className="absolute -inset-4 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover/icon:opacity-100 transition-all duration-500"></div>
+                        <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-xl opacity-0 group-hover/icon:opacity-100 transition-all duration-500"></div>
                         <div className="p-6 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 shadow-sm relative z-10 group-hover/icon:scale-110 transition-transform duration-300 flex items-center justify-center">
-                            <Activity className={`w-10 h-10 text-purple-500 ${loading ? 'animate-pulse' : ''}`} />
+                            <Activity className={`w-10 h-10 text-amber-500 ${loading ? 'animate-pulse' : ''}`} />
                         </div>
                     </div>
 
@@ -210,7 +210,7 @@ export default function SyncPage() {
                             className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2
             ${loading
                                     ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-wait'
-                                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white shadow-purple-500/20 hover:shadow-purple-500/30 hover:-translate-y-0.5'
+                                    : 'bg-gradient-to-r from-amber-500 to-pink-500 hover:from-amber-400 hover:to-pink-400 text-white shadow-amber-500/20 hover:shadow-amber-500/30 hover:-translate-y-0.5'
                                 }`}
                         >
                             {loading ? 'Aguarde...' : 'Sync Rápido (Implantação)'}

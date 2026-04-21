@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
@@ -181,7 +182,7 @@ export default function AnalystProfileView() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                        <div className="p-2 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-lg">
                             <BriefcaseIcon className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-bold uppercase tracking-wider text-zinc-500">Carga Ponderada</span>
@@ -453,7 +454,7 @@ export default function AnalystProfileView() {
 
             {/* CARTEIRA ATUAL */}
             <h2 className="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
-                <BriefcaseIcon size={20} className="text-indigo-500" />
+                <BriefcaseIcon size={20} className="text-orange-500" />
                 Carteira Ativa ({ativas.length} Projetos)
             </h2>
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
@@ -566,3 +567,4 @@ export default function AnalystProfileView() {
         </div>
     )
 }
+

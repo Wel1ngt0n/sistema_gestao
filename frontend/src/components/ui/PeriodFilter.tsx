@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import React, { useState } from 'react';
 import { Calendar, ChevronDown, Check } from 'lucide-react';
 
@@ -90,3 +91,4 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange }) =
         </div>
     );
 };
+

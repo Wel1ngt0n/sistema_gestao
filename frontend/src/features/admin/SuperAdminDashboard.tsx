@@ -173,9 +173,9 @@ export default function SuperAdminDashboard() {
                                 <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
                                 <div className="text-3xl font-bold">{data.collective_kpis.quality_global.toFixed(1)}% <span className="text-base font-normal opacity-70">/ 90%</span></div>
                             </div>
-                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                                 <div className="absolute right-0 top-0 p-4 opacity-20"><UserCheck size={64} /></div>
-                                <h3 className="text-purple-100 font-bold uppercase text-xs mb-1">Comportamental (Média)</h3>
+                                <h3 className="text-amber-100 font-bold uppercase text-xs mb-1">Comportamental (Média)</h3>
                                 <div className="text-3xl font-bold">-</div>
                                 {/* Could calc average behavioral here if needed */}
                             </div>
@@ -216,7 +216,7 @@ export default function SuperAdminDashboard() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className={`px-2 py-1 rounded-lg font-bold ${user.metrics.churns > 0 ? 'bg-rose-100 text-rose-700' : 'bg-purple-100 text-purple-700'
+                                            <span className={`px-2 py-1 rounded-lg font-bold ${user.metrics.churns > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
                                                 }`}>
                                                 {user.scores.behavioral}%
                                             </span>
@@ -259,7 +259,7 @@ export default function SuperAdminDashboard() {
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
                                     Comunicação (0-100) <span className="text-zinc-900 dark:text-white">{reviewForm.comm}</span>
                                 </label>
-                                <input type="range" min="0" max="100" className="w-full mt-2 accent-purple-600"
+                                <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.comm} onChange={e => setReviewForm({ ...reviewForm, comm: Number(e.target.value) })}
                                 />
                             </div>
@@ -267,7 +267,7 @@ export default function SuperAdminDashboard() {
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
                                     Processos (0-100) <span className="text-zinc-900 dark:text-white">{reviewForm.proc}</span>
                                 </label>
-                                <input type="range" min="0" max="100" className="w-full mt-2 accent-purple-600"
+                                <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.proc} onChange={e => setReviewForm({ ...reviewForm, proc: Number(e.target.value) })}
                                 />
                             </div>
@@ -275,7 +275,7 @@ export default function SuperAdminDashboard() {
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
                                     Responsabilidade (0-100) <span className="text-zinc-900 dark:text-white">{reviewForm.resp}</span>
                                 </label>
-                                <input type="range" min="0" max="100" className="w-full mt-2 accent-purple-600"
+                                <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.resp} onChange={e => setReviewForm({ ...reviewForm, resp: Number(e.target.value) })}
                                 />
                             </div>
@@ -295,7 +295,7 @@ export default function SuperAdminDashboard() {
 
                         <div className="flex justify-end gap-2 mt-8">
                             <button onClick={() => setReviewModalOpen(false)} className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg">Cancelar</button>
-                            <button onClick={saveReview} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold">Salvar Avaliação</button>
+                            <button onClick={saveReview} className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">Salvar Avaliação</button>
                         </div>
                     </div>
                 </div>

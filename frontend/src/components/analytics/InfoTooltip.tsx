@@ -9,7 +9,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({ text, position = 'top'
     return (
         <div className="relative inline-block group ml-2 align-middle">
             {/* Ícone de Informação (i) */}
-            <div className="flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500 text-[10px] font-bold text-slate-400 dark:text-slate-400 cursor-help hover:border-indigo-400 hover:text-indigo-500 transition-colors">
+            <div className="flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500 text-[10px] font-bold text-slate-400 dark:text-slate-400 cursor-help hover:border-orange-400 hover:text-orange-500 transition-colors">
                 i
             </div>
 

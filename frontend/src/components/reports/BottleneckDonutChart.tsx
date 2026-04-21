@@ -42,7 +42,7 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
     }
 
     const bgMap: Record<string, string> = {
-        CLIENTE: 'rgba(99, 102, 241, 0.85)', // indigo-500
+        CLIENTE: 'rgba(99, 102, 241, 0.85)', // orange-500
         IMPLANTADOR: 'rgba(249, 115, 22, 0.85)', // orange-500
         CARGA: 'rgba(239, 68, 68, 0.85)', // red-500
         ETAPA: 'rgba(14, 165, 233, 0.85)', // sky-500

@@ -38,7 +38,7 @@ export const RiskTooltip: FC<{ store: Store; style: React.CSSProperties }> = ({ 
         <div style={style} className="fixed z-[9999] bg-slate-900 text-white p-3 rounded-lg shadow-2xl w-72 text-xs text-left pointer-events-none animate-in fade-in zoom-in-95 duration-200 border border-slate-700">
             {ai && !ai.is_concluded && (
                 <div className="mb-3 pb-3 border-b border-slate-700">
-                    <h4 className="font-bold text-violet-400 flex items-center gap-1 mb-2">
+                    <h4 className="font-bold text-orange-400 flex items-center gap-1 mb-2">
                         <span>🤖 Análise AI</span>
                         {ai.risk_level === 'CRITICAL' && <span className="text-[10px] bg-red-600 px-1 rounded text-white">CRÍTICO</span>}
                     </h4>
@@ -113,7 +113,7 @@ export const Filter = ({ column, table }: { column: Column<any, unknown>; table:
                 <select
                     onChange={e => column.setFilterValue(e.target.value || undefined)}
                     value={(columnFilterValue ?? '') as string}
-                    className="w-full text-[10px] border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none p-1 h-6 shadow-sm focus:ring-1 focus:ring-indigo-500"
+                    className="w-full text-[10px] border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none p-1 h-6 shadow-sm focus:ring-1 focus:ring-orange-500"
                 >
                     <option value="">Todos</option>
                     {sortedUniqueValues.map((value: any) => (

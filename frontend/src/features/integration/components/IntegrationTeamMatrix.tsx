@@ -113,7 +113,7 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                             </th>
 
                             <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('sla')}>
-                                <div className="flex items-center justify-end gap-2 text-indigo-600 dark:text-indigo-400">SLA % <SortIcon field="sla" /></div>
+                                <div className="flex items-center justify-end gap-2 text-orange-600 dark:text-orange-400">SLA % <SortIcon field="sla" /></div>
                             </th>
 
                             <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-right" onClick={() => handleSort('bugs')}>

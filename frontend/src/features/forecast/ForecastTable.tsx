@@ -254,7 +254,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                         </button>
                         <button
                             onClick={() => setHistoryStore({ id: info.row.original.id, name: info.row.original.store_name })}
-                            className="p-1 text-slate-400 hover:text-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
                             title="Ver Histórico"
                         >
                             <History size={14} />

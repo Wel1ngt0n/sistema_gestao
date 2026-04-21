@@ -134,7 +134,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                             <p className="text-slate-500 mt-2 max-w-md mx-auto">{error}</p>
                                             <button
                                                 onClick={() => store && fetchAnalysis(store.id, true)}
-                                                className="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold transition-colors"
+                                                className="mt-6 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold transition-colors"
                                             >
                                                 Tentar Novamente
                                             </button>
@@ -212,7 +212,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                             <div className="flex justify-end pt-4 border-t border-slate-800/50">
                                                 <button
                                                     onClick={() => store && fetchAnalysis(store.id, true)}
-                                                    className="px-4 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-600/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                                    className="px-4 py-2 bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 border border-orange-600/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                                                 >
                                                     ✨ Gerar Nova Análise
                                                 </button>

@@ -13,7 +13,6 @@ import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
 import TeamDiagnosticsView from './pages/implantadores/TeamDiagnosticsView'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
-import JarvisCockpit from './pages/implantadores/JarvisCockpit'
 
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import ForecastPage from './features/forecast/ForecastPage'
@@ -23,7 +22,6 @@ import MetricsDictionaryModal from './components/MetricsDictionaryModal'
 import SuperAdminDashboard from './features/admin/SuperAdminDashboard'
 import SettingsPage from './features/admin/SettingsPage'
 import UserManagementPage from './features/admin/UserManagementPage'
-import AIChatPage from './components/ai/AIChatPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 
 function App() {
@@ -60,7 +58,7 @@ function App() {
                     </ProtectedRoute>
                 }>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/jarvis-cockpit" element={<JarvisCockpit />} />
+                    <Route path="/jarvis-cockpit" element={<Navigate to="/team-diagnostics" replace />} />
                     <Route path="/monitor" element={<Monitor />} />
                     <Route path="/team-diagnostics" element={<TeamDiagnosticsView />} />
                     <Route path="/team-diagnostics/:name" element={<AnalystProfileView />} />
@@ -81,9 +79,6 @@ function App() {
                     <Route path="/admin/performance" element={<SuperAdminDashboard />} />
                     <Route path="/admin/users" element={<UserManagementPage />} />
                     <Route path="/admin/configs" element={<SettingsPage />} />
-
-                    {/* AI Command Center */}
-                    <Route path="/ai-command-center" element={<AIChatPage />} />
 
                     {/* User Profile */}
                     <Route path="/profile" element={<ProfilePage />} />

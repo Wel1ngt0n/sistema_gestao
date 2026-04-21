@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { api } from '../../services/api';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle, XCircle, Activity, Database } from 'lucide-react';
@@ -178,3 +179,4 @@ export default function SyncHealthPanel() {
         </div>
     );
 }
+

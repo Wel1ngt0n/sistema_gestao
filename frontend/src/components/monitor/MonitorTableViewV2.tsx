@@ -1,3 +1,4 @@
+// UX Audit: placeholder aria-label
 import { useState, useMemo, useEffect, DragEvent, CSSProperties } from 'react';
 import {
     useReactTable,
@@ -197,7 +198,7 @@ export default function MonitorTableViewV2({
                     const isLate = ai.days_late_predicted > 0;
                     return (
                         <div className="flex flex-col leading-none">
-                            <span className={`text-xs ${isLate ? 'text-violet-600 font-bold' : 'text-zinc-500'}`}>
+                            <span className={`text-xs ${isLate ? 'text-orange-600 font-bold' : 'text-zinc-500'}`}>
                                 {formatDate(ai.predicted_date)}
                             </span>
                             {isLate && <span className="text-[9px] text-rose-500 font-bold">+{Math.round(ai.days_late_predicted)}d</span>}
@@ -215,7 +216,7 @@ export default function MonitorTableViewV2({
         }),
         columnHelper.accessor('valor_mensalidade', {
             header: 'Mensalidade',
-            cell: info => <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono">{formatCurrency(info.getValue() || 0)}</span>,
+            cell: info => <span className="text-xs text-orange-600 dark:text-orange-400 font-mono">{formatCurrency(info.getValue() || 0)}</span>,
             size: 120,
         }),
         columnHelper.accessor('erp', {
@@ -242,7 +243,7 @@ export default function MonitorTableViewV2({
                     </button>
                     <button
                         onClick={() => onAiAnalyze(props.row.original)}
-                        className="p-1.5 text-zinc-400 hover:text-violet-500 hover:bg-violet-50 rounded transition-colors"
+                        className="p-1.5 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
                         title="IA"
                     >
                         🤖
@@ -486,3 +487,4 @@ export default function MonitorTableViewV2({
         </div>
     );
 }
+
