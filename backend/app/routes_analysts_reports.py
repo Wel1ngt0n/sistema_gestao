@@ -32,13 +32,13 @@ def get_team_cockpit(payload):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         
-        # Converter se necessário (simplificado: assume ISO se vier)
+        # Converter se necessário
         if start_date:
             from dateutil.parser import parse
-            start_date = parse(start_date)
+            start_date = parse(start_date).replace(tzinfo=None)
         if end_date:
             from dateutil.parser import parse
-            end_date = parse(end_date)
+            end_date = parse(end_date).replace(tzinfo=None)
 
         data = AnalystsReportService.get_team_cockpit(start_date, end_date)
         return jsonify(data), 200
