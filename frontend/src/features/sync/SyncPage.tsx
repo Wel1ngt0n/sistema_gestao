@@ -10,7 +10,6 @@ import {
     Clock,
     CheckCircle2,
     ChevronRight,
-    Settings2,
     Command
 } from 'lucide-react'
 import { api } from '../../services/api'
