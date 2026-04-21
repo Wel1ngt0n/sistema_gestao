@@ -366,8 +366,12 @@ class SyncService:
                             )
                             db.session.add(err)
                             db.session.commit()
+                            
+                        # MANTÉM A CONEXÃO SSE VIVA (EVITA TIMEOUT NO RENDER)
+                        if not vital_only and stores_processed % 3 == 0:
+                            yield f"data: ⏳ [Deep] {stores_processed} lojas detalhadas processadas...\n\n"
                     
-                    yield f"data: ⏳ Processadas {stores_processed} lojas...\n\n"
+                    yield f"data: ⏳ Lote de lojas concluído. Total: {stores_processed}...\n\n"
                     batch = None # GC
 
             yield f"data: ✅ {stores_processed} lojas sincronizadas.\n\n"
@@ -405,6 +409,11 @@ class SyncService:
                                             self.metrics.apply_training_completion_rule(store_db)
                                             db.session.commit()
                                             steps_processed += 1
+                                            
+                                            # MANTÉM A CONEXÃO SSE VIVA
+                                            if not vital_only and steps_processed % 10 == 0:
+                                                yield f"data: ⏳ [Deep] {steps_processed} etapas atualizadas...\n\n"
+                                                
                                 except Exception as inner_e:
                                     db.session.rollback()
                                     self.logger.error(f"Erro na etapa {s_task.get('id')}: {inner_e}")

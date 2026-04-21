@@ -132,11 +132,11 @@ class MetricsService:
                 except (ValueError, TypeError): 
                     pass
             elif 'erp' in fname:
-                store.erp = val_str
+                store.erp = val_str[:500] if len(val_str) > 500 else val_str
             elif 'cnpj' in fname:
-                store.cnpj = val_str
+                store.cnpj = val_str[:200] if len(val_str) > 200 else val_str
             elif 'crm' in fname:
-                store.crm = val_str
+                store.crm = val_str[:200] if len(val_str) > 200 else val_str
         
         # Idle Days Calculation (Store Level)
         if updated_at_ts:

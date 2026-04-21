@@ -224,18 +224,18 @@ export default function SyncPage() {
                     <div className="lg:col-span-8 space-y-8">
 
                         {/* Terminal Log */}
-                        <div className="bg-[#1e293b] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden flex flex-col h-[500px]">
-                            <div className="bg-slate-800/50 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px] transition-all duration-500">
+                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="flex gap-1.5">
-                                        <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-                                        <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-                                        <div className="w-3 h-3 rounded-full bg-slate-700"></div>
+                                        <div className="w-3 h-3 rounded-full bg-slate-200"></div>
+                                        <div className="w-3 h-3 rounded-full bg-slate-200"></div>
+                                        <div className="w-3 h-3 rounded-full bg-slate-200"></div>
                                     </div>
-                                    <div className="h-4 w-px bg-slate-700 mx-2"></div>
+                                    <div className="h-4 w-px bg-slate-200 mx-2"></div>
                                     <div className="flex items-center gap-2">
-                                        <Terminal size={14} className="text-orange-500" />
-                                        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Execution Logs // Stream</span>
+                                        <Terminal size={14} className="text-slate-400" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Execution Logs // Output</span>
                                     </div>
                                 </div>
                                 {loading && (
@@ -245,22 +245,21 @@ export default function SyncPage() {
                                     </div>
                                 )}
                             </div>
-
-                            <div className="flex-1 overflow-y-auto p-6 font-mono text-xs space-y-2 scrollbar-thin scrollbar-thumb-zinc-800">
+                            <div className="flex-1 overflow-y-auto p-6 font-mono text-xs space-y-2 scrollbar-thin scrollbar-thumb-slate-200">
                                 {logs.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-zinc-800 gap-4">
-                                        <Settings2 size={48} className="opacity-10" />
-                                        <p className="italic text-sm">Aguardando comando de inicialização...</p>
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-4">
+                                        <Command size={48} className="opacity-20" />
+                                        <p className="italic text-sm font-medium">Aguardando comando de inicialização...</p>
                                     </div>
                                 ) : (
                                     logs.map((log, i) => (
                                         <div key={i} className="flex gap-4 group">
-                                            <span className="text-slate-600 select-none w-8 text-right font-mono">{i + 1}</span>
+                                            <span className="text-slate-300 select-none w-8 text-right font-mono">{i + 1}</span>
                                             <span className={`
-                                                ${log.includes('❌') ? 'text-rose-400' :
-                                                    log.includes('✅') ? 'text-emerald-400' :
-                                                        log.includes('🚀') ? 'text-orange-400 font-bold' :
-                                                            'text-slate-300'}
+                                                ${log.includes('❌') ? 'text-rose-500 font-medium' :
+                                                    log.includes('✅') ? 'text-emerald-500 font-medium' :
+                                                        log.includes('🚀') ? 'text-orange-500 font-bold' :
+                                                            'text-slate-600'}
                                             `}>
                                                 {log.replace('data: ', '')}
                                             </span>

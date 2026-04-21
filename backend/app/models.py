@@ -58,9 +58,9 @@ class Store(db.Model):
     clickup_url = db.Column(db.String(255))
     
     # Status
-    status = db.Column(db.String(50)) # Status de Exibição Atual/Legado
-    status_raw = db.Column(db.String(50)) # Status Original do ClickUp
-    status_norm = db.Column(db.String(50), default="IN_PROGRESS") # Normalizado: IN_PROGRESS, DONE, BLOCKED, NOT_STARTED
+    status = db.Column(db.String(255)) # Status de Exibição Atual/Legado
+    status_raw = db.Column(db.String(255)) # Status Original do ClickUp
+    status_norm = db.Column(db.String(100), default="IN_PROGRESS") # Normalizado: IN_PROGRESS, DONE, BLOCKED, NOT_STARTED
     
     # Datas
     created_at = db.Column(db.DateTime)
@@ -74,22 +74,22 @@ class Store(db.Model):
     idle_days = db.Column(db.Integer, default=0) # Dias desde o último evento
     
     # Pessoas
-    implantador = db.Column(db.String(100), nullable=True) # Responsável Atual
-    implantador_original = db.Column(db.String(100), nullable=True) # Primeiro responsável
-    implantador_atual = db.Column(db.String(100), nullable=True) # Atual explícito
-    integrador = db.Column(db.String(100), nullable=True) # Responsável Integração (V3)
+    implantador = db.Column(db.String(255), nullable=True) # Responsável Atual
+    implantador_original = db.Column(db.String(255), nullable=True) # Primeiro responsável
+    implantador_atual = db.Column(db.String(255), nullable=True) # Atual explícito
+    integrador = db.Column(db.String(255), nullable=True) # Responsável Integração (V3)
     
     # Campos de Negócio / Comerciais (Sync ou Manual)
     valor_mensalidade = db.Column(db.Float, default=0.0)
     valor_implantacao = db.Column(db.Float, default=0.0)
-    financeiro_status = db.Column(db.String(50), default="Não paga mensalidade")
-    erp = db.Column(db.String(100))
-    cnpj = db.Column(db.String(50))
-    crm = db.Column(db.String(50))
+    financeiro_status = db.Column(db.String(100), default="Não paga mensalidade")
+    erp = db.Column(db.Text)
+    cnpj = db.Column(db.Text)
+    crm = db.Column(db.Text)
     
     # Novos Campos (Solicitação V3)
-    rede = db.Column(db.String(100)) # Nome da Rede (ex: Grupo Pão de Açúcar)
-    tipo_loja = db.Column(db.String(50), default='Filial') # Matriz ou Filial
+    rede = db.Column(db.String(255)) # Nome da Rede (ex: Grupo Pão de Açúcar)
+    tipo_loja = db.Column(db.String(100), default='Filial') # Matriz ou Filial
     
     # Relacionamento Matriz-Filial
     parent_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=True)

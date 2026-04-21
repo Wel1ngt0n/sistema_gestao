@@ -698,8 +698,9 @@ def deep_sync_store(payload, id):
 @require_permission('manage_sync')
 def sync_stream(payload):
     full = request.args.get('full', 'false').lower() == 'true'
+    vital_only = request.args.get('vital_only', 'false').lower() == 'true'
     service = SyncService()
-    return Response(stream_with_context(service.run_sync_stream(force_full=full)), mimetype='text/event-stream')
+    return Response(stream_with_context(service.run_sync_stream(force_full=full, vital_only=vital_only)), mimetype='text/event-stream')
 
 @api_bp.route('/analyze/store/<int:id>', methods=['POST'])
 @require_auth

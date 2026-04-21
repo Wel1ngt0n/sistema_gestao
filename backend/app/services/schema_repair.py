@@ -39,7 +39,19 @@ def repair_database_schema():
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS include_in_forecast BOOLEAN DEFAULT TRUE;",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS integrador VARCHAR(100);",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS assignees_json TEXT;",
-        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS total_time_tracked INTEGER DEFAULT 0;"
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS total_time_tracked INTEGER DEFAULT 0;",
+        
+        # V3.1 - Expandir colunas VARCHAR estreitas para TEXT/VARCHAR(255) (fix StringDataRightTruncation)
+        "ALTER TABLE stores ALTER COLUMN erp TYPE TEXT;",
+        "ALTER TABLE stores ALTER COLUMN cnpj TYPE TEXT;",
+        "ALTER TABLE stores ALTER COLUMN crm TYPE TEXT;",
+        "ALTER TABLE stores ALTER COLUMN implantador TYPE VARCHAR(255);",
+        "ALTER TABLE stores ALTER COLUMN implantador_original TYPE VARCHAR(255);",
+        "ALTER TABLE stores ALTER COLUMN implantador_atual TYPE VARCHAR(255);",
+        "ALTER TABLE stores ALTER COLUMN integrador TYPE VARCHAR(255);",
+        "ALTER TABLE stores ALTER COLUMN rede TYPE VARCHAR(255);",
+        "ALTER TABLE stores ALTER COLUMN status TYPE VARCHAR(255);",
+        "ALTER TABLE stores ALTER COLUMN status_raw TYPE VARCHAR(255);",
     ]
 
     
