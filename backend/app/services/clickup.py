@@ -201,7 +201,7 @@ class ClickUpService:
                         'since': since_dt,
                         'orderindex': order
                     })
-                except:
+                except Exception:
                     pass
         
         # Incluir current_status se tiver orderindex
@@ -217,7 +217,7 @@ class ClickUpService:
                         'since': cs_dt,
                         'orderindex': current.get('orderindex')
                     })
-                except:
+                except Exception:
                     pass
         
         # Ordenar pelo workflow
