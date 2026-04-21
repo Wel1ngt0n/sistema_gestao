@@ -101,15 +101,16 @@ class AnalystsReportService:
             return {"alerts": [], "analysts": [], "summary": {}}
 
         # 1. Calcular Médias do Time para Contexto
-        total_ativos = sum(a['ativas'] for a in resume_data)
-        total_entregues_mes = sum(a['entregas_mes'] for a in resume_data)
-        avg_sla = sum(a['pct_sla_concluidas'] for a in resume_data) / len(resume_data) if resume_data else 0
-        avg_throughput = total_entregues_mes / len(resume_data) if resume_data else 0
+        analysts_list = resume_data.get('data', [])
+        total_ativos = sum(a['ativos'] for a in analysts_list)
+        total_entregues_mes = sum(a['entregas_mes'] for a in analysts_list)
+        avg_sla = sum(a['pct_sla_concluidas'] for a in analysts_list) / len(analysts_list) if analysts_list else 0
+        avg_throughput = total_entregues_mes / len(analysts_list) if analysts_list else 0
 
         cockpit_analysts = []
         alerts = []
 
-        for analyst in resume_data:
+        for analyst in analysts_list:
             # Heurísticas Jarvis
             # Calculando média de idle
             status = "HEALTHY"
