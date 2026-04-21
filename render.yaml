@@ -3,7 +3,7 @@ services:
     name: clickup-crm-backend
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn --chdir backend run:app
+    startCommand: PYTHONPATH=backend python backend/scripts/maintenance/patch_db.py && gunicorn --chdir backend run:app
     envVars:
       - key: FLASK_APP
         value: backend/app

@@ -39,11 +39,25 @@ def patch_database():
             check_and_add_column('stores', 'parent_id', 'INTEGER REFERENCES stores(id)')
             check_and_add_column('stores', 'parent_id', 'INTEGER REFERENCES stores(id)')
             check_and_add_column('stores', 'delivered_with_quality', 'BOOLEAN DEFAULT TRUE')
+            # Controle de Datas Manual (V4)
+            check_and_add_column('stores', 'manual_start_date', 'TIMESTAMP WITHOUT TIME ZONE')
             check_and_add_column('stores', 'is_manual_start_date', 'BOOLEAN DEFAULT FALSE')
             
             # Colunas para Cache de IA
             check_and_add_column('stores', 'ai_summary', 'TEXT')
             check_and_add_column('stores', 'ai_analyzed_at', 'TIMESTAMP WITHOUT TIME ZONE')
+
+            # Campos de Previsão & CS (V5)
+            check_and_add_column('stores', 'address', 'TEXT')
+            check_and_add_column('stores', 'state_uf', 'VARCHAR(2)')
+            check_and_add_column('stores', 'had_ecommerce', 'BOOLEAN DEFAULT FALSE')
+            check_and_add_column('stores', 'previous_platform', 'VARCHAR(100)')
+            check_and_add_column('stores', 'deployment_type', "VARCHAR(50) DEFAULT 'MIGRAÇÃO'")
+            check_and_add_column('stores', 'projected_orders', 'INTEGER DEFAULT 0')
+            check_and_add_column('stores', 'order_rate', 'FLOAT DEFAULT 0.0')
+            check_and_add_column('stores', 'manual_go_live_date', 'TIMESTAMP WITHOUT TIME ZONE')
+            check_and_add_column('stores', 'forecast_obs', 'TEXT')
+            check_and_add_column('stores', 'include_in_forecast', 'BOOLEAN DEFAULT TRUE')
             
             # V3 - Integração
             check_and_add_column('stores', 'integrador', 'VARCHAR(100)')
