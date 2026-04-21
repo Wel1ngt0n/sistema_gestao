@@ -16,7 +16,7 @@ class ClickUpService:
         retries = 3
         for i in range(retries):
             try:
-                response = requests.get(url, headers=self.HEADERS, params=params, timeout=30)
+                response = requests.get(url, headers=self.HEADERS, params=params, timeout=25)
                 if response.status_code == 429: # Limite de Taxa (Rate Limit)
                     self.logger.warning("Limite de taxa atingido. Aguardando 5 segundos...")
                     time.sleep(5)

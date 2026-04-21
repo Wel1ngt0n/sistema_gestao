@@ -3,7 +3,7 @@ services:
     name: clickup-crm-backend
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn --chdir backend run:app
+    startCommand: gunicorn --chdir backend --timeout 120 run:app
     envVars:
       - key: FLASK_APP
         value: backend/app
