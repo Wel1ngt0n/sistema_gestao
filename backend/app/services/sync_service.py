@@ -305,7 +305,10 @@ class SyncService:
             
             # 1. Stores
             yield "data: 🔍 Buscando lojas modificadas...\n\n"
-            parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts)
+            parent_tasks = []
+            for batch in self.clickup.fetch_parent_tasks_generator(date_updated_gt=last_ts):
+                parent_tasks.extend(batch)
+                yield f"data: 📦 Baixando {len(parent_tasks)} lojas...\n\n"
             yield f"data: ✅ {len(parent_tasks)} lojas para atualizar.\n\n"
             
             # 2. Steps
@@ -354,6 +357,9 @@ class SyncService:
 
                     db.session.commit()
                     count += 1
+                    
+                    if count % 5 == 0:
+                        yield f"data: ⏳ Processadas {count}/{len(parent_tasks)} lojas...\n\n"
                 except Exception as e:
                     db.session.rollback()
                     self.logger.error(f"Erro store {p_task.get('name')}: {e}")
@@ -387,6 +393,9 @@ class SyncService:
                         self.metrics.apply_training_completion_rule(store_db)
                         db.session.commit()
                         steps_processed += len(s_tasks)
+                        
+                        if steps_processed % 20 == 0:
+                            yield f"data: ⏳ Processadas {steps_processed} etapas...\n\n"
                 except Exception as e:
                     db.session.rollback()
                     self.logger.error(f"Erro ao processar steps para loja {custom_id}: {e}")

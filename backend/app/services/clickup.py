@@ -65,6 +65,32 @@ class ClickUpService:
         self.logger.info(f"[ClickUp] Total de {len(tasks)} lojas encontradas.")
         return tasks
 
+    def fetch_parent_tasks_generator(self, date_updated_gt=None):
+        """Busca tarefas da Lista Principal (Lojas) e retorna por página."""
+        self.logger.info(f"[ClickUp] Buscando lojas EM ABERTO na lista {Config.LIST_ID_PRINCIPAL} (Generator)...")
+        page = 0
+        while True:
+            params = {
+                "page": page, 
+                "subtasks": "true", 
+                "include_closed": "true",
+                "archived": "false"
+            }
+            if date_updated_gt:
+                params["date_updated_gt"] = date_updated_gt
+
+            data = self._get(f"list/{Config.LIST_ID_PRINCIPAL}/task", params=params)
+            
+            if not data or not data.get('tasks'):
+                break
+                
+            batch = data['tasks']
+            yield batch
+            page += 1
+            
+            if len(batch) < 100:
+                break
+
     def get_father_field_id(self):
         """Encontra o UUID do campo personalizado _father_task_id."""
         first_list = list(Config.LIST_IDS_STEPS.values())[0]
@@ -102,6 +128,30 @@ class ClickUpService:
             if len(batch) < 100:
                 break
         return tasks
+    
+    def fetch_tasks_from_list_generator(self, list_id, date_updated_gt=None):
+        """Busca todas as tarefas de uma lista específica iterando em blocos."""
+        page = 0
+        while True:
+            params = {
+                "page": page,
+                "subtasks": "true",
+                "include_closed": "true",
+                "archived": "false",
+                "limit": 100
+            }
+            if date_updated_gt:
+                params["date_updated_gt"] = date_updated_gt
+                
+            data = self._get(f"list/{list_id}/task", params=params)
+            if not data or not data.get('tasks'):
+                break
+            
+            batch = data['tasks']
+            yield batch
+            page += 1
+            if len(batch) < 100:
+                break
     
     def get_task_history(self, task_id):
         """
