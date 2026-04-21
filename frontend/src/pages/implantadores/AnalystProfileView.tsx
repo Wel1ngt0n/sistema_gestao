@@ -48,7 +48,6 @@ export default function AnalystProfileView() {
             url += `?period=${periodParam}`
             
             const res = await api.get(url)
-            console.log('DEBUG: Analyst data received:', res.data)
             setData(res.data)
             if (res.data.last_ai_analysis) {
                 setAiResult(res.data.last_ai_analysis)
@@ -113,10 +112,6 @@ export default function AnalystProfileView() {
     const ativas = data?.carteira_atual || []
     const entregas = data?.concluidas_mes || []
     const actions = summary?.personal_actions || []
-
-    if (!summary || Object.keys(summary).length === 0) {
-        console.warn('DEBUG: Summary is empty or malformed')
-    }
 
     return (
         <div className="min-h-screen bg-[#EEF0F8] pb-20">
