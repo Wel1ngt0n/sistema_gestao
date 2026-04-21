@@ -37,11 +37,11 @@ export default function SyncHealthPanel() {
             {/* Header Status Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Last Run Card (Glass) */}
-                <div className={`flex-1 p-6 rounded-[2.5rem] border transition-all duration-300 relative overflow-hidden group
+                <div className={`flex-1 p-6 rounded-[2rem] border transition-all duration-300 relative overflow-hidden group
                     ${is_stale
-                        ? 'bg-amber-50/80 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'
-                        : 'bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl border-zinc-200 dark:border-zinc-800'
-                    } shadow-sm hover:shadow-md`}>
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-white border-slate-200 shadow-sm'
+                    } hover:shadow-md`}>
 
                     {/* Background glow for staleness */}
                     {is_stale && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>}
@@ -49,16 +49,16 @@ export default function SyncHealthPanel() {
                     <div className="flex items-start justify-between relative z-10">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
-                                <Clock className={`w-4 h-4 ${is_stale ? 'text-amber-500' : 'text-zinc-400'}`} />
-                                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Última Sincronização</p>
+                                <Clock className={`w-4 h-4 ${is_stale ? 'text-amber-500' : 'text-slate-400'}`} />
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Última Sincronização</p>
                             </div>
-                            <h3 className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-white">
+                            <h3 className="text-3xl font-black tracking-tighter text-slate-900">
                                 {lastRunDate ? (
                                     <span>{lastRunDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 ) : (
-                                    <span className="text-zinc-400 text-xl">--:--</span>
+                                    <span className="text-slate-300 text-xl">--:--</span>
                                 )}
-                                <span className="text-sm font-medium text-zinc-400 ml-2">
+                                <span className="text-sm font-medium text-slate-400 ml-2">
                                     {lastRunDate ? lastRunDate.toLocaleDateString() : ''}
                                 </span>
                             </h3>
@@ -100,26 +100,26 @@ export default function SyncHealthPanel() {
                 </div>
 
                 {/* Status System Card (Glass) */}
-                <div className="flex-1 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+                <div className="flex-1 bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-slate-300 transition-colors">
                     <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Activity size={80} />
                     </div>
 
                     <div className="flex items-center gap-4 relative z-10">
                         <div className={`p-4 rounded-2xl shadow-sm border ${!is_stale
-                            ? 'bg-emerald-100 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
-                            : 'bg-zinc-100 text-zinc-400 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700'
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            : 'bg-slate-50 text-slate-400 border-slate-100'
                             }`}>
                             <Activity size={24} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Saúde do Motor</p>
-                            <h3 className={`text-3xl font-black tracking-tighter mt-1 ${!is_stale ? 'text-emerald-600' : 'text-zinc-900 dark:text-white'}`}>
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Saúde do Motor</p>
+                            <h3 className={`text-3xl font-black tracking-tighter mt-1 ${!is_stale ? 'text-emerald-600' : 'text-slate-900'}`}>
                                 {is_stale ? 'ATENÇÃO' : 'OPERACIONAL'}
                             </h3>
                         </div>
                     </div>
-                    <p className="text-xs font-medium text-zinc-400 mt-4 pl-1">Monitoramento em tempo real do Jarvis Sync Engine.</p>
+                    <p className="text-xs font-medium text-slate-400 mt-4 pl-1 leading-relaxed">Monitoramento em tempo real do Jarvis Sync Engine.</p>
                 </div>
             </div>
 
