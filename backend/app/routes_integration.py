@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app.models import db, Store, IntegrationMetric, TaskStep
-from app.services.security_service import require_auth
+from app.services.security_service import require_auth, require_permission
 from sqlalchemy import desc, func, case
 from datetime import datetime, date
 
