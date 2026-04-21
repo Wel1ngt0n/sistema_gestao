@@ -8,26 +8,25 @@ interface KPICardProps {
     subtext?: string;
     icon?: string;
     trend?: 'up' | 'down' | 'neutral';
-    color?: 'orange' | 'green' | 'red' | 'yellow' | 'blue' | 'amber' | 'slate' | 'orange' | 'emerald';
+    color?: 'orange' | 'green' | 'red' | 'yellow' | 'blue' | 'amber' | 'slate' | 'emerald';
     tooltip?: string;
     className?: string;
 }
 
 export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtext, icon, trend, color = 'orange', tooltip, className = '' }) => {
 
-    const colorClasses = {
-        orange: 'text-orange-600 dark:text-orange-400',
+    const colorClasses: Record<string, string> = {
+        orange: 'text-orange-500 dark:text-orange-400',
         green: 'text-emerald-500 dark:text-emerald-400',
         red: 'text-rose-500 dark:text-rose-400',
         yellow: 'text-amber-500 dark:text-amber-400',
         blue: 'text-blue-500 dark:text-blue-400',
         amber: 'text-orange-500 dark:text-orange-400',
         slate: 'text-slate-500 dark:text-zinc-400',
-        orange: 'text-orange-500 dark:text-orange-400',
         emerald: 'text-emerald-500 dark:text-emerald-400',
     };
 
-    const bgIconClasses = {
+    const bgIconClasses: Record<string, string> = {
         orange: 'text-orange-500',
         green: 'text-emerald-500',
         red: 'text-rose-500',
@@ -35,7 +34,6 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtex
         blue: 'text-blue-500',
         amber: 'text-orange-500',
         slate: 'text-slate-500',
-        orange: 'text-orange-500',
         emerald: 'text-emerald-500',
     };
 
@@ -46,14 +44,14 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtex
             <div aria-label="KPI Card" className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
                 {/* Ícone de Fundo (Efeito Bento) */}
                 {icon && (
-                    <div aria-label="KPI Card" className={`absolute -right-6 -top-6 text-[100px] opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 ${bgIconClasses[color]}`}>
+                    <div aria-label="KPI Card" className={`absolute -right-6 -top-6 text-[100px] opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 ${bgIconClasses[color] || bgIconClasses.orange}`}>
                         {icon}
                     </div>
                 )}
 
                 {/* Barra de Progresso Decorativa (Opcional) */}
                 <div aria-label="KPI Card" className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 dark:bg-black/20">
-                    <div aria-label="KPI Card" className={`h-full opacity-50 ${colorClasses[color].split(' ')[0].replace('text-', 'bg-')}`} style={{ width: '40%' }}></div>
+                    <div aria-label="KPI Card" className={`h-full opacity-50 ${(colorClasses[color] || colorClasses.orange).split(' ')[0].replace('text-', 'bg-')}`} style={{ width: '40%' }}></div>
                 </div>
             </div>
 
@@ -66,7 +64,7 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtex
                         </div>
                     </div>
 
-                    <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter ${colorClasses[color]} transition-colors`}>
+                    <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter ${colorClasses[color] || colorClasses.orange} transition-colors`}>
                         {value}
                     </h3>
                 </div>

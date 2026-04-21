@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { 
     Sparkles, Brain, ArrowRight, Zap, Loader2, 
-    ChevronDown, ChevronUp, MessageSquare, ShieldAlert
+    ChevronDown, ChevronUp
 } from 'lucide-react'
 import { api } from '../../services/api'
 
 interface JarvisCopilotProps {
-    teamData: any
-    diagnosticsData: any
+    teamData?: any
+    diagnosticsData?: any
 }
 
-export const JarvisCopilot: React.FC<JarvisCopilotProps> = ({ teamData, diagnosticsData }) => {
+export const JarvisCopilot: React.FC<JarvisCopilotProps> = () => {
     const [isExpanded, setIsExpanded] = useState(true)
     const [message, setMessage] = useState('')
     const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'jarvis', content: string }>>([])
@@ -188,8 +188,5 @@ export const JarvisCopilot: React.FC<JarvisCopilotProps> = ({ teamData, diagnost
                 </div>
             )}
         </div>
-    )
-}
-
     )
 }

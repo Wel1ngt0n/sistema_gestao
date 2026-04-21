@@ -44,8 +44,7 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
         amber: 'bg-amber-500',
         yellow: 'bg-amber-500',
         slate: 'bg-slate-500',
-        red: 'bg-rose-500',
-        orange: 'bg-orange-500'
+        red: 'bg-rose-500'
     };
 
     const textColors: any = {
@@ -55,8 +54,7 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
         amber: 'text-amber-600 dark:text-amber-400',
         yellow: 'text-amber-600 dark:text-amber-400',
         slate: 'text-slate-600 dark:text-slate-400',
-        red: 'text-rose-600 dark:text-rose-400',
-        orange: 'text-orange-600 dark:text-orange-400'
+        red: 'text-rose-600 dark:text-rose-400'
     };
 
     return (
@@ -345,4 +343,3 @@ export default function IntegrationAnalytics() {
         </div>
     );
 }
-
