@@ -8,7 +8,9 @@ import {
 } from 'lucide-react'
 import { PerformanceScoreBadge } from '../../components/reports/PerformanceScoreBadge'
 import { AnalystRadarChart } from '../../components/reports/AnalystRadarChart'
+import { BottleneckDonutChart } from '../../components/reports/BottleneckDonutChart'
 import { PeriodFilter, DateRange } from '../../components/ui/PeriodFilter'
+
 
 export default function AnalystProfileView() {
     const { name } = useParams<{ name: string }>()
@@ -131,8 +133,9 @@ export default function AnalystProfileView() {
                             </div>
                             <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
                                 {summary?.implantador || name}
-                                {summary?.score && <PerformanceScoreBadge score={summary.score.score_final} size="lg" />}
+                                {summary?.score && <PerformanceScoreBadge score={summary.score?.score_final || 0} size="lg" />}
                             </h1>
+
                         </div>
                     </div>
 
@@ -182,187 +185,188 @@ export default function AnalystProfileView() {
                     </div>
                 </div>
 
-                {/* 3. INDIVIDUAL ACTION PLAN (PRIORITY) */}
-                {actions.length > 0 && (
-                    <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-5">
-                            <Target size={120} className="text-indigo-600" />
-                        </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
-                                    <Activity size={20} className="text-white" />
+                {/* 3. COCKPIT SECTION: ACTIONS + INTELLIGENCE + CHARTS */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+                    
+                    {/* LEFT SIDE: ACTIONS & AI (8 COLS) */}
+                    <div className="xl:col-span-8 space-y-8">
+                        {/* 3.1. INDIVIDUAL ACTION PLAN */}
+                        {actions.length > 0 && (
+                            <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-5">
+                                    <Target size={120} className="text-indigo-600" />
                                 </div>
-                                <div>
-                                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Plano de Ação Individual</h2>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Prioridades para {name}</p>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
+                                            <Activity size={20} className="text-white" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-black text-slate-900 tracking-tight">Plano de Ação Individual</h2>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Prioridades para {name}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {actions.map((action: any, idx: number) => (
+                                            <div key={idx} className="group p-5 bg-slate-50 border border-slate-100 rounded-2xl hover:border-indigo-200 hover:bg-white hover:shadow-md transition-all">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border ${
+                                                        action.priority === 'HIGH' ? 'text-rose-600 bg-rose-50 border-rose-100' : 'text-amber-600 bg-amber-50 border-amber-100'
+                                                    }`}>
+                                                        {action.priority}
+                                                    </span>
+                                                    <div className="p-1.5 bg-white rounded-lg border border-slate-100 text-indigo-600">
+                                                        <Target size={14} />
+                                                    </div>
+                                                </div>
+                                                <h4 className="text-sm font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">
+                                                    {action.description}
+                                                </h4>
+                                                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                                                    <ShieldAlert size={10} />
+                                                    IMPACTO: {action.impact}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {actions.map((action: any, idx: number) => (
-                                    <div key={idx} className="group p-5 bg-slate-50 border border-slate-100 rounded-2xl hover:border-indigo-200 hover:bg-white hover:shadow-md transition-all">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border ${
-                                                action.priority === 'HIGH' ? 'text-rose-600 bg-rose-50 border-rose-100' : 'text-amber-600 bg-amber-50 border-amber-100'
-                                            }`}>
-                                                {action.priority}
-                                            </span>
-                                            <div className="p-1.5 bg-white rounded-lg border border-slate-100 text-indigo-600">
-                                                <Target size={14} />
+                        {/* 3.2. AI DIAGNOSTIC SIDE */}
+                        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                        <Sparkles size={18} className="text-indigo-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Diagnóstico Jarvis DeepView</h3>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Análise Qualitativa Automatizada</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleAIAnalysis}
+                                    disabled={aiLoading}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                                >
+                                    {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                    {aiLoading ? 'Analisando...' : 'Gerar Novo Diagnóstico'}
+                                </button>
+                            </div>
+
+                            <div className="p-8">
+                                {!aiResult && !aiLoading && (
+                                    <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/30">
+                                        <HelpCircle size={40} className="text-slate-200 mb-4" />
+                                        <p className="text-sm text-slate-400 font-bold text-center max-w-xs uppercase tracking-widest">
+                                            Clique no botão acima para iniciar a análise profunda deste analista
+                                        </p>
+                                    </div>
+                                )}
+
+                                {aiResult && !aiResult.error && (
+                                    <div className="space-y-8">
+                                        {/* Executive Summary */}
+                                        <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100/50">
+                                            <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                                                <Target size={12} />
+                                                Parecer Executivo
+                                            </h3>
+                                            <p className="text-slate-800 text-lg font-bold leading-snug">
+                                                {aiResult.resumo_executivo}
+                                            </p>
+                                        </div>
+
+                                        {/* Grid Details */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            {/* Patterns */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Padrões Detectados</h3>
+                                                <div className="space-y-2">
+                                                    {aiResult.padroes_identificados?.map((p: string, i: number) => (
+                                                        <div key={i} className="flex gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                                            <span className="text-sm text-slate-700 font-medium">{p}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Bottlenecks */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gargalos Operacionais</h3>
+                                                <div className="space-y-2">
+                                                    {aiResult.gargalos_operacionais?.map((g: string, i: number) => (
+                                                        <div key={i} className="flex gap-3 p-3 bg-rose-50/50 rounded-xl border border-rose-100/50">
+                                                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                                                            <span className="text-sm text-slate-700 font-medium">{g}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                        <h4 className="text-sm font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">
-                                            {action.description}
-                                        </h4>
-                                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                                            <ShieldAlert size={10} />
-                                            IMPACTO: {action.impact}
-                                        </div>
+                                    </div>
+                                )}
+
+                                {aiResult?.error && (
+                                    <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100 text-sm font-bold flex items-center gap-3">
+                                        <ShieldAlert size={18} />
+                                        {aiResult.error}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RIGHT SIDE: CHARTS & METRICS (4 COLS) */}
+                    <div className="xl:col-span-4 space-y-6 sticky top-8">
+                        {/* RADAR */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
+                            <h3 className="font-black text-[10px] text-slate-400 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Activity className="text-indigo-500" size={14} />
+                                Radar de Competências
+                            </h3>
+                            <div className="flex justify-center items-center min-h-[300px]">
+                                {summary?.score?.eixos ? (
+                                    <AnalystRadarChart data={summary.score.eixos} />
+                                ) : (
+                                    <div className="text-slate-300 font-bold text-[10px] uppercase tracking-[0.2em]">Dados Insuficientes</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* CAUSE DIAGNOSTIC */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                            <h3 className="font-black text-[10px] text-slate-400 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <ShieldAlert className="text-indigo-500" size={14} />
+                                Origem dos Atrasos
+                            </h3>
+                            <div className="h-64 relative flex items-center justify-center">
+                                {summary?.diagnostico_causas ? (
+                                    <BottleneckDonutChart data={summary.diagnostico_causas} />
+                                ) : (
+                                    <div className="text-slate-300 font-bold text-[10px] uppercase tracking-[0.2em]">Sem Ocorrências</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* STAGE METRICS (Quick List) */}
+                        <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl">
+                            <h3 className="font-black text-[10px] text-indigo-400 mb-4 uppercase tracking-[0.2em]">Média de Dias por Etapa</h3>
+                            <div className="space-y-3">
+                                {summary?.etapas && Object.entries(summary.etapas).slice(0, 4).map(([name, days]: [string, any]) => (
+                                    <div key={name} className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{name}</span>
+                                        <span className="text-sm font-black text-white">{days}d</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-                )}
-
-                {/* 4. PERFORMANCE RADAR & INTELLIGENCE */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-                    
-                    {/* RADAR SIDE */}
-                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm flex flex-col">
-                        <h3 className="font-bold text-slate-900 mb-2 flex items-center gap-2 uppercase tracking-tight">
-                            <Activity className="text-indigo-500" size={18} />
-                            Radar de Equilíbrio
-                        </h3>
-                        <p className="text-xs text-slate-400 font-medium mb-8">Distribuição de competências operacionais</p>
-                        <div className="flex-1 flex justify-center items-center min-h-[350px]">
-                            {summary?.score?.eixos ? (
-                                <AnalystRadarChart data={summary.score.eixos} />
-                            ) : (
-                                <div className="text-slate-300 font-bold text-sm uppercase tracking-widest">Sem dados suficientes</div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* AI DIAGNOSTIC SIDE */}
-                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/30">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                                    <Sparkles size={18} className="text-indigo-600" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Diagnóstico Jarvis DeepView</h3>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Análise Qualitativa Automatizada</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleAIAnalysis}
-                                disabled={aiLoading}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
-                            >
-                                {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                                {aiLoading ? 'Analisando...' : 'Gerar Novo Diagnóstico'}
-                            </button>
-                        </div>
-
-                        <div className="p-8">
-                            {!aiResult && !aiLoading && (
-                                <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/30">
-                                    <HelpCircle size={40} className="text-slate-200 mb-4" />
-                                    <p className="text-sm text-slate-400 font-bold text-center max-w-xs uppercase tracking-widest">
-                                        Clique no botão acima para iniciar a análise profunda deste analista
-                                    </p>
-                                </div>
-                            )}
-
-                            {aiResult && !aiResult.error && (
-                                <div className="space-y-8">
-                                    {/* Executive Summary */}
-                                    <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100/50">
-                                        <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                                            <Target size={12} />
-                                            Parecer Executivo
-                                        </h3>
-                                        <p className="text-slate-800 text-lg font-bold leading-snug">
-                                            {aiResult.resumo_executivo}
-                                        </p>
-                                    </div>
-
-                                    {/* Grid Details */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        {/* Patterns */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Padrões Detectados</h3>
-                                            <div className="space-y-2">
-                                                {aiResult.padroes_identificados?.map((p: string, i: number) => (
-                                                    <div key={i} className="flex gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                                                        <span className="text-sm text-slate-700 font-medium">{p}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Bottlenecks */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gargalos Operacionais</h3>
-                                            <div className="space-y-2">
-                                                {aiResult.gargalos_operacionais?.map((g: string, i: number) => (
-                                                    <div key={i} className="flex gap-3 p-3 bg-rose-50/50 rounded-xl border border-rose-100/50">
-                                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
-                                                        <span className="text-sm text-slate-700 font-medium">{g}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Raio-X Audit (High Contrast Panel) */}
-                                    {aiResult.auditoria_raio_x && (
-                                        <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl relative overflow-hidden" aria-label="Auditoria de Processos">
-                                            <div className="absolute top-0 right-0 p-8 opacity-10">
-                                                <ShieldAlert size={80} className="text-white" />
-                                            </div>
-                                            <h3 className="font-black text-indigo-400 mb-6 flex items-center gap-2 text-sm uppercase tracking-widest">
-                                                <Sparkles size={18} />
-                                                Raio-X: Auditoria de Processos
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                                <div className="space-y-2">
-                                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Doc. ClickUp</span>
-                                                    <p className="text-sm text-slate-300 italic">"{aiResult.auditoria_raio_x.qualidade_documentacao}"</p>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Bloqueios Reais</span>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {aiResult.auditoria_raio_x.bloqueios_identificados?.map((b: string, idx: number) => (
-                                                            <span key={idx} className="px-2 py-1 bg-rose-500/20 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/30">
-                                                                {b}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Conformidade</span>
-                                                    <p className="text-sm text-slate-300">{aiResult.auditoria_raio_x.conformidade_etapas}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {aiResult?.error && (
-                                <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100 text-sm font-bold flex items-center gap-3">
-                                    <ShieldAlert size={18} />
-                                    {aiResult.error}
-                                </div>
-                            )}
-                        </div>
-                    </div>
                 </div>
+
 
                 {/* 5. ACTIVE PORTFOLIO TABLE */}
                 <div className="space-y-4">

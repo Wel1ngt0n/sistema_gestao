@@ -190,37 +190,43 @@ export const TeamDiagnosticsView: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 3. PROJECTION CHART (Full width panel) */}
-                <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm" aria-label="Projeção de MRR">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-emerald-50 rounded-xl">
-                            <TrendingUp size={20} className="text-emerald-600" />
+                {/* 3. PROJECTION & ACTIONS GRID */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                    {/* LEFT: PROJECTION */}
+                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm h-full" aria-label="Projeção de MRR">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-emerald-50 rounded-xl">
+                                <TrendingUp size={20} className="text-emerald-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 tracking-tight">Projeção de Performance</h2>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-left">Faturamento Real vs Projetado (Matriz/Filial)</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-lg font-black text-slate-900 tracking-tight">Projeção de Performance</h2>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-left">Faturamento Real vs Projetado (Matriz/Filial)</p>
+                        <div className="h-[300px]">
+                            {companyProjection ? (
+                                <MRRNetProjectionWidget data={companyProjection} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase tracking-[0.2em]">Carregando Projeção...</div>
+                            )}
                         </div>
                     </div>
-                    <div className="h-[300px]">
-                        {companyProjection ? (
-                            <MRRNetProjectionWidget data={companyProjection} />
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase tracking-[0.2em]">Carregando Projeção...</div>
-                        )}
+
+                    {/* RIGHT: QUICK ACTIONS */}
+                    <div className="xl:col-span-4 h-full">
+                        <TeamActionsBlock actions={teamActions} />
                     </div>
                 </div>
 
-                {/* 4. TEAM ACTIONS (PRIORITY #1) */}
-                <TeamActionsBlock actions={teamActions} />
-
-                {/* 5. TEAM CLASSIFICATION PANELS */}
+                {/* 4. TEAM CLASSIFICATION PANELS */}
                 <AnalystClassificationCards analysts={data} />
 
-                {/* 6. COMPARATIVE TABLE & INTELLIGENCE */}
+                {/* 5. DIAGNOSTICS & COMPARATIVE TABLE */}
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                     
                     {/* TABLE SIDE */}
                     <div className="xl:col-span-8 space-y-6">
+
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                             <div className="p-6 border-b border-slate-50 flex justify-between items-center">
                                 <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
@@ -282,11 +288,11 @@ export const TeamDiagnosticsView: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* DIAGNOSTIC ROW */}
+                        {/* DIAGNOSTIC ROW (MOVED UP/RECONFIGURED) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <Activity size={18} className="text-indigo-500" />
+                                <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                                    <Activity size={14} className="text-indigo-500" />
                                     Diagnóstico por Causa
                                 </h4>
                                 <div className="h-64 relative flex items-center justify-center">
@@ -294,23 +300,24 @@ export const TeamDiagnosticsView: React.FC = () => {
                                 </div>
                             </div>
                             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <Clock size={18} className="text-indigo-500" />
+                                <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                                    <Clock size={14} className="text-indigo-500" />
                                     Gargalos por Etapa
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                     {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-transparent hover:border-indigo-500/20 transition-all group">
-                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">{g.etapa}</span>
+                                        <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-xl border border-transparent hover:border-indigo-500/20 transition-all group">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{g.etapa}</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-900">{g.count}</span>
-                                                <ChevronRight size={14} className="text-slate-200 group-hover:text-indigo-500 transition-colors" />
+                                                <span className="text-xs font-black text-slate-900">{g.count}</span>
+                                                <ChevronRight size={12} className="text-slate-200 group-hover:text-indigo-500 transition-colors" />
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     {/* INTELLIGENCE SIDE */}

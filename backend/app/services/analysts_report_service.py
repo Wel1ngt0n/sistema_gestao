@@ -239,7 +239,11 @@ class AnalystsReportService:
         Retorna a Mesa Comparativa do time.
         Agrega métricas por implantador. Suporta filtros de data.
         """
-        cutoff = start_date or AnalystsReportService.CUTOFF_DATE
+        if not start_date or start_date < AnalystsReportService.CUTOFF_DATE:
+            start_date = AnalystsReportService.CUTOFF_DATE
+
+        cutoff = start_date
+
         
         # Filtro: Pessoas que têm lojas ATIVAS neste momento OR lojas ENTREGUES no período
         implantadores_query = db.session.query(Store.implantador).distinct().filter(
@@ -478,7 +482,11 @@ class AnalystsReportService:
         """
         Retorna o Drill-down Individual do Implantador (Aba 3).
         """
+        if not start_date or start_date < AnalystsReportService.CUTOFF_DATE:
+            start_date = AnalystsReportService.CUTOFF_DATE
+            
         last_ai_analysis = None
+
         # Obter todas as lojas do analista
         stores = Store.query.filter(
             or_(

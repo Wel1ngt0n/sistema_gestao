@@ -29,7 +29,7 @@ export const PerformanceScoreBadge: React.FC<PerformanceScoreBadgeProps> = ({ sc
 
     return (
         <span className={`inline-flex items-center justify-center font-medium rounded-full border ${bgColorClass} ${colorClass} ${sizes[size]}`}>
-            Score: {score.toFixed(1)}
+            Score: {(score || 0).toFixed(1)}
         </span>
     );
 };
