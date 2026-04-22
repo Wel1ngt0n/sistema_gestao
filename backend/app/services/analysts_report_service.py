@@ -73,14 +73,21 @@ class AnalystsReportService:
         entregas_norm = min(100, (metrics.get('entregas_mes', 0) / meta_mensal) * 100)
         
         retrabalho = metrics.get('pct_retrabalho', 0)
+        # Inversão de Retrabalho: 0% retrabalho = 100 pontos, 50%+ retrabalho = 0 pontos
         retrabalho_inv = max(0, 100 - (retrabalho * 2))
+        
+        # Qualidade na Entrega: Média de lojas entregues com qualidade (0 ou 100)
+        qualidade_entrega = metrics.get('pct_qualidade', 100)
+        
+        # Eixo Qualidade Consolidado (50% Retrabalho Inv + 50% Qualidade Entrega)
+        eixo_qualidade = (retrabalho_inv * 0.5) + (qualidade_entrega * 0.5)
         
         score = (
             (pct_sla_c * 0.30) +
-            (pct_sla_a * 0.25) +
-            (idle_inv * 0.20) +
+            (pct_sla_a * 0.20) +
+            (idle_inv * 0.15) +
             (entregas_norm * 0.15) +
-            (retrabalho_inv * 0.10)
+            (eixo_qualidade * 0.20)
         )
         return {
             "score_final": round(score, 1),
@@ -89,7 +96,7 @@ class AnalystsReportService:
                 "sla_ativas": round(pct_sla_a, 1),
                 "idle_invertido": round(idle_inv, 1),
                 "entregas": round(entregas_norm, 1),
-                "qualidade": round(max(0, 100 - retrabalho), 1)
+                "qualidade": round(eixo_qualidade, 1)
             }
         }
 
@@ -560,6 +567,9 @@ class AnalystsReportService:
         retrabalho_count = sum(1 for s in concluidas if s.teve_retrabalho)
         pct_retrabalho = (retrabalho_count / len(concluidas) * 100) if len(concluidas) > 0 else 0
         
+        qualidade_count = sum(1 for s in concluidas if s.delivered_with_quality)
+        pct_qualidade = (qualidade_count / len(concluidas) * 100) if len(concluidas) > 0 else 100
+        
         # Detalhes das lojas ativas para exibir na UI
         carteira_atual = []
         for s in ativas:
@@ -573,6 +583,9 @@ class AnalystsReportService:
                 "tempo_contrato": s.tempo_contrato or 90,
                 "valor_mensalidade": s.valor_mensalidade,
                 "teve_retrabalho": s.teve_retrabalho,
+                "delivered_with_quality": s.delivered_with_quality,
+                "considerar_tempo_implantacao": s.considerar_tempo_implantacao,
+                "observacoes": s.observacoes,
                 "is_scheduled": False
             })
             
@@ -665,6 +678,7 @@ class AnalystsReportService:
             "pct_sla_concluidas": pct_sla_concluidas,
             "pct_sla_ativas": pct_sla_ativas,
             "pct_retrabalho": pct_retrabalho,
+            "pct_qualidade": pct_qualidade,
             "idle_medio": (total_idle_days / len(ativas)) if len(ativas) > 0 else 0,
             "entregas_mes": len(concluidas_mes_list)
         }
@@ -910,7 +924,8 @@ class AnalystsReportService:
                 "tempo_espera_percentual": summ.get('tempo', {}).get('wait_pct', 0)
             },
             "qualidade": {
-                "retrabalho_percentual": summ.get('pct_retrabalho', 0)
+                "retrabalho_percentual": summ.get('pct_retrabalho', 0),
+                "entrega_com_qualidade_percentual": summ.get('pct_qualidade', 100)
             },
             "etapas": summ.get('etapas', {}),
             "diagnostico_backend": summ.get('diagnostico_causas', {}),
@@ -923,7 +938,13 @@ class AnalystsReportService:
                     "tempo_limite": loja.get('tempo_contrato'),
                     "contexto_verbal": {
                         "descricao": loja.get('description'),
-                        "ultimos_comentarios": loja.get('last_comments')
+                        "ultimos_comentarios": loja.get('last_comments'),
+                        "observacoes_privadas": loja.get('observacoes')
+                    },
+                    "operacional": {
+                        "qualidade_completa": loja.get('delivered_with_quality'),
+                        "teve_retrabalho": loja.get('teve_retrabalho'),
+                        "considerar_sla": loja.get('considerar_tempo_implantacao')
                     }
                 } for loja in lojas_criticas
             ],
@@ -971,6 +992,7 @@ Você deve classificar e explicar os problemas considerando:
 - EXECUÇÃO INTERNA: baixa cadência, idle sem justificativa
 - CARGA: volume excessivo sob responsabilidade
 - ETAPA: gargalo estrutural em fase específica
+- CONTROLE OPERACIONAL: avalie as 'observacoes_privadas' e as flags de qualidade/retrabalho para entender o contexto real de cada loja.
 
 Use os dados fornecidos (inclusive diagnóstico do backend, se houver).
 Se houver ambiguidade, deixe claro.

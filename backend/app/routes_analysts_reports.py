@@ -188,3 +188,30 @@ def get_analyst_details(payload, implantador_name):
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+@analysts_reports_bp.route('/stores/<int:store_id>/operational', methods=['PATCH'])
+@require_auth
+def update_store_operational(payload, store_id):
+    """
+    Atualiza dados de controle operacional e observações privadas de uma loja.
+    """
+    try:
+        from app.models import Store, db
+        data = request.json
+        store = Store.query.get_or_404(store_id)
+        
+        if 'delivered_with_quality' in data:
+            store.delivered_with_quality = data['delivered_with_quality']
+        if 'teve_retrabalho' in data:
+            store.teve_retrabalho = data['teve_retrabalho']
+        if 'considerar_tempo_implantacao' in data:
+            store.considerar_tempo_implantacao = data['considerar_tempo_implantacao']
+        if 'observacoes' in data:
+            store.observacoes = data['observacoes']
+            
+        db.session.commit()
+        return jsonify({"message": "Operational data updated successfully"}), 200
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

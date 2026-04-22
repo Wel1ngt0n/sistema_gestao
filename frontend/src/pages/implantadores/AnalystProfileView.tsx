@@ -10,6 +10,7 @@ import { PerformanceScoreBadge } from '../../components/reports/PerformanceScore
 import { AnalystRadarChart } from '../../components/reports/AnalystRadarChart'
 import { BottleneckDonutChart } from '../../components/reports/BottleneckDonutChart'
 import { PeriodFilter, DateRange } from '../../components/ui/PeriodFilter'
+import { OperationalControlModal } from '../../components/reports/OperationalControlModal'
 
 
 export default function AnalystProfileView() {
@@ -29,6 +30,10 @@ export default function AnalystProfileView() {
         end: null,
         label: 'Todo o Período'
     })
+
+    // Modal State
+    const [selectedStore, setSelectedStore] = useState<any>(null)
+    const [isModalOpen, setIsModalOpen] = useState(false)
 
     useEffect(() => {
         if (!name) return
@@ -384,9 +389,10 @@ export default function AnalystProfileView() {
                                     <tr>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Loja</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Controle</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tempo (SLA)</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Idle</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">MRR</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -403,9 +409,33 @@ export default function AnalystProfileView() {
                                                     {loja.status_name}
                                                 </span>
                                             </td>
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-2">
+                                                    {loja.delivered_with_quality && (
+                                                        <div className="p-1 bg-emerald-50 text-emerald-600 rounded-md border border-emerald-100" title="Qualidade Confirmada">
+                                                            <CheckCircle size={12} />
+                                                        </div>
+                                                    )}
+                                                    {loja.teve_retrabalho && (
+                                                        <div className="p-1 bg-rose-50 text-rose-600 rounded-md border border-rose-100" title="Teve Retrabalho">
+                                                            <ShieldAlert size={12} />
+                                                        </div>
+                                                    )}
+                                                    {!loja.considerar_tempo_implantacao && (
+                                                        <div className="p-1 bg-slate-100 text-slate-500 rounded-md border border-slate-200" title="SLA Ignorado">
+                                                            <Activity size={12} />
+                                                        </div>
+                                                    )}
+                                                    {loja.observacoes && (
+                                                        <div className="p-1 bg-indigo-50 text-indigo-500 rounded-md border border-indigo-100" title="Possui Observações">
+                                                            <Sparkles size={12} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-8 py-5 text-center">
                                                 <div className="flex flex-col items-center">
-                                                    <span className={`font-black ${loja.dias_em_progresso > loja.tempo_contrato ? 'text-rose-500' : 'text-slate-700'}`}>
+                                                    <span className={`font-black ${loja.dias_em_progresso > loja.tempo_contrato && loja.considerar_tempo_implantacao ? 'text-rose-500' : 'text-slate-700'}`}>
                                                         {loja.dias_em_progresso}d
                                                     </span>
                                                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Meta: {loja.tempo_contrato}d</span>
@@ -416,8 +446,17 @@ export default function AnalystProfileView() {
                                                     {loja.idle_days}d
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-5 text-right font-black text-slate-500">
-                                                {formatMoney(loja.valor_mensalidade || 0)}
+                                            <td className="px-8 py-5 text-right">
+                                                <button 
+                                                    onClick={() => {
+                                                        setSelectedStore(loja)
+                                                        setIsModalOpen(true)
+                                                    }}
+                                                    className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-slate-200 hover:shadow-sm text-slate-400 hover:text-indigo-600 transition-all"
+                                                    title="Editar Controle Operacional"
+                                                >
+                                                    <Target size={18} />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -525,6 +564,13 @@ export default function AnalystProfileView() {
                 </div>
 
             </div>
+
+            <OperationalControlModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                store={selectedStore}
+                onSaveSuccess={fetchAnalyst}
+            />
         </div>
     )
 }
