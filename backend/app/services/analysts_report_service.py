@@ -105,9 +105,9 @@ class AnalystsReportService:
 
         # 1. Calcular Médias do Time para Contexto
         analysts_list = resume_data.get('data', [])
-        total_ativos = sum(a['ativos'] for a in analysts_list)
-        total_entregues_mes = sum(a['entregas_mes'] for a in analysts_list)
-        avg_sla = sum(a['pct_sla_concluidas'] for a in analysts_list) / len(analysts_list) if analysts_list else 0
+        total_ativos = sum(a.get('ativos', 0) for a in analysts_list)
+        total_entregues_mes = sum(a.get('entregas_mes', 0) for a in analysts_list)
+        avg_sla = sum(a.get('pct_sla_concluidas', 0) for a in analysts_list) / len(analysts_list) if analysts_list else 0
         avg_throughput = total_entregues_mes / len(analysts_list) if analysts_list else 0
 
         cockpit_analysts = []
@@ -121,7 +121,7 @@ class AnalystsReportService:
             action_priority = "low"
 
             # 🚨 ALERTA: Sobrecarga Crítica
-            if analyst['carga_ponderada'] > 15 and analyst['entregas_mes'] < (avg_throughput * 0.5):
+            if analyst.get('carga_ponderada', 0) > 15 and analyst.get('entregas_mes', 0) < (avg_throughput * 0.5):
                 status = "OVERLOADED"
                 recommendation = "Redistribuir novas lojas. Analista com carga alta e baixa vazão."
                 action_priority = "high"
@@ -131,13 +131,13 @@ class AnalystsReportService:
                 })
 
             # 🚀 ALERTA: Alta Performance
-            elif analyst['entregas_mes'] > avg_throughput and analyst['pct_sla_concluidas'] >= 85:
+            elif analyst.get('entregas_mes', 0) > avg_throughput and analyst.get('pct_sla_concluidas', 0) >= 85:
                 status = "HIGH_PERFORMANCE"
                 recommendation = "Reconhecer performance. Potencial para mentorar outros membros."
                 action_priority = "low"
 
             # ⚠️ ALERTA: Idle/Estagnação
-            elif analyst['idle_medio'] > 7:
+            elif analyst.get('idle_medio', 0) > 7:
                 status = "WARNING"
                 recommendation = "Verificar bloqueios técnicos ou falta de engajamento do cliente."
                 action_priority = "medium"
@@ -147,7 +147,7 @@ class AnalystsReportService:
                 })
 
             # 📉 ALERTA: Baixa Entrega
-            elif analyst['entregas_mes'] == 0 and analyst['ativas'] > 0:
+            elif analyst.get('entregas_mes', 0) == 0 and analyst.get('ativos', 0) > 0:
                 status = "CRITICAL_IDLE"
                 recommendation = "Ação imediata: Cobrar entregas ou entender motivo da trava total."
                 action_priority = "high"
@@ -373,7 +373,7 @@ class AnalystsReportService:
             
             report.append({
                 "implantador": imp,
-                "ativas": len(ativas),
+                "ativos": len(ativas),
                 "programadas": len(programadas),
                 "entregues": len(concluidas),
                 "carga_ponderada": carga_ponderada,
@@ -467,7 +467,7 @@ class AnalystsReportService:
 
         # Sumarização do Time
         summary = {
-            "total_ativos": sum(item['ativas'] for item in report),
+            "total_ativos": sum(item.get('ativos', 0) for item in report),
             "total_programadas": sum(item['programadas'] for item in report),
             "total_entregues": sum(item['entregas_mes'] for item in report),
             "mrr_total_ativo": sum(item['mrr_ativo'] for item in report),
@@ -705,7 +705,7 @@ class AnalystsReportService:
                 "implantador": implantador_name,
                 "ativos": len(ativas),
                 "programadas": len(programadas),
-                "entregue_mes": len(concluidas_mes_list),
+                "entregas_mes": len(concluidas_mes_list),
                 "entregues_total": len(concluidas),
                 "carga_ponderada": carga_ponderada,
                 "mrr_ativo": mrr_ativo,
@@ -835,14 +835,14 @@ class AnalystsReportService:
         
         for item in team_data:
             writer.writerow([
-                item['implantador'],
-                str(item['carga_ponderada']).replace('.', ','),
-                item['ativos'],
-                item['matrizes_ativas'],
-                item['filiais_ativas'],
-                item['throughput_30d'],
-                str(item['pct_sla']).replace('.', ','),
-                str(item['pct_retrabalho']).replace('.', ','),
+                item.get('implantador', '-'),
+                str(item.get('carga_ponderada', 0)).replace('.', ','),
+                item.get('ativos', 0),
+                item.get('matrizes_ativas', 0),
+                item.get('filiais_ativas', 0),
+                item.get('entregas_mes', 0),
+                str(item.get('pct_sla_concluidas', 0)).replace('.', ','),
+                str(item.get('pct_retrabalho', 0)).replace('.', ','),
                 str(item['idle_medio']).replace('.', ','),
                 item['idle_critico_count'],
                 str(item['mrr_ativo']).replace('.', ',')
@@ -896,8 +896,8 @@ class AnalystsReportService:
             "implantador": implantador_name,
             "resumo": {
                 "lojas_ativas": summ.get('ativos', 0),
-                "lojas_concluidas_mes": summ.get('entregue_mes', 0),
-                "percentual_sla": summ.get('pct_sla_ativas', 0),
+                "lojas_concluidas_mes": summ.get('entregas_mes', 0),
+                "percentual_sla": summ.get('pct_sla_concluidas', 0),
                 "idle_medio": summ.get('idle_medio', 0),
                 "lojas_idle_alto": len([s for s in ativas if (s.get('idle_days') or 0) > 7])
             },
@@ -1204,7 +1204,7 @@ Responda APENAS o JSON válido.
         
         kpis = [
             ("Lojas Ativas", str(summary.get('ativos', 0))),
-            ("Entregas (Mes Atual)", str(summary.get('entregue_mes', 0))),
+            ("Entregas (Mes Atual)", str(summary.get('entregas_mes', 0))),
             ("Entregas (Total 2026)", str(summary.get('entregues_total', 0))),
             ("Carga Ponderada", f"{summary.get('carga_ponderada', 0):.1f} pts"),
             ("MRR Ativo (Em Implante)", f"R$ {summary.get('mrr_ativo', 0):,.2f}"),
