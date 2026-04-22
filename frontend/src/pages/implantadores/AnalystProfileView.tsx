@@ -156,7 +156,7 @@ export default function AnalystProfileView() {
                 </div>
 
                 {/* 2. KPI GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Carga Ponderada</span>
@@ -187,6 +187,15 @@ export default function AnalystProfileView() {
                         <div className="flex items-baseline gap-2">
                             <span className="text-3xl font-black text-slate-900">{summary?.entregue_mes || 0}</span>
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">lojas</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Taxa de Retrabalho</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className={`text-3xl font-black ${summary?.pct_retrabalho > 10 ? 'text-rose-500' : 'text-slate-900'}`}>
+                                {summary?.pct_retrabalho?.toFixed(1) || 0}%
+                            </span>
                         </div>
                     </div>
                 </div>

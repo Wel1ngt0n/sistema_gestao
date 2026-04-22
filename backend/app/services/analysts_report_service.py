@@ -226,6 +226,7 @@ class AnalystsReportService:
                 "total_ativos": total_ativos,
                 "total_entregues_mes": total_entregues_mes,
                 "avg_sla": round(avg_sla, 1),
+                "avg_retrabalho": round(sum(a.get('pct_retrabalho', 0) for a in cockpit_analysts) / len(cockpit_analysts), 1) if cockpit_analysts else 0,
                 "team_health": "Good" if avg_sla > 80 else "Attention"
             },
             "avg_metrics": {

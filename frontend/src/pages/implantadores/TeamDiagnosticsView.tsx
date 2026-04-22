@@ -110,7 +110,8 @@ export const TeamDiagnosticsView: React.FC = () => {
             maxIdle: Math.max(...data.map(a => a.idle_medio)),
             minSla: Math.min(...data.map(a => a.pct_sla_concluidas)),
             maxCarga: Math.max(...data.map(a => a.carga_ponderada)),
-            maxEntregas: Math.max(...data.map(a => a.entregas_mes))
+            maxEntregas: Math.max(...data.map(a => a.entregas_mes)),
+            maxRetrabalho: Math.max(...data.map(a => (a as any).pct_retrabalho || 0))
         }
     }, [data])
 
@@ -150,7 +151,7 @@ export const TeamDiagnosticsView: React.FC = () => {
                 </div>
 
                 {/* 2. KPI GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Analistas Ativos</span>
@@ -186,6 +187,16 @@ export const TeamDiagnosticsView: React.FC = () => {
                             <span className={`text-xl font-black uppercase ${summary?.team_health === 'Good' ? 'text-emerald-500' : 'text-amber-500'}`}>
                                 {summary?.team_health === 'Good' ? 'Consistente' : 'Atenção'}
                             </span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Taxa de Retrabalho</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className={`text-3xl font-black ${summary?.avg_retrabalho > 10 ? 'text-rose-500' : 'text-slate-900'}`}>
+                                {summary?.avg_retrabalho || 0}%
+                            </span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">média time</span>
                         </div>
                     </div>
                 </div>
@@ -246,6 +257,7 @@ export const TeamDiagnosticsView: React.FC = () => {
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('score')}>Score</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('carga_ponderada')}>Carga</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('entregas_mes')}>Entregas</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('pct_retrabalho' as any)}>Retrabalho</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('idle_medio')}>Idle</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
                                     </tr>
@@ -273,6 +285,9 @@ export const TeamDiagnosticsView: React.FC = () => {
                                             </td>
                                             <td className={`px-6 py-4 text-right font-bold ${item.entregas_mes === extremes?.maxEntregas ? 'text-emerald-600 bg-emerald-50/30' : 'text-slate-600'}`}>
                                                 {item.entregas_mes}
+                                            </td>
+                                            <td className={`px-6 py-4 text-right font-bold ${(item as any).pct_retrabalho === extremes?.maxRetrabalho && (item as any).pct_retrabalho > 0 ? 'text-rose-600 bg-rose-50' : 'text-slate-600'}`}>
+                                                {(item as any).pct_retrabalho?.toFixed(0)}%
                                             </td>
                                             <td className={`px-6 py-4 text-right font-bold ${item.idle_medio === extremes?.maxIdle ? 'text-rose-600 bg-rose-50/30' : 'text-slate-600'}`}>
                                                 {item.idle_medio}d
