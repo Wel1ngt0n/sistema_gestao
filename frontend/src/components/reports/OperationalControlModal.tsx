@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { X, CheckCircle2, AlertCircle, Calendar, Save, Loader2, MessageSquareText } from 'lucide-react'
+import { X, CheckCircle2, Save, Loader2, MessageSquareText } from 'lucide-react'
 import { api } from '../../services/api'
 
 interface Store {
