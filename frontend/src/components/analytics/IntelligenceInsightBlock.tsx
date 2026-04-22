@@ -144,10 +144,81 @@ export const IntelligenceInsightBlock: React.FC<IntelligenceInsightBlockProps> =
                         <p className="text-sm text-rose-600">Serviço de IA indisponível no momento.</p>
                     ) : aiAnalysis ? (
                         <div className="space-y-2">
-                            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Diagnóstico IA</p>
-                            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                                {aiAnalysis.analysis || aiAnalysis.response || JSON.stringify(aiAnalysis)}
-                            </p>
+                            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Diagnóstico Jarvis v3.5</p>
+                            
+                            <div className="space-y-6 mt-4">
+                                {/* Briefing */}
+                                <div className="p-4 bg-white/50 rounded-xl border border-indigo-100/50">
+                                    <p className="text-sm text-slate-700 font-bold leading-relaxed">
+                                        {aiAnalysis.jarvis_briefing}
+                                    </p>
+                                </div>
+
+                                {/* Decision Inputs */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {aiAnalysis.insumos_decisao?.map((item: any, idx: number) => (
+                                        <div key={idx} className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="text-xs font-black text-slate-900 uppercase">{item.titulo}</h4>
+                                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                                                    item.impacto === 'Alto' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                }`}>
+                                                    {item.impacto}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 font-medium leading-normal">{item.descricao}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Xadrez Operacional & Radar */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Xadrez */}
+                                    <div className="space-y-3">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Users size={12} className="text-indigo-500" />
+                                            Xadrez Operacional
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {aiAnalysis.xadrez_operacional?.map((acao: string, idx: number) => (
+                                                <div key={idx} className="flex gap-2 p-2.5 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                                                    <span className="text-[11px] font-bold text-slate-700">{acao}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Radar */}
+                                    <div className="space-y-3">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <AlertTriangle size={12} className="text-amber-500" />
+                                            Radar de Risco
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase block">Técnico</span>
+                                                <span className="text-[11px] font-bold text-slate-700">{aiAnalysis.radar_de_risco?.tecnico}</span>
+                                            </div>
+                                            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase block">Financeiro</span>
+                                                <span className="text-[11px] font-bold text-slate-700">{aiAnalysis.radar_de_risco?.financeiro}</span>
+                                            </div>
+                                            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase block">Pessoas</span>
+                                                <span className="text-[11px] font-bold text-slate-700">{aiAnalysis.radar_de_risco?.pessoas}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Closure */}
+                                <div className="pt-4 border-t border-indigo-100 flex justify-end">
+                                    <p className="text-xs font-black text-indigo-400 italic">
+                                        "{aiAnalysis.frase_do_copiloto}"
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     ) : null}
                 </div>
