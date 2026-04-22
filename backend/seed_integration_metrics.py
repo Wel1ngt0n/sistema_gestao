@@ -22,7 +22,8 @@ def seed_integration_metrics():
                 metric = IntegrationMetric.query.filter_by(store_id=store.id).first()
                 
                 if not metric:
-                    metric = IntegrationMetric(store_id=store.id)
+                    metric = IntegrationMetric(store_id=store.id, snapshot_date=datetime.now().date())
+
                     created_count += 1
                 else:
                     updated_count += 1

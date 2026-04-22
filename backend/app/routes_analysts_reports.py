@@ -20,6 +20,8 @@ def get_analysts_resume(payload):
         data = AnalystsReportService.get_team_resume(start_date, end_date)
         return jsonify(data), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/cockpit', methods=['GET'])
@@ -43,6 +45,8 @@ def get_team_cockpit(payload):
         data = AnalystsReportService.get_team_cockpit(start_date, end_date)
         return jsonify(data), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/jarvis/chat', methods=['POST'])
@@ -60,6 +64,8 @@ def jarvis_chat(payload):
         response = JarvisCommandService.process_message(message)
         return jsonify(response), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/diagnostico', methods=['GET'])
@@ -72,6 +78,8 @@ def get_diagnostics(payload):
         data = AnalystsReportService.get_diagnostics()
         return jsonify(data), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/export-csv', methods=['GET'])
@@ -86,6 +94,8 @@ def export_team_csv(payload):
             headers={"Content-disposition": "attachment; filename=diagnostico_time.csv"}
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/<path:implantador_name>/export-csv', methods=['GET'])
@@ -100,6 +110,8 @@ def export_individual_csv(payload, implantador_name):
             headers={"Content-disposition": f"attachment; filename=diagnostico_{implantador_name}.csv"}
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/export-pdf', methods=['GET'])
@@ -114,6 +126,8 @@ def export_team_pdf(payload):
             headers={"Content-disposition": "attachment; filename=diagnostico_time.pdf"}
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/<path:implantador_name>/export-pdf', methods=['GET'])
@@ -128,6 +142,8 @@ def export_individual_pdf(payload, implantador_name):
             headers={"Content-disposition": f"attachment; filename=diagnostico_{implantador_name}.pdf"}
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/analyze/team', methods=['POST'])
@@ -138,6 +154,8 @@ def analyze_team(payload):
         data = AnalystsReportService.generate_team_ai_analysis()
         return jsonify(data), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/analyze/<path:implantador_name>', methods=['POST'])
@@ -148,6 +166,8 @@ def analyze_individual(payload, implantador_name):
         data = AnalystsReportService.generate_ai_analysis(implantador_name)
         return jsonify(data), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @analysts_reports_bp.route('/<path:implantador_name>', methods=['GET'])
@@ -165,4 +185,6 @@ def get_analyst_details(payload, implantador_name):
         data = AnalystsReportService.get_analyst_details(implantador_name, start_date, end_date)
         return jsonify(data), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
