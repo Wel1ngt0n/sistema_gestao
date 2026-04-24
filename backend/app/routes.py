@@ -420,7 +420,7 @@ def get_store(payload, id):
     def fmt_date(d):
         return d.strftime('%Y-%m-%d') if d else None
 
-    from app.services.scoring import ScoringService
+    from app.services.scoring_service import ScoringService
     risk_data = ScoringService.calculate_risk_score(store)
     risk_score = risk_data['total']
     risk_level = risk_data['level']
