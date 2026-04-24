@@ -410,6 +410,61 @@ def delete_store(payload, id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+@api_bp.route('/store/<int:id>', methods=['GET'])
+@require_auth
+def get_store(payload, id):
+    from app.services.metrics_formatter import fmt_date
+    from app.services.status_normalizer import StatusNormalizer
+    store = Store.query.get_or_404(id)
+    all_matrices = Store.query.filter_by(tipo_loja='Matriz').all()
+    matrices = [{'id': m.id, 'name': m.store_name} for m in all_matrices]
+
+    # Calculate Risk Score (simplified logic, matches get_stores roughly)
+    risk_score = store.risk_score or 0
+    risk_level = "Baixo"
+    if risk_score > 20: risk_level = "Crítico"
+    elif risk_score > 10: risk_level = "Médio"
+
+    result = {
+        'id': store.id,
+        'name': store.store_name,
+        'custom_id': store.custom_store_id,
+        'clickup_id': store.clickup_task_id,
+        'clickup_url': store.clickup_url,
+        'status': store.status,
+        'status_norm': store.status_norm,
+        'implantador': store.implantador,
+        'data_inicio': fmt_date(store.effective_started_at),
+        'data_fim': fmt_date(store.effective_finished_at),
+        'data_previsao': fmt_date(store.data_previsao_implantacao),
+        'dias_em_transito': store.dias_em_progresso, 
+        'idle_days': store.idle_days,
+        'risk_score': risk_score,
+        'risk_level': risk_level,
+        'valor_mensalidade': store.valor_mensalidade,
+        'tempo_contrato': store.tempo_contrato or 90,
+        'financeiro_status': store.financeiro_status,
+        'teve_retrabalho': store.teve_retrabalho,
+        'observacoes': store.observacoes,
+        'manual_finished_at': fmt_date(store.manual_finished_at),
+        'considerar_tempo': store.considerar_tempo_implantacao, 
+        'justificativa_tempo': store.justificativa_tempo_implantacao,
+        'erp': store.erp,
+        'cnpj': store.cnpj,
+        'crm': store.crm,
+        'valor_implantacao': store.valor_implantacao,
+        'rede': store.rede,
+        'tipo_loja': store.tipo_loja,
+        'parent_id': store.parent_id,
+        'parent_name': store.matriz.store_name if store.matriz else None,
+        'delivered_with_quality': store.delivered_with_quality,
+        'is_manual_start_date': store.is_manual_start_date,
+        'is_scheduled': store.is_scheduled,
+        'clickup_created_at': fmt_date(store.created_at),
+    }
+
+    return jsonify({"store": result, "matrices": matrices})
+
 @api_bp.route('/store/<int:id>', methods=['PUT'])
 @require_auth
 def update_store(payload, id):

@@ -1,7 +1,9 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { ChevronDown, ChevronUp, Download, Bot, FileText, Loader2, Users, CheckCircle, Clock, Target, TrendingUp, TrendingDown, BarChart3, Building2, Layers, Printer } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import MonitorStoreModal from '../monitor/MonitorStoreModal';
+import { Store } from '../monitor/types';
 
 interface StoreReport {
     id: number;
@@ -115,6 +117,12 @@ const MonthlyReport: React.FC = () => {
     const [aiLoading, setAiLoading] = useState(false);
     const [selectedMonthForAi, setSelectedMonthForAi] = useState<string | null>(null);
 
+    // Edit Modal State
+    const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+    const [editingStore, setEditingStore] = useState<Store | null>(null);
+    const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
+    const [deepSyncLoading, setDeepSyncLoading] = useState(false);
+
     useEffect(() => {
         fetchReport();
     }, []);
@@ -136,6 +144,45 @@ const MonthlyReport: React.FC = () => {
 
     const toggleMonth = (month: string) => {
         setExpandedMonth(expandedMonth === month ? null : month);
+    };
+
+    const handleEditClick = async (storeId: number) => {
+        try {
+            const response = await api.get(`/api/store/${storeId}`);
+            setEditingStore(response.data.store);
+            setMatrices(response.data.matrices);
+            setIsStoreModalOpen(true);
+        } catch (error) {
+            console.error("Erro ao buscar detalhes da loja", error);
+            alert("Erro ao abrir loja.");
+        }
+    };
+
+    const handleSaveStore = async (storeToSave: Store) => {
+        if (!storeToSave.id) return;
+        try {
+            await api.put(`/api/store/${storeToSave.id}`, storeToSave);
+            setIsStoreModalOpen(false);
+            fetchReport(); // recarrega o relatorio para atualizar
+        } catch (error: any) {
+            console.error("Erro ao salvar", error);
+            alert(`Erro ao salvar alterações: ${error.message}`);
+        }
+    };
+
+    const handleRunDeepSync = async (storeId: number) => {
+        setDeepSyncLoading(true);
+        try {
+            await api.post(`/api/deep-sync/store/${storeId}`);
+            alert("Deep Sync finalizado com sucesso! Histórico atualizado.");
+            // Recarrega os dados da loja na modal
+            const response = await api.get(`/api/store/${storeId}`);
+            setEditingStore(response.data.store);
+        } catch (e) {
+            alert("Erro ao rodar Deep Sync.");
+        } finally {
+            setDeepSyncLoading(false);
+        }
     };
 
     const handleGenerateSummary = async (monthData: MonthlyData, formatType: 'simple' | 'email' = 'simple') => {
@@ -510,7 +557,8 @@ const MonthlyReport: React.FC = () => {
                                                 <th className="px-4 py-3 text-right">Data Fim</th>
                                                 <th className="px-4 py-3 text-right">Dias</th>
                                                 <th className="px-4 py-3 text-center">Prazo</th>
-                                                <th className="px-4 py-3 text-right rounded-r-lg">MRR</th>
+                                                <th className="px-4 py-3 text-right">MRR</th>
+                                                <th className="px-4 py-3 text-center rounded-r-lg">Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -536,6 +584,15 @@ const MonthlyReport: React.FC = () => {
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-semibold text-emerald-600">
                                                         R$ {store.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleEditClick(store.id); }}
+                                                            className="p-1.5 text-zinc-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            ✏️
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -587,6 +644,17 @@ const MonthlyReport: React.FC = () => {
                     </Dialog.Panel>
                 </div>
             </Dialog>
+
+            {/* Edit Store Modal */}
+            <MonitorStoreModal
+                isOpen={isStoreModalOpen}
+                onClose={() => setIsStoreModalOpen(false)}
+                store={editingStore}
+                matrices={matrices}
+                onSave={handleSaveStore}
+                onDeepSync={handleRunDeepSync}
+                isDeepSyncing={deepSyncLoading}
+            />
         </div>
     );
 }

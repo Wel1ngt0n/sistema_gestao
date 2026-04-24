@@ -87,7 +87,7 @@ export default function SyncPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-10 transition-colors duration-500">
+        <div aria-label="Sync Page" className="min-h-screen bg-[#f8fafc] p-6 lg:p-10 transition-colors duration-500">
             <div className="max-w-7xl mx-auto space-y-8">
 
                 {/* Header */}
