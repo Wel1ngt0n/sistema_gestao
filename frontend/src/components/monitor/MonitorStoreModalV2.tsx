@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { Store } from './types';
 import { 
-    X, AlertTriangle, Clock, 
-    Activity, Save, MessageSquarePlus, Loader2, Link as LinkIcon
+    X, AlertTriangle, 
+    Activity, Save, MessageSquarePlus, Loader2, Link as LinkIcon, PauseCircle
 } from 'lucide-react';
 import { api } from '../../services/api';
 
