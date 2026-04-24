@@ -157,6 +157,7 @@ class MetricsService:
         step = TaskStep.query.filter_by(clickup_task_id=clickup_id).first()
         if not step:
             step = TaskStep(clickup_task_id=clickup_id)
+            step.store_id = store_db.id
             db.session.add(step)
             db.session.flush() # needs ID for manual check
             
