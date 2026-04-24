@@ -420,11 +420,10 @@ def get_store(payload, id):
     def fmt_date(d):
         return d.strftime('%Y-%m-%d') if d else None
 
-    # Calculate Risk Score (simplified logic, matches get_stores roughly)
-    risk_score = store.risk_score or 0
-    risk_level = "Baixo"
-    if risk_score > 20: risk_level = "Crítico"
-    elif risk_score > 10: risk_level = "Médio"
+    from app.services.scoring import ScoringService
+    risk_data = ScoringService.calculate_risk_score(store)
+    risk_score = risk_data['total']
+    risk_level = risk_data['level']
 
     result = {
         'id': store.id,
