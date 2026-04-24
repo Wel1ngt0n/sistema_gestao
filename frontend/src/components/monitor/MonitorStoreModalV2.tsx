@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { Store } from './types';
 import { 
-    X, AlertTriangle, Clock, CheckCircle2, 
-    Activity, ArrowRight, Save, MessageSquarePlus, PauseCircle, Loader2, Link as LinkIcon
+    X, AlertTriangle, Clock, 
+    Activity, Save, MessageSquarePlus, Loader2, Link as LinkIcon
 } from 'lucide-react';
 import { api } from '../../services/api';
 
