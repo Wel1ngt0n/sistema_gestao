@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { Store } from './types';
 import { 
-    X, AlertTriangle, Clock, 
-    Activity, Save, MessageSquarePlus, Loader2, Link as LinkIcon, PauseCircle, Trash2
+    X, 
+    Activity, Save, MessageSquarePlus, Loader2, Link as LinkIcon, Trash2, PauseCircle
 } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -35,7 +35,6 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
     const [newObs, setNewObs] = useState('');
     const [newObsType, setNewObsType] = useState('observacao');
     const [obsLoading, setObsLoading] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (store && isOpen) {
@@ -102,15 +101,12 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
         if (!editedStore) return;
         if (!window.confirm(`ATENÇÃO: Deseja excluir permanentemente a loja "${editedStore.name}"?`)) return;
         
-        setIsDeleting(true);
         try {
             await api.delete(`/api/stores/${editedStore.id}`);
             onClose();
             window.location.reload(); 
         } catch (e) {
             console.error("Erro ao excluir loja:", e);
-        } finally {
-            setIsDeleting(false);
         }
     };
 
@@ -130,7 +126,7 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
             <div className="fixed inset-0 flex items-center justify-center p-4">
                 <Dialog.Panel className="mx-auto max-w-6xl w-full max-h-[90vh] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden ring-1 ring-slate-200">
                     
-                    {/* Header: Cockpit Top */}
+                    {/* Header */}
                     <div className="bg-white border-b border-slate-100 px-8 py-6 shrink-0 flex items-start justify-between">
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
@@ -146,7 +142,6 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                 <span className="text-slate-200">•</span>
                                 <span>Resp: {editedStore.implantador || 'N/A'}</span>
                             </div>
-                            {/* Badges Rápidos */}
                             <div className="flex gap-2 pt-1">
                                 <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-wider border border-blue-100">
                                     {editedStore.status}
@@ -166,7 +161,7 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                         </div>
                     </div>
 
-                    {/* Resumo de Métricas (Igual ao Screenshot) */}
+                    {/* Quick Metrics */}
                     <div className="bg-white px-8 py-5 border-b border-slate-100 shrink-0 grid grid-cols-2 md:grid-cols-6 gap-8">
                         <div className="space-y-1">
                             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Dias Decorridos</p>
@@ -197,7 +192,7 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                     </div>
 
                     <div className="flex flex-1 overflow-hidden">
-                        {/* Sidebar: Botões Numerados */}
+                        {/* Sidebar */}
                         <div className="w-64 bg-white border-r border-slate-100 flex flex-col py-6 shrink-0 overflow-y-auto">
                             {[
                                 { id: 'operacional', label: '1. Op & Edição' },
@@ -221,18 +216,14 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                             ))}
                         </div>
 
-                        {/* Content Area */}
+                        {/* Content */}
                         <div className="flex-1 bg-white overflow-y-auto p-10">
-                            
-                            {/* ABA 1: Operacional */}
                             {activeTab === 'operacional' && (
                                 <div className="space-y-10 max-w-4xl">
-                                    
                                     <div className="grid grid-cols-2 gap-8">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data Início Operacional</label>
                                             <input type="date" value={editedStore.manual_start_date || ''} onChange={(e) => handleChange('manual_start_date', e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition text-sm font-bold text-slate-700" />
-                                            <p className="text-[10px] text-slate-400 ml-1">Esta data sobrescreve a original do ClickUp para KPIs.</p>
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dias de Contrato</label>
@@ -249,70 +240,49 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vínculo Matriz</label>
                                             <select value={editedStore.parent_id || ''} onChange={(e) => handleChange('parent_id', e.target.value ? parseInt(e.target.value) : null)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition text-sm font-bold text-slate-700">
                                                 <option value="">Nenhuma</option>
-                                                {matrices.map(m => (
-                                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                                ))}
+                                                {matrices.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                             </select>
                                         </div>
                                     </div>
 
-                                    {/* CONTROLES OPERACIONAIS (Novos campos integrados) */}
                                     <div className="pt-6 border-t border-slate-50">
                                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Checklist de Operação</h3>
                                         <div className="grid grid-cols-3 gap-4">
-                                            <button onClick={() => handleChange('delivered_with_quality', !editedStore.delivered_with_quality)} 
-                                                    className={`p-4 rounded-2xl border text-left transition ${editedStore.delivered_with_quality ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
+                                            <button onClick={() => handleChange('delivered_with_quality', !editedStore.delivered_with_quality)} className={`p-4 rounded-2xl border text-left transition ${editedStore.delivered_with_quality ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase">Qualidade</p>
-                                                <p className={`text-xs font-bold mt-1 ${editedStore.delivered_with_quality ? 'text-emerald-700' : 'text-slate-600'}`}>Loja Completa?</p>
+                                                <p className="text-xs font-bold mt-1">Loja Completa?</p>
                                             </button>
-                                            <button onClick={() => handleChange('teve_retrabalho', !editedStore.teve_retrabalho)}
-                                                    className={`p-4 rounded-2xl border text-left transition ${editedStore.teve_retrabalho ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                                            <button onClick={() => handleChange('teve_retrabalho', !editedStore.teve_retrabalho)} className={`p-4 rounded-2xl border text-left transition ${editedStore.teve_retrabalho ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase">Execução</p>
-                                                <p className={`text-xs font-bold mt-1 ${editedStore.teve_retrabalho ? 'text-rose-700' : 'text-slate-600'}`}>Houve Retrabalho?</p>
+                                                <p className="text-xs font-bold mt-1">Houve Retrabalho?</p>
                                             </button>
-                                            <button onClick={() => handleChange('considerar_tempo', !editedStore.considerar_tempo)}
-                                                    className={`p-4 rounded-2xl border text-left transition ${editedStore.considerar_tempo ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                                            <button onClick={() => handleChange('considerar_tempo', !editedStore.considerar_tempo)} className={`p-4 rounded-2xl border text-left transition ${editedStore.considerar_tempo ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase">Métricas</p>
-                                                <p className={`text-xs font-bold mt-1 ${editedStore.considerar_tempo ? 'text-blue-700' : 'text-slate-600'}`}>Contar SLA?</p>
+                                                <p className="text-xs font-bold mt-1">Contar SLA?</p>
                                             </button>
                                         </div>
                                     </div>
 
-                                    {/* Observações Feed */}
                                     <div className="pt-10 border-t border-slate-100">
                                         <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
                                             <MessageSquarePlus size={18} className="text-slate-400" /> Histórico Interno / Observações
                                         </h3>
-                                        
                                         <div className="flex gap-2 mb-8 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
                                             <select value={newObsType} onChange={(e) => setNewObsType(e.target.value)} className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold outline-none text-slate-600">
                                                 <option value="observacao">Observação</option>
                                                 <option value="alerta">Alerta</option>
                                                 <option value="bloqueio">Bloqueio</option>
                                             </select>
-                                            <input 
-                                                type="text" 
-                                                value={newObs}
-                                                onChange={(e) => setNewObs(e.target.value)}
-                                                placeholder="Adicione uma nota rápida..."
-                                                className="flex-1 px-4 py-2 bg-transparent outline-none text-sm font-medium text-slate-700"
-                                                onKeyDown={(e) => e.key === 'Enter' && handleAddObs()}
-                                            />
-                                            <button onClick={handleAddObs} disabled={obsLoading} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs hover:bg-blue-700 disabled:opacity-50 transition shadow-lg shadow-blue-100">
-                                                {obsLoading ? '...' : 'Salvar'}
-                                            </button>
+                                            <input type="text" value={newObs} onChange={(e) => setNewObs(e.target.value)} placeholder="Adicione uma nota..." className="flex-1 px-4 py-2 bg-transparent outline-none text-sm font-medium text-slate-700" onKeyDown={(e) => e.key === 'Enter' && handleAddObs()} />
+                                            <button onClick={handleAddObs} disabled={obsLoading} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs hover:bg-blue-700 disabled:opacity-50 transition">Salvar</button>
                                         </div>
-
-                                        <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
                                             {observations.map((obs) => (
                                                 <div key={obs.id} className="p-4 bg-slate-50/30 rounded-2xl border border-slate-100 flex gap-4 transition hover:border-slate-200">
-                                                    <div className={`w-1 rounded-full shrink-0 ${
-                                                        obs.tipo === 'alerta' ? 'bg-amber-400' : 
-                                                        obs.tipo === 'bloqueio' ? 'bg-rose-500' : 'bg-blue-400'
-                                                    }`} />
+                                                    <div className={`w-1 rounded-full shrink-0 ${obs.tipo === 'alerta' ? 'bg-amber-400' : obs.tipo === 'bloqueio' ? 'bg-rose-500' : 'bg-blue-400'}`} />
                                                     <div className="flex-1">
-                                                        <p className="text-sm text-slate-700 leading-relaxed font-medium">{obs.texto}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 tracking-widest">{obs.autor} • {new Date(obs.created_at).toLocaleDateString('pt-BR')}</p>
+                                                        <p className="text-sm text-slate-700 font-medium">{obs.texto}</p>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">{obs.autor} • {new Date(obs.created_at).toLocaleDateString('pt-BR')}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -321,7 +291,6 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                 </div>
                             )}
 
-                            {/* ABA 2: ANÁLISE */}
                             {activeTab === 'analise' && (
                                 <div className="space-y-10 max-w-4xl">
                                     <div className="grid grid-cols-3 gap-6">
@@ -333,34 +302,28 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                         <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 text-center">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SLA Efetivo</p>
                                             <p className="text-6xl font-black mt-4 text-slate-800 tracking-tighter">{editedStore.dias_em_transito}d</p>
-                                            <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase">Limite: {editedStore.tempo_contrato}d</p>
                                         </div>
                                         <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 text-center">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Idle Days</p>
                                             <p className={`text-6xl font-black mt-4 tracking-tighter ${isIdleCritical ? 'text-orange-500' : 'text-slate-800'}`}>{editedStore.idle_days || 0}d</p>
-                                            <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase">Inatividade</p>
                                         </div>
                                     </div>
-                                    
                                     <div className="p-10 bg-blue-50/30 rounded-[3rem] border border-blue-100 relative overflow-hidden">
-                                        <h3 className="text-lg font-black text-blue-900 mb-6 flex items-center gap-3">
-                                            <Activity size={24} className="text-blue-400" /> Diagnóstico Gerencial
-                                        </h3>
+                                        <h3 className="text-lg font-black text-blue-900 mb-6 flex items-center gap-3"><Activity size={24} className="text-blue-400" /> Diagnóstico</h3>
                                         <p className="text-blue-800/80 leading-relaxed font-semibold text-lg">
                                             {editedStore.risk_score > 70 
-                                                ? "⚠️ CRÍTICO: A loja apresenta desvios severos de prazo e inatividade. Recomendamos contato imediato com o responsável para desbloqueio operacional."
+                                                ? "⚠️ CRÍTICO: A loja apresenta desvios severos de prazo e inatividade."
                                                 : isIdleCritical
-                                                ? "⚠️ ATENÇÃO: Loja em idle há mais de 7 dias. Verifique se há pendências com o cliente ou travamento técnico na etapa atual."
-                                                : "✅ SAUDÁVEL: O fluxo de implantação está dentro dos parâmetros normais de SLA e engajamento."}
+                                                ? "⚠️ ATENÇÃO: Loja em idle há mais de 7 dias."
+                                                : "✅ SAUDÁVEL: O fluxo de implantação está dentro dos parâmetros normais."}
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* ABA 3: ETAPAS */}
                             {activeTab === 'cronograma' && (
                                 <div className="space-y-6">
-                                    <h3 className="text-xl font-bold text-slate-800 mb-8">Fluxo de Etapas (Edição Manual)</h3>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-8">Etapas (Edição Manual)</h3>
                                     <div className="overflow-x-auto rounded-3xl border border-slate-100">
                                         <table className="w-full text-sm">
                                             <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold">
@@ -377,9 +340,7 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                                     <tr key={s.id} className="hover:bg-slate-50/50 transition">
                                                         <td className="px-6 py-5 font-bold text-slate-700">{s.step_name}</td>
                                                         <td className="px-6 py-5">
-                                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                                                                s.status === 'DONE' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
-                                                            }`}>{s.status}</span>
+                                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${s.status === 'DONE' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>{s.status}</span>
                                                         </td>
                                                         <td className="px-6 py-5">
                                                             <input type="date" value={s.start_date || ''} onChange={(e) => handleStepChange(s.id, 'start_date', e.target.value)} className="p-1 bg-transparent border-b border-slate-200 outline-none text-xs font-bold text-slate-600" />
@@ -396,21 +357,16 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                 </div>
                             )}
 
-                            {/* ABA 4: HISTÓRICO */}
                             {activeTab === 'historico' && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-bold text-slate-800 mb-8">Log de Mudanças</h3>
                                     <div className="space-y-4">
                                         {logs.map((log, idx) => (
                                             <div key={idx} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex gap-4 transition hover:border-slate-200">
-                                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0">
-                                                    <Activity size={18} className="text-slate-300" />
-                                                </div>
+                                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0"><Activity size={18} className="text-slate-300" /></div>
                                                 <div className="flex-1">
                                                     <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{log.field || 'Sistema'}</p>
-                                                    <p className="text-xs text-slate-500 mt-2 font-medium">
-                                                        De <span className="font-bold text-rose-500">{log.old || '-'}</span> para <span className="font-bold text-emerald-600">{log.new || '-'}</span>
-                                                    </p>
+                                                    <p className="text-xs text-slate-500 mt-2 font-medium">De <span className="font-bold text-rose-500">{log.old || '-'}</span> para <span className="font-bold text-emerald-600">{log.new || '-'}</span></p>
                                                     <p className="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-widest">{log.at} • {log.source}</p>
                                                 </div>
                                             </div>
@@ -419,19 +375,35 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                 </div>
                             )}
 
+                            {activeTab === 'pausas' && (
+                                <div className="space-y-6">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-8">Pausas</h3>
+                                    <div className="space-y-4">
+                                        {pauses.map((p, idx) => (
+                                            <div key={idx} className="p-6 bg-slate-50 rounded-3xl border border-slate-200 flex justify-between items-center transition">
+                                                <div className="flex gap-5 items-center">
+                                                    <div className="p-3 rounded-2xl bg-slate-200 text-slate-500"><PauseCircle size={24} /></div>
+                                                    <div>
+                                                        <p className="text-base font-black text-slate-800 leading-tight">{p.reason || 'Pausa Operacional'}</p>
+                                                        <p className="text-xs text-slate-500 mt-1 font-bold">{p.start_date.split('-').reverse().join('/')} ➔ {p.end_date ? p.end_date.split('-').reverse().join('/') : 'Ativo'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-3xl font-black text-slate-900 tracking-tighter">{p.duration}d</p>
+                                                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">SLA Impact</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Footer Actions */}
                     <div className="bg-white border-t border-slate-100 px-8 py-6 shrink-0 flex justify-end gap-3 shadow-sm">
-                        <button onClick={onClose} className="px-8 py-2.5 text-xs font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition">
-                            Cancelar
-                        </button>
-                        <button onClick={() => onSave(editedStore)} className="px-10 py-3 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition flex items-center gap-2 uppercase tracking-widest">
-                            <Save size={18} /> Salvar Alterações
-                        </button>
+                        <button onClick={onClose} className="px-8 py-2.5 text-xs font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition">Cancelar</button>
+                        <button onClick={() => onSave(editedStore)} className="px-10 py-3 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition flex items-center gap-2 uppercase tracking-widest"><Save size={18} /> Salvar Alterações</button>
                     </div>
-
                 </Dialog.Panel>
             </div>
         </Dialog>
