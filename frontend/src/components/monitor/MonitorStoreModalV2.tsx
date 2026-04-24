@@ -29,6 +29,9 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
     const [activeTab, setActiveTab] = useState<'operacional' | 'analise' | 'cronograma' | 'historico' | 'pausas'>('operacional');
     const [editedStore, setEditedStore] = useState<Store | null>(null);
     const [observations, setObservations] = useState<Observation[]>([]);
+    const [steps, setSteps] = useState<any[]>([]);
+    const [logs, setLogs] = useState<any[]>([]);
+    const [pauses, setPauses] = useState<any[]>([]);
     const [newObs, setNewObs] = useState('');
     const [newObsType, setNewObsType] = useState('observacao');
     const [obsLoading, setObsLoading] = useState(false);
@@ -37,8 +40,26 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
         if (store && isOpen) {
             setEditedStore({ ...store });
             loadObservations(store.id);
+            loadTabData(store.id, activeTab);
         }
-    }, [store, isOpen]);
+    }, [store, isOpen, activeTab]);
+
+    const loadTabData = async (id: number, tab: string) => {
+        try {
+            if (tab === 'cronograma') {
+                const res = await api.get(`/api/stores/${id}/steps`);
+                setSteps(res.data);
+            } else if (tab === 'historico') {
+                const res = await api.get(`/api/stores/${id}/logs`);
+                setLogs(res.data);
+            } else if (tab === 'pausas') {
+                const res = await api.get(`/api/stores/${id}/pauses`);
+                setPauses(res.data);
+            }
+        } catch (e) {
+            console.error(`Erro ao buscar dados da aba ${tab}:`, e);
+        }
+    };
 
     const loadObservations = async (id: number) => {
         try {
@@ -292,11 +313,96 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                 </div>
                             )}
 
-                            {/* Outras abas (apenas placeholders p/ simplificar neste arquivo) */}
-                            {['cronograma', 'historico', 'pausas'].includes(activeTab) && (
-                                <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
-                                    <Clock size={48} className="opacity-20" />
-                                    <p className="font-medium text-sm">Visualização de {activeTab} virá na Fase 2 completa.</p>
+                            {/* ABA 3: Cronograma */}
+                            {activeTab === 'cronograma' && (
+                                <div className="space-y-6">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-4">Fluxo de Etapas</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left rounded-l-xl">Etapa</th>
+                                                    <th className="px-4 py-3 text-left">Status</th>
+                                                    <th className="px-4 py-3 text-left">Início</th>
+                                                    <th className="px-4 py-3 text-left">Fim</th>
+                                                    <th className="px-4 py-3 text-right rounded-r-xl">Duração</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {steps.map((s, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-4 py-4 font-bold text-slate-700">{s.step_name}</td>
+                                                        <td className="px-4 py-4">
+                                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                                                                s.status === 'DONE' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                                                            }`}>{s.status}</span>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-slate-500">{s.start_date?.split('-').reverse().join('/') || '-'}</td>
+                                                        <td className="px-4 py-4 text-slate-500">{s.end_date?.split('-').reverse().join('/') || '-'}</td>
+                                                        <td className="px-4 py-4 text-right font-bold text-slate-700">{s.duration}d</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ABA 4: Histórico */}
+                            {activeTab === 'historico' && (
+                                <div className="space-y-6">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-4">Log de Mudanças</h3>
+                                    <div className="space-y-4">
+                                        {logs.map((log, idx) => (
+                                            <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0">
+                                                    <Activity size={18} className="text-slate-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-800">{log.field || 'Alteração System'}</p>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        De <span className="font-bold text-rose-500">{log.old || 'N/A'}</span> para <span className="font-bold text-emerald-600">{log.new || 'N/A'}</span>
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wider">{log.at} • {log.source}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ABA 5: Pausas */}
+                            {activeTab === 'pausas' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-bold text-slate-800">Pausas e Congelamentos</h3>
+                                        <button className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition">Nova Pausa</button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {pauses.map((p, idx) => (
+                                            <div key={idx} className="p-5 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center">
+                                                <div className="flex gap-4 items-center">
+                                                    <div className={`p-2 rounded-xl ${p.is_active ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                        <PauseCircle size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800">{p.reason || 'Pausa sem motivo'}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5">{p.start_date.split('-').reverse().join('/')} até {p.end_date ? p.end_date.split('-').reverse().join('/') : 'Ativo'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-black text-slate-800">{p.duration}d</p>
+                                                    <p className="text-[10px] text-slate-400 uppercase font-bold">Impacto SLA</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {pauses.length === 0 && (
+                                            <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-3xl">
+                                                <PauseCircle size={48} className="mx-auto text-slate-100 mb-4" />
+                                                <p className="text-slate-400 font-medium">Nenhuma pausa registrada para esta loja.</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

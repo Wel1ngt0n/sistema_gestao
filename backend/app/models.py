@@ -192,38 +192,9 @@ class Store(db.Model):
 
     @property
     def effective_started_at(self):
-        # Regra V6:
-        # 1. Se existir manual_start_date, ela é a base.
-        # 2. Mas se houver início real detectado ANTES da data manual ou da criação, 
-        #    o início real prevalece (início operacional detectado).
-        
-        # Início Real Detectado (ClickUp Start ou Primeira Ação em Etapa)
-        detected_candidates = []
-        if self.start_real_at: 
-            detected_candidates.append(self.start_real_at)
-        
-        if self.steps:
-            sub_starts = [s.start_real_at for s in self.steps if s.start_real_at]
-            sub_ends = [s.end_real_at for s in self.steps if s.end_real_at]
-            if sub_starts: 
-                detected_candidates.append(min(sub_starts))
-            if sub_ends: 
-                detected_candidates.append(min(sub_ends))
-            
-        detected_start = min(detected_candidates) if detected_candidates else None
-        
-        # Data Base Definida (Manual ou Criação)
-        # Importante: Usamos created_at do ClickUp como fallback original.
-        base_start = self.manual_start_date or self.created_at
-        
-        if not base_start:
-            return detected_start
-            
-        if not detected_start:
-            return base_start
-            
-        # O início real "vence" se for anterior à base definida
-        return min(base_start, detected_start)
+        # Se existir manual_start_date, ela define a effective_start_date. 
+        # Se não existir, usar clickup_created_at.
+        return self.manual_start_date or self.created_at
 
     @property
     def dias_em_progresso(self):
