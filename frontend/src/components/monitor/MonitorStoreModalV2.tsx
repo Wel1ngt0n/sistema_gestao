@@ -128,7 +128,6 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
     if (!isOpen || !editedStore) return null;
 
     // Métricas de exibição
-    const slaPercent = Math.min(100, Math.round(((editedStore.dias_em_transito || 0) / (editedStore.tempo_contrato || 90)) * 100));
     const isIdleCritical = (editedStore.idle_days || 0) > 7;
 
     return (
@@ -423,7 +422,7 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                                         <p className="text-blue-800/80 leading-relaxed font-semibold text-lg">
                                             {editedStore.risk_score > 70 
                                                 ? "ALERTA CRÍTICO: Esta loja ultrapassou limites de SLA e apresenta inatividade prolongada. Exige revisão estratégica da implantação e contato com os responsáveis técnicos."
-                                                : editedStore.idle_days > 7
+                                                : isIdleCritical
                                                 ? "ATENÇÃO: Embora o SLA esteja saudável, a loja está sem movimentação há mais de uma semana. Verifique possíveis bloqueios externos ou falta de retorno do cliente."
                                                 : "OPERAÇÃO SAUDÁVEL: A loja segue dentro dos parâmetros esperados. Recomenda-se manter o fluxo atual e focar na qualidade da entrega final."}
                                         </p>

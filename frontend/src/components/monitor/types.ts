@@ -60,6 +60,7 @@ export interface Store {
     ai_prediction?: AIPrediction;
     days_late_predicted?: number;
     previsao_ia?: string | null;
+    manual_start_date?: string | null;
 }
 
 export interface IntegrationData {
