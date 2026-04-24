@@ -48,6 +48,22 @@ class StorePause(db.Model):
         return f'<Pause {self.start_date} - {self.end_date}>'
 
 
+class StoreObservation(db.Model):
+    __tablename__ = 'store_observations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    texto = db.Column(db.Text, nullable=False)
+    autor = db.Column(db.String(255), nullable=True)
+    tipo = db.Column(db.String(50), nullable=True, default='observacao') # observacao, alerta, bloqueio, follow-up
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    def __repr__(self):
+        return f'<StoreObservation {self.id} Store {self.store_id}>'
+
+
 class Store(db.Model):
     __tablename__ = 'stores'
     
@@ -141,6 +157,7 @@ class Store(db.Model):
     # Relacionamentos
     steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")
     pauses = db.relationship('StorePause', backref='store', lazy=True, cascade="all, delete-orphan")
+    observations = db.relationship('StoreObservation', backref='store', lazy=True, cascade="all, delete-orphan")
     deep_sync_state = db.relationship('StoreDeepSyncState', uselist=False, backref='store', cascade="all, delete-orphan")
 
     status_history = db.relationship('TimeInStatusCache', backref='store', lazy=True, cascade="all, delete-orphan")

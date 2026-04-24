@@ -682,6 +682,45 @@ def bulk_update_stores(payload):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route('/stores/<int:id>/observations', methods=['GET'])
+@require_auth
+def get_store_observations(payload, id):
+    from app.models import StoreObservation
+    observations = StoreObservation.query.filter_by(store_id=id).order_by(StoreObservation.created_at.desc()).all()
+    results = []
+    for obs in observations:
+        results.append({
+            'id': obs.id,
+            'texto': obs.texto,
+            'autor': obs.autor,
+            'tipo': obs.tipo,
+            'created_at': obs.created_at.isoformat() if obs.created_at else None
+        })
+    return jsonify(results)
+
+@api_bp.route('/stores/<int:id>/observations', methods=['POST'])
+@require_auth
+def add_store_observation(payload, id):
+    from app.models import Store, StoreObservation
+    from app import db
+    
+    store = Store.query.get_or_404(id)
+    data = request.json
+    
+    texto = data.get('texto')
+    if not texto:
+        return jsonify({'error': 'Texto é obrigatório'}), 400
+        
+    obs = StoreObservation(
+        store_id=id,
+        texto=texto,
+        autor=payload.get('name') or payload.get('email', 'Usuário Desconhecido'),
+        tipo=data.get('tipo', 'observacao')
+    )
+    db.session.add(obs)
+    db.session.commit()
+    return jsonify({'message': 'Observação adicionada com sucesso', 'id': obs.id}), 201
+
 @api_bp.route('/stores/<int:id>/logs', methods=['GET'])
 @require_auth
 def get_store_logs(payload, id):

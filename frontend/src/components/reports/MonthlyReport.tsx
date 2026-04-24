@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { ChevronDown, ChevronUp, Download, Bot, FileText, Loader2, Users, CheckCircle, Clock, Target, TrendingUp, TrendingDown, BarChart3, Building2, Layers, Printer } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import MonitorStoreModal from '../monitor/MonitorStoreModal';
+import MonitorStoreModalV2 from '../monitor/MonitorStoreModalV2';
 import { Store } from '../monitor/types';
 
 interface StoreReport {
@@ -119,6 +120,7 @@ const MonthlyReport: React.FC = () => {
 
     // Edit Modal State
     const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+    const [isStoreModalV2Open, setIsStoreModalV2Open] = useState(false);
     const [editingStore, setEditingStore] = useState<Store | null>(null);
     const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
     const [deepSyncLoading, setDeepSyncLoading] = useState(false);
@@ -146,12 +148,13 @@ const MonthlyReport: React.FC = () => {
         setExpandedMonth(expandedMonth === month ? null : month);
     };
 
-    const handleEditClick = async (storeId: number) => {
+    const handleEditClick = async (storeId: number, isV2: boolean = false) => {
         try {
             const response = await api.get(`/api/store/${storeId}`);
             setEditingStore(response.data.store);
             setMatrices(response.data.matrices);
-            setIsStoreModalOpen(true);
+            if (isV2) setIsStoreModalV2Open(true);
+            else setIsStoreModalOpen(true);
         } catch (error) {
             console.error("Erro ao buscar detalhes da loja", error);
             alert("Erro ao abrir loja.");
@@ -163,6 +166,7 @@ const MonthlyReport: React.FC = () => {
         try {
             await api.put(`/api/store/${storeToSave.id}`, storeToSave);
             setIsStoreModalOpen(false);
+            setIsStoreModalV2Open(false);
             fetchReport(); // recarrega o relatorio para atualizar
         } catch (error: any) {
             console.error("Erro ao salvar", error);
@@ -585,13 +589,20 @@ const MonthlyReport: React.FC = () => {
                                                     <td className="px-4 py-3 text-right font-semibold text-emerald-600">
                                                         R$ {store.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                     </td>
-                                                    <td className="px-4 py-3 text-center">
+                                                    <td className="px-4 py-3 text-center space-x-1">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleEditClick(store.id); }}
                                                             className="p-1.5 text-zinc-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"
-                                                            title="Editar"
+                                                            title="Editar (V1)"
                                                         >
                                                             ✏️
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleEditClick(store.id, true); }}
+                                                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                            title="Cockpit (V2)"
+                                                        >
+                                                            🚀
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -649,6 +660,17 @@ const MonthlyReport: React.FC = () => {
             <MonitorStoreModal
                 isOpen={isStoreModalOpen}
                 onClose={() => setIsStoreModalOpen(false)}
+                store={editingStore}
+                matrices={matrices}
+                onSave={handleSaveStore}
+                onDeepSync={handleRunDeepSync}
+                isDeepSyncing={deepSyncLoading}
+            />
+
+            {/* Edit Store Modal V2 */}
+            <MonitorStoreModalV2
+                isOpen={isStoreModalV2Open}
+                onClose={() => setIsStoreModalV2Open(false)}
                 store={editingStore}
                 matrices={matrices}
                 onSave={handleSaveStore}
