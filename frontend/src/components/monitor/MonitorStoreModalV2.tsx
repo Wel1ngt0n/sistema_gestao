@@ -100,17 +100,15 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
 
     const handleDeleteStore = async () => {
         if (!editedStore) return;
-        if (!window.confirm(`ATENÇÃO: Deseja excluir permanentemente a loja "${editedStore.name}"? Esta ação não pode ser desfeita.`)) return;
+        if (!window.confirm(`ATENÇÃO: Deseja excluir permanentemente a loja "${editedStore.name}"?`)) return;
         
         setIsDeleting(true);
         try {
             await api.delete(`/api/stores/${editedStore.id}`);
             onClose();
-            // Avisar o pai para atualizar a lista
             window.location.reload(); 
         } catch (e) {
             console.error("Erro ao excluir loja:", e);
-            alert("Erro ao excluir loja.");
         } finally {
             setIsDeleting(false);
         }
@@ -121,359 +119,275 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
         setEditedStore({ ...editedStore, [field]: value });
     };
 
-    const handleSave = () => {
-        if (editedStore) onSave(editedStore);
-    };
-
     if (!isOpen || !editedStore) return null;
 
-    // Métricas de exibição
+    const slaPercent = Math.min(100, Math.round(((editedStore.dias_em_transito || 0) / (editedStore.tempo_contrato || 90)) * 100));
     const isIdleCritical = (editedStore.idle_days || 0) > 7;
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 z-50 overflow-hidden">
-            <div className="flex items-center justify-center min-h-screen p-4">
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" />
-
-                <Dialog.Panel className="relative bg-white w-full max-w-6xl rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 flex flex-col h-[90vh]">
+        <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" aria-hidden="true" />
+            <div className="fixed inset-0 flex items-center justify-center p-4">
+                <Dialog.Panel className="mx-auto max-w-6xl w-full max-h-[90vh] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden ring-1 ring-slate-200">
                     
-                    {/* HEADER FIXO */}
-                    <div className="px-8 py-6 bg-white border-b border-slate-100 flex justify-between items-center shrink-0">
-                        <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-                                <p className="text-xl font-black text-slate-800">#{editedStore.custom_id || editedStore.id}</p>
+                    {/* Header: Cockpit Top */}
+                    <div className="bg-white border-b border-slate-100 px-8 py-6 shrink-0 flex items-start justify-between">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">{editedStore.name}</h2>
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                                    {editedStore.custom_id || "N/A"}
+                                </span>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{editedStore.name}</h2>
-                                <div className="flex gap-2 mt-1 items-center">
-                                    <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded uppercase tracking-wider">{editedStore.status}</span>
-                                    <span className="text-slate-300">•</span>
-                                    <a href={editedStore.clickup_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-slate-400 hover:text-blue-500 transition text-[10px] font-bold uppercase tracking-wider">
-                                        <LinkIcon size={12} /> ClickUp
-                                    </a>
-                                </div>
+                            <div className="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                <a href={editedStore.clickup_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-blue-600 transition-colors">
+                                    <LinkIcon size={14} /> ClickUp
+                                </a>
+                                <span className="text-slate-200">•</span>
+                                <span>Resp: {editedStore.implantador || 'N/A'}</span>
+                            </div>
+                            {/* Badges Rápidos */}
+                            <div className="flex gap-2 pt-1">
+                                <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-wider border border-blue-100">
+                                    {editedStore.status}
+                                </span>
+                                <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider border ${slaPercent >= 100 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                                    SLA: {slaPercent}%
+                                </span>
                             </div>
                         </div>
-                        <div className="flex gap-3">
-                            <button 
-                                onClick={handleDeleteStore} 
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-rose-500 hover:bg-rose-50 text-xs font-bold rounded-xl transition flex items-center gap-2 border border-rose-100"
-                            >
-                                {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Excluir Loja
+                        <div className="flex items-center gap-3">
+                            <button onClick={handleDeleteStore} className="p-2 text-slate-300 hover:text-rose-500 transition-colors" title="Excluir Loja">
+                                <Trash2 size={20} />
                             </button>
-                            <button onClick={handleSave} className="px-6 py-2 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition flex items-center gap-2">
-                                <Save size={18} /> Salvar Alterações
-                            </button>
-                            <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition">
-                                <X size={24} />
+                            <button onClick={onClose} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                                <X size={28} />
                             </button>
                         </div>
                     </div>
 
-                    {/* CORPO DO COCKPIT */}
+                    {/* Resumo de Métricas (Igual ao Screenshot) */}
+                    <div className="bg-white px-8 py-5 border-b border-slate-100 shrink-0 grid grid-cols-2 md:grid-cols-6 gap-8">
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Dias Decorridos</p>
+                            <p className="text-xl font-black text-slate-800">{editedStore.dias_em_transito || 0} <span className="text-slate-300 text-lg">/ {editedStore.tempo_contrato}</span></p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">MRR</p>
+                            <p className="text-xl font-black text-emerald-600">R$ {editedStore.valor_mensalidade?.toLocaleString('pt-BR') || '0'}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Previsão</p>
+                            <p className="text-sm font-bold text-slate-700 mt-1">{editedStore.data_previsao ? editedStore.data_previsao.split('-').reverse().join('/') : '-'}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Início Operacional</p>
+                            <p className="text-sm font-bold text-slate-700 mt-1">{editedStore.data_inicio ? editedStore.data_inicio.split('-').reverse().join('/') : 'N/A'}</p>
+                        </div>
+                        <div className="col-span-2 space-y-1 text-right md:text-left">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Ações Rápidas</p>
+                            <div className="flex gap-2 mt-1">
+                                <button onClick={() => handleChange('status_norm', 'IN_PROGRESS')} className="px-4 py-1.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-lg hover:bg-blue-100 transition uppercase tracking-wider">Iniciar</button>
+                                <button onClick={() => onDeepSync(editedStore.id)} disabled={isDeepSyncing} className="px-4 py-1.5 bg-teal-50 text-teal-700 text-[10px] font-black rounded-lg hover:bg-teal-100 transition flex items-center gap-1 uppercase tracking-wider">
+                                    {isDeepSyncing ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Deep Sync
+                                </button>
+                                <button onClick={() => setActiveTab('pausas')} className="px-4 py-1.5 bg-slate-50 text-slate-500 text-[10px] font-black rounded-lg hover:bg-slate-100 transition uppercase tracking-wider">Pausar</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="flex flex-1 overflow-hidden">
-                        
-                        {/* SIDEBAR DE NAVEGAÇÃO */}
-                        <div className="w-64 bg-slate-50/50 border-r border-slate-100 p-6 flex flex-col gap-2 shrink-0">
+                        {/* Sidebar: Botões Numerados */}
+                        <div className="w-64 bg-white border-r border-slate-100 flex flex-col py-6 shrink-0 overflow-y-auto">
                             {[
-                                { id: 'operacional', label: 'Operacional & Edição', icon: <Activity size={18} /> },
-                                { id: 'analise', label: 'Análise da Loja', icon: <AlertTriangle size={18} /> },
-                                { id: 'cronograma', label: 'Cronograma', icon: <Clock size={18} /> },
-                                { id: 'historico', label: 'Histórico', icon: <Activity size={18} /> },
-                                { id: 'pausas', label: 'Pausas & Descontos', icon: <PauseCircle size={18} /> },
+                                { id: 'operacional', label: '1. Op & Edição' },
+                                { id: 'analise', label: '2. Análise' },
+                                { id: 'cronograma', label: '3. Etapas' },
+                                { id: 'historico', label: '4. Histórico' },
+                                { id: 'pausas', label: '5. Pausas' },
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as any)}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200 ${
+                                    className={`px-8 py-4 text-left text-sm font-bold transition-all relative ${
                                         activeTab === tab.id 
-                                        ? 'bg-white text-slate-900 shadow-sm border border-slate-100 translate-x-1' 
-                                        : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                        ? 'text-blue-600' 
+                                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                                     }`}
                                 >
-                                    {tab.icon}
+                                    {activeTab === tab.id && <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full" />}
                                     {tab.label}
                                 </button>
                             ))}
-                            
-                            <div className="mt-auto p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Ações Rápidas</p>
-                                <div className="flex flex-col gap-2 mt-2">
-                                    <button onClick={() => handleChange('status_norm', 'IN_PROGRESS')} className="w-full px-3 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 transition text-left">Iniciar Implantação</button>
-                                    <button onClick={() => onDeepSync(editedStore.id)} disabled={isDeepSyncing} className="w-full px-3 py-2 bg-teal-50 text-teal-700 text-xs font-bold rounded-lg hover:bg-teal-100 transition flex items-center gap-2">
-                                        {isDeepSyncing ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Deep Sync
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
-                        {/* ÁREA DE CONTEÚDO (SCROLLABLE) */}
-                        <div className="flex-1 overflow-y-auto p-8 bg-white">
+                        {/* Content Area */}
+                        <div className="flex-1 bg-white overflow-y-auto p-10">
                             
-                            {/* ABA 1: OPERACIONAL & EDIÇÃO */}
+                            {/* ABA 1: Operacional */}
                             {activeTab === 'operacional' && (
-                                <div className="space-y-8 max-w-4xl">
+                                <div className="space-y-10 max-w-4xl">
                                     
-                                    {/* SEÇÃO: ESTRUTURAL */}
-                                    <section>
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Dados Estruturais & Rede</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 ml-1">Tipo de Loja</label>
-                                                <select 
-                                                    value={editedStore.tipo_loja || 'Filial'} 
-                                                    onChange={(e) => handleChange('tipo_loja', e.target.value)}
-                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                >
-                                                    <option value="Matriz">Matriz</option>
-                                                    <option value="Filial">Filial</option>
-                                                    <option value="Solo">Solo</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 ml-1">Vinculador de Matriz</label>
-                                                <select 
-                                                    value={editedStore.parent_id || ''} 
-                                                    onChange={(e) => handleChange('parent_id', e.target.value ? parseInt(e.target.value) : null)}
-                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                >
-                                                    <option value="">Nenhuma (Independente)</option>
-                                                    {matrices.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 ml-1">Dias de Contrato (SLA)</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={editedStore.tempo_contrato || 90} 
-                                                    onChange={(e) => handleChange('tempo_contrato', parseInt(e.target.value))}
-                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 ml-1">Status Financeiro</label>
-                                                <select 
-                                                    value={editedStore.financeiro_status || 'OK'} 
-                                                    onChange={(e) => handleChange('financeiro_status', e.target.value)}
-                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                >
-                                                    <option value="OK">OK</option>
-                                                    <option value="PENDING">PENDENTE</option>
-                                                    <option value="SUSPENDED">SUSPENSO</option>
-                                                </select>
-                                            </div>
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data Início Operacional</label>
+                                            <input type="date" value={editedStore.manual_start_date || ''} onChange={(e) => handleChange('manual_start_date', e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition text-sm font-bold text-slate-700" />
+                                            <p className="text-[10px] text-slate-400 ml-1">Esta data sobrescreve a original do ClickUp para KPIs.</p>
                                         </div>
-                                    </section>
-
-                                    {/* SEÇÃO: DATAS OPERACIONAIS */}
-                                    <section>
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Cronograma Operacional</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 ml-1">Data Início (Replanejado)</label>
-                                                <input 
-                                                    type="date" 
-                                                    value={editedStore.manual_start_date || ''} 
-                                                    onChange={(e) => handleChange('manual_start_date', e.target.value)}
-                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 ml-1">Data Conclusão (Manual)</label>
-                                                <input 
-                                                    type="date" 
-                                                    value={editedStore.manual_finished_at || ''} 
-                                                    onChange={(e) => handleChange('manual_finished_at', e.target.value)}
-                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                />
-                                            </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dias de Contrato</label>
+                                            <input type="number" value={editedStore.tempo_contrato || ''} onChange={(e) => handleChange('tempo_contrato', parseInt(e.target.value))} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition text-sm font-bold text-slate-700" />
                                         </div>
-                                    </section>
+                                    </div>
 
-                                    {/* SEÇÃO: CONTROLES OPERACIONAIS */}
-                                    <section>
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Controle Operacional & Qualidade</h3>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between h-24 ${editedStore.delivered_with_quality ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'}`}
-                                                 onClick={() => handleChange('delivered_with_quality', !editedStore.delivered_with_quality)}>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Qualidade</p>
-                                                    <p className="text-xs font-bold mt-1 text-slate-700 leading-tight">Chegou Completa?</p>
-                                                </div>
-                                                <div className="flex justify-end">
-                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${editedStore.delivered_with_quality ? 'bg-emerald-500 border-emerald-600' : 'bg-white border-slate-300'}`}>
-                                                        {editedStore.delivered_with_quality && <div className="w-2 h-2 bg-white rounded-full" />}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between h-24 ${editedStore.teve_retrabalho ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}
-                                                 onClick={() => handleChange('teve_retrabalho', !editedStore.teve_retrabalho)}>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Gargalos</p>
-                                                    <p className="text-xs font-bold mt-1 text-slate-700 leading-tight">Houve Retrabalho?</p>
-                                                </div>
-                                                <div className="flex justify-end">
-                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${editedStore.teve_retrabalho ? 'bg-rose-500 border-rose-600' : 'bg-white border-slate-300'}`}>
-                                                        {editedStore.teve_retrabalho && <div className="w-2 h-2 bg-white rounded-full" />}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between h-24 ${editedStore.considerar_tempo ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}`}
-                                                 onClick={() => handleChange('considerar_tempo', !editedStore.considerar_tempo)}>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">SLA</p>
-                                                    <p className="text-xs font-bold mt-1 text-slate-700 leading-tight">Considerar SLA?</p>
-                                                </div>
-                                                <div className="flex justify-end">
-                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${editedStore.considerar_tempo ? 'bg-blue-500 border-blue-600' : 'bg-white border-slate-300'}`}>
-                                                        {editedStore.considerar_tempo && <div className="w-2 h-2 bg-white rounded-full" />}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rede</label>
+                                            <input type="text" value={editedStore.rede || ''} onChange={(e) => handleChange('rede', e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition text-sm font-bold text-slate-700" />
                                         </div>
-                                    </section>
-
-                                    {/* SEÇÃO: OBSERVACÕES */}
-                                    <section>
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Notas Internas & Observações</h3>
-                                        <div className="flex gap-3 mb-4">
-                                            <input 
-                                                className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
-                                                placeholder="Escreva uma observação importante..."
-                                                value={newObs}
-                                                onChange={(e) => setNewObs(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleAddObs()}
-                                            />
-                                            <select 
-                                                value={newObsType}
-                                                onChange={(e) => setNewObsType(e.target.value)}
-                                                className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none"
-                                            >
-                                                <option value="observacao">OBS</option>
-                                                <option value="alerta">ALERTA</option>
-                                                <option value="bloqueio">BLOQUEIO</option>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vínculo Matriz</label>
+                                            <select value={editedStore.parent_id || ''} onChange={(e) => handleChange('parent_id', e.target.value ? parseInt(e.target.value) : null)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition text-sm font-bold text-slate-700">
+                                                <option value="">Nenhuma</option>
+                                                {matrices.map(m => (
+                                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                                ))}
                                             </select>
-                                            <button 
-                                                onClick={handleAddObs}
-                                                disabled={obsLoading || !newObs.trim()}
-                                                className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition disabled:opacity-50"
-                                            >
-                                                {obsLoading ? <Loader2 size={18} className="animate-spin" /> : <MessageSquarePlus size={18} />}
+                                        </div>
+                                    </div>
+
+                                    {/* CONTROLES OPERACIONAIS (Novos campos integrados) */}
+                                    <div className="pt-6 border-t border-slate-50">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Checklist de Operação</h3>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <button onClick={() => handleChange('delivered_with_quality', !editedStore.delivered_with_quality)} 
+                                                    className={`p-4 rounded-2xl border text-left transition ${editedStore.delivered_with_quality ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Qualidade</p>
+                                                <p className={`text-xs font-bold mt-1 ${editedStore.delivered_with_quality ? 'text-emerald-700' : 'text-slate-600'}`}>Loja Completa?</p>
+                                            </button>
+                                            <button onClick={() => handleChange('teve_retrabalho', !editedStore.teve_retrabalho)}
+                                                    className={`p-4 rounded-2xl border text-left transition ${editedStore.teve_retrabalho ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Execução</p>
+                                                <p className={`text-xs font-bold mt-1 ${editedStore.teve_retrabalho ? 'text-rose-700' : 'text-slate-600'}`}>Houve Retrabalho?</p>
+                                            </button>
+                                            <button onClick={() => handleChange('considerar_tempo', !editedStore.considerar_tempo)}
+                                                    className={`p-4 rounded-2xl border text-left transition ${editedStore.considerar_tempo ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Métricas</p>
+                                                <p className={`text-xs font-bold mt-1 ${editedStore.considerar_tempo ? 'text-blue-700' : 'text-slate-600'}`}>Contar SLA?</p>
                                             </button>
                                         </div>
+                                    </div>
+
+                                    {/* Observações Feed */}
+                                    <div className="pt-10 border-t border-slate-100">
+                                        <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                            <MessageSquarePlus size={18} className="text-slate-400" /> Histórico Interno / Observações
+                                        </h3>
                                         
-                                        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="flex gap-2 mb-8 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
+                                            <select value={newObsType} onChange={(e) => setNewObsType(e.target.value)} className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold outline-none text-slate-600">
+                                                <option value="observacao">Observação</option>
+                                                <option value="alerta">Alerta</option>
+                                                <option value="bloqueio">Bloqueio</option>
+                                            </select>
+                                            <input 
+                                                type="text" 
+                                                value={newObs}
+                                                onChange={(e) => setNewObs(e.target.value)}
+                                                placeholder="Adicione uma nota rápida..."
+                                                className="flex-1 px-4 py-2 bg-transparent outline-none text-sm font-medium text-slate-700"
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAddObs()}
+                                            />
+                                            <button onClick={handleAddObs} disabled={obsLoading} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs hover:bg-blue-700 disabled:opacity-50 transition shadow-lg shadow-blue-100">
+                                                {obsLoading ? '...' : 'Salvar'}
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                             {observations.map((obs) => (
-                                                <div key={obs.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex gap-4">
-                                                    <div className={`w-1.5 rounded-full shrink-0 ${
+                                                <div key={obs.id} className="p-4 bg-slate-50/30 rounded-2xl border border-slate-100 flex gap-4 transition hover:border-slate-200">
+                                                    <div className={`w-1 rounded-full shrink-0 ${
                                                         obs.tipo === 'alerta' ? 'bg-amber-400' : 
                                                         obs.tipo === 'bloqueio' ? 'bg-rose-500' : 'bg-blue-400'
                                                     }`} />
                                                     <div className="flex-1">
                                                         <p className="text-sm text-slate-700 leading-relaxed font-medium">{obs.texto}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 tracking-wider">
-                                                            {obs.autor} • {new Date(obs.created_at).toLocaleDateString('pt-BR')} {new Date(obs.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 tracking-widest">{obs.autor} • {new Date(obs.created_at).toLocaleDateString('pt-BR')}</p>
                                                     </div>
                                                 </div>
                                             ))}
-                                            {observations.length === 0 && (
-                                                <div className="py-8 text-center border-2 border-dashed border-slate-100 rounded-2xl">
-                                                    <p className="text-slate-400 text-xs font-medium italic">Nenhuma observação interna ainda.</p>
-                                                </div>
-                                            )}
                                         </div>
-                                    </section>
+                                    </div>
                                 </div>
                             )}
 
-                            {/* ABA 2: ANÁLISE GERENCIAL */}
+                            {/* ABA 2: ANÁLISE */}
                             {activeTab === 'analise' && (
-                                <div className="space-y-8 max-w-4xl">
+                                <div className="space-y-10 max-w-4xl">
                                     <div className="grid grid-cols-3 gap-6">
-                                        <div className="p-8 bg-slate-50 rounded-[40px] border border-slate-200 flex flex-col items-center text-center shadow-sm">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Risco Geral</p>
-                                            <p className={`text-6xl font-black mt-4 tracking-tighter ${
-                                                editedStore.risk_score > 70 ? 'text-rose-500' : 
-                                                editedStore.risk_score > 40 ? 'text-amber-500' : 'text-emerald-500'
-                                            }`}>{editedStore.risk_score}</p>
-                                            <p className="text-sm font-bold text-slate-600 mt-2 uppercase tracking-wide">{editedStore.risk_level}</p>
+                                        <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 text-center">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Risco</p>
+                                            <p className={`text-6xl font-black mt-4 tracking-tighter ${editedStore.risk_score > 70 ? 'text-rose-500' : editedStore.risk_score > 40 ? 'text-amber-500' : 'text-emerald-500'}`}>{editedStore.risk_score}</p>
+                                            <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase">{editedStore.risk_level}</p>
                                         </div>
-                                        <div className="p-8 bg-slate-50 rounded-[40px] border border-slate-200 flex flex-col items-center text-center shadow-sm">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">SLA Efetivo</p>
+                                        <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 text-center">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SLA Efetivo</p>
                                             <p className="text-6xl font-black mt-4 text-slate-800 tracking-tighter">{editedStore.dias_em_transito}d</p>
-                                            <p className="text-sm font-bold text-slate-500 mt-2 uppercase tracking-wide">Prazo: {editedStore.tempo_contrato}d</p>
+                                            <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase">Limite: {editedStore.tempo_contrato}d</p>
                                         </div>
-                                        <div className="p-8 bg-slate-50 rounded-[40px] border border-slate-200 flex flex-col items-center text-center shadow-sm">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">AI Boost</p>
-                                            <p className="text-6xl font-black mt-4 text-teal-600 tracking-tighter">+{editedStore.ai_boost || 0}</p>
-                                            <p className="text-sm font-bold text-teal-600 mt-2 uppercase tracking-wide">Refinamento IA</p>
+                                        <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 text-center">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Idle Days</p>
+                                            <p className={`text-6xl font-black mt-4 tracking-tighter ${isIdleCritical ? 'text-orange-500' : 'text-slate-800'}`}>{editedStore.idle_days || 0}d</p>
+                                            <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase">Inatividade</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="p-10 bg-blue-50/50 rounded-[40px] border border-blue-100 shadow-sm relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                                            <Activity size={120} />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-blue-900 mb-6 flex items-center gap-3">
-                                            <Activity size={24} /> Diagnóstico Analítico
+                                    <div className="p-10 bg-blue-50/30 rounded-[3rem] border border-blue-100 relative overflow-hidden">
+                                        <h3 className="text-lg font-black text-blue-900 mb-6 flex items-center gap-3">
+                                            <Activity size={24} className="text-blue-400" /> Diagnóstico Gerencial
                                         </h3>
                                         <p className="text-blue-800/80 leading-relaxed font-semibold text-lg">
                                             {editedStore.risk_score > 70 
-                                                ? "ALERTA CRÍTICO: Esta loja ultrapassou limites de SLA e apresenta inatividade prolongada. Exige revisão estratégica da implantação e contato com os responsáveis técnicos."
+                                                ? "⚠️ CRÍTICO: A loja apresenta desvios severos de prazo e inatividade. Recomendamos contato imediato com o responsável para desbloqueio operacional."
                                                 : isIdleCritical
-                                                ? "ATENÇÃO: Embora o SLA esteja saudável, a loja está sem movimentação há mais de uma semana. Verifique possíveis bloqueios externos ou falta de retorno do cliente."
-                                                : "OPERAÇÃO SAUDÁVEL: A loja segue dentro dos parâmetros esperados. Recomenda-se manter o fluxo atual e focar na qualidade da entrega final."}
+                                                ? "⚠️ ATENÇÃO: Loja em idle há mais de 7 dias. Verifique se há pendências com o cliente ou travamento técnico na etapa atual."
+                                                : "✅ SAUDÁVEL: O fluxo de implantação está dentro dos parâmetros normais de SLA e engajamento."}
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* ABA 3: CRONOGRAMA & ETAPAS */}
+                            {/* ABA 3: ETAPAS */}
                             {activeTab === 'cronograma' && (
                                 <div className="space-y-6">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-xl font-bold text-slate-800">Fluxo de Etapas (Edição Manual)</h3>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sincronizado via ClickUp</p>
-                                    </div>
-                                    <div className="overflow-x-auto rounded-[24px] border border-slate-100 shadow-sm">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-8">Fluxo de Etapas (Edição Manual)</h3>
+                                    <div className="overflow-x-auto rounded-3xl border border-slate-100">
                                         <table className="w-full text-sm">
-                                            <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                                            <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-left">Etapa da Implantação</th>
+                                                    <th className="px-6 py-4 text-left">Etapa</th>
                                                     <th className="px-6 py-4 text-left">Status</th>
                                                     <th className="px-6 py-4 text-left">Início Real</th>
                                                     <th className="px-6 py-4 text-left">Fim Real</th>
                                                     <th className="px-6 py-4 text-right">Duração</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100">
+                                            <tbody className="divide-y divide-slate-50">
                                                 {steps.map((s) => (
-                                                    <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                                                    <tr key={s.id} className="hover:bg-slate-50/50 transition">
                                                         <td className="px-6 py-5 font-bold text-slate-700">{s.step_name}</td>
                                                         <td className="px-6 py-5">
-                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                                                s.status === 'DONE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                                                                s.status === 'DONE' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
                                                             }`}>{s.status}</span>
                                                         </td>
                                                         <td className="px-6 py-5">
-                                                            <input 
-                                                                type="date" 
-                                                                value={s.start_date || ''} 
-                                                                onChange={(e) => handleStepChange(s.id, 'start_date', e.target.value)}
-                                                                className="p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-[11px] font-bold text-slate-600"
-                                                            />
+                                                            <input type="date" value={s.start_date || ''} onChange={(e) => handleStepChange(s.id, 'start_date', e.target.value)} className="p-1 bg-transparent border-b border-slate-200 outline-none text-xs font-bold text-slate-600" />
                                                         </td>
                                                         <td className="px-6 py-5">
-                                                            <input 
-                                                                type="date" 
-                                                                value={s.end_date || ''} 
-                                                                onChange={(e) => handleStepChange(s.id, 'end_date', e.target.value)}
-                                                                className="p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-[11px] font-bold text-slate-600"
-                                                            />
+                                                            <input type="date" value={s.end_date || ''} onChange={(e) => handleStepChange(s.id, 'end_date', e.target.value)} className="p-1 bg-transparent border-b border-slate-200 outline-none text-xs font-bold text-slate-600" />
                                                         </td>
-                                                        <td className="px-6 py-5 text-right font-black text-slate-700 text-base">{s.duration}d</td>
+                                                        <td className="px-6 py-5 text-right font-black text-slate-800">{s.duration}d</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -485,65 +399,22 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                             {/* ABA 4: HISTÓRICO */}
                             {activeTab === 'historico' && (
                                 <div className="space-y-6">
-                                    <h3 className="text-xl font-bold text-slate-800 mb-6">Log de Alterações & Auditoria</h3>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-8">Log de Mudanças</h3>
                                     <div className="space-y-4">
                                         {logs.map((log, idx) => (
-                                            <div key={idx} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex gap-5 transition-all hover:border-slate-200">
-                                                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
-                                                    <Activity size={20} className="text-slate-400" />
+                                            <div key={idx} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex gap-4 transition hover:border-slate-200">
+                                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0">
+                                                    <Activity size={18} className="text-slate-300" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="flex justify-between items-start">
-                                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{log.field || 'Alteração System'}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{log.at}</p>
-                                                    </div>
+                                                    <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{log.field || 'Sistema'}</p>
                                                     <p className="text-xs text-slate-500 mt-2 font-medium">
-                                                        De <span className="px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded font-bold">{log.old || 'Nulo'}</span> para <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded font-bold">{log.new || 'Nulo'}</span>
+                                                        De <span className="font-bold text-rose-500">{log.old || '-'}</span> para <span className="font-bold text-emerald-600">{log.new || '-'}</span>
                                                     </p>
-                                                    <div className="mt-3 flex items-center gap-2">
-                                                        <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-[9px] font-bold rounded uppercase tracking-widest">{log.source}</span>
-                                                    </div>
+                                                    <p className="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-widest">{log.at} • {log.source}</p>
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ABA 5: PAUSAS */}
-                            {activeTab === 'pausas' && (
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <h3 className="text-xl font-bold text-slate-800">Gestão de Pausas & Impacto SLA</h3>
-                                        <button className="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-2xl hover:bg-slate-800 transition shadow-lg shadow-slate-200">Registrar Nova Pausa</button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {pauses.map((p, idx) => (
-                                            <div key={idx} className="p-6 bg-slate-50 rounded-3xl border border-slate-200 flex justify-between items-center transition-all hover:shadow-md">
-                                                <div className="flex gap-5 items-center">
-                                                    <div className={`p-3 rounded-2xl ${p.is_active ? 'bg-orange-100 text-orange-600' : 'bg-slate-200 text-slate-500'}`}>
-                                                        <PauseCircle size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-base font-black text-slate-800 leading-tight">{p.reason || 'Pausa Operacional'}</p>
-                                                        <p className="text-xs text-slate-500 mt-1 font-bold">
-                                                            {p.start_date.split('-').reverse().join('/')} ➔ {p.end_date ? p.end_date.split('-').reverse().join('/') : 'Ativo'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-3xl font-black text-slate-900 tracking-tighter">{p.duration}d</p>
-                                                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Impacto no SLA</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {pauses.length === 0 && (
-                                            <div className="text-center py-16 border-2 border-dashed border-slate-100 rounded-[40px]">
-                                                <PauseCircle size={64} className="mx-auto text-slate-100 mb-6" />
-                                                <p className="text-slate-400 font-bold text-lg">Nenhuma pausa registrada para esta loja.</p>
-                                                <p className="text-slate-300 text-sm mt-1">O SLA está correndo normalmente.</p>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             )}
@@ -551,13 +422,13 @@ export default function MonitorStoreModalV2({ isOpen, onClose, store, matrices, 
                         </div>
                     </div>
 
-                    {/* RODAPÉ DE AÇÕES */}
-                    <div className="bg-white border-t border-slate-100 px-10 py-6 shrink-0 flex justify-end gap-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
-                        <button onClick={onClose} className="px-8 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-2xl transition">
+                    {/* Footer Actions */}
+                    <div className="bg-white border-t border-slate-100 px-8 py-6 shrink-0 flex justify-end gap-3 shadow-sm">
+                        <button onClick={onClose} className="px-8 py-2.5 text-xs font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition">
                             Cancelar
                         </button>
-                        <button onClick={handleSave} className="px-10 py-3 bg-blue-600 text-white text-sm font-black rounded-2xl hover:bg-blue-700 transition shadow-xl shadow-blue-100 flex items-center gap-3">
-                            <Save size={20} /> Salvar Tudo
+                        <button onClick={() => onSave(editedStore)} className="px-10 py-3 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition flex items-center gap-2 uppercase tracking-widest">
+                            <Save size={18} /> Salvar Alterações
                         </button>
                     </div>
 
