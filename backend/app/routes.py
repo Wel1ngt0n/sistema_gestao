@@ -413,11 +413,12 @@ def delete_store(payload, id):
 @api_bp.route('/store/<int:id>', methods=['GET'])
 @require_auth
 def get_store(payload, id):
-    from app.services.metrics_formatter import fmt_date
-    from app.services.status_normalizer import StatusNormalizer
     store = Store.query.get_or_404(id)
     all_matrices = Store.query.filter_by(tipo_loja='Matriz').all()
     matrices = [{'id': m.id, 'name': m.store_name} for m in all_matrices]
+
+    def fmt_date(d):
+        return d.strftime('%Y-%m-%d') if d else None
 
     # Calculate Risk Score (simplified logic, matches get_stores roughly)
     risk_score = store.risk_score or 0
