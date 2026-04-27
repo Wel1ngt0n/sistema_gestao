@@ -32,9 +32,10 @@ class ClickUpService:
                 time.sleep(2)
         return None
 
-    def fetch_parent_tasks(self, date_updated_gt=None):
+    def fetch_parent_tasks(self, date_updated_gt=None, include_closed=True):
         """Busca tarefas da Lista Principal (Lojas). Pagina por todas."""
-        self.logger.info(f"[ClickUp] Buscando lojas EM ABERTO na lista {Config.LIST_ID_PRINCIPAL}...")
+        status_msg = "INCLUINDO CONCLUÍDAS" if include_closed else "APENAS EM ABERTO"
+        self.logger.info(f"[ClickUp] Buscando lojas ({status_msg}) na lista {Config.LIST_ID_PRINCIPAL}...")
         tasks = []
         page = 0
         while True:
@@ -43,7 +44,7 @@ class ClickUpService:
             params = {
                 "page": page, 
                 "subtasks": "true", 
-                "include_closed": "true",
+                "include_closed": "true" if include_closed else "false",
                 "archived": "false"
             }
             if date_updated_gt:
@@ -65,15 +66,16 @@ class ClickUpService:
         self.logger.info(f"[ClickUp] Total de {len(tasks)} lojas encontradas.")
         return tasks
 
-    def fetch_parent_tasks_generator(self, date_updated_gt=None):
+    def fetch_parent_tasks_generator(self, date_updated_gt=None, include_closed=True):
         """Busca tarefas da Lista Principal (Lojas) e retorna por página."""
-        self.logger.info(f"[ClickUp] Buscando lojas EM ABERTO na lista {Config.LIST_ID_PRINCIPAL} (Generator)...")
+        status_msg = "INCLUINDO CONCLUÍDAS" if include_closed else "APENAS EM ABERTO"
+        self.logger.info(f"[ClickUp] Buscando lojas ({status_msg}) na lista {Config.LIST_ID_PRINCIPAL} (Generator)...")
         page = 0
         while True:
             params = {
                 "page": page, 
                 "subtasks": "true", 
-                "include_closed": "true",
+                "include_closed": "true" if include_closed else "false",
                 "archived": "false"
             }
             if date_updated_gt:
@@ -129,14 +131,14 @@ class ClickUpService:
                 break
         return tasks
     
-    def fetch_tasks_from_list_generator(self, list_id, date_updated_gt=None):
+    def fetch_tasks_from_list_generator(self, list_id, date_updated_gt=None, include_closed=True):
         """Busca todas as tarefas de uma lista específica iterando em blocos."""
         page = 0
         while True:
             params = {
                 "page": page,
                 "subtasks": "true",
-                "include_closed": "true",
+                "include_closed": "true" if include_closed else "false",
                 "archived": "false",
                 "limit": 100
             }

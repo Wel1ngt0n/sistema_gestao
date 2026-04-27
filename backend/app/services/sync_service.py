@@ -96,9 +96,21 @@ class SyncService:
                 last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                 self.logger.info(f"Primeiro Sincronismo: Iniciando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}")
 
-            # 1. Buscar Lojas (Incremental)
-            parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts)
-            self.logger.info(f"Lojas modificadas encontradas: {len(parent_tasks)}")
+            # 1. Buscar Lojas (Lógica de Cobertura Total 2026 + Ativas)
+            parent_tasks_dict = {}
+            
+            # Passo A: Ativas (Sempre)
+            active_tasks = self.clickup.fetch_parent_tasks(include_closed=False)
+            for t in active_tasks:
+                parent_tasks_dict[t['id']] = t
+            
+            # Passo B: Ciclo Atual (2026)
+            recent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=True)
+            for t in recent_tasks:
+                parent_tasks_dict[t['id']] = t
+                
+            parent_tasks = list(parent_tasks_dict.values())
+            self.logger.info(f"Lojas modificadas/ativas encontradas: {len(parent_tasks)}")
             
             # 2. Buscar Etapas
             steps_map = {} # { custom_id: [tarefas] }
@@ -322,10 +334,29 @@ class SyncService:
                 last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                 yield f"data: 🚀 Primeiro Sincronismo: Iniciando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
             
-            # 1. Stores (Processamento em Tempo Real)
+            # 1. Stores (Processamento em Tempo Real) - Cobertura Total 2026 + Ativas
             yield "data: 🔍 Buscando e processando lojas...\n\n"
+            
+            parent_tasks_dict = {}
+            # A: Lojas em Aberto (Sempre sincronizar)
+            yield "data: 📥 Sincronizando lojas em andamento...\n\n"
+            for batch in self.clickup.fetch_parent_tasks_generator(include_closed=False):
+                for t in batch:
+                    parent_tasks_dict[t['id']] = t
+            
+            # B: Lojas Concluídas este ano
+            yield f"data: 📥 Sincronizando histórico desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
+            for batch in self.clickup.fetch_parent_tasks_generator(date_updated_gt=last_ts, include_closed=True):
+                for t in batch:
+                    parent_tasks_dict[t['id']] = t
+            
+            parent_tasks_list = list(parent_tasks_dict.values())
             stores_processed = 0
-            for batch in self.clickup.fetch_parent_tasks_generator(date_updated_gt=last_ts):
+            
+            def to_chunks(l, n):
+                for i in range(0, len(l), n): yield l[i:i + n]
+
+            for batch in to_chunks(parent_tasks_list, 20):
                 if batch:
                     for p_task in batch:
                         try:
@@ -416,47 +447,62 @@ class SyncService:
             for list_name, list_id in Config.LIST_IDS_STEPS.items():
                 try:
                     yield f"data: 📥 Iniciando busca da lista '{list_name}'...\n\n"
-                    for batch in self.clickup.fetch_tasks_from_list_generator(list_id, last_ts):
-                        if batch:
-                            for s_task in batch:
-                                try:
-                                    # Encontrar Store via Custom Field
-                                    custom_id = None
-                                    for cf in s_task.get('custom_fields', []):
-                                        if cf['id'] == father_field_id:
-                                            custom_id = cf.get('value')
-                                            break
-                                    
-                                    if custom_id:
-                                        # Usar CACHE em vez de Query
-                                        store_db = store_cache.get(custom_id)
-                                        if store_db:
-                                            s_task['step_type_name'] = list_name
-                                            
-                                            # Processar com Cache de Manual Flags
-                                            self.metrics.process_step_data(store_db, s_task, manual_flags=manual_flags)
-                                            
-                                            # Aplicar regra de treinamento
-                                            self.metrics.apply_training_completion_rule(store_db)
-                                            
-                                            steps_processed += 1
-                                            
-                                            # BATCH COMMIT: Commita a cada 50 etapas em vez de 1 por 1
-                                            if steps_processed % 50 == 0:
-                                                db.session.commit()
-                                            
-                                            # MANTÉM A CONEXÃO SSE VIVA
-                                            if not vital_only and steps_processed % 10 == 0:
-                                                yield f"data: ⏳ [Deep] {steps_processed} etapas atualizadas...\n\n"
-                                                
-                                except Exception as inner_e:
-                                    db.session.rollback()
-                                    self.logger.error(f"Erro na etapa {s_task.get('id')}: {inner_e}")
+                    
+                    # Lógica Dupla para Etapas:
+                    # 1. Busca TODAS as etapas em aberto (independentemente da data)
+                    # 2. Busca TODAS as etapas atualizadas desde o corte
+                    
+                    steps_dict = {}
+                    
+                    # A: Etapas em Aberto
+                    for batch in self.clickup.fetch_tasks_from_list_generator(list_id, include_closed=False):
+                        for t in batch: steps_dict[t['id']] = t
+                    
+                    # B: Etapas do Ciclo Atual
+                    search_ts = last_ts if last_ts else int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                    for batch in self.clickup.fetch_tasks_from_list_generator(list_id, date_updated_gt=search_ts, include_closed=True):
+                        for t in batch: steps_dict[t['id']] = t
+                    
+                    steps_list = list(steps_dict.values())
+                    
+                    for s_task in steps_list:
+                        try:
+                            # Encontrar Store via Custom Field
+                            custom_id = None
+                            for cf in s_task.get('custom_fields', []):
+                                if cf['id'] == father_field_id:
+                                    custom_id = cf.get('value')
+                                    break
                             
-                            # Commit ao final de cada batch da ClickUp
-                            db.session.commit()
-                            yield f"data: 📦 Lista '{list_name}' parcial: {steps_processed} etapas processadas...\n\n"
-                            batch = None # GC
+                            if custom_id:
+                                # Usar CACHE em vez de Query
+                                store_db = store_cache.get(custom_id)
+                                if store_db:
+                                    s_task['step_type_name'] = list_name
+                                    
+                                    # Processar com Cache de Manual Flags
+                                    self.metrics.process_step_data(store_db, s_task, manual_flags=manual_flags)
+                                    
+                                    # Aplicar regra de treinamento
+                                    self.metrics.apply_training_completion_rule(store_db)
+                                    
+                                    steps_processed += 1
+                                    
+                                    # BATCH COMMIT: Commita a cada 50 etapas em vez de 1 por 1
+                                    if steps_processed % 50 == 0:
+                                        db.session.commit()
+                                    
+                                    # MANTÉM A CONEXÃO SSE VIVA
+                                    if not vital_only and steps_processed % 10 == 0:
+                                        yield f"data: ⏳ [Deep] {steps_processed} etapas atualizadas...\n\n"
+                                        
+                        except Exception as inner_e:
+                            db.session.rollback()
+                            self.logger.error(f"Erro na etapa {s_task.get('id')}: {inner_e}")
+                    
+                    # Commit ao final de cada lista
+                    db.session.commit()
+                    yield f"data: 📦 Lista '{list_name}' concluída: {len(steps_list)} etapas.\n\n"
                 except Exception as e:
                     self.logger.error(str(e))
                     yield f"data: ⚠️ Erro ao buscar lista '{list_name}': {str(e)}\n\n"
