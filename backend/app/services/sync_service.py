@@ -336,21 +336,25 @@ class SyncService:
             
             # 1. Stores (Processamento em Tempo Real) - Cobertura Total 2026 + Ativas
             yield "data: 🔍 Buscando e processando lojas...\n\n"
+            self.logger.info(f"--- INICIANDO BUSCA DE LOJAS (Cutoff: {AnalystsReportService.CUTOFF_DATE}) ---")
             
             parent_tasks_dict = {}
             # A: Lojas em Aberto (Sempre sincronizar)
             yield "data: 📥 Sincronizando lojas em andamento...\n\n"
+            self.logger.info("Buscando lojas com status 'Open'...")
             for batch in self.clickup.fetch_parent_tasks_generator(include_closed=False):
                 for t in batch:
                     parent_tasks_dict[t['id']] = t
             
             # B: Lojas Concluídas este ano
             yield f"data: 📥 Sincronizando histórico desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
+            self.logger.info(f"Buscando histórico de lojas desde {AnalystsReportService.CUTOFF_DATE}...")
             for batch in self.clickup.fetch_parent_tasks_generator(date_updated_gt=last_ts, include_closed=True):
                 for t in batch:
                     parent_tasks_dict[t['id']] = t
             
             parent_tasks_list = list(parent_tasks_dict.values())
+            self.logger.info(f"Total de lojas para processar: {len(parent_tasks_list)}")
             stores_processed = 0
             
             def to_chunks(data_list, chunk_size):
@@ -361,6 +365,9 @@ class SyncService:
                 if batch:
                     for p_task in batch:
                         try:
+                            store_name = p_task.get('name', 'Desconhecido')
+                            self.logger.info(f"Processando loja [{stores_processed + 1}]: {store_name}")
+                            
                             # Sincronizar Contexto Verbal (Raio-X) apenas se NÃO for Vital
                             if not vital_only:
                                 self._sync_verbal_context(p_task)
@@ -421,10 +428,12 @@ class SyncService:
                     yield f"data: ⏳ Lote de lojas concluído. Total: {stores_processed}...\n\n"
                     batch = None # GC
 
+            self.logger.info(f"--- FIM DO PROCESSAMENTO DE LOJAS: {stores_processed} processadas ---")
             yield f"data: ✅ {stores_processed} lojas sincronizadas.\n\n"
             
             # 2. Steps (Processamento em Tempo Real por Batch) - OTIMIZADO
             yield "data: 📦 Buscando e processando etapas...\n\n"
+            self.logger.info("--- INICIANDO BUSCA DE ETAPAS (SUBTAREFAS) ---")
             steps_processed = 0
             father_field_id = self.clickup.get_father_field_id()
             from app.models import Store, StoreSyncLog
@@ -448,6 +457,7 @@ class SyncService:
             for list_name, list_id in Config.LIST_IDS_STEPS.items():
                 try:
                     yield f"data: 📥 Iniciando busca da lista '{list_name}'...\n\n"
+                    self.logger.info(f"Sincronizando lista de etapas: {list_name} ({list_id})")
                     
                     # Lógica Dupla para Etapas:
                     # 1. Busca TODAS as etapas em aberto (independentemente da data)
@@ -456,17 +466,20 @@ class SyncService:
                     steps_dict = {}
                     
                     # A: Etapas em Aberto
+                    self.logger.info(f"[{list_name}] Buscando etapas em aberto...")
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, include_closed=False):
                         for t in batch:
                             steps_dict[t['id']] = t
                     
                     # B: Etapas do Ciclo Atual
+                    self.logger.info(f"[{list_name}] Buscando etapas concluídas em 2026...")
                     search_ts = last_ts if last_ts else int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, date_updated_gt=search_ts, include_closed=True):
                         for t in batch:
                             steps_dict[t['id']] = t
                     
                     steps_list = list(steps_dict.values())
+                    self.logger.info(f"[{list_name}] Total de etapas encontradas: {len(steps_list)}")
                     
                     for s_task in steps_list:
                         try:
@@ -494,6 +507,7 @@ class SyncService:
                                     # BATCH COMMIT: Commita a cada 50 etapas em vez de 1 por 1
                                     if steps_processed % 50 == 0:
                                         db.session.commit()
+                                        self.logger.info(f"[{list_name}] Batch de 50 etapas commitado. Total: {steps_processed}")
                                     
                                     # MANTÉM A CONEXÃO SSE VIVA
                                     if not vital_only and steps_processed % 10 == 0:
@@ -505,6 +519,7 @@ class SyncService:
                     
                     # Commit ao final de cada lista
                     db.session.commit()
+                    self.logger.info(f"[{list_name}] Sincronização concluída.")
                     yield f"data: 📦 Lista '{list_name}' concluída: {len(steps_list)} etapas.\n\n"
                 except Exception as e:
                     self.logger.error(str(e))

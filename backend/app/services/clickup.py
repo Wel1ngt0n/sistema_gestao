@@ -16,19 +16,32 @@ class ClickUpService:
         retries = 3
         for i in range(retries):
             try:
-                response = requests.get(url, headers=self.HEADERS, params=params, timeout=25)
-                if response.status_code == 429: # Limite de Taxa (Rate Limit)
-                    self.logger.warning("Limite de taxa atingido. Aguardando 5 segundos...")
-                    time.sleep(5)
+                start_time = time.time()
+                response = requests.get(url, headers=self.HEADERS, params=params, timeout=60)
+                duration = time.time() - start_time
+                
+                if response.status_code == 429: # Rate Limit
+                    self.logger.warning(f"ClickUp Rate Limit (429). Tentativa {i+1}/{retries}. Aguardando 10s...")
+                    time.sleep(10)
                     continue
                 
                 if response.status_code != 200:
-                    self.logger.error(f"Erro ao buscar {url}: {response.text}")
+                    self.logger.error(f"Erro ClickUp {response.status_code} em {endpoint}: {response.text}")
+                    if i < retries - 1:
+                        time.sleep(2)
+                        continue
                     return None
                 
+                # Log success for long requests
+                if duration > 10:
+                    self.logger.info(f"[ClickUp] Chamada lenta para {endpoint}: {duration:.1f}s")
+                    
                 return response.json()
+            except requests.exceptions.Timeout:
+                self.logger.error(f"Timeout (60s) na chamada para {endpoint}. Tentativa {i+1}/{retries}...")
+                time.sleep(3)
             except requests.exceptions.RequestException as e:
-                self.logger.error(f"Exceção ao requisitar {url}: {e}")
+                self.logger.error(f"Exceção ClickUp em {endpoint}: {str(e)}")
                 time.sleep(2)
         return None
 
