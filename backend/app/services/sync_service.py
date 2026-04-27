@@ -400,9 +400,8 @@ class SyncService:
                                         store_db = Store.query.filter_by(custom_store_id=custom_id).first()
                                         if store_db:
                                             s_task['step_type_name'] = list_name
-                                            # Sincronizar Contexto Verbal apenas se NÃO for Vital
-                                            if not vital_only:
-                                                self._sync_verbal_context(s_task)
+                                            # Contexto verbal removido das etapas para evitar timeout/rate limit no Deep Sync
+                                            # (Focamos contexto verbal apenas nas lojas principais)
                                                 
                                             self.metrics.process_step_data(store_db, s_task)
                                             # Aplicar regra de treinamento

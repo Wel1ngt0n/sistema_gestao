@@ -360,9 +360,10 @@ class AnalystsReportService:
             pct_sla_ativas = (sla_ok_ativas / sla_total_ativas * 100) if sla_total_ativas > 0 else 0
             
             
-            # Qualidade (Total na carteira processada no período)
-            retrabalho_count = sum(1 for s in stores if s.teve_retrabalho)
-            pct_retrabalho = (retrabalho_count / len(stores) * 100) if len(stores) > 0 else 0
+            # Qualidade (Somente nas FINALIZADAS do período)
+            base_concluidas = concluidas if (start_date and end_date) else concluidas_mes
+            retrabalho_count = sum(1 for s in base_concluidas if s.teve_retrabalho)
+            pct_retrabalho = (retrabalho_count / len(base_concluidas) * 100) if len(base_concluidas) > 0 else 0
             
             # Idle (Apenas ativas)
             idles = [s.idle_days for s in ativas if s.idle_days is not None]
@@ -565,12 +566,14 @@ class AnalystsReportService:
         pct_sla_ativas = (sla_ok_ativas / sla_total_ativas * 100) if sla_total_ativas > 0 else 0
         
         
-        # Qualidade (Total na carteira processada no período)
-        retrabalho_count = sum(1 for s in stores if s.teve_retrabalho)
-        pct_retrabalho = (retrabalho_count / len(stores) * 100) if len(stores) > 0 else 0
+        # Qualidade (Somente nas lojas FINALIZADAS do período)
+        base_concluidas = concluidas if (start_date and end_date) else concluidas_30d
         
-        qualidade_count = sum(1 for s in stores if s.delivered_with_quality)
-        pct_qualidade = (qualidade_count / len(stores) * 100) if len(stores) > 0 else 100
+        retrabalho_count = sum(1 for s in base_concluidas if s.teve_retrabalho)
+        pct_retrabalho = (retrabalho_count / len(base_concluidas) * 100) if len(base_concluidas) > 0 else 0
+        
+        qualidade_count = sum(1 for s in base_concluidas if s.delivered_with_quality)
+        pct_qualidade = (qualidade_count / len(base_concluidas) * 100) if len(base_concluidas) > 0 else 100
         
         # Detalhes das lojas ativas para exibir na UI
         carteira_atual = []
