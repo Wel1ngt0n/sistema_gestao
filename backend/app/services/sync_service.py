@@ -353,8 +353,9 @@ class SyncService:
             parent_tasks_list = list(parent_tasks_dict.values())
             stores_processed = 0
             
-            def to_chunks(l, n):
-                for i in range(0, len(l), n): yield l[i:i + n]
+            def to_chunks(data_list, chunk_size):
+                for i in range(0, len(data_list), chunk_size):
+                    yield data_list[i:i + chunk_size]
 
             for batch in to_chunks(parent_tasks_list, 20):
                 if batch:
@@ -456,12 +457,14 @@ class SyncService:
                     
                     # A: Etapas em Aberto
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, include_closed=False):
-                        for t in batch: steps_dict[t['id']] = t
+                        for t in batch:
+                            steps_dict[t['id']] = t
                     
                     # B: Etapas do Ciclo Atual
                     search_ts = last_ts if last_ts else int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, date_updated_gt=search_ts, include_closed=True):
-                        for t in batch: steps_dict[t['id']] = t
+                        for t in batch:
+                            steps_dict[t['id']] = t
                     
                     steps_list = list(steps_dict.values())
                     
