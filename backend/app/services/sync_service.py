@@ -80,15 +80,21 @@ class SyncService:
         try:
             self.logger.info(f"--- INICIANDO SYNC V2.5 ({'COMPLETO' if force_full else 'INCREMENTAL'}) ---")
             
+            # Otimização Sync V3.5: Respeitar CUTOFF_DATE (01/01/2026)
+            from app.services.analysts_report_service import AnalystsReportService
             last_ts = self.get_last_sync_ts()
+            
             if force_full:
-                last_ts = None
-                self.logger.info("Modo FORCE FULL ativado: Ignorando timestamp anterior.")
-                
-            if last_ts:
+                last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                self.logger.info(f"Modo FORCE FULL ativado: Sincronizando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}.")
+            elif last_ts:
+                cutoff_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                if last_ts < cutoff_ts:
+                    last_ts = cutoff_ts
                 self.logger.info(f"Busca incremental a partir de: {datetime.fromtimestamp(last_ts/1000)}")
             else:
-                self.logger.info("Busca COMPLETA (Primeiro Sincronismo)")
+                last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                self.logger.info(f"Primeiro Sincronismo: Iniciando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}")
 
             # 1. Buscar Lojas (Incremental)
             parent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts)
@@ -299,13 +305,22 @@ class SyncService:
             mode_str = "VITAL" if vital_only else "DEEP"
             yield f"data: 🚀 Iniciando Sync V3.0 ({mode_str} - {'COMPLETO' if force_full else 'INCREMENTAL'})...\n\n"
             
+            # Otimização Sync V3.5: Respeitar CUTOFF_DATE (01/01/2026) no sincronismo completo
+            from app.services.analysts_report_service import AnalystsReportService
             last_ts = self.get_last_sync_ts()
+            
             if force_full:
-                last_ts = None
-                yield "data: ⚠️ Modo Completo Forçado: Re-escaneando tudo...\n\n"
-                
-            last_date_str = datetime.fromtimestamp(last_ts/1000).strftime('%d/%m %H:%M') if last_ts else "INÍCIO (Tudo)"
-            yield f"data: 🕒 Filtro: desde {last_date_str}\n\n"
+                last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                yield f"data: ⚠️ Modo Completo Ativado: Sincronizando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
+            elif last_ts:
+                # Se o último sync for mais antigo que o corte (improvável mas possível), usamos o corte
+                cutoff_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                if last_ts < cutoff_ts:
+                    last_ts = cutoff_ts
+                yield f"data: 🕒 Sincronismo Incremental: Desde {datetime.fromtimestamp(last_ts/1000).strftime('%d/%m/%Y %H:%M')}...\n\n"
+            else:
+                last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
+                yield f"data: 🚀 Primeiro Sincronismo: Iniciando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
             
             # 1. Stores (Processamento em Tempo Real)
             yield "data: 🔍 Buscando e processando lojas...\n\n"
