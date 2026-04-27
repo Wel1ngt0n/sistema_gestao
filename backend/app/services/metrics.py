@@ -152,7 +152,7 @@ class MetricsService:
         db.session.add(store)
         return store
 
-    def process_step_data(self, store_db, task_data):
+    def process_step_data(self, store_db, task_data, manual_flags=None):
         clickup_id = task_data['id']
         step = TaskStep.query.filter_by(clickup_task_id=clickup_id).first()
         if not step:
@@ -169,10 +169,16 @@ class MetricsService:
         if task_data.get('date_created'):
             step.created_at = datetime.fromtimestamp(int(task_data['date_created']) / 1000)
             
-        # Determinar se a data foi editada manualmente (Hierarquia Max)
+        # Determinar se a data foi editada manualmente (Hierarquia Max) - OTIMIZADO via cache
         has_manual_start = False
         has_manual_end = False
-        if step.id:
+        
+        if manual_flags is not None:
+            # Se recebemos o cache, verificamos nele (muito mais rápido)
+            has_manual_start = f'step_start_{step.id}' in manual_flags.get(store_db.id, set())
+            has_manual_end = f'step_end_{step.id}' in manual_flags.get(store_db.id, set())
+        elif step.id:
+            # Fallback para query individual (legado/unitário)
             has_manual_start = StoreSyncLog.query.filter_by(store_id=store_db.id, field_name=f'step_start_{step.id}', source='manual').first() is not None
             has_manual_end = StoreSyncLog.query.filter_by(store_id=store_db.id, field_name=f'step_end_{step.id}', source='manual').first() is not None
 
@@ -182,6 +188,7 @@ class MetricsService:
             else:
                 # Fallback Hierarquia: Usar final da etapa concluída imediatamente antes dela (time-travel seguro)
                 limit_date = step.end_real_at or datetime.now()
+                # Otimização: Apenas 1 query por fallback de data (raro)
                 last_finished_step = TaskStep.query.filter(
                     TaskStep.store_id == store_db.id, 
                     TaskStep.id != step.id, 

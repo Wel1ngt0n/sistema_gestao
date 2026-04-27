@@ -376,12 +376,28 @@ class SyncService:
 
             yield f"data: ✅ {stores_processed} lojas sincronizadas.\n\n"
             
-            # 2. Steps (Processamento em Tempo Real por Batch)
+            # 2. Steps (Processamento em Tempo Real por Batch) - OTIMIZADO
             yield "data: 📦 Buscando e processando etapas...\n\n"
             steps_processed = 0
             father_field_id = self.clickup.get_father_field_id()
-            from app.models import Store
+            from app.models import Store, StoreSyncLog
             
+            # CACHE DE LOJAS: Evita milhares de queries individuais
+            self.logger.info("Construindo cache de lojas...")
+            store_cache = {s.custom_store_id: s for s in Store.query.all()}
+            
+            # CACHE DE FLAGS MANUAIS: Evita milhares de queries individuais a StoreSyncLog
+            self.logger.info("Construindo cache de flags manuais...")
+            manual_flags = {}
+            all_manual = StoreSyncLog.query.filter(
+                StoreSyncLog.source == 'manual',
+                StoreSyncLog.field_name.like('step_%')
+            ).all()
+            for log in all_manual:
+                if log.store_id not in manual_flags:
+                    manual_flags[log.store_id] = set()
+                manual_flags[log.store_id].add(log.field_name)
+
             for list_name, list_id in Config.LIST_IDS_STEPS.items():
                 try:
                     yield f"data: 📥 Iniciando busca da lista '{list_name}'...\n\n"
@@ -397,17 +413,22 @@ class SyncService:
                                             break
                                     
                                     if custom_id:
-                                        store_db = Store.query.filter_by(custom_store_id=custom_id).first()
+                                        # Usar CACHE em vez de Query
+                                        store_db = store_cache.get(custom_id)
                                         if store_db:
                                             s_task['step_type_name'] = list_name
-                                            # Contexto verbal removido das etapas para evitar timeout/rate limit no Deep Sync
-                                            # (Focamos contexto verbal apenas nas lojas principais)
-                                                
-                                            self.metrics.process_step_data(store_db, s_task)
+                                            
+                                            # Processar com Cache de Manual Flags
+                                            self.metrics.process_step_data(store_db, s_task, manual_flags=manual_flags)
+                                            
                                             # Aplicar regra de treinamento
                                             self.metrics.apply_training_completion_rule(store_db)
-                                            db.session.commit()
+                                            
                                             steps_processed += 1
+                                            
+                                            # BATCH COMMIT: Commita a cada 50 etapas em vez de 1 por 1
+                                            if steps_processed % 50 == 0:
+                                                db.session.commit()
                                             
                                             # MANTÉM A CONEXÃO SSE VIVA
                                             if not vital_only and steps_processed % 10 == 0:
@@ -417,12 +438,13 @@ class SyncService:
                                     db.session.rollback()
                                     self.logger.error(f"Erro na etapa {s_task.get('id')}: {inner_e}")
                             
+                            # Commit ao final de cada batch da ClickUp
+                            db.session.commit()
                             yield f"data: 📦 Lista '{list_name}' parcial: {steps_processed} etapas processadas...\n\n"
                             batch = None # GC
                 except Exception as e:
                     self.logger.error(str(e))
                     yield f"data: ⚠️ Erro ao buscar lista '{list_name}': {str(e)}\n\n"
-
                     yield f"data: 🔄 Etapas processadas: {steps_processed}\n\n"
     
             self.metrics.commit()
