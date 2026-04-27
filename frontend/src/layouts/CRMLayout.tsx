@@ -107,10 +107,10 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     {!collapsed && (
                         <div className="flex flex-col overflow-hidden whitespace-nowrap">
                             <h2 className="text-sm font-black tracking-tighter text-slate-900 leading-none">
-                                FLOW<span className="text-indigo-600">TECH</span>
+                                SISTEMA <span className="text-indigo-600">GESTÃO</span>
                             </h2>
                             <span className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
-                                Operational Intelligence
+                                Operações
                             </span>
                         </div>
                     )}
