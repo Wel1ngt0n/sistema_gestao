@@ -11,6 +11,8 @@ import { Store } from './monitor/types';
 
 import { MonitorFilterPanel, FilterState } from './monitor/MonitorFilterPanel';
 import MonitorHeader from './monitor/MonitorHeader';
+import BulkActionBar from './monitor/BulkActionBar';
+import BulkUpdateModal from './monitor/BulkUpdateModal';
 
 export default function MonitorV2() {
     const [data, setData] = useState<Store[]>([]);
@@ -51,6 +53,11 @@ export default function MonitorV2() {
     // Estado Admin & Matrizes
     const [adminOpen, setAdminOpen] = useState(false);
     const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
+
+    // Estado de Seleção em Massa
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+    const [bulkLoading, setBulkLoading] = useState(false);
 
     // Recommendation State
 
@@ -147,20 +154,42 @@ export default function MonitorV2() {
     }
 
     const handleSave = async (storeToSave: Store) => {
-        if (!storeToSave.id) {
-            alert("Erro: ID da loja inválido.");
-            return;
-        }
-
-        const url = `/api/store/${storeToSave.id}`;
-
+        if (!storeToSave.id) return;
         try {
-            await api.put(url, storeToSave);
+            await api.put(`/api/store/${storeToSave.id}`, storeToSave);
+            fetchStores(true);
             setIsStoreModalOpen(false);
-            fetchStores(true); // Soft refresh
-        } catch (error: any) {
-            console.error("Erro ao salvar", error);
-            alert(`Erro ao salvar alterações: ${error.message}`);
+        } catch (err) {
+            console.error("Error saving store", err);
+            alert("Erro ao salvar alterações.");
+        }
+    };
+
+    const handleBulkUpdate = async (updateData: { status?: string, manual_finished_at?: string }) => {
+        // Obter os IDs reais das lojas selecionadas a partir do rowSelection (que usa índices)
+        // No TanStack Table, se rowSelection = { "0": true }, significa que a linha 0 do modelo atual está selecionada.
+        // Como o filteredData é o que passamos para a tabela, usamos ele.
+        const selectedIndices = Object.keys(rowSelection).filter(k => rowSelection[k]);
+        const selectedIds = selectedIndices.map(idx => filteredData[parseInt(idx)]?.id).filter(Boolean);
+
+        if (selectedIds.length === 0) return;
+
+        setBulkLoading(true);
+        try {
+            await api.post('/api/stores/bulk-update', {
+                store_ids: selectedIds,
+                ...updateData
+            });
+            
+            setRowSelection({});
+            setIsBulkModalOpen(false);
+            fetchStores(true);
+            alert(`${selectedIds.length} lojas atualizadas com sucesso!`);
+        } catch (err) {
+            console.error("Erro no bulk update", err);
+            alert("Ocorreu um erro ao atualizar as lojas em massa.");
+        } finally {
+            setBulkLoading(false);
         }
     };
 
@@ -257,7 +286,7 @@ export default function MonitorV2() {
     if (loading && data.length === 0) return <SkeletonLoader />;
 
     return (
-        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen bg-zinc-50#09090b] text-zinc-900 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden">
+        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden">
 
             <MonitorAIModal
                 isOpen={aiModalOpen}
@@ -302,7 +331,9 @@ export default function MonitorV2() {
                             data={filteredData}
                             onEdit={handleEditClick}
                             onAiAnalyze={handleAiAnalyze}
-                            onRefetch={fetchStores}
+                            onRefetch={() => fetchStores(true)}
+                            rowSelection={rowSelection}
+                            onRowSelectionChange={setRowSelection}
                         />
                     )}
 
@@ -327,6 +358,20 @@ export default function MonitorV2() {
 
 
             {/* Modals */}
+            <BulkActionBar 
+                selectedCount={Object.keys(rowSelection).length}
+                onClearSelection={() => setRowSelection({})}
+                onBulkAction={() => setIsBulkModalOpen(true)}
+            />
+
+            <BulkUpdateModal 
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
+                selectedCount={Object.keys(rowSelection).length}
+                onConfirm={handleBulkUpdate}
+                isLoading={bulkLoading}
+            />
+
             <MonitorStoreModal
                 isOpen={isStoreModalOpen}
                 onClose={() => setIsStoreModalOpen(false)}

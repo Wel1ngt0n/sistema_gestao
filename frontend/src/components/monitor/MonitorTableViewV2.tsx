@@ -1,4 +1,4 @@
-﻿// UX Audit: placeholder aria-label
+// UX Audit: placeholder aria-label
 import { useState, useMemo, useEffect, DragEvent, CSSProperties } from 'react';
 import {
     useReactTable,
@@ -24,6 +24,8 @@ interface MonitorTableViewProps {
     onEdit: (store: Store) => void;
     onAiAnalyze: (store: Store) => void;
     onRefetch: () => void;
+    rowSelection?: Record<string, boolean>;
+    onRowSelectionChange?: (selection: any) => void;
 }
 
 export default function MonitorTableViewV2({
@@ -31,6 +33,8 @@ export default function MonitorTableViewV2({
     onEdit,
     onAiAnalyze,
     onRefetch,
+    rowSelection: externalRowSelection,
+    onRowSelectionChange: externalOnRowSelectionChange,
 }: MonitorTableViewProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -79,7 +83,10 @@ export default function MonitorTableViewV2({
     const [menuDraggedId, setMenuDraggedId] = useState<string | null>(null);
 
     // Row Selection State
-    const [rowSelection, setRowSelection] = useState({});
+    const [internalRowSelection, setInternalRowSelection] = useState({});
+    
+    const rowSelection = externalRowSelection !== undefined ? externalRowSelection : internalRowSelection;
+    const onRowSelectionChange = externalOnRowSelectionChange !== undefined ? externalOnRowSelectionChange : setInternalRowSelection;
 
     // Columns Definition
     const columnHelper = createColumnHelper<Store>();
@@ -281,7 +288,7 @@ export default function MonitorTableViewV2({
         onColumnPinningChange: setColumnPinning,
         onColumnOrderChange: setColumnOrder,
         onColumnFiltersChange: setColumnFilters,
-        onRowSelectionChange: setRowSelection,
+        onRowSelectionChange: onRowSelectionChange,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -338,15 +345,6 @@ export default function MonitorTableViewV2({
                 </div>
 
                 <div className="flex gap-2 relative">
-                    {/* Bulk Action Trigger */}
-                    {Object.keys(rowSelection).length > 0 && (
-                        <button
-                            className="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse shadow-lg shadow-orange-500/20"
-                            onClick={() => alert("Menu de ações em massa abriria aqui")}
-                        >
-                            {Object.keys(rowSelection).length} Selecionados
-                        </button>
-                    )}
 
                     {/* Column Menu Toggle */}
                     <div className="relative">

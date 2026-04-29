@@ -5,6 +5,8 @@ import { Dialog } from '@headlessui/react';
 import MonitorStoreModal from '../monitor/MonitorStoreModal';
 import MonitorStoreModalV2 from '../monitor/MonitorStoreModalV2';
 import { Store } from '../monitor/types';
+import BulkActionBar from '../monitor/BulkActionBar';
+import BulkUpdateModal from '../monitor/BulkUpdateModal';
 
 interface StoreReport {
     id: number;
@@ -125,6 +127,11 @@ const MonthlyReport: React.FC = () => {
     const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
     const [deepSyncLoading, setDeepSyncLoading] = useState(false);
 
+    // Bulk Selection State
+    const [selectedStoreIds, setSelectedStoreIds] = useState<number[]>([]);
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+    const [bulkLoading, setBulkLoading] = useState(false);
+
     useEffect(() => {
         fetchReport();
     }, []);
@@ -158,6 +165,51 @@ const MonthlyReport: React.FC = () => {
         } catch (error) {
             console.error("Erro ao buscar detalhes da loja", error);
             alert("Erro ao abrir loja.");
+        }
+    };
+
+    const handleBulkUpdate = async (updateData: { status?: string, manual_finished_at?: string }) => {
+        if (selectedStoreIds.length === 0) return;
+
+        setBulkLoading(true);
+        try {
+            await api.post('/api/stores/bulk-update', {
+                store_ids: selectedStoreIds,
+                ...updateData
+            });
+            
+            setSelectedStoreIds([]);
+            setIsBulkModalOpen(false);
+            fetchReport(); 
+            alert(`${selectedStoreIds.length} lojas atualizadas com sucesso!`);
+        } catch (err) {
+            console.error("Erro no bulk update", err);
+            alert("Ocorreu um erro ao atualizar as lojas em massa.");
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const toggleStoreSelection = (id: number) => {
+        setSelectedStoreIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const toggleAllInMonth = (monthStores: StoreReport[]) => {
+        const monthIds = monthStores.map(s => s.id);
+        const allSelected = monthIds.every(id => selectedStoreIds.includes(id));
+        
+        if (allSelected) {
+            setSelectedStoreIds(prev => prev.filter(id => !monthIds.includes(id)));
+        } else {
+            setSelectedStoreIds(prev => {
+                const newIds = [...prev];
+                monthIds.forEach(id => {
+                    if (!newIds.includes(id)) newIds.push(id);
+                });
+                return newIds;
+            });
         }
     };
 
@@ -289,7 +341,7 @@ const MonthlyReport: React.FC = () => {
     };
 
     return (
-        <div className="p-0 space-y-8 bg-zinc-50#09090b] min-h-screen text-zinc-900 transition-colors duration-300">
+        <div className="p-0 space-y-8 bg-zinc-50 min-h-screen text-zinc-900 transition-colors duration-300">
             <header className="px-6 md:px-10 pt-6">
                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-500 to-cyan-600">
                     Relatório Mensal de Implantação
@@ -541,7 +593,7 @@ const MonthlyReport: React.FC = () => {
                                                             <CheckCircle size={12} />{imp.on_time_pct}%
                                                         </span>
                                                     </div>
-                                                    <div className="mt-2 text-xs text-zinc-4000 truncate" title={imp.store_names.join(', ')}>
+                                                    <div className="mt-2 text-xs text-zinc-400 truncate" title={imp.store_names.join(', ')}>
                                                         {imp.store_names.join(', ')}
                                                     </div>
                                                 </div>
@@ -555,7 +607,15 @@ const MonthlyReport: React.FC = () => {
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-zinc-500 uppercase bg-zinc-100/50 rounded-lg">
                                             <tr>
-                                                <th className="px-4 py-3 rounded-l-lg">Loja</th>
+                                                <th className="px-4 py-3 rounded-l-lg w-10">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="rounded border-zinc-300 w-4 h-4 accent-orange-600"
+                                                        checked={monthData.stores.length > 0 && monthData.stores.every(s => selectedStoreIds.includes(s.id))}
+                                                        onChange={() => toggleAllInMonth(monthData.stores)}
+                                                    />
+                                                </th>
+                                                <th className="px-4 py-3">Loja</th>
                                                 <th className="px-4 py-3">Implantador</th>
                                                 <th className="px-4 py-3">Tipo</th>
                                                 <th className="px-4 py-3 text-right">Data Fim</th>
@@ -567,7 +627,15 @@ const MonthlyReport: React.FC = () => {
                                         </thead>
                                         <tbody>
                                             {monthData.stores.map((store) => (
-                                                <tr key={store.id} className="border-b border-zinc-100 hover:bg-white/30 transition-colors">
+                                                <tr key={store.id} className={`border-b border-zinc-100 transition-colors ${selectedStoreIds.includes(store.id) ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-white/30'}`}>
+                                                    <td className="px-4 py-3">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="rounded border-zinc-300 w-4 h-4 accent-orange-600"
+                                                            checked={selectedStoreIds.includes(store.id)}
+                                                            onChange={() => toggleStoreSelection(store.id)}
+                                                        />
+                                                    </td>
                                                     <td className="px-4 py-3 font-medium text-zinc-800">{store.name}</td>
                                                     <td className="px-4 py-3 text-zinc-600">{store.implantador}</td>
                                                     <td className="px-4 py-3">
@@ -655,6 +723,20 @@ const MonthlyReport: React.FC = () => {
                     </Dialog.Panel>
                 </div>
             </Dialog>
+
+            <BulkActionBar 
+                selectedCount={selectedStoreIds.length}
+                onClearSelection={() => setSelectedStoreIds([])}
+                onBulkAction={() => setIsBulkModalOpen(true)}
+            />
+
+            <BulkUpdateModal 
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
+                selectedCount={selectedStoreIds.length}
+                onConfirm={handleBulkUpdate}
+                isLoading={bulkLoading}
+            />
 
             {/* Edit Store Modal */}
             <MonitorStoreModal

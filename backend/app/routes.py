@@ -642,6 +642,10 @@ def bulk_update_stores(payload):
         store_ids = data.get('store_ids', [])
         parent_id = data.get('parent_id')
         tipo_loja = data.get('tipo_loja')
+        status = data.get('status')
+        manual_finished_at_str = data.get('manual_finished_at')
+
+        service = MetricsService()
 
         if not store_ids:
             return jsonify({'error': 'IDs das lojas são obrigatórios'}), 400
@@ -668,10 +672,32 @@ def bulk_update_stores(payload):
                     store.tipo_loja = tipo_loja
                 
                 if parent_id:
+                    service.log_change(store, 'matriz_id', store.parent_id, parent_id, source='manual')
                     store.parent_id = parent_id
                     store.tipo_loja = 'Filial' # Forçamos filial se houver vínculo
                     if parent_store and parent_store.rede:
                         store.rede = parent_store.rede
+                
+                if status:
+                    service.log_change(store, 'status', store.status, status, source='manual')
+                    store.status = status
+                    
+                if manual_finished_at_str:
+                    try:
+                        new_date = datetime.strptime(manual_finished_at_str, '%Y-%m-%d')
+                        old_val = store.manual_finished_at.strftime('%Y-%m-%d') if store.manual_finished_at else None
+                        if old_val != manual_finished_at_str:
+                            service.log_change(store, 'fim_manual', old_val, manual_finished_at_str, source='manual')
+                        store.manual_finished_at = new_date
+                        
+                        # Fechar pausas abertas se estiver sendo finalizada
+                        from app.models import StorePause
+                        open_pauses = StorePause.query.filter_by(store_id=store.id, end_date=None).all()
+                        for p in open_pauses:
+                            p.end_date = new_date
+                            p.reason = f"{(p.reason or '')} (Fechado via Bulk Update)".strip()
+                    except Exception:
+                        pass
                         
                 count += 1
         
