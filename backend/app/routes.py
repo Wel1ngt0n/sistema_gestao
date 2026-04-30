@@ -990,7 +990,8 @@ def get_monthly_implantation_report(payload):
             "days": days,
             "points": points,
             "tipo": s.tipo_loja or "Filial",
-            "on_time": on_time
+            "on_time": on_time,
+            "observacoes": s.observacoes or ""
         })
     
     sorted_months = sorted(grouped.keys(), reverse=True)

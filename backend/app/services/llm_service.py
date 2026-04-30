@@ -108,6 +108,7 @@ O resumo deve ser objetivo, estruturado, claro e focado em decisão.
 * Não usar linguagem técnica excessiva
 * Não fazer julgamentos pessoais
 * Sempre interpretar os dados (não apenas listar)
+* Analisar as observações individuais de cada loja para capturar insights qualitativos e avaliações de gestão
 * Usar bullet points
 * Manter padrão visual consistente
 * Pensar em leitura rápida (até 30 segundos)

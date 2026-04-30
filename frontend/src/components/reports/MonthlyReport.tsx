@@ -19,6 +19,7 @@ interface StoreReport {
     points: number;
     tipo: string;
     on_time: number;
+    observacoes?: string;
 }
 
 interface ImplantadorStats {
