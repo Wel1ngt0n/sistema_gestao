@@ -556,7 +556,7 @@ const MonthlyReport: React.FC = () => {
                                             {monthData.variation.stores_change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                             Lojas: {monthData.variation.stores_change >= 0 ? '+' : ''}{monthData.variation.stores_change} ({monthData.variation.stores_change_pct >= 0 ? '+' : ''}{monthData.variation.stores_change_pct}%)
                                         </span>
-                                        {monthData.variation.avg_days_change !== undefined && (
+                                        {monthData.variation.avg_days_change !== undefined && monthData.variation.avg_days_change_pct !== undefined && (
                                             <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${monthData.variation.avg_days_change <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                                                 {monthData.variation.avg_days_change <= 0 ? <TrendingUp size={12} className="rotate-180" /> : <TrendingDown size={12} className="rotate-180" />}
                                                 Tempo: {monthData.variation.avg_days_change >= 0 ? '+' : ''}{monthData.variation.avg_days_change} dias ({monthData.variation.avg_days_change_pct >= 0 ? '+' : ''}{monthData.variation.avg_days_change_pct}%)
