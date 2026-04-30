@@ -1,7 +1,6 @@
 import os
 from flask import Flask, request
 from flask_migrate import Migrate
-from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -49,7 +48,7 @@ def create_app():
     app.limiter = limiter # Expor para uso em Blueprints
     
     db.init_app(app)
-    migrate = Migrate(app, db)
+    Migrate(app, db)
     
     # Inicializar Scheduler (Automação de Sync)
     from app.scheduler import init_scheduler

@@ -72,6 +72,12 @@ export default function MonitorStoreModal({
     const [newPauseDate, setNewPauseDate] = useState("");
     const [showPauseForm, setShowPauseForm] = useState(false);
 
+    // Pause Editing State
+    const [editingPauseId, setEditingPauseId] = useState<number | null>(null);
+    const [editPauseStartDate, setEditPauseStartDate] = useState<string>("");
+    const [editPauseEndDate, setEditPauseEndDate] = useState<string>("");
+    const [editPauseReason, setEditPauseReason] = useState<string>("");
+
 
     useEffect(() => {
         if (store) {
@@ -139,6 +145,20 @@ export default function MonitorStoreModal({
             fetchPauses();
         } catch (e: any) {
             alert("Erro ao fechar pausa: " + (e.response?.data?.error || e.message));
+        }
+    };
+
+    const handleUpdatePause = async (pauseId: number) => {
+        try {
+            await api.put(`/api/pauses/${pauseId}`, {
+                start_date: editPauseStartDate,
+                end_date: editPauseEndDate || null,
+                reason: editPauseReason
+            });
+            setEditingPauseId(null);
+            fetchPauses();
+        } catch (e: any) {
+            alert("Erro ao atualizar pausa: " + (e.response?.data?.error || e.message));
         }
     };
 
@@ -791,36 +811,97 @@ export default function MonitorStoreModal({
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {pauses.map(p => (
-                                                <tr key={p.id} className="hover:bg-slate-50/50">
-                                                    <td className="px-6 py-3 font-mono text-slate-600">{formatDate(p.start_date)}</td>
-                                                    <td className="px-6 py-3 font-mono text-slate-600">
-                                                        {p.end_date ? formatDate(p.end_date) : <span className="text-emerald-500 font-bold uppercase text-[10px] bg-emerald-100 px-2 py-0.5 rounded">Em Aberto</span>}
-                                                    </td>
-                                                    <td className="px-6 py-3 text-slate-700">{p.reason}</td>
-                                                    <td className="px-6 py-3 text-right font-bold text-orange-600">
-                                                        {p.duration > 0 ? `-${p.duration} dias` : '-'}
-                                                    </td>
-                                                    <td className="px-6 py-3 text-right flex justify-end gap-2">
-                                                        {p.is_active && (
-                                                            <button
-                                                                onClick={() => handleClosePause(p.id)}
-                                                                className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 font-bold uppercase"
-                                                                title="Encerrar Pausa"
-                                                            >
-                                                                Encerrar
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => handleDeletePause(p.id)}
-                                                            className="text-slate-400 hover:text-red-500 transition-colors"
-                                                            title="Excluir Registro"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {pauses.map(p => {
+                                                const isEditing = editingPauseId === p.id;
+                                                return (
+                                                    <tr key={p.id} className={`hover:bg-slate-50/50 ${isEditing ? 'bg-amber-50/30' : ''}`}>
+                                                        <td className="px-6 py-3 font-mono text-slate-600 text-xs">
+                                                            {isEditing ? (
+                                                                <input 
+                                                                    type="date" 
+                                                                    className="border rounded px-1 py-0.5 text-xs w-28" 
+                                                                    value={editPauseStartDate}
+                                                                    onChange={e => setEditPauseStartDate(e.target.value)}
+                                                                />
+                                                            ) : formatDate(p.start_date)}
+                                                        </td>
+                                                        <td className="px-6 py-3 font-mono text-slate-600 text-xs">
+                                                            {isEditing ? (
+                                                                <input 
+                                                                    type="date" 
+                                                                    className="border rounded px-1 py-0.5 text-xs w-28" 
+                                                                    value={editPauseEndDate}
+                                                                    onChange={e => setEditPauseEndDate(e.target.value)}
+                                                                />
+                                                            ) : p.end_date ? formatDate(p.end_date) : (
+                                                                <span className="text-emerald-500 font-bold uppercase text-[10px] bg-emerald-100 px-2 py-0.5 rounded">Em Aberto</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-slate-700 text-xs">
+                                                            {isEditing ? (
+                                                                <input 
+                                                                    type="text" 
+                                                                    className="border rounded px-2 py-0.5 text-xs w-full" 
+                                                                    value={editPauseReason}
+                                                                    onChange={e => setEditPauseReason(e.target.value)}
+                                                                />
+                                                            ) : p.reason}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-right font-bold text-orange-600 text-xs">
+                                                            {p.duration > 0 ? `-${p.duration} dias` : '-'}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-right flex justify-end gap-2">
+                                                            {isEditing ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleUpdatePause(p.id)}
+                                                                        className="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded hover:bg-emerald-600 font-bold uppercase"
+                                                                    >
+                                                                        Salvar
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditingPauseId(null)}
+                                                                        className="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded hover:bg-slate-300 font-bold uppercase"
+                                                                    >
+                                                                        Sair
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    {p.is_active && (
+                                                                        <button
+                                                                            onClick={() => handleClosePause(p.id)}
+                                                                            className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 font-bold uppercase"
+                                                                            title="Encerrar Pausa"
+                                                                        >
+                                                                            Encerrar
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingPauseId(p.id);
+                                                                            setEditPauseStartDate(p.start_date.split('T')[0]);
+                                                                            setEditPauseEndDate(p.end_date ? p.end_date.split('T')[0] : "");
+                                                                            setEditPauseReason(p.reason || "");
+                                                                        }}
+                                                                        className="text-slate-400 hover:text-blue-500 transition-colors text-xs"
+                                                                        title="Editar Pausa"
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeletePause(p.id)}
+                                                                        className="text-slate-400 hover:text-red-500 transition-colors text-xs"
+                                                                        title="Excluir Registro"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                         <tfoot className="bg-slate-50/50 border-t border-slate-200">
                                             <tr>
