@@ -25,6 +25,8 @@ interface StoreReport {
 interface ImplantadorStats {
     name: string;
     stores: number;
+    matriz_count: number;
+    filial_count: number;
     store_names: string[];
     mrr: number;
     avg_days: number;
@@ -597,8 +599,11 @@ const MonthlyReport: React.FC = () => {
                                                             R$ {imp.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-4 text-xs text-zinc-500">
-                                                        <span className="flex items-center gap-1"><FileText size={12} />{imp.stores} {imp.stores === 1 ? 'loja' : 'lojas'}</span>
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+                                                        <span className="flex items-center gap-1 font-medium text-zinc-700">
+                                                            <FileText size={12} />{imp.stores} {imp.stores === 1 ? 'loja' : 'lojas'} 
+                                                            <span className="text-zinc-400 font-normal">({imp.matriz_count}M / {imp.filial_count}F)</span>
+                                                        </span>
                                                         <span className="flex items-center gap-1"><Clock size={12} />{imp.avg_days} dias</span>
                                                         <span className={`flex items-center gap-1 ${imp.on_time_pct >= 70 ? 'text-emerald-600' : imp.on_time_pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
                                                             <CheckCircle size={12} />{imp.on_time_pct}%

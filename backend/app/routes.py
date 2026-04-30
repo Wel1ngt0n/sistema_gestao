@@ -1135,7 +1135,7 @@ def get_monthly_implantation_report(payload):
         prev_month_data = {"total_mrr": total_mrr, "total_stores": total_stores, "avg_days": avg_days}
         
         # ── Ranking por Implantador ──
-        impl_map = defaultdict(lambda: {"stores": 0, "mrr": 0.0, "days_list": [], "on_time": 0, "points": 0.0, "store_names": []})
+        impl_map = defaultdict(lambda: {"stores": 0, "mrr": 0.0, "days_list": [], "on_time": 0, "points": 0.0, "store_names": [], "matriz_count": 0, "filial_count": 0})
         for s in stores:
             imp = s['implantador']
             impl_map[imp]["stores"] += 1
@@ -1144,6 +1144,10 @@ def get_monthly_implantation_report(payload):
             impl_map[imp]["on_time"] += s['on_time']
             impl_map[imp]["points"] += s['points']
             impl_map[imp]["store_names"].append(s['name'])
+            if s['tipo'] == 'Matriz':
+                impl_map[imp]["matriz_count"] += 1
+            else:
+                impl_map[imp]["filial_count"] += 1
         
         implantadores = []
         for name, d in impl_map.items():
@@ -1152,6 +1156,8 @@ def get_monthly_implantation_report(payload):
             implantadores.append({
                 "name": name,
                 "stores": d["stores"],
+                "matriz_count": d["matriz_count"],
+                "filial_count": d["filial_count"],
                 "store_names": d["store_names"],
                 "mrr": round(d["mrr"], 2),
                 "avg_days": round(avg_impl, 1),
