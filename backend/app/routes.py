@@ -698,6 +698,20 @@ def bulk_update_stores(payload):
                 if status:
                     service.log_change(store, 'status', store.status, status, source='manual')
                     store.status = status
+
+                if data.get('reopen'):
+                    old_status = store.status_norm
+                    if old_status != 'IN_PROGRESS':
+                        service.log_change(store, 'status_norm', old_status, 'IN_PROGRESS', source='manual')
+                        store.status_norm = 'IN_PROGRESS'
+                    
+                    if store.manual_finished_at:
+                        old_date = store.manual_finished_at.strftime('%Y-%m-%d')
+                        service.log_change(store, 'fim_manual', old_date, None, source='manual')
+                        store.manual_finished_at = None
+                    
+                    store.end_real_at = None
+                    store.finished_at = None
                     
                 if manual_finished_at_str:
                     try:

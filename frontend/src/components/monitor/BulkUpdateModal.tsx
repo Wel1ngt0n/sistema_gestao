@@ -5,7 +5,7 @@ import { Calendar, CheckCircle2, X } from 'lucide-react';
 interface BulkUpdateModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (data: { status?: string, manual_finished_at?: string }) => void;
+    onConfirm: (data: { status?: string, manual_finished_at?: string, reopen?: boolean }) => void;
     selectedCount: number;
     isLoading?: boolean;
 }
@@ -16,8 +16,9 @@ export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCo
 
     const handleConfirm = () => {
         onConfirm({ 
-            status, 
-            manual_finished_at: status === 'DONE' ? finishDate : undefined 
+            status: status === 'REOPEN' ? 'IN_PROGRESS' : status, 
+            manual_finished_at: status === 'DONE' ? finishDate : undefined,
+            reopen: status === 'REOPEN'
         });
     };
 
@@ -51,6 +52,7 @@ export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCo
                                 <option value="IN_PROGRESS">Em Andamento</option>
                                 <option value="PAUSED">Pausada</option>
                                 <option value="WAITING">Aguardando</option>
+                                <option value="REOPEN">↩️ Reabrir Lojas (Voltar para Progresso)</option>
                             </select>
                         </div>
 
