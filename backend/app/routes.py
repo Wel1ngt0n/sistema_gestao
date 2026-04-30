@@ -1570,13 +1570,16 @@ def add_store_pause(payload, id):
         return jsonify({'error': str(e)}), 400
 
 @api_bp.route('/pauses/<int:pause_id>/close', methods=['PUT'])
-def close_pause(pause_id):
+@require_auth
+def close_pause(payload, pause_id):
     from app.models import StorePause
     data = request.json
     try:
         end_date = datetime.strptime(data['end_date'], '%Y-%m-%d')
-        pause = StorePause.query.get_or_404(pause_id)
-        
+        pause = StorePause.query.get(pause_id)
+        if not pause:
+            return jsonify({'error': 'Pausa não encontrada'}), 404
+            
         if end_date < pause.start_date:
              return jsonify({'error': 'Data de fim deve ser maior que data de início'}), 400
              
@@ -1587,10 +1590,13 @@ def close_pause(pause_id):
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/pauses/<int:pause_id>', methods=['DELETE'])
-def delete_pause(pause_id):
+@require_auth
+def delete_pause(payload, pause_id):
     from app.models import StorePause
     try:
-        pause = StorePause.query.get_or_404(pause_id)
+        pause = StorePause.query.get(pause_id)
+        if not pause:
+            return jsonify({'error': 'Pausa não encontrada'}), 404
         db.session.delete(pause)
         db.session.commit()
         return jsonify({'status': 'deleted'}), 200

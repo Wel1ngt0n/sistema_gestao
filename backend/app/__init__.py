@@ -42,8 +42,9 @@ def create_app():
     limiter = Limiter(
         key_func=get_remote_address,
         app=app,
-        default_limits=["200 per day", "50 per hour"],
+        default_limits=["2000 per day", "500 per hour"],
         storage_uri="memory://",
+        request_filter=lambda: request.method == "OPTIONS"
     )
     app.limiter = limiter # Expor para uso em Blueprints
     
