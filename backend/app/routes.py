@@ -1288,7 +1288,8 @@ def generate_monthly_summary(payload):
         "total_points": data.get('stats', {}).get('total_points', 0),
         "highlights": data.get('highlights', 'Nenhum destaque enviado.'),
         "stores": data.get('stores', []),
-        "variation": data.get('variation')
+        "variation": data.get('variation'),
+        "implantadores": data.get('implantadores', [])
     }
     
     report_format = data.get('format', 'simple')
