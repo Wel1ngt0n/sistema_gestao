@@ -109,6 +109,8 @@ O resumo deve ser objetivo, estruturado, claro e focado em decisão.
 * Não fazer julgamentos pessoais
 * Sempre interpretar os dados (não apenas listar)
 * Analisar as observações individuais de cada loja para capturar insights qualitativos e avaliações de gestão
+* Regra de Observação por Rede: Se houver observações em apenas uma loja de uma rede, considere que elas se aplicam a todas as lojas dessa rede naquele mês, exceto se houver observações específicas em outras lojas.
+* Considerar o peso de esforço (Matriz = 1.0, Filial = 0.7) representado pelo campo 'points' para avaliar a produtividade real de cada implantador.
 * Usar bullet points
 * Manter padrão visual consistente
 * Pensar em leitura rápida (até 30 segundos)

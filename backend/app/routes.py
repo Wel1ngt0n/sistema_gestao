@@ -1166,7 +1166,7 @@ def get_monthly_implantation_report(payload):
                 "points": round(d["points"], 1)
             })
         
-        implantadores.sort(key=lambda x: x['mrr'], reverse=True)
+        implantadores.sort(key=lambda x: x['points'], reverse=True)
         
         results.append({
             "month": month,

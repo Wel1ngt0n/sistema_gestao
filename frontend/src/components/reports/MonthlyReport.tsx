@@ -595,9 +595,14 @@ const MonthlyReport: React.FC = () => {
                                                             </span>
                                                             <span className="font-semibold text-zinc-800">{imp.name}</span>
                                                         </div>
-                                                        <span className="text-sm font-bold text-emerald-600">
-                                                            R$ {imp.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                        </span>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-sm font-bold text-teal-600">
+                                                                {imp.points} pts
+                                                            </span>
+                                                            <span className="text-[10px] font-bold text-emerald-600">
+                                                                R$ {imp.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
                                                         <span className="flex items-center gap-1 font-medium text-zinc-700">
