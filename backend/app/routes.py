@@ -1120,14 +1120,18 @@ def get_monthly_implantation_report(payload):
         if prev_month_data:
             prev_mrr = prev_month_data['total_mrr']
             prev_stores_count = prev_month_data['total_stores']
+            prev_avg_days = prev_month_data['avg_days']
+            
             variation = {
                 "mrr_change": round(total_mrr - prev_mrr, 2),
                 "mrr_change_pct": round(((total_mrr - prev_mrr) / max(prev_mrr, 1)) * 100, 1),
                 "stores_change": total_stores - prev_stores_count,
                 "stores_change_pct": round(((total_stores - prev_stores_count) / max(prev_stores_count, 1)) * 100, 1),
+                "avg_days_change": round(avg_days - prev_avg_days, 1),
+                "avg_days_change_pct": round(((avg_days - prev_avg_days) / max(prev_avg_days, 0.1)) * 100, 1),
             }
         
-        prev_month_data = {"total_mrr": total_mrr, "total_stores": total_stores}
+        prev_month_data = {"total_mrr": total_mrr, "total_stores": total_stores, "avg_days": avg_days}
         
         # ── Ranking por Implantador ──
         impl_map = defaultdict(lambda: {"stores": 0, "mrr": 0.0, "days_list": [], "on_time": 0, "points": 0.0, "store_names": []})
@@ -1283,7 +1287,8 @@ def generate_monthly_summary(payload):
         "median_time": data.get('stats', {}).get('median_days', 0),
         "total_points": data.get('stats', {}).get('total_points', 0),
         "highlights": data.get('highlights', 'Nenhum destaque enviado.'),
-        "stores": data.get('stores', [])
+        "stores": data.get('stores', []),
+        "variation": data.get('variation')
     }
     
     report_format = data.get('format', 'simple')

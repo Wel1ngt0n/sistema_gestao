@@ -71,6 +71,8 @@ interface Variation {
     mrr_change_pct: number;
     stores_change: number;
     stores_change_pct: number;
+    avg_days_change?: number;
+    avg_days_change_pct?: number;
 }
 
 interface AnnualGoals {
@@ -252,6 +254,8 @@ const MonthlyReport: React.FC = () => {
                 stats: monthData.stats,
                 stores: monthData.stores,
                 implantadores: monthData.implantadores,
+                highlights: monthData.highlights,
+                variation: monthData.variation,
                 on_time_pct: monthData.stats.on_time_pct,
                 on_time_count: monthData.stats.on_time_count,
                 format: formatType
@@ -549,6 +553,12 @@ const MonthlyReport: React.FC = () => {
                                             {monthData.variation.stores_change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                             Lojas: {monthData.variation.stores_change >= 0 ? '+' : ''}{monthData.variation.stores_change} ({monthData.variation.stores_change_pct >= 0 ? '+' : ''}{monthData.variation.stores_change_pct}%)
                                         </span>
+                                        {monthData.variation.avg_days_change !== undefined && (
+                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${monthData.variation.avg_days_change <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                {monthData.variation.avg_days_change <= 0 ? <TrendingUp size={12} className="rotate-180" /> : <TrendingDown size={12} className="rotate-180" />}
+                                                Tempo: {monthData.variation.avg_days_change >= 0 ? '+' : ''}{monthData.variation.avg_days_change} dias ({monthData.variation.avg_days_change_pct >= 0 ? '+' : ''}{monthData.variation.avg_days_change_pct}%)
+                                            </span>
+                                        )}
                                     </div>
                                 )}
 
