@@ -61,6 +61,7 @@ export interface Store {
     days_late_predicted?: number;
     previsao_ia?: string | null;
     manual_start_date?: string | null;
+    reopen?: boolean;
 }
 
 export interface IntegrationData {

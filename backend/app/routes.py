@@ -537,7 +537,23 @@ def update_store(payload, id):
              store.is_manual_start_date = False
 
     
-    if 'manual_finished_at' in data:
+    if data.get('reopen'):
+        old_status = store.status_norm
+        if old_status != 'IN_PROGRESS':
+            service.log_change(store, 'status_norm', old_status, 'IN_PROGRESS', source='manual')
+            store.status_norm = 'IN_PROGRESS'
+        
+        if store.manual_finished_at:
+             old_date = store.manual_finished_at.strftime('%Y-%m-%d')
+             service.log_change(store, 'fim_manual', old_date, None, source='manual')
+             store.manual_finished_at = None
+        
+        # Também limpamos as datas reais detectadas automaticamente para "zerar" o estado
+        store.end_real_at = None
+        store.finished_at = None
+
+
+    if 'manual_finished_at' in data and not data.get('reopen'):
         date_str = data['manual_finished_at']
         old_val = store.manual_finished_at.strftime('%Y-%m-%d') if store.manual_finished_at else None
         if date_str:
@@ -552,6 +568,7 @@ def update_store(payload, id):
             if old_val is not None:
                 service.log_change(store, 'fim_manual', old_val, None, source='manual')
             store.manual_finished_at = None
+
             
     # FECHAR PAUSAS ABERTAS SE A LOJA ESTIVER SENDO FINALIZADA MANUALMENTE:
     # Corrige bug em que a loja era "morta" com 31/03, mas possuía uma "pausa" em aberto que consumia todos os dias até 31/03.
@@ -730,7 +747,7 @@ def add_store_observation(payload, id):
     from app.models import Store, StoreObservation
     from app import db
     
-    store = Store.query.get_or_404(id)
+    Store.query.get_or_404(id)
     data = request.json
     
     texto = data.get('texto')

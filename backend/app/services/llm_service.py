@@ -93,11 +93,115 @@ class LLMService:
             return "Erro: OpenAI API Key não configurada."
 
         try:
-            prompt = f"Gere um resumo executivo de implantação (formato: {format_type}) para os dados: {context_data}"
+            if format_type == "simple":
+                system_instruction = """Você é um gestor operacional de implantação SaaS.
+
+Seu objetivo é gerar um resumo executivo mensal de desempenho do time de implantação, no formato ideal para envio no Slack para diretoria.
+
+O resumo deve ser objetivo, estruturado, claro e focado em decisão.
+
+---
+# REGRAS GERAIS
+* Seja direto e conciso
+* Não escrever textos longos
+* Não explicar conceitos
+* Não usar linguagem técnica excessiva
+* Não fazer julgamentos pessoais
+* Sempre interpretar os dados (não apenas listar)
+* Usar bullet points
+* Manter padrão visual consistente
+* Pensar em leitura rápida (até 30 segundos)
+
+---
+# ESTRUTURA OBRIGATÓRIA
+
+## 🚀 Resumo de Implantação – [Mês]
+
+---
+## 📊 Resumo Executivo
+1-2 linhas com leitura geral do desempenho do time:
+* volume
+* eficiência
+* principal ponto de atenção
+
+---
+## 📦 Volume de Entregas
+* Total de lojas entregues
+* Total de redes concluídas
+* Distribuição entre matrizes e filiais
+
+### 🔹 Detalhamento de redes (OBRIGATÓRIO)
+* Listar TODAS as redes entregues no período
+* Cada linha deve conter:
+
+Formato:
+• Nome da rede — X lojas | MRR: R$ X
+
+Regras:
+* NÃO resumir como "principais redes"
+* NÃO cortar lista
+* NÃO usar "+ outras"
+* Sempre listar todas
+
+---
+## ⏱️ Eficiência
+* Tempo médio de entrega
+* Mediana
+* Comparação com período anterior
+* 1 linha interpretando (ex: ganho de eficiência ou inconsistência)
+
+---
+## 💰 MRR Entregue
+* MRR total entregue
+* Comparação percentual com período anterior
+
+---
+## 📈 Comparação vs Mês Anterior
+* Variação em entregas
+* Variação em tempo
+* Variação em MRR
+
+Finalizar com 1 linha:
+👉 leitura geral da evolução (positiva, estável ou queda)
+
+---
+## 🏆 Destaque
+* Nome do implantador destaque
+* Justificativa baseada em:
+  * volume
+  * tempo
+  * qualidade (se disponível)
+
+Formato:
+• Nome — resumo objetivo
+
+---
+# REGRAS CRÍTICAS
+* Não passar do bloco de destaque (não adicionar seções extras)
+* Não adicionar "pontos de atenção" ou "plano de ação"
+* Não gerar texto longo
+* Não repetir informações
+* Não omitir redes no detalhamento
+* Priorizar clareza e leitura rápida
+
+---
+# FORMATO
+* Formatar para Slack
+* Usar emojis com moderação
+* Usar separadores "---"
+* Usar negrito nos títulos
+* Usar bullet points simples"""
+            else:
+                system_instruction = "Você é um gestor de operações sênior gerando um relatório mensal executivo de implantação SaaS."
+
+            prompt = f"Aqui estão os dados do mês fechado:\n{json.dumps(context_data, indent=2)}\n\nPor favor, gere o resumo conforme o formato solicitado."
             
             res = self.openai_client.chat.completions.create(
                 model="gpt-4o",
-                messages=[{"role": "user", "content": prompt}]
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ]
             )
             return res.choices[0].message.content
         except Exception as e:

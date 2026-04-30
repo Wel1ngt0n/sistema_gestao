@@ -613,6 +613,7 @@ const MonthlyReport: React.FC = () => {
                                                         className="rounded border-zinc-300 w-4 h-4 accent-orange-600"
                                                         checked={monthData.stores.length > 0 && monthData.stores.every(s => selectedStoreIds.includes(s.id))}
                                                         onChange={() => toggleAllInMonth(monthData.stores)}
+                                                        aria-label="Selecionar todas as lojas do mês"
                                                     />
                                                 </th>
                                                 <th className="px-4 py-3">Loja</th>
@@ -634,6 +635,7 @@ const MonthlyReport: React.FC = () => {
                                                             className="rounded border-zinc-300 w-4 h-4 accent-orange-600"
                                                             checked={selectedStoreIds.includes(store.id)}
                                                             onChange={() => toggleStoreSelection(store.id)}
+                                                            aria-label={`Selecionar loja ${store.name}`}
                                                         />
                                                     </td>
                                                     <td className="px-4 py-3 font-medium text-zinc-800">{store.name}</td>
@@ -703,8 +705,9 @@ const MonthlyReport: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-zinc-500">Copie o texto abaixo para enviar:</p>
+                                    <label htmlFor="ai-summary" className="text-sm text-zinc-500 block mb-2">Copie o texto abaixo para enviar:</label>
                                     <textarea
+                                        id="ai-summary"
                                         className="w-full h-64 p-4 bg-zinc-50 text-zinc-900 rounded-xl border border-zinc-200 font-mono text-sm resize-none focus:ring-2 focus:ring-teal-500 outline-none"
                                         value={aiSummary}
                                         readOnly

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Store } from './types';
 import { formatDate, formatCurrency } from './monitorUtils';
@@ -587,6 +587,21 @@ export default function MonitorStoreModal({
                                     <p className="text-[10px] text-slate-400 mt-2 leading-tight">
                                         Define manualmente a data de conclusão, sobrescrevendo a do ClickUp.
                                     </p>
+
+                                    {localStore.status_norm === 'DONE' && (
+                                        <button
+                                            onClick={() => {
+                                                if (confirm("Deseja realmente voltar esta loja para Em Progresso? Isso limpará a data de conclusão manual.")) {
+                                                    const updated = { ...localStore, reopen: true, status_norm: 'IN_PROGRESS', manual_finished_at: '' };
+                                                    setLocalStore(updated);
+                                                    onSave(updated); // Trigger immediate save
+                                                }
+                                            }}
+                                            className="w-full mt-4 py-2 bg-blue-50 text-blue-600 font-bold border border-blue-100 rounded-lg hover:bg-blue-100 transition-all text-[10px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                        >
+                                            ↩️ Voltar para Em Progresso
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Notes */}
