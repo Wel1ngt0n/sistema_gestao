@@ -116,86 +116,41 @@ O resumo deve ser objetivo, estruturado, claro e focado em decisão.
 * Pensar em leitura rápida (até 30 segundos)
 
 ---
-# ESTRUTURA OBRIGATÓRIA
+# ESTRUTURA OBRIGATÓRIA (Suscinta)
 
 ## 🚀 Resumo de Implantação – [Mês]
 
 ---
-## 📊 Resumo Executivo
-1-2 linhas com leitura geral do desempenho do time:
-* volume
-* eficiência
-* principal ponto de atenção
+📊 **Resumo Executivo**
+* MRR Total: R$ [Valor] ([Var %] vs mês anterior)
+* Lojas Entregues: [Total] ([Var %] vs mês anterior) — ([X] Matrizes / [Y] Filiais)
+* Média de Dias: [Média] dias ([Var %] vs mês anterior)
 
 ---
-## 📦 Volume de Entregas
-* Total de lojas entregues
-* Total de redes concluídas
-* Distribuição entre matrizes e filiais
-
-### 🔹 Detalhamento de redes (OBRIGATÓRIO)
-* Listar TODAS as redes entregues no período
-* Cada linha deve conter:
-
-Formato:
-• Nome da rede — X lojas | MRR: R$ X
-
-Regras:
-* NÃO resumir como "principais redes"
-* NÃO cortar lista
-* NÃO usar "+ outras"
-* Sempre listar todas
+# REGRAS DE VARIAÇÃO
+* Para MRR e Lojas: Variação positiva (+) = Superação/Melhora.
+* Para Média de Dias: Variação negativa (-) = Superação/Melhora (foi mais rápido).
+* Se a variação for positiva em tempo, indique como aumento (alerta).
 
 ---
-## ⏱️ Eficiência
-* Tempo médio de entrega
-* Mediana
-* Comparação com período anterior
-* 1 linha interpretando (ex: ganho de eficiência ou inconsistência)
+📦 **Lojas Entregues**
+[Listar TODAS as lojas/redes entregues no período]
+Formato: • Nome da Loja/Rede — R$ [MRR]
 
 ---
-## 💰 MRR Entregue
-* MRR total entregue
-* Comparação percentual com período anterior
-
----
-## 📈 Comparação vs Mês Anterior
-* Variação em entregas
-* Variação em tempo
-* Variação em MRR
-
-Finalizar com 1 linha:
-👉 leitura geral da evolução (positiva, estável ou queda)
-
----
-## 🏆 Destaque
-* Nome do implantador destaque
-* Justificativa baseada em:
-  * volume
-  * tempo
-  * qualidade (se disponível)
-
-Formato:
-• Nome — resumo objetivo
+🏆 **Destaque do Mês**
+• [Nome do Implantador] — [Resumo objetivo do porquê foi destaque, citando volume e esforço/pontos]
 
 ---
 # REGRAS CRÍTICAS
-* Não passar do bloco de destaque (não adicionar seções extras)
-* Não adicionar "pontos de atenção" ou "plano de ação"
-* Não gerar texto longo
-* Não repetir informações
-* Não omitir redes no detalhamento
-* Priorizar clareza e leitura rápida
-
----
-# FORMATO
-* Formatar para Slack
-* Usar emojis com moderação
-* Usar separadores "---"
-* Usar negrito nos títulos
-* Usar bullet points simples"""
+* NÃO adicionar seções extras (como "Eficiência" detalhada ou "Comparação")
+* NÃO resumir a lista de lojas; listar TODAS as entregues
+* NÃO usar linguagem técnica excessiva
+* Manter o texto extremamente curto e direto
+* Formatar para leitura rápida no Slack usando negritos e emojis
+* Usar separadores "---" entre seções"""
             else:
-                system_instruction = "Você é um gestor de operações sênior gerando um relatório mensal executivo de implantação SaaS."
+                system_instruction = "Você é um gestor de operações sênior geran do um relatório mensal executivo de implantação SaaS."
 
             prompt = f"Aqui estão os dados do mês fechado:\n{json.dumps(context_data, indent=2)}\n\nPor favor, gere o resumo conforme o formato solicitado."
             
