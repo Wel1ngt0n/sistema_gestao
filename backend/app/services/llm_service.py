@@ -127,6 +127,11 @@ O resumo deve ser objetivo, estruturado, claro e focado em decisão.
 * Média de Dias: [Média] dias ([Var %] vs mês anterior)
 
 ---
+👤 **Desempenho por Implantador**
+[Listar cada implantador que realizou entregas no mês]
+Formato: • Nome: [X] lojas ([Y] Matrizes / [Z] Filiais) — MRR: R$ [Valor] — Esforço: [Points] pts
+
+---
 # REGRAS DE VARIAÇÃO
 * Para MRR e Lojas: Variação positiva (+) = Superação/Melhora.
 * Para Média de Dias: Variação negativa (-) = Superação/Melhora (foi mais rápido).
