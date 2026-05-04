@@ -1000,11 +1000,14 @@ def get_monthly_implantation_report(payload):
     ytd_mrr = sum(s['mrr'] for month in grouped.values() for s in month)
     ytd_stores = sum(len(month) for month in grouped.values())
     ytd_points = sum(s['points'] for month in grouped.values() for s in month)
-    months_elapsed = len(sorted_months)  # meses com entregas
+    # Meses transcorridos no ano atual (até o mês anterior fechado)
+    # Se estamos em Maio, 4 meses cheios (Jan-Abr) passaram.
+    # Para o ritmo YTD, usamos o máximo entre meses com entregas e meses do calendário.
+    months_elapsed = max(len(sorted_months), now.month - 1, 1)
     
     # Projeção: baseada no ritmo médio mensal
-    avg_mrr_per_month = ytd_mrr / max(months_elapsed, 1)
-    avg_stores_per_month = ytd_stores / max(months_elapsed, 1)
+    avg_mrr_per_month = ytd_mrr / months_elapsed
+    avg_stores_per_month = ytd_stores / months_elapsed
     
     mrr_remaining = max(0, mrr_target - ytd_mrr)
     stores_remaining = max(0, stores_target - ytd_stores)
@@ -1013,11 +1016,9 @@ def get_monthly_implantation_report(payload):
     months_to_stores_goal = math.ceil(stores_remaining / avg_stores_per_month) if avg_stores_per_month > 0 else 0
     
     # Calcular mês estimado de atingimento
-    from datetime import datetime
-    from dateutil.relativedelta import relativedelta
-    now = datetime.now()
-    est_mrr_date = (now + relativedelta(months=months_to_mrr_goal)).strftime('%Y-%m') if months_to_mrr_goal > 0 else now.strftime('%Y-%m')
-    est_stores_date = (now + relativedelta(months=months_to_stores_goal)).strftime('%Y-%m') if months_to_stores_goal > 0 else now.strftime('%Y-%m')
+    # Ajuste: se months_to_goal é 1, o atingimento é este mês (now + 0)
+    est_mrr_date = (now + relativedelta(months=max(0, months_to_mrr_goal - 1))).strftime('%Y-%m') if months_to_mrr_goal > 0 else now.strftime('%Y-%m')
+    est_stores_date = (now + relativedelta(months=max(0, months_to_stores_goal - 1))).strftime('%Y-%m') if months_to_stores_goal > 0 else now.strftime('%Y-%m')
     
     # ── WIP Overview (Board Stages) ──
     # Regra V6: WIP ignora programadas
