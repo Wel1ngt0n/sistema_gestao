@@ -1000,6 +1000,10 @@ def get_monthly_implantation_report(payload):
     ytd_mrr = sum(s['mrr'] for month in grouped.values() for s in month)
     ytd_stores = sum(len(month) for month in grouped.values())
     ytd_points = sum(s['points'] for month in grouped.values() for s in month)
+    from datetime import datetime
+    from dateutil.relativedelta import relativedelta
+    now = datetime.now()
+    
     # Meses transcorridos no ano atual (até o mês anterior fechado)
     # Se estamos em Maio, 4 meses cheios (Jan-Abr) passaram.
     # Para o ritmo YTD, usamos o máximo entre meses com entregas e meses do calendário.
