@@ -205,7 +205,7 @@ def enrich_contacts_from_conversations_csv(data, period=None):
 # ============================================================
 # 2. IMPORTAÇÃO DE ATIVIDADES (export-activities-*.csv)
 # ============================================================
-def import_zenvia_activities_csv(data):
+def import_zenvia_activities_csv(data, period=None):
     """
     Importa o histórico de mensagens.
     'data' pode ser um DataFrame ou um objeto de arquivo.
@@ -213,6 +213,9 @@ def import_zenvia_activities_csv(data):
     df = read_input_data(data, 'Cliente')
     if df is None:
         return {"error": "Formato de arquivo de atividades inválido ou coluna 'Cliente' não encontrada."}
+
+    # Sufixo para conv_key baseado no período manual ou na data do arquivo
+    period_suffix_override = period.replace('-', '') if period else None
 
     stats = {
         "total_rows": len(df),
@@ -284,8 +287,10 @@ def import_zenvia_activities_csv(data):
                 contact_cache[contact_slug] = contact_id
 
             # 2. Conversa (Agrupamento mensal)
+            # Prioriza o período manual se fornecido para o sufixo da chave
+            suffix = period_suffix_override if period_suffix_override else ts.strftime('%Y%m')
             safe_slug_for_conv = contact_slug[:60]
-            conv_key = f"{safe_slug_for_conv}_{ts.strftime('%Y%m')}"
+            conv_key = f"{safe_slug_for_conv}_{suffix}"
             zenvia_conv_id = f"IMPORT_CONV_{conv_key}"
 
             conv_id = conv_cache.get(conv_key)

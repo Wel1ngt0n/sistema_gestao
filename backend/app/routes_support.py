@@ -163,7 +163,7 @@ def import_csv():
         # 2. Processar planilhas de Atividades (Mensagens)
         activities_files = request.files.getlist('activities')
         for f in activities_files:
-            stats = import_zenvia_activities_csv(f)
+            stats = import_zenvia_activities_csv(f, period=period)
             results.append({"file": f.filename, "type": "message_import", "stats": stats})
 
         # 3. Processar planilhas de Performance (KPIs Agregados)
