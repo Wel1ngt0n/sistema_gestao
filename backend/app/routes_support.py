@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify, request
-from app.models import SupportConversation, SupportMessage, SupportContact, db
+from app.models import SupportConversation, SupportMessage, SupportContact, SystemConfig, db
+from datetime import datetime
 from app.services.event_processor_service import process_pending_zenvia_events
 
 support_bp = Blueprint('support_bp', __name__)
@@ -11,12 +11,16 @@ def get_kpis():
     msgs_in = SupportMessage.query.filter_by(direction='IN').count()
     msgs_out = SupportMessage.query.filter_by(direction='OUT').count()
     
+    # Busca o último sync nas configurações
+    last_sync = SystemConfig.query.filter_by(key='last_support_sync').first()
+    
     return jsonify({
         "open_conversations": open_convs,
         "closed_conversations": closed_convs,
         "messages_in": msgs_in,
         "messages_out": msgs_out,
-        "avg_response_time": "15m" # Placeholder for MVP
+        "avg_response_time": "15m", # Placeholder for MVP
+        "last_sync": last_sync.value if last_sync else "Nunca"
     })
 
 @support_bp.route('/api/support/orphans', methods=['GET'])
@@ -64,10 +68,23 @@ def link_store():
 def sync_data():
     try:
         results = process_pending_zenvia_events()
+        
+        # Salva o horário do último sync no DB
+        sync_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        config = SystemConfig.query.filter_by(key='last_support_sync').first()
+        if config:
+            config.value = sync_time
+        else:
+            config = SystemConfig(key='last_support_sync', value=sync_time, category='webhooks', description='Última sincronização manual de eventos de suporte')
+            db.session.add(config)
+        
+        db.session.commit()
+
         return jsonify({
             "status": "success", 
             "processed": results.get('processed_count', 0),
-            "conversations": results.get('new_conversations_count', 0)
+            "conversations": results.get('new_conversations_count', 0),
+            "last_sync": sync_time
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

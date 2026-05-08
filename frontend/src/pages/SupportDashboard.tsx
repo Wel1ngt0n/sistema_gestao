@@ -11,10 +11,10 @@ interface OrphanContact {
 export const SupportDashboard = () => {
   const [kpis, setKpis] = useState({
     open_conversations: 0,
-    closed_conversations: 0,
     messages_in: 0,
     messages_out: 0,
-    avg_response_time: '0m'
+    avg_response_time: '0m',
+    last_sync: 'Nunca'
   });
 
   const [orphans, setOrphans] = useState<OrphanContact[]>([]);
@@ -122,7 +122,7 @@ export const SupportDashboard = () => {
           </button>
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-zinc-200 shadow-sm">
             <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
-            <span className="text-[10px] text-zinc-600 font-bold tracking-wider uppercase">Dados estáticos (10m)</span>
+            <span className="text-[10px] text-zinc-600 font-bold tracking-wider uppercase">Último Sync: {kpis.last_sync}</span>
           </div>
         </div>
       </div>
