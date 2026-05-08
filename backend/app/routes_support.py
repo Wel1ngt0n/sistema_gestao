@@ -145,12 +145,19 @@ def import_csv():
             print("ERROR: No files in request.files")
             return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
 
+        # Pega o período manual (YYYY-MM) se enviado, senão usa o atual
+        period = request.form.get('period')
+        if not period:
+            period = datetime.now().strftime('%Y-%m')
+        
+        print(f"IMPORT PERIOD: {period}")
+
         results = []
         
         # 1. Processar planilhas de Cadastro (NPS e Contatos)
         conversas_files = request.files.getlist('conversas')
         for f in conversas_files:
-            stats = enrich_contacts_from_conversations_csv(f)
+            stats = enrich_contacts_from_conversations_csv(f, period=period)
             results.append({"file": f.filename, "type": "contact_enrichment", "stats": stats})
 
         # 2. Processar planilhas de Atividades (Mensagens)
@@ -162,17 +169,17 @@ def import_csv():
         # 3. Processar planilhas de Performance (KPIs Agregados)
         performance_files = request.files.getlist('performance')
         for f in performance_files:
-            stats = import_agent_performance_csv(f)
+            stats = import_agent_performance_csv(f, period=period)
             results.append({"file": f.filename, "type": "agent_performance", "stats": stats})
 
         # 4. Processar planilha de Agentes (Estado Atual)
         agents_files = request.files.getlist('agents')
         for f in agents_files:
-            stats = import_agents_status_csv(f)
+            stats = import_agents_status_csv(f, period=period)
             results.append({"file": f.filename, "type": "agent_status", "stats": stats})
 
         # 5. Calcular NPS por Atendente (Pós-processamento)
-        nps_stats = calculate_agent_nps()
+        nps_stats = calculate_agent_nps(period=period)
         results.append({"file": "NPS Calculation", "type": "nps_calculation", "stats": nps_stats})
 
         if not results:

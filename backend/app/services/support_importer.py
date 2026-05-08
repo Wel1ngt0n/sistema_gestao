@@ -87,7 +87,7 @@ def read_input_data(data, required_column=None):
 # ============================================================
 # 1. ENRIQUECIMENTO DE CONTATOS (Conversas - *.csv)
 # ============================================================
-def enrich_contacts_from_conversations_csv(data):
+def enrich_contacts_from_conversations_csv(data, period=None):
     """
     Processa dados de conversas para enriquecer contatos e extrair NPS.
     'data' pode ser um DataFrame ou um objeto de arquivo.
@@ -102,6 +102,13 @@ def enrich_contacts_from_conversations_csv(data):
         "contacts_created": 0,
         "nps_extracted": 0
     }
+
+    # Se não houver período manual, usa o mês atual para o link do NPS
+    if not period:
+        period_suffix = datetime.now().strftime('%Y%m')
+    else:
+        # period vem como YYYY-MM, removemos o hífen
+        period_suffix = period.replace('-', '')
 
     for _, row in df.iterrows():
         try:
@@ -172,11 +179,11 @@ def enrich_contacts_from_conversations_csv(data):
                 db.session.flush()
                 stats["contacts_created"] += 1
 
-            # Vincular NPS à conversa do mesmo mês
+            # Vincular NPS à conversa do período especificado
             if nps_score is not None or nps_comment:
                 # Garante que conv_key não estoure o limite de 100 do conv_id
                 safe_slug = contact_slug[:60]
-                conv_key = f"{safe_slug}_{conv_ts.strftime('%Y%m')}"
+                conv_key = f"{safe_slug}_{period_suffix}"
                 zenvia_conv_id = f"IMPORT_CONV_{conv_key}"
                 conv = SupportConversation.query.filter_by(zenvia_conversation_id=zenvia_conv_id).first()
                 if conv:

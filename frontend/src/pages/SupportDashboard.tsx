@@ -59,6 +59,7 @@ export const SupportDashboard = () => {
   const currentMonth = new Date().toISOString().substring(0, 7);
   const [availablePeriods, setAvailablePeriods] = useState<string[]>([currentMonth]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonth);
+  const [importPeriod, setImportPeriod] = useState<string>(currentMonth);
 
   const fetchPeriods = async () => {
     try {
@@ -160,6 +161,8 @@ export const SupportDashboard = () => {
     setImporting(true);
     try {
       const formData = new FormData();
+      formData.append('period', importPeriod);
+      
       selectedFiles.forEach(sf => {
         if (sf.type !== 'ignore') {
           formData.append(sf.type, sf.file);
@@ -261,6 +264,16 @@ export const SupportDashboard = () => {
             </svg>
             {syncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR AGORA'}
           </button>
+          <div className="flex items-center gap-4 bg-white p-2 px-4 rounded-xl shadow-sm border border-orange-100">
+            <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Importar para:</span>
+            <input 
+              type="month" 
+              value={importPeriod}
+              onChange={(e) => setImportPeriod(e.target.value)}
+              className="bg-transparent border-none text-orange-600 font-bold focus:ring-0 cursor-pointer outline-none text-sm"
+            />
+          </div>
+
           <button 
             onClick={triggerFileInput}
             disabled={importing}
