@@ -68,8 +68,8 @@ const LoginScreen = () => {
     return (
         <div className="min-h-screen flex text-zinc-100 font-sans bg-[#09090b] relative overflow-hidden">
             {/* Global Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#ea580c] via-[#09090b] to-[#09090b] opacity-90 pointer-events-none z-0"></div>
-            <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-orange-400 via-transparent to-transparent pointer-events-none z-0"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#ff7900] via-[#09090b] to-[#09090b] opacity-90 pointer-events-none z-0"></div>
+            <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#ff7900] via-transparent to-transparent pointer-events-none z-0"></div>
 
             {/* Lado Esquerdo - Info/Branding */}
             <div className="hidden lg:flex w-1/2 p-12 flex-col justify-between relative z-10">
@@ -77,7 +77,7 @@ const LoginScreen = () => {
                 <div>
                     <div className="flex items-center gap-3 mb-16">
                         <img src={logo} alt="Instabuy" className="w-10 h-10 rounded-lg drop-shadow-md brightness-0 invert" />
-                        <span className="text-2xl font-black tracking-tight text-white uppercase">Instabuy<span className="text-orange-200">Operações</span></span>
+                        <span className="text-2xl font-black tracking-tight text-white uppercase">Instabuy<span className="text-[#ff7900] ml-1">Operações</span></span>
                     </div>
 
                     <h2 className="text-5xl font-bold leading-tight mb-6 text-white">
@@ -100,10 +100,10 @@ const LoginScreen = () => {
                 <div className="w-full max-w-md">
 
                     <div className="mb-10 lg:hidden flex flex-col items-center justify-center gap-3 text-center">
-                        <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-[#ff7900] rounded-lg flex items-center justify-center shadow-lg">
                             <img src={logo} alt="Instabuy" className="w-8 h-8 object-contain brightness-0 invert" />
                         </div>
-                        <span className="text-xl font-black tracking-tight text-white uppercase text-center">Instabuy<br /><span className="text-orange-500 text-2xl">Operações</span></span>
+                        <span className="text-xl font-black tracking-tight text-white uppercase text-center">Instabuy<br /><span className="text-[#ff7900] text-2xl">Operações</span></span>
                     </div>
 
                     <div className="bg-[#121214] border border-zinc-800/50 p-8 rounded-2xl shadow-2xl">
@@ -160,7 +160,7 @@ const LoginScreen = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full mt-8 py-3 px-4 bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-orange-500/10"
+                                        className="w-full mt-8 py-3 px-4 bg-[#ff7900] hover:bg-[#e66d00] disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-black rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-orange-500/10"
                                     >
                                         {loading ? (
                                             <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

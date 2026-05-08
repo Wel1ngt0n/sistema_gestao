@@ -118,8 +118,8 @@ export const TeamDiagnosticsView: React.FC = () => {
     if (loading && !data.length) {
         return (
             <div className="flex flex-col items-center justify-center h-[70vh] gap-4 bg-[#EEF0F8]">
-                <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                <p className="text-slate-500 font-bold animate-pulse">Sincronizando Cockpit Jarvis...</p>
+                <div className="w-12 h-12 rounded-full border-4 border-[#128131]/20 border-t-[#128131] animate-spin"></div>
+                <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Sincronizando Cockpit Instabuy...</p>
             </div>
         )
     }
@@ -131,9 +131,9 @@ export const TeamDiagnosticsView: React.FC = () => {
                 {/* 1. TOP HEADER */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">
+                        <div className="flex items-center gap-2 text-[#128131] font-black text-[10px] uppercase tracking-[0.3em]">
                             <Brain size={14} className="animate-pulse" />
-                            Gestão de Performance v3.5
+                            Instabuy Intelligence v3.5
                         </div>
                         <h1 className="text-3xl font-black tracking-tight text-slate-900">
                             Dashboard de Operações
@@ -153,7 +153,7 @@ export const TeamDiagnosticsView: React.FC = () => {
                 {/* 2. KPI GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+                        <div className="absolute top-0 left-0 w-full h-1 bg-[#ff7900]"></div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Analistas Ativos</span>
                         <div className="flex items-baseline gap-2">
                             <span className="text-3xl font-black text-slate-900">{summary?.total_ativos || 0}</span>
@@ -253,13 +253,13 @@ export const TeamDiagnosticsView: React.FC = () => {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-slate-50/50 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('implantador')}>Analista</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('score')}>Score</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('carga_ponderada')}>Carga</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('entregas_mes')}>Entregas</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('pct_retrabalho' as any)}>Retrabalho</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('idle_medio')}>Idle</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('implantador')}>Analista</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('score')}>Score</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('carga_ponderada')}>Carga</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('entregas_mes')}>Entregas</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('pct_retrabalho' as any)}>Retrabalho</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('idle_medio')}>Idle</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">

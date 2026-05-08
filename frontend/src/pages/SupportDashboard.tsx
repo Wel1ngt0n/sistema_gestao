@@ -203,9 +203,9 @@ export const SupportDashboard = () => {
 
   if (loading && orphans.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-50 text-teal-600">
-        <div className="w-12 h-12 border-4 border-teal-600/20 border-t-teal-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-bold tracking-widest animate-pulse uppercase">Conectando ao sistema de suporte...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-50 text-[#128131]">
+        <div className="w-12 h-12 border-4 border-[#128131]/20 border-t-[#128131] rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-bold tracking-widest animate-pulse uppercase">Conectando ao sistema de suporte Instabuy...</p>
       </div>
     );
   }
@@ -214,19 +214,19 @@ export const SupportDashboard = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-zinc-50 min-h-screen text-zinc-900">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-extrabold text-[#128131]">
             Zenvia Live Support
           </h1>
-          <p className="text-zinc-500 text-sm mt-1 font-medium">Monitoramento de conversas e vinculação de contatos</p>
+          <p className="text-zinc-500 text-sm mt-1 font-medium italic">Powered by Instabuy Intelligence</p>
         </div>
         <div className="flex items-center gap-4">
           <button 
             onClick={handleSync}
             disabled={syncing}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black shadow-sm transition-all ${
               syncing 
               ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' 
-              : 'bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300'
+              : 'bg-[#128131] text-white hover:bg-[#0f6b29] shadow-lg shadow-green-100'
             }`}
           >
             <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,10 +237,10 @@ export const SupportDashboard = () => {
           <button 
             onClick={triggerFileInput}
             disabled={importing}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black shadow-sm transition-all ${
               importing 
               ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' 
-              : 'bg-zinc-900 text-white hover:bg-zinc-800'
+              : 'bg-[#ff7900] text-white hover:bg-[#e66d00] shadow-lg shadow-orange-100'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,7 +259,7 @@ export const SupportDashboard = () => {
           />
           
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-zinc-200 shadow-sm">
-            <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+            <span className="w-2 h-2 bg-[#128131] rounded-full"></span>
             <span className="text-[10px] text-zinc-600 font-bold tracking-wider uppercase">Último Sync: {kpis.last_sync}</span>
           </div>
         </div>
@@ -278,7 +278,7 @@ export const SupportDashboard = () => {
               className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${
                 importing 
                 ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed' 
-                : 'bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-100'
+                : 'bg-[#128131] text-white hover:bg-[#0f6b29] shadow-lg shadow-green-100'
               }`}
             >
               {importing ? 'PROCESSANDO...' : 'INICIAR IMPORTAÇÃO'}
@@ -323,9 +323,9 @@ export const SupportDashboard = () => {
       <div className="flex gap-2 border-b border-zinc-200 pb-0">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-all ${
+          className={`px-5 py-2.5 text-sm font-black rounded-t-xl transition-all ${
             activeTab === 'overview'
-              ? 'bg-white border border-b-0 border-zinc-200 text-zinc-900 -mb-px'
+              ? 'bg-white border border-b-0 border-zinc-200 text-[#ff7900] -mb-px'
               : 'text-zinc-400 hover:text-zinc-600'
           }`}
         >
@@ -333,9 +333,9 @@ export const SupportDashboard = () => {
         </button>
         <button
           onClick={() => setActiveTab('performance')}
-          className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-all ${
+          className={`px-5 py-2.5 text-sm font-black rounded-t-xl transition-all ${
             activeTab === 'performance'
-              ? 'bg-white border border-b-0 border-zinc-200 text-zinc-900 -mb-px'
+              ? 'bg-white border border-b-0 border-zinc-200 text-[#ff7900] -mb-px'
               : 'text-zinc-400 hover:text-zinc-600'
           }`}
         >
@@ -348,10 +348,10 @@ export const SupportDashboard = () => {
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Conversas Ativas', value: kpis.open_conversations, color: 'text-teal-600', border: 'border-teal-200', bg: 'bg-teal-50/50' },
+          { label: 'Conversas Ativas', value: kpis.open_conversations, color: 'text-[#128131]', border: 'border-green-100', bg: 'bg-green-50/30' },
           { label: 'Mensagens Recebidas', value: kpis.messages_in, color: 'text-zinc-900', border: 'border-zinc-200', bg: 'bg-white' },
           { label: 'Respostas Enviadas', value: kpis.messages_out, color: 'text-zinc-500', border: 'border-zinc-200', bg: 'bg-white' },
-          { label: 'Tempo de Resposta', value: kpis.avg_response_time, color: 'text-orange-600', border: 'border-orange-200', bg: 'bg-orange-50/50' },
+          { label: 'Tempo de Resposta', value: kpis.avg_response_time, color: 'text-[#ff7900]', border: 'border-orange-100', bg: 'bg-orange-50/30' },
         ].map((kpi, i) => (
           <div key={i} className={`p-5 rounded-2xl shadow-sm border ${kpi.border} ${kpi.bg}`}>
             <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{kpi.label}</h3>
@@ -378,7 +378,7 @@ export const SupportDashboard = () => {
                   </div>
                   <button 
                     onClick={() => handleLinkStore(contact.id, contact.name)}
-                    className="bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-bold px-4 py-2 rounded-xl shadow-sm transition-transform group-hover:scale-105"
+                    className="bg-[#ff7900] hover:bg-[#e66d00] text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-sm transition-transform group-hover:scale-105"
                   >
                     VINCULAR LOJA
                   </button>
@@ -409,7 +409,7 @@ export const SupportDashboard = () => {
                   </div>
                   <p className="text-sm text-zinc-700 leading-relaxed">{m.text}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${m.direction === 'IN' ? 'text-teal-600' : 'text-blue-600'}`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${m.direction === 'IN' ? 'text-[#128131]' : 'text-blue-600'}`}>
                       {m.direction === 'IN' ? '← Recebida' : '→ Enviada'}
                     </span>
                     <span className="text-[10px] text-zinc-400">•</span>

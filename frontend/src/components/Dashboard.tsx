@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import {
     Chart as ChartJS,
@@ -67,7 +67,7 @@ export default function Dashboard() {
         datasets: [{
             label: 'Lojas em Andamento',
             data: charts?.impl_values || [],
-            backgroundColor: '#f97316', // Orange-500
+            backgroundColor: '#ff7900', // Instabuy Orange
             borderRadius: 8,
             barThickness: 40,
         }],
@@ -124,11 +124,11 @@ export default function Dashboard() {
             {/* Header: Soft Modern Typography */}
             <header className="mb-8 flex flex-col md:flex-row justify-between items-end">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900">
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900">
                         Sistema de Gestão de Operações
                     </h1>
-                    <p className="text-zinc-500 font-medium text-sm tracking-wide mt-1 uppercase">
-                        Visão Geral Operacional
+                    <p className="text-[#128131] font-black text-sm tracking-widest mt-1 uppercase">
+                        Visão Geral :: Instabuy Intelligence
                     </p>
                 </div>
                 <div className="flex items-center gap-2 text-zinc-400 font-mono text-xs mt-4 md:mt-0 bg-white px-3 py-1.5 rounded-full shadow-sm border border-zinc-200">
@@ -150,20 +150,20 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between mb-2">
                             <h3 className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Em andamento</h3>
                             <span className="flex h-2 w-2 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff7900] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ff7900]"></span>
                             </span>
                         </div>
-                        <div className="text-6xl font-black text-zinc-900 group-hover:text-orange-500 transition-colors tracking-tighter">
+                        <div className="text-6xl font-black text-zinc-900 group-hover:text-[#ff7900] transition-colors tracking-tighter">
                             {kpis.wip}
                         </div>
                     </div>
 
                     <div className="w-full bg-zinc-100 rounded-full h-1.5 mt-4 mb-4 overflow-hidden">
-                        <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: '60%' }}></div>
+                        <div className="bg-[#ff7900] h-1.5 rounded-full" style={{ width: '60%' }}></div>
                     </div>
 
-                    <div className="inline-flex items-center gap-2 text-sm font-bold text-orange-600">
+                    <div className="inline-flex items-center gap-2 text-sm font-black text-[#ff7900]">
                         <span>Pipeline ativo</span>
                         <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                 {/* Chart: Volume */}
                 <div className="md:col-span-8 bg-white border border-zinc-200 p-8 rounded-3xl shadow-sm min-h-[380px]">
                     <h3 className="text-zinc-400 font-bold mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
-                        <Zap size={16} className="text-orange-500" />
+                        <Zap size={16} className="text-[#ff7900]" />
                         Distribuição de Carga
                     </h3>
                     <div className="h-[280px]">
