@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Settings, Target, Scale, Clock, Bell, Send, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
 
@@ -121,6 +121,36 @@ export default function SettingsPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Webhook Info Card */}
+                    <div className="bg-white rounded-2xl border border-teal-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
+                        <div className="px-6 pt-5 pb-3 border-b border-teal-100 bg-teal-50">
+                            <h3 className="text-base font-bold flex items-center gap-2 text-teal-700">
+                                <Send size={18} /> URL de Recebimento de Webhook (Suporte)
+                            </h3>
+                            <p className="text-xs text-teal-600 mt-1">Utilize esta URL para configurar o envio de eventos externos (como o Zenvia) para o sistema.</p>
+                        </div>
+                        <div className="p-6">
+                            <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Endpoint (Método POST)</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    readOnly
+                                    value={`${import.meta.env.VITE_API_URL || window.location.origin}/api/webhooks/zenvia`}
+                                    className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-600 outline-none select-all"
+                                />
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${import.meta.env.VITE_API_URL || window.location.origin}/api/webhooks/zenvia`);
+                                        showMsg('URL do Webhook copiada com sucesso!', 'success');
+                                    }}
+                                    className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+                                >
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     {Object.entries(CATEGORY_META).map(([cat, meta]) => {
                         const items = configs[cat] || [];
                         if (items.length === 0) return null;

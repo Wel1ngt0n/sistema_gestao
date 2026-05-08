@@ -17,7 +17,8 @@ import {
     Rocket,
     Network,
     User,
-    LogOut
+    LogOut,
+    MessageSquare
 } from 'lucide-react'
 import logo from '../assets/logo.png'
 
@@ -33,7 +34,8 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
 
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         'Implantação': true,
-        'Integração': true
+        'Integração': true,
+        'Suporte': true
     })
 
     const toggleMenu = (label: string) => {
@@ -63,6 +65,13 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                         { to: '/integration/monitor', label: 'Monitor', icon: Target },
                         { to: '/integration/analytics', label: 'Analytics', icon: BarChart },
                         { to: '/integration/reports', label: 'Relatórios', icon: FileText },
+                    ]
+                },
+                {
+                    label: 'Suporte',
+                    icon: MessageSquare,
+                    children: [
+                        { to: '/support', label: 'Zenvia Dash', icon: LayoutDashboard },
                     ]
                 }
             ]

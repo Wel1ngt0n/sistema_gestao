@@ -1,51 +1,48 @@
-# PLAN: Unified Team Management & AI Integration (Jarvis v3.5)
+# PLAN: Infraestrutura de Webhook de Suporte e Deploy
 
-## 📋 Overview
-This plan describes the consolidation of the Team Management module into a single, cohesive experience. The AI (Jarvis) is integrated as a contextual Copilot, providing real-time diagnostics and support directly on the operational screen.
+## 📋 Visão Geral
+Este plano descreve a orquestração e as etapas de implementação necessárias para colocar a infraestrutura de suporte online usando Render (Backend), Vercel (Frontend) e Supabase (Banco de Dados). Isso inclui a criação de uma Tela de Configuração de Webhooks, a exposição do manipulador de webhooks para a web e a implementação de uma funcionalidade de sincronização (sync) de suporte.
 
-## 🤖 Agents & Roles
-| Agent | Role | Focus |
+## 🤖 Agentes & Funções
+| Agente | Função | Foco |
 |-------|------|-------|
-| `project-planner` | Architect | Task breakdown and system alignment |
-| `frontend-specialist` | UI/UX Developer | Implementation of the unified dashboard and premium design |
-| `test-engineer` | Quality Assurance | Validation of metrics, UX, and code standards |
-
-## 🛠️ Tech Stack
-- **Frontend**: React 18, Tailwind CSS v4, Lucide React
-- **Backend**: Python/Flask (AnalystsReportService)
-- **Design System**: Industrial Utilitarian (Orange/Amber/Zinc)
+| `project-planner` | Arquiteto | Divisão das tarefas e alinhamento do sistema (Fase 1) |
+| `frontend-specialist` | Desenvolvedor UI/UX | Tela de configuração de webhooks e interface de sync de suporte (Fase 2) |
+| `backend-specialist` | Servidor e API | Manipulador de webhooks, lógica de sync e configuração de deploy no Render (Fase 2) |
+| `devops-engineer` | Operações | Configuração do deploy para integrações com Vercel, Render e Supabase (Fase 2) |
 
 ---
 
-## 📅 Phase 1: Planning & Analysis (COMPLETED)
-- [x] Identify the core metrics (SLA, MRR, Idle, Carga).
-- [x] Analyze the "Jarvis Cockpit" logic to be integrated.
-- [x] Map navigation changes (remove redundant routes).
-
-## 🎨 Phase 2: Implementation (IN PROGRESS)
-- [x] **Core Component**: Create `JarvisCopilot.tsx` with chat and auto-analysis.
-- [x] **Unified Layout**: Refactor `TeamDiagnosticsView.tsx` to include:
-    - [x] Operational summary cards.
-    - [x] MRR Projection Widget.
-    - [x] Team Performance Table with AI classification.
-    - [x] Bottleneck charts.
-    - [x] Jarvis Copilot sidebar.
-- [ ] **Aesthetic Refinement**:
-    - [ ] Strictly enforce "Purple Ban" (remove all indigo/purple).
-    - [ ] Add micro-animations (animate-in, fade-in, scale).
-    - [ ] Implement premium typography (font-black, tracking-tight).
-
-## ⚙️ Phase 3: Logic & Data (PENDING)
-- [ ] **Data Flow**: Ensure the `JarvisCopilot` correctly reads and interprets the `teamData` passed as props.
-- [ ] **Action Items**: Link the "Próximos Passos" block to actual critical items in the state.
-
-## ✅ Phase 4: Validation & Quality (PENDING)
-- [ ] **Script Audit**: Fix Unicode encoding issue in `checklist.py` or run manual validation scripts.
-- [ ] **Cross-browser Audit**: Verify responsiveness on tablet/desktop.
-- [ ] **Final Security Scan**: Run `security_scan.py`.
+## 🚀 Fase 1: Planejamento e Análise
+- [x] Analisar o pedido do usuário para Deploy e Webhooks de Suporte.
+- [x] Criar este `PLAN.md` para coordenar múltiplos agentes.
 
 ---
 
-## ⏸️ CHECKPOINT
-### User Approval Needed
-Does this plan align with your vision of a "single experience"? If YES, we proceed to Phase 2/3 refinement.
+## 🛠️ Fase 2: Implementação (Aguardando Aprovação do Usuário)
+
+### Passo 1: Infraestrutura de Webhook e Deploy no Render (Backend)
+- Definir endpoints de webhook no backend para receber eventos externos de suporte.
+- Configurar as definições de deploy para o Render.
+- Configurar as strings de conexão do Supabase com segurança.
+
+### Passo 2: Tela de Configuração de Webhooks (Frontend)
+- Criar uma página dedicada `/support/settings` ou `/webhooks` no frontend.
+- Exibir a URL pública do Webhook do sistema (ex: `https://api.seusistema.com/webhooks/...`) em destaque para fácil cópia.
+- Implementar formulários para adicionar, editar, desativar e testar URLs de Webhooks.
+- Garantir um design premium alinhado ao sistema existente.
+- Preparar o deploy do frontend na Vercel.
+
+### Passo 3: Funcionalidade de Sync de Suporte
+- Criar um endpoint de API e uma tarefa em segundo plano para sincronizar os dados de suporte.
+- Adicionar um gatilho "Sincronizar Agora" no dashboard de suporte.
+- Exibir o status da sincronização, horário do último sync e logs de erros na interface.
+
+### Passo 4: Verificação e Deploy Final
+- Executar `security_scan.py` para garantir que os webhooks expostos estejam seguros.
+- Verificar o funcionamento de ponta a ponta (E2E).
+
+## ❓ Perguntas Pendentes (Portão Socrático)
+1. Você já tem algum provedor de webhook específico em mente que enviará dados para nós (ex: Stripe, Hotmart, Intercom)?
+2. Quais dados específicos de suporte devem ser sincronizados por essa funcionalidade de "Sync de Suporte"?
+3. As contas do Render, Vercel e Supabase já estão criadas e vinculadas a este repositório?

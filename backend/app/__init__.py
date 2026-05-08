@@ -113,4 +113,10 @@ def create_app():
     from app.routes_analysts_reports import analysts_reports_bp
     app.register_blueprint(analysts_reports_bp)
     
+    from app.routes_webhooks import webhook_bp
+    app.register_blueprint(webhook_bp)
+    
+    from app.routes_support import support_bp
+    app.register_blueprint(support_bp)
+    
     return app

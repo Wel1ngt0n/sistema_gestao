@@ -13,6 +13,7 @@ import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
 import TeamDiagnosticsView from './pages/implantadores/TeamDiagnosticsView'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
+import { SupportDashboard } from './pages/SupportDashboard'
 
 import DashboardAnalytics from './components/analytics/DashboardAnalytics'
 import ForecastPage from './features/forecast/ForecastPage'
@@ -51,6 +52,9 @@ function App() {
                     <Route path="/integration/monitor" element={<IntegrationMonitor />} />
                     <Route path="/integration/analytics" element={<IntegrationAnalytics />} />
                     <Route path="/integration/reports" element={<IntegrationReports />} />
+                    
+                    {/* Suporte Zenvia */}
+                    <Route path="/support" element={<SupportDashboard />} />
 
                     <Route path="/analytics" element={<DashboardAnalytics />} />
                     <Route path="/forecast" element={<ForecastPage />} />

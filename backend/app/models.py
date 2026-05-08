@@ -685,3 +685,74 @@ class AILongTermMemory(db.Model):
 
     def __repr__(self):
         return f'<AIMemory {self.id} - {self.analysis_type} ({self.created_at.strftime("%d/%m")})>'
+
+# --- ZENVIA SUPPORT MODELS ---
+
+class ZenviaWebhookEvent(db.Model):
+    __tablename__ = 'zenvia_webhook_events'
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    event_type = db.Column(db.String(50), nullable=False)
+    subscription_id = db.Column(db.String(100), nullable=True)
+    channel = db.Column(db.String(50), nullable=True)
+    timestamp = db.Column(db.String(50), nullable=True)
+    raw_payload = db.Column(db.Text, nullable=False) # JSON text
+    processed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SupportContact(db.Model):
+    __tablename__ = 'support_contacts'
+    id = db.Column(db.Integer, primary_key=True)
+    zenvia_contact_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=True)
+    phone = db.Column(db.String(50), nullable=True, index=True)
+    email = db.Column(db.String(150), nullable=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=True) # Para contatos órfãos
+    created_at_zenvia = db.Column(db.DateTime, nullable=True)
+    linked_store_name = db.Column(db.String(255), nullable=True) # Nome da loja livre (legado/externo)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    store = db.relationship('Store', backref='support_contacts')
+
+class SupportConversation(db.Model):
+    __tablename__ = 'support_conversations'
+    id = db.Column(db.Integer, primary_key=True)
+    zenvia_conversation_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    contact_id = db.Column(db.Integer, db.ForeignKey('support_contacts.id'), nullable=True)
+    channel = db.Column(db.String(50), nullable=True)
+    from_number = db.Column(db.String(50), nullable=True)
+    to_number = db.Column(db.String(50), nullable=True)
+    status = db.Column(db.String(50), nullable=True) # OPEN, CLOSED
+    group_id = db.Column(db.String(100), nullable=True)
+    user_id = db.Column(db.String(100), nullable=True) # ID do atendente na zenvia
+    created_at_zenvia = db.Column(db.DateTime, nullable=True)
+    closed_at = db.Column(db.DateTime, nullable=True)
+    last_message_at = db.Column(db.DateTime, nullable=True)
+    first_response_at = db.Column(db.DateTime, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    contact = db.relationship('SupportContact', backref='conversations')
+
+class SupportMessage(db.Model):
+    __tablename__ = 'support_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    zenvia_message_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('support_conversations.id'), nullable=True)
+    direction = db.Column(db.String(20), nullable=False) # IN, OUT
+    channel = db.Column(db.String(50), nullable=True)
+    from_number = db.Column(db.String(50), nullable=True)
+    to_number = db.Column(db.String(50), nullable=True)
+    content_type = db.Column(db.String(50), nullable=True)
+    text = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(50), nullable=True) # SENT, DELIVERED, READ, FAILED
+    
+    conversation = db.relationship('SupportConversation', backref='messages')
+
+class SupportAgentEvent(db.Model):
+    __tablename__ = 'support_agent_events'
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.String(100), nullable=True)
+    expert_agent_id = db.Column(db.String(100), nullable=True)
+    external_id = db.Column(db.String(100), nullable=True)
+    timestamp = db.Column(db.DateTime, nullable=True)
