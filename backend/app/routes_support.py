@@ -118,8 +118,8 @@ def import_csv():
         return jsonify({"status": "ok"}), 200
 
     try:
-        files = request.files.getlist('files')
-        if not files or len(files) == 0:
+        # Pega todos os arquivos enviados (independente da chave) para validar se há algo
+        if not request.files:
             return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
 
         results = []
