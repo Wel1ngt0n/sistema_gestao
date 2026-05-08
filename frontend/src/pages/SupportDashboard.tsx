@@ -145,7 +145,13 @@ export const SupportDashboard = () => {
         }
       });
 
-      const response = await api.post('/api/support/import-csv', formData);
+      console.log("Enviando FormData com as chaves:", Array.from(formData.keys()));
+      
+      const response = await api.post('/api/support/import-csv', formData, {
+        headers: {
+          'Content-Type': undefined // Força o axios a não usar o padrão application/json da instância
+        }
+      });
 
       if (response.status === 200) {
         alert("Importação concluída com sucesso!");
