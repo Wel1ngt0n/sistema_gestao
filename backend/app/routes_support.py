@@ -189,6 +189,13 @@ def get_agent_performance():
     
     agents = SupportAgentPerformance.query.filter_by(period=period).all()
     
+    # Se não houver dados no período solicitado (ex: mês atual), busca o período mais recente disponível
+    if not agents:
+        latest_perf = SupportAgentPerformance.query.order_by(SupportAgentPerformance.period.desc()).first()
+        if latest_perf:
+            period = latest_perf.period
+            agents = SupportAgentPerformance.query.filter_by(period=period).all()
+    
     return jsonify([{
         "id": a.id,
         "agent_name": a.agent_name,
