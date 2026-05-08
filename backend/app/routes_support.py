@@ -122,31 +122,60 @@ def import_csv():
         if not files or len(files) == 0:
             return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
 
+        # Identificação Inteligente baseada em colunas
+        files_to_process = {
+            "conversas": [],
+            "activities": [],
+            "performance": [],
+            "agents": []
+        }
+
+        for f in files:
+            # Lê o cabeçalho para identificar o tipo de arquivo
+            f.seek(0)
+            try:
+                # Lê apenas a primeira linha para ser rápido
+                header = pd.read_csv(f, nrows=0, encoding='utf-8')
+            except:
+                try:
+                    f.seek(0)
+                    header = pd.read_csv(f, nrows=0, encoding='latin-1')
+                except:
+                    continue
+            
+            cols = header.columns.tolist()
+            f.seek(0) # Volta para o início para o processamento real
+
+            if 'phone' in cols:
+                files_to_process["conversas"].append(f)
+            elif 'Detalhes' in cols:
+                files_to_process["activities"].append(f)
+            elif 'Total de contatos' in cols:
+                files_to_process["performance"].append(f)
+            elif 'Atendimentos pendentes' in cols:
+                files_to_process["agents"].append(f)
+
         results = []
         
-        # 1. Processar planilhas de Cadastro (Conversas - *.csv)
-        for f in files:
-            if 'Conversas' in f.filename:
-                stats = enrich_contacts_from_conversations_csv(f)
-                results.append({"file": f.filename, "type": "contact_enrichment", "stats": stats})
+        # 1. Processar planilhas de Cadastro (NPS e Contatos)
+        for f in files_to_process["conversas"]:
+            stats = enrich_contacts_from_conversations_csv(f)
+            results.append({"file": f.filename, "type": "contact_enrichment", "stats": stats})
 
-        # 2. Processar planilhas de Atividades (export-activities-*.csv)
-        for f in files:
-            if 'export-activities' in f.filename:
-                stats = import_zenvia_activities_csv(f)
-                results.append({"file": f.filename, "type": "message_import", "stats": stats})
+        # 2. Processar planilhas de Atividades (Mensagens)
+        for f in files_to_process["activities"]:
+            stats = import_zenvia_activities_csv(f)
+            results.append({"file": f.filename, "type": "message_import", "stats": stats})
 
-        # 3. Processar planilhas de Performance (Performance do grupo*.csv)
-        for f in files:
-            if 'Performance' in f.filename:
-                stats = import_agent_performance_csv(f)
-                results.append({"file": f.filename, "type": "agent_performance", "stats": stats})
+        # 3. Processar planilhas de Performance (KPIs Agregados)
+        for f in files_to_process["performance"]:
+            stats = import_agent_performance_csv(f)
+            results.append({"file": f.filename, "type": "agent_performance", "stats": stats})
 
-        # 4. Processar planilha de Agentes (Agentes.csv)
-        for f in files:
-            if 'Agentes' in f.filename:
-                stats = import_agents_status_csv(f)
-                results.append({"file": f.filename, "type": "agent_status", "stats": stats})
+        # 4. Processar planilha de Agentes (Estado Atual)
+        for f in files_to_process["agents"]:
+            stats = import_agents_status_csv(f)
+            results.append({"file": f.filename, "type": "agent_status", "stats": stats})
 
         # 5. Calcular NPS por Atendente (Pós-processamento)
         nps_stats = calculate_agent_nps()
