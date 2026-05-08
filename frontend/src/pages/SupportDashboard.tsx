@@ -9,6 +9,9 @@ interface OrphanContact {
 
 
 export const SupportDashboard = () => {
+  const [kpis, setKpis] = useState({
+    open_conversations: 0,
+    messages_in: 0,
     messages_out: 0,
     avg_response_time: '0m',
     last_sync: 'Nunca'
