@@ -141,7 +141,12 @@ def enrich_contacts_from_conversations_csv(data):
 
             # Contato
             contact_slug = slugify(name)
+            if len(contact_slug) > 80:
+                contact_slug = contact_slug[:70] + "_" + get_hash(name)[:10]
             zenvia_contact_id = f"IMPORT_{contact_slug}"
+
+            # Truncar nome se for muito longo (coluna é String(255))
+            safe_name = name[:250]
 
             contact = SupportContact.query.filter_by(zenvia_contact_id=zenvia_contact_id).first()
             if not contact and phone and phone != 'nan':
@@ -152,11 +157,14 @@ def enrich_contacts_from_conversations_csv(data):
                     contact.phone = phone
                 if (not contact.email or contact.email == 'nan') and email != 'nan':
                     contact.email = email
+                # Atualiza nome se o atual for genérico e o novo for melhor
+                if len(safe_name) > 5 and (not contact.name or len(contact.name) < 5):
+                    contact.name = safe_name
                 stats["contacts_updated"] += 1
             else:
                 contact = SupportContact(
                     zenvia_contact_id=zenvia_contact_id,
-                    name=name,
+                    name=safe_name,
                     phone=phone if phone != 'nan' else None,
                     email=email if email != 'nan' else None
                 )
@@ -166,7 +174,9 @@ def enrich_contacts_from_conversations_csv(data):
 
             # Vincular NPS à conversa do mesmo mês
             if nps_score is not None or nps_comment:
-                conv_key = f"{contact_slug}_{conv_ts.strftime('%Y%m')}"
+                # Garante que conv_key não estoure o limite de 100 do conv_id
+                safe_slug = contact_slug[:60]
+                conv_key = f"{safe_slug}_{conv_ts.strftime('%Y%m')}"
                 zenvia_conv_id = f"IMPORT_CONV_{conv_key}"
                 conv = SupportConversation.query.filter_by(zenvia_conversation_id=zenvia_conv_id).first()
                 if conv:
@@ -248,6 +258,8 @@ def import_zenvia_activities_csv(data):
 
             # 1. Contato
             contact_slug = slugify(contact_name)
+            if len(contact_slug) > 80:
+                contact_slug = contact_slug[:70] + "_" + get_hash(contact_name)[:10]
             zenvia_contact_id = f"IMPORT_{contact_slug}"
 
             contact_id = contact_cache.get(contact_slug)
@@ -256,7 +268,7 @@ def import_zenvia_activities_csv(data):
                 if not contact:
                     contact = SupportContact(
                         zenvia_contact_id=zenvia_contact_id,
-                        name=contact_name
+                        name=contact_name[:250]
                     )
                     db.session.add(contact)
                     db.session.flush()
@@ -265,7 +277,8 @@ def import_zenvia_activities_csv(data):
                 contact_cache[contact_slug] = contact_id
 
             # 2. Conversa (Agrupamento mensal)
-            conv_key = f"{contact_slug}_{ts.strftime('%Y%m')}"
+            safe_slug_for_conv = contact_slug[:60]
+            conv_key = f"{safe_slug_for_conv}_{ts.strftime('%Y%m')}"
             zenvia_conv_id = f"IMPORT_CONV_{conv_key}"
 
             conv_id = conv_cache.get(conv_key)
