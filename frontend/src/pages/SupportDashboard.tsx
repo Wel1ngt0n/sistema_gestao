@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Calendar, ChevronRight, Download, RefreshCw, Filter, Users, MessageSquare, Star } from 'lucide-react';
 import { api } from '../services/api';
 
 interface OrphanContact {
@@ -48,20 +49,38 @@ export const SupportDashboard = () => {
   const [orphans, setOrphans] = useState<OrphanContact[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [agents, setAgents] = useState<AgentPerf[]>([]);
   const [npsFeedbacks, setNpsFeedbacks] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'performance'>('overview');
+  
+  // Estados para Filtro de Período
+  const [availablePeriods, setAvailablePeriods] = useState<string[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(new Date().toISOString().substring(0, 7));
+
+  const fetchPeriods = async () => {
+    try {
+      const response = await api.get('/api/support/periods');
+      if (response.data && response.data.length > 0) {
+        setAvailablePeriods(response.data);
+        // Se o período selecionado não estiver na lista, pega o mais recente
+        if (!response.data.includes(selectedPeriod)) {
+          setSelectedPeriod(response.data[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar períodos:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
       const [kpiRes, orphanRes, eventRes, msgRes, agentRes, npsRes] = await Promise.all([
-        api.get('/api/support/kpis').catch(() => ({ data: {} })),
+        api.get(`/api/support/kpis?period=${selectedPeriod}`).catch(() => ({ data: {} })),
         api.get('/api/support/orphans').catch(() => ({ data: [] })),
         api.get('/api/webhooks/events').catch(() => ({ data: [] })),
         api.get('/api/support/messages').catch(() => ({ data: [] })),
-        api.get('/api/support/agent-performance').catch(() => ({ data: [] })),
+        api.get(`/api/support/agent-performance?period=${selectedPeriod}`).catch(() => ({ data: [] })),
         api.get('/api/support/nps-feedbacks').catch(() => ({ data: [] }))
       ]);
 
@@ -174,10 +193,14 @@ export const SupportDashboard = () => {
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 600000); // Atualiza a cada 10 minutos
-    return () => clearInterval(interval);
+    fetchPeriods();
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 600000); 
+    return () => clearInterval(interval);
+  }, [selectedPeriod]);
 
   const handleLinkStore = async (contactId: number, currentName: string) => {
     const storeName = window.prompt(`Vincular o contato "${currentName}" a qual loja?`);
@@ -344,6 +367,45 @@ export const SupportDashboard = () => {
           🏆 Performance da Equipe
         </button>
       </div>
+      
+      {/* Período / Filtro Global */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/60 backdrop-blur-sm p-4 rounded-3xl border border-zinc-200/50 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center">
+            <Calendar className="w-6 h-6 text-orange-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-zinc-900">Mês de Referência</h3>
+            <p className="text-xs text-zinc-500">Filtrando métricas e performance por período</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-zinc-200 shadow-inner">
+          {availablePeriods.length > 0 ? (
+            availablePeriods.map(p => {
+              const [year, month] = p.split('-');
+              const date = new Date(parseInt(year), parseInt(month) - 1);
+              const label = date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+              const isSelected = selectedPeriod === p;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setSelectedPeriod(p)}
+                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${
+                    isSelected 
+                      ? 'bg-[#ff7900] text-white shadow-md scale-105' 
+                      : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
+                  }`}
+                >
+                  {label} {year.slice(2)}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-6 py-2 text-xs text-zinc-400 italic">Carregando períodos...</div>
+          )}
+        </div>
+      </div>
 
       {activeTab === 'overview' && (
       <>
@@ -504,7 +566,6 @@ export const SupportDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {agents.length > 0 ? (
                   agents.map((a, i) => (
                     <tr key={a.agent_name} className="hover:bg-zinc-50 transition-colors">
                       <td className="px-6 py-4">

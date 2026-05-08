@@ -16,10 +16,27 @@ support_bp = Blueprint('support_bp', __name__)
 
 @support_bp.route('/api/support/kpis', methods=['GET'])
 def get_kpis():
+    period = request.args.get('period', datetime.now().strftime('%Y-%m'))
+    
+    # Filtro por mês para conversas e mensagens
+    # Busca por string prefixo (YYYY-MM) no created_at_zenvia
     open_convs = SupportConversation.query.filter_by(status='OPEN').count()
-    closed_convs = SupportConversation.query.filter_by(status='CLOSED').count()
-    msgs_in = SupportMessage.query.filter_by(direction='IN').count()
-    msgs_out = SupportMessage.query.filter_by(direction='OUT').count()
+    
+    # Para dados históricos, filtramos pelo mês
+    closed_convs = SupportConversation.query.filter(
+        SupportConversation.status == 'CLOSED',
+        db.cast(SupportConversation.created_at_zenvia, db.String).like(f"{period}%")
+    ).count()
+    
+    msgs_in = SupportMessage.query.filter(
+        SupportMessage.direction == 'IN',
+        db.cast(SupportMessage.timestamp, db.String).like(f"{period}%")
+    ).count()
+    
+    msgs_out = SupportMessage.query.filter(
+        SupportMessage.direction == 'OUT',
+        db.cast(SupportMessage.timestamp, db.String).like(f"{period}%")
+    ).count()
     
     # Busca o último sync nas configurações
     last_sync = SystemConfig.query.filter_by(key='last_support_sync').first()
@@ -174,6 +191,14 @@ def import_csv():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+@support_bp.route('/api/support/periods', methods=['GET'])
+def get_periods():
+    """
+    Retorna a lista de meses únicos (YYYY-MM) que possuem dados de performance.
+    """
+    periods = db.session.query(SupportAgentPerformance.period).distinct().order_by(SupportAgentPerformance.period.desc()).all()
+    return jsonify([p.period for p in periods])
 
 # ============================================================
 # NOVOS ENDPOINTS: PERFORMANCE DA EQUIPE
