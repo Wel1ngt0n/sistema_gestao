@@ -59,20 +59,30 @@ def parse_time_to_seconds(time_str):
 def read_input_data(data, required_column=None):
     """Lê entrada que pode ser um DataFrame ou um objeto de arquivo (buffer)."""
     if isinstance(data, pd.DataFrame):
-        return data
-    
-    # Se for buffer, tenta ler com múltiplos encodings
-    for encoding in ['utf-8', 'latin-1', 'cp1252']:
-        try:
-            if hasattr(data, 'seek'):
-                data.seek(0)
-            df = pd.read_csv(data, encoding=encoding)
-            if required_column and required_column not in df.columns:
+        df = data
+    else:
+        # Se for buffer, tenta ler com múltiplos encodings
+        df = None
+        for encoding in ['utf-8', 'latin-1', 'cp1252']:
+            try:
+                if hasattr(data, 'seek'):
+                    data.seek(0)
+                df = pd.read_csv(data, encoding=encoding)
+                if required_column:
+                    # Limpa espaços das colunas para bater certinho
+                    df.columns = [c.strip() for c in df.columns]
+                    if required_column not in df.columns:
+                        df = None
+                        continue
+                break
+            except:
                 continue
-            return df
-        except:
-            continue
-    return None
+    
+    if df is not None:
+        # Limpa espaços de todas as colunas
+        df.columns = [c.strip() for c in df.columns]
+        print(f">>> Arquivo lido com sucesso. Colunas: {df.columns.tolist()[:5]}...")
+    return df
 
 # ============================================================
 # 1. ENRIQUECIMENTO DE CONTATOS (Conversas - *.csv)
