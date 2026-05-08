@@ -122,58 +122,29 @@ def import_csv():
         if not files or len(files) == 0:
             return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
 
-        # Identificação Inteligente baseada em colunas
-        files_to_process = {
-            "conversas": [],
-            "activities": [],
-            "performance": [],
-            "agents": []
-        }
-
-        for f in files:
-            # Lê o cabeçalho para identificar o tipo de arquivo
-            f.seek(0)
-            try:
-                # Lê apenas a primeira linha para ser rápido
-                header = pd.read_csv(f, nrows=0, encoding='utf-8')
-            except:
-                try:
-                    f.seek(0)
-                    header = pd.read_csv(f, nrows=0, encoding='latin-1')
-                except:
-                    continue
-            
-            cols = header.columns.tolist()
-            f.seek(0) # Volta para o início para o processamento real
-
-            if 'phone' in cols:
-                files_to_process["conversas"].append(f)
-            elif 'Detalhes' in cols:
-                files_to_process["activities"].append(f)
-            elif 'Total de contatos' in cols:
-                files_to_process["performance"].append(f)
-            elif 'Atendimentos pendentes' in cols:
-                files_to_process["agents"].append(f)
-
         results = []
         
         # 1. Processar planilhas de Cadastro (NPS e Contatos)
-        for f in files_to_process["conversas"]:
+        conversas_files = request.files.getlist('conversas')
+        for f in conversas_files:
             stats = enrich_contacts_from_conversations_csv(f)
             results.append({"file": f.filename, "type": "contact_enrichment", "stats": stats})
 
         # 2. Processar planilhas de Atividades (Mensagens)
-        for f in files_to_process["activities"]:
+        activities_files = request.files.getlist('activities')
+        for f in activities_files:
             stats = import_zenvia_activities_csv(f)
             results.append({"file": f.filename, "type": "message_import", "stats": stats})
 
         # 3. Processar planilhas de Performance (KPIs Agregados)
-        for f in files_to_process["performance"]:
+        performance_files = request.files.getlist('performance')
+        for f in performance_files:
             stats = import_agent_performance_csv(f)
             results.append({"file": f.filename, "type": "agent_performance", "stats": stats})
 
         # 4. Processar planilha de Agentes (Estado Atual)
-        for f in files_to_process["agents"]:
+        agents_files = request.files.getlist('agents')
+        for f in agents_files:
             stats = import_agents_status_csv(f)
             results.append({"file": f.filename, "type": "agent_status", "stats": stats})
 

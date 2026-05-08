@@ -102,16 +102,48 @@ export const SupportDashboard = () => {
     }
   };
 
-  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [selectedFiles, setSelectedFiles] = useState<{file: File, type: string}[]>([]);
+
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files).map(f => {
+      // Pré-detecção por nome para ajudar o usuário
+      let type = 'ignore';
+      if (f.name.includes('Conversas') || f.name.includes('clientes') || f.name.includes('qualidade')) type = 'conversas';
+      else if (f.name.includes('activities') || f.name.includes('Intera')) type = 'activities';
+      else if (f.name.includes('Performance')) type = 'performance';
+      else if (f.name.includes('Agentes')) type = 'agents';
+      
+      return { file: f, type };
+    });
+
+    setSelectedFiles([...selectedFiles, ...newFiles]);
+    if (event.target) event.target.value = '';
+  };
+
+  const updateFileType = (index: number, type: string) => {
+    const updated = [...selectedFiles];
+    updated[index].type = type;
+    setSelectedFiles(updated);
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleImportCSV = async () => {
+    if (selectedFiles.length === 0) return;
 
     setImporting(true);
     try {
       const formData = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i]);
-      }
+      selectedFiles.forEach(sf => {
+        if (sf.type !== 'ignore') {
+          formData.append(sf.type, sf.file);
+        }
+      });
 
       const response = await api.post('/api/support/import-csv', formData, {
         headers: {
@@ -120,8 +152,9 @@ export const SupportDashboard = () => {
       });
 
       if (response.status === 200) {
-        alert("Importação concluída com sucesso! Verifique o console para detalhes.");
+        alert("Importação concluída com sucesso!");
         console.log("Import Results:", response.data.results);
+        setSelectedFiles([]);
         fetchData();
       } else {
         alert("Erro na importação: " + (response.data.message || "Erro desconhecido"));
@@ -131,8 +164,6 @@ export const SupportDashboard = () => {
       alert("Erro ao importar arquivos: " + (error.response?.data?.message || error.message));
     } finally {
       setImporting(false);
-      // Reseta o input para permitir selecionar o mesmo arquivo novamente
-      if (event.target) event.target.value = '';
     }
   };
 
@@ -212,27 +243,81 @@ export const SupportDashboard = () => {
               : 'bg-zinc-900 text-white hover:bg-zinc-800'
             }`}
           >
-            <svg className={`w-4 h-4 ${importing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            {importing ? 'IMPORTANDO...' : 'IMPORTAR HISTÓRICO'}
+            SELECIONAR EXCEL
           </button>
           
-          {/* Input de arquivo oculto */}
           <input 
             type="file" 
             id="support-file-input" 
             multiple 
             accept=".csv" 
-            onChange={handleImportCSV} 
+            onChange={handleFileSelection} 
             className="hidden" 
           />
+          
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-zinc-200 shadow-sm">
             <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
             <span className="text-[10px] text-zinc-600 font-bold tracking-wider uppercase">Último Sync: {kpis.last_sync}</span>
           </div>
         </div>
       </div>
+
+      {/* Gerenciador de Arquivos Selecionados */}
+      {selectedFiles.length > 0 && (
+        <div className="mb-8 bg-zinc-50 border border-zinc-200 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black text-zinc-700 uppercase tracking-widest flex items-center gap-2">
+              📂 Arquivos para Processar ({selectedFiles.length})
+            </h3>
+            <button 
+              onClick={handleImportCSV}
+              disabled={importing}
+              className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${
+                importing 
+                ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed' 
+                : 'bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-100'
+              }`}
+            >
+              {importing ? 'PROCESSANDO...' : 'INICIAR IMPORTAÇÃO'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {selectedFiles.map((sf, idx) => (
+              <div key={idx} className="bg-white p-3 rounded-xl border border-zinc-200 flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-zinc-800 truncate">{sf.file.name}</p>
+                  <p className="text-[10px] text-zinc-400">{(sf.file.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select 
+                    value={sf.type}
+                    onChange={(e) => updateFileType(idx, e.target.value)}
+                    className="text-[10px] font-bold bg-zinc-50 border-zinc-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-teal-500"
+                  >
+                    <option value="ignore">Ignorar</option>
+                    <option value="conversas">Conversas (NPS/Cadastro)</option>
+                    <option value="activities">Atividades (Histórico)</option>
+                    <option value="performance">Performance (KPIs)</option>
+                    <option value="agents">Agentes (Status)</option>
+                  </select>
+                  <button 
+                    onClick={() => removeFile(idx)}
+                    className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tab Switcher */}
       <div className="flex gap-2 border-b border-zinc-200 pb-0">
