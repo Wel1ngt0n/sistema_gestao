@@ -56,11 +56,17 @@ def parse_time_to_seconds(time_str):
     
     return total
 
-def read_csv_safe(file_path, required_column=None):
-    """Tenta ler CSV com múltiplos encodings."""
+def read_input_data(data, required_column=None):
+    """Lê entrada que pode ser um DataFrame ou um objeto de arquivo (buffer)."""
+    if isinstance(data, pd.DataFrame):
+        return data
+    
+    # Se for buffer, tenta ler com múltiplos encodings
     for encoding in ['utf-8', 'latin-1', 'cp1252']:
         try:
-            df = pd.read_csv(file_path, encoding=encoding)
+            if hasattr(data, 'seek'):
+                data.seek(0)
+            df = pd.read_csv(data, encoding=encoding)
             if required_column and required_column not in df.columns:
                 continue
             return df
@@ -68,20 +74,17 @@ def read_csv_safe(file_path, required_column=None):
             continue
     return None
 
-
 # ============================================================
 # 1. ENRIQUECIMENTO DE CONTATOS (Conversas - *.csv)
 # ============================================================
-def enrich_contacts_from_conversations_csv(file_path):
+def enrich_contacts_from_conversations_csv(data):
     """
-    Processa a planilha 'Conversas - *.csv' para:
-    - Criar/atualizar contatos com telefone e email
-    - Extrair NPS score e comentários do campo 'extra' (JSON)
-    - Vincular NPS às conversas existentes por data
+    Processa dados de conversas para enriquecer contatos e extrair NPS.
+    'data' pode ser um DataFrame ou um objeto de arquivo.
     """
-    df = read_csv_safe(file_path, 'phone')
+    df = read_input_data(data, 'phone')
     if df is None:
-        raise ValueError("Não foi possível ler o arquivo de conversas.")
+        return {"error": "Formato de arquivo de conversas inválido ou coluna 'phone' não encontrada."}
 
     stats = {
         "total_rows": len(df),
@@ -175,14 +178,14 @@ def enrich_contacts_from_conversations_csv(file_path):
 # ============================================================
 # 2. IMPORTAÇÃO DE ATIVIDADES (export-activities-*.csv)
 # ============================================================
-def import_zenvia_activities_csv(file_path):
+def import_zenvia_activities_csv(data):
     """
-    Importa o histórico de mensagens do arquivo export-activities-*.csv.
-    Formato: Data, Grupo, Agente, Cliente, Detalhes
+    Importa o histórico de mensagens.
+    'data' pode ser um DataFrame ou um objeto de arquivo.
     """
-    df = read_csv_safe(file_path, 'Cliente')
+    df = read_input_data(data, 'Cliente')
     if df is None:
-        raise ValueError("Não foi possível ler o arquivo de atividades.")
+        return {"error": "Formato de arquivo de atividades inválido ou coluna 'Cliente' não encontrada."}
 
     stats = {
         "total_rows": len(df),
@@ -307,15 +310,13 @@ def import_zenvia_activities_csv(file_path):
 # ============================================================
 # 3. PERFORMANCE DO GRUPO (Performance do grupo*.csv)
 # ============================================================
-def import_agent_performance_csv(file_path, period=None):
+def import_agent_performance_csv(data, period=None):
     """
-    Importa KPIs agregados da planilha 'Performance do grupo (2).csv'.
-    Formato: Consultor, Grupo, Total de contatos, Conv. totais, Novas conversas,
-             Conv. fechadas, Fecha em, Responde em, Mensagens enviadas
+    Importa KPIs agregados.
     """
-    df = read_csv_safe(file_path, 'Consultor')
+    df = read_input_data(data, 'Consultor')
     if df is None:
-        raise ValueError("Não foi possível ler a planilha de performance.")
+        return {"error": "Formato de arquivo de performance inválido ou coluna 'Consultor' não encontrada."}
 
     if not period:
         period = datetime.now().strftime('%Y-%m')
@@ -376,15 +377,13 @@ def import_agent_performance_csv(file_path, period=None):
 # ============================================================
 # 4. AGENTES ATIVO (Agentes.csv)
 # ============================================================
-def import_agents_status_csv(file_path, period=None):
+def import_agents_status_csv(data, period=None):
     """
-    Importa estado atual dos atendentes da planilha 'Agentes.csv'.
-    Formato: Consultor, Ult. Atividade, Ativ. realizadas hoje,
-             Atendimentos aceitos hoje, Atendimentos pendentes, etc.
+    Importa estado atual dos atendentes.
     """
-    df = read_csv_safe(file_path, 'Consultor')
+    df = read_input_data(data, 'Consultor')
     if df is None:
-        raise ValueError("Não foi possível ler a planilha de agentes.")
+        return {"error": "Formato de arquivo de agentes inválido ou coluna 'Consultor' não encontrada."}
 
     if not period:
         period = datetime.now().strftime('%Y-%m')

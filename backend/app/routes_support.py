@@ -108,44 +108,52 @@ def sync_data():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@support_bp.route('/api/support/import-csv', methods=['POST'])
+@support_bp.route('/api/support/import-csv', methods=['POST', 'OPTIONS'])
 def import_csv():
     """
-    Orquestra a importação de todos os CSVs da pasta excel_suporte.
+    Orquestra a importação de múltiplos arquivos CSV enviados pelo usuário.
     Ordem: Conversas → Atividades → Performance → Agentes → Cálculo NPS
     """
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
     try:
-        base_dir = os.getcwd()
-        base_path = os.path.join(base_dir, 'excel_suporte')
+        files = request.files.getlist('files')
+        if not files or len(files) == 0:
+            return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
+
         results = []
         
         # 1. Processar planilhas de Cadastro (Conversas - *.csv)
-        for f in glob.glob(os.path.join(base_path, 'Conversas - *.csv')):
-            stats = enrich_contacts_from_conversations_csv(f)
-            results.append({"file": os.path.basename(f), "type": "contact_enrichment", "stats": stats})
+        for f in files:
+            if 'Conversas' in f.filename:
+                stats = enrich_contacts_from_conversations_csv(f)
+                results.append({"file": f.filename, "type": "contact_enrichment", "stats": stats})
 
         # 2. Processar planilhas de Atividades (export-activities-*.csv)
-        for f in glob.glob(os.path.join(base_path, 'export-activities-*.csv')):
-            stats = import_zenvia_activities_csv(f)
-            results.append({"file": os.path.basename(f), "type": "message_import", "stats": stats})
+        for f in files:
+            if 'export-activities' in f.filename:
+                stats = import_zenvia_activities_csv(f)
+                results.append({"file": f.filename, "type": "message_import", "stats": stats})
 
         # 3. Processar planilhas de Performance (Performance do grupo*.csv)
-        for f in glob.glob(os.path.join(base_path, 'Performance do grupo*.csv')):
-            stats = import_agent_performance_csv(f)
-            results.append({"file": os.path.basename(f), "type": "agent_performance", "stats": stats})
+        for f in files:
+            if 'Performance' in f.filename:
+                stats = import_agent_performance_csv(f)
+                results.append({"file": f.filename, "type": "agent_performance", "stats": stats})
 
         # 4. Processar planilha de Agentes (Agentes.csv)
-        agents_file = os.path.join(base_path, 'Agentes.csv')
-        if os.path.exists(agents_file):
-            stats = import_agents_status_csv(agents_file)
-            results.append({"file": "Agentes.csv", "type": "agent_status", "stats": stats})
+        for f in files:
+            if 'Agentes' in f.filename:
+                stats = import_agents_status_csv(f)
+                results.append({"file": f.filename, "type": "agent_status", "stats": stats})
 
         # 5. Calcular NPS por Atendente (Pós-processamento)
         nps_stats = calculate_agent_nps()
         results.append({"file": "NPS Calculation", "type": "nps_calculation", "stats": nps_stats})
 
         if not results:
-            return jsonify({"status": "error", "message": "Nenhum arquivo de suporte encontrado."}), 404
+            return jsonify({"status": "error", "message": "Nenhum arquivo compatível encontrado entre os enviados."}), 400
             
         # Salva timestamp da última importação
         sync_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')

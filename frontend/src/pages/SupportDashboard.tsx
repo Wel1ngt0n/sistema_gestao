@@ -102,29 +102,42 @@ export const SupportDashboard = () => {
     }
   };
 
-  const handleImportCSV = async () => {
-    if (!window.confirm("Isso irá processar os arquivos export-activities-*.csv na pasta excel_suporte para importar o histórico. Deseja continuar?")) return;
-    
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
     setImporting(true);
     try {
-      const response = await api.post('/api/support/import-csv');
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+
+      const response = await api.post('/api/support/import-csv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
       if (response.status === 200) {
-        const results = response.data.results;
-        let message = "Importação concluída!\n";
-        results.forEach((r: any) => {
-          message += `\nArquivo: ${r.file}\nMensagens: ${r.stats.messages_imported}\nContatos: ${r.stats.contacts_created}\nConversas: ${r.stats.conversations_created}`;
-        });
-        alert(message);
-        await fetchData();
+        alert("Importação concluída com sucesso! Verifique o console para detalhes.");
+        console.log("Import Results:", response.data.results);
+        fetchData();
       } else {
         alert("Erro na importação: " + (response.data.message || "Erro desconhecido"));
       }
     } catch (error: any) {
       console.error("Erro na importação:", error);
-      alert("Erro na importação: " + (error.response?.data?.message || error.message));
+      alert("Erro ao importar arquivos: " + (error.response?.data?.message || error.message));
     } finally {
       setImporting(false);
+      // Reseta o input para permitir selecionar o mesmo arquivo novamente
+      if (event.target) event.target.value = '';
     }
+  };
+
+  const triggerFileInput = () => {
+    document.getElementById('support-file-input')?.click();
   };
 
   useEffect(() => {
@@ -191,7 +204,7 @@ export const SupportDashboard = () => {
             {syncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR AGORA'}
           </button>
           <button 
-            onClick={handleImportCSV}
+            onClick={triggerFileInput}
             disabled={importing}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all ${
               importing 
@@ -204,6 +217,16 @@ export const SupportDashboard = () => {
             </svg>
             {importing ? 'IMPORTANDO...' : 'IMPORTAR HISTÓRICO'}
           </button>
+          
+          {/* Input de arquivo oculto */}
+          <input 
+            type="file" 
+            id="support-file-input" 
+            multiple 
+            accept=".csv" 
+            onChange={handleImportCSV} 
+            className="hidden" 
+          />
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-zinc-200 shadow-sm">
             <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
             <span className="text-[10px] text-zinc-600 font-bold tracking-wider uppercase">Último Sync: {kpis.last_sync}</span>
