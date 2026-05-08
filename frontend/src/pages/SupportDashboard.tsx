@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 interface OrphanContact {
   id: number;
@@ -24,15 +25,15 @@ export const SupportDashboard = () => {
   const fetchData = async () => {
     try {
       const [kpiRes, orphanRes] = await Promise.all([
-        fetch('/api/support/kpis').catch(() => ({ json: () => ({}) })),
-        fetch('/api/support/orphans').catch(() => ({ json: () => [] }))
+        api.get('/api/support/kpis').catch(() => ({ data: {} })),
+        api.get('/api/support/orphans').catch(() => ({ data: [] }))
       ]);
 
-      const kpiData = await (typeof kpiRes.json === 'function' ? kpiRes.json() : {});
-      const orphanData = await (typeof orphanRes.json === 'function' ? orphanRes.json() : []);
+      const kpiData = kpiRes.data || {};
+      const orphanData = Array.isArray(orphanRes.data) ? orphanRes.data : [];
 
       setKpis(prev => ({ ...prev, ...kpiData }));
-      setOrphans(Array.isArray(orphanData) ? orphanData : []);
+      setOrphans(orphanData);
     } catch (error) {
       console.error("Erro ao carregar dados do suporte:", error);
     } finally {
@@ -43,8 +44,8 @@ export const SupportDashboard = () => {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const response = await fetch('/api/support/sync', { method: 'POST' });
-      if (response.ok) {
+      const response = await api.post('/api/support/sync');
+      if (response.status === 200) {
         await fetchData();
       } else {
         alert("Erro ao sincronizar dados.");
@@ -67,13 +68,12 @@ export const SupportDashboard = () => {
     
     if (storeName && storeName.trim()) {
       try {
-        const response = await fetch('/api/support/link-store', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contact_id: contactId, store_name: storeName.trim() })
+        const response = await api.post('/api/support/link-store', {
+          contact_id: contactId,
+          store_name: storeName.trim()
         });
 
-        if (response.ok) {
+        if (response.status === 200) {
           // Remove o contato da lista localmente para feedback instantâneo
           setOrphans(prev => prev.filter(c => c.id !== contactId));
           // Atualiza KPIs para refletir a mudança se necessário
