@@ -63,3 +63,14 @@ def zenvia_webhook():
     # O event_processor.py processará de forma assíncrona/batch os eventos com processed_at=None.
     
     return jsonify({"message": "Event received successfully"}), 200
+
+@webhook_bp.route('/api/webhooks/events', methods=['GET'])
+def get_webhook_events():
+    # Retorna os últimos 20 eventos recebidos para debug no dashboard
+    events = ZenviaWebhookEvent.query.order_by(ZenviaWebhookEvent.id.desc()).limit(20).all()
+    return jsonify([{
+        "id": e.id,
+        "payload_type": e.event_type or 'Unknown',
+        "received_at": e.created_at.strftime('%d/%m %H:%M:%S') if e.created_at else '---',
+        "status": "Recebido"
+    } for e in events])

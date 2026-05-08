@@ -9,14 +9,12 @@ interface OrphanContact {
 
 
 export const SupportDashboard = () => {
-  const [kpis, setKpis] = useState({
-    open_conversations: 0,
-    messages_in: 0,
     messages_out: 0,
     avg_response_time: '0m',
     last_sync: 'Nunca'
   });
 
+  const [events, setEvents] = useState<any[]>([]);
   const [orphans, setOrphans] = useState<OrphanContact[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,16 +22,19 @@ export const SupportDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [kpiRes, orphanRes] = await Promise.all([
+      const [kpiRes, orphanRes, eventRes] = await Promise.all([
         api.get('/api/support/kpis').catch(() => ({ data: {} })),
-        api.get('/api/support/orphans').catch(() => ({ data: [] }))
+        api.get('/api/support/orphans').catch(() => ({ data: [] })),
+        api.get('/api/webhooks/events').catch(() => ({ data: [] }))
       ]);
 
       const kpiData = kpiRes.data || {};
       const orphanData = Array.isArray(orphanRes.data) ? orphanRes.data : [];
+      const eventData = Array.isArray(eventRes.data) ? eventRes.data : [];
 
       setKpis(prev => ({ ...prev, ...kpiData }));
       setOrphans(orphanData);
+      setEvents(eventData);
     } catch (error) {
       console.error("Erro ao carregar dados do suporte:", error);
     } finally {
@@ -168,6 +169,54 @@ export const SupportDashboard = () => {
               ))
             )}
           </div>
+        </div>
+      </div>
+      {/* Recent Webhook Events */}
+      <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+          <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            Monitor de Webhooks em Tempo Real
+          </h2>
+          <span className="text-[10px] text-zinc-400 font-medium italic">Últimos 20 eventos</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-zinc-50">
+                <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">ID</th>
+                <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo do Evento</th>
+                <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Recebido em</th>
+                <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {events.length > 0 ? (
+                events.map((e) => (
+                  <tr key={e.id} className="hover:bg-zinc-50 transition-colors">
+                    <td className="px-6 py-4 text-xs font-mono text-zinc-400">#{e.id}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 rounded-lg bg-zinc-100 text-zinc-700 text-xs font-bold uppercase tracking-tight">
+                        {e.payload_type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-zinc-500 font-medium">{e.received_at}</td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">
+                        {e.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-zinc-400 italic">
+                    Nenhum webhook recebido ainda. Aguardando eventos da Zenvia...
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
