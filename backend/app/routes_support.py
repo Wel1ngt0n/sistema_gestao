@@ -118,8 +118,14 @@ def import_csv():
         return jsonify({"status": "ok"}), 200
 
     try:
+        # Debug logs para Render
+        print(f"--- IMPORT CSV DEBUG ---")
+        print(f"FILES KEYS: {list(request.files.keys())}")
+        print(f"FORM KEYS: {list(request.form.keys())}")
+
         # Pega todos os arquivos enviados (independente da chave) para validar se há algo
         if not request.files:
+            print("ERROR: No files in request.files")
             return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
 
         results = []

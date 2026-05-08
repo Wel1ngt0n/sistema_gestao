@@ -145,11 +145,7 @@ export const SupportDashboard = () => {
         }
       });
 
-      const response = await api.post('/api/support/import-csv', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/api/support/import-csv', formData);
 
       if (response.status === 200) {
         alert("Importação concluída com sucesso!");
