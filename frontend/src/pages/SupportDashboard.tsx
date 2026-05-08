@@ -18,6 +18,7 @@ export const SupportDashboard = () => {
   });
 
   const [events, setEvents] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [orphans, setOrphans] = useState<OrphanContact[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,19 +26,22 @@ export const SupportDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [kpiRes, orphanRes, eventRes] = await Promise.all([
+      const [kpiRes, orphanRes, eventRes, msgRes] = await Promise.all([
         api.get('/api/support/kpis').catch(() => ({ data: {} })),
         api.get('/api/support/orphans').catch(() => ({ data: [] })),
-        api.get('/api/webhooks/events').catch(() => ({ data: [] }))
+        api.get('/api/webhooks/events').catch(() => ({ data: [] })),
+        api.get('/api/support/messages').catch(() => ({ data: [] }))
       ]);
 
       const kpiData = kpiRes.data || {};
       const orphanData = Array.isArray(orphanRes.data) ? orphanRes.data : [];
       const eventData = Array.isArray(eventRes.data) ? eventRes.data : [];
+      const msgData = Array.isArray(msgRes.data) ? msgRes.data : [];
 
       setKpis(prev => ({ ...prev, ...kpiData }));
       setOrphans(orphanData);
       setEvents(eventData);
+      setMessages(msgData);
     } catch (error) {
       console.error("Erro ao carregar dados do suporte:", error);
     } finally {
@@ -174,6 +178,44 @@ export const SupportDashboard = () => {
           </div>
         </div>
       </div>
+      {/* Recent Messages Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50">
+          <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-2">
+            <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+            </svg>
+            Últimas Mensagens (Zenvia)
+          </h2>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {messages.length > 0 ? (
+              messages.map((m) => (
+                <div key={m.id} className={`flex flex-col p-4 rounded-xl border ${m.direction === 'IN' ? 'bg-zinc-50 border-zinc-100' : 'bg-blue-50/30 border-blue-100 self-end'}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-bold text-zinc-900">{m.contact_name}</span>
+                    <span className="text-[10px] text-zinc-400">{new Date(m.timestamp).toLocaleString('pt-BR')}</span>
+                  </div>
+                  <p className="text-sm text-zinc-700 leading-relaxed">{m.text}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${m.direction === 'IN' ? 'text-teal-600' : 'text-blue-600'}`}>
+                      {m.direction === 'IN' ? '← Recebida' : '→ Enviada'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">•</span>
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase">{m.status}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-sm text-zinc-400 italic bg-zinc-50 rounded-2xl">
+                Nenhuma mensagem processada ainda.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Recent Webhook Events */}
       <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
