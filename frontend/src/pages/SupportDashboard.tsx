@@ -7,6 +7,32 @@ interface OrphanContact {
   phone: string;
 }
 
+interface AgentPerf {
+  agent_name: string;
+  total_contacts: number;
+  total_conversations: number;
+  closed_conversations: number;
+  total_messages_sent: number;
+  avg_response_time_seconds: number;
+  avg_close_time_seconds: number;
+  avg_nps: number | null;
+  nps_count: number;
+  pending_tickets: number;
+  open_tickets: number;
+}
+
+const formatTime = (seconds: number): string => {
+  if (!seconds || seconds === 0) return '-';
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+};
+
 
 export const SupportDashboard = () => {
   const [kpis, setKpis] = useState({
@@ -23,14 +49,20 @@ export const SupportDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const [syncing, setSyncing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [agents, setAgents] = useState<AgentPerf[]>([]);
+  const [npsFeedbacks, setNpsFeedbacks] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'performance'>('overview');
 
   const fetchData = async () => {
     try {
-      const [kpiRes, orphanRes, eventRes, msgRes] = await Promise.all([
+      const [kpiRes, orphanRes, eventRes, msgRes, agentRes, npsRes] = await Promise.all([
         api.get('/api/support/kpis').catch(() => ({ data: {} })),
         api.get('/api/support/orphans').catch(() => ({ data: [] })),
         api.get('/api/webhooks/events').catch(() => ({ data: [] })),
-        api.get('/api/support/messages').catch(() => ({ data: [] }))
+        api.get('/api/support/messages').catch(() => ({ data: [] })),
+        api.get('/api/support/agent-performance').catch(() => ({ data: [] })),
+        api.get('/api/support/nps-feedbacks').catch(() => ({ data: [] }))
       ]);
 
       const kpiData = kpiRes.data || {};
@@ -38,10 +70,15 @@ export const SupportDashboard = () => {
       const eventData = Array.isArray(eventRes.data) ? eventRes.data : [];
       const msgData = Array.isArray(msgRes.data) ? msgRes.data : [];
 
+      const agentData = Array.isArray(agentRes.data) ? agentRes.data : [];
+      const npsData = Array.isArray(npsRes.data) ? npsRes.data : [];
+
       setKpis(prev => ({ ...prev, ...kpiData }));
       setOrphans(orphanData);
       setEvents(eventData);
       setMessages(msgData);
+      setAgents(agentData);
+      setNpsFeedbacks(npsData);
     } catch (error) {
       console.error("Erro ao carregar dados do suporte:", error);
     } finally {
@@ -62,6 +99,31 @@ export const SupportDashboard = () => {
       console.error("Erro na sincronização:", error);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleImportCSV = async () => {
+    if (!window.confirm("Isso irá processar os arquivos export-activities-*.csv na pasta excel_suporte para importar o histórico. Deseja continuar?")) return;
+    
+    setImporting(true);
+    try {
+      const response = await api.post('/api/support/import-csv');
+      if (response.status === 200) {
+        const results = response.data.results;
+        let message = "Importação concluída!\n";
+        results.forEach((r: any) => {
+          message += `\nArquivo: ${r.file}\nMensagens: ${r.stats.messages_imported}\nContatos: ${r.stats.contacts_created}\nConversas: ${r.stats.conversations_created}`;
+        });
+        alert(message);
+        await fetchData();
+      } else {
+        alert("Erro na importação: " + (response.data.message || "Erro desconhecido"));
+      }
+    } catch (error: any) {
+      console.error("Erro na importação:", error);
+      alert("Erro na importação: " + (error.response?.data?.message || error.message));
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -128,13 +190,53 @@ export const SupportDashboard = () => {
             </svg>
             {syncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR AGORA'}
           </button>
+          <button 
+            onClick={handleImportCSV}
+            disabled={importing}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all ${
+              importing 
+              ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' 
+              : 'bg-zinc-900 text-white hover:bg-zinc-800'
+            }`}
+          >
+            <svg className={`w-4 h-4 ${importing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            {importing ? 'IMPORTANDO...' : 'IMPORTAR HISTÓRICO'}
+          </button>
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-zinc-200 shadow-sm">
             <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
             <span className="text-[10px] text-zinc-600 font-bold tracking-wider uppercase">Último Sync: {kpis.last_sync}</span>
           </div>
         </div>
       </div>
-      
+
+      {/* Tab Switcher */}
+      <div className="flex gap-2 border-b border-zinc-200 pb-0">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-all ${
+            activeTab === 'overview'
+              ? 'bg-white border border-b-0 border-zinc-200 text-zinc-900 -mb-px'
+              : 'text-zinc-400 hover:text-zinc-600'
+          }`}
+        >
+          📊 Visão Geral
+        </button>
+        <button
+          onClick={() => setActiveTab('performance')}
+          className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-all ${
+            activeTab === 'performance'
+              ? 'bg-white border border-b-0 border-zinc-200 text-zinc-900 -mb-px'
+              : 'text-zinc-400 hover:text-zinc-600'
+          }`}
+        >
+          🏆 Performance da Equipe
+        </button>
+      </div>
+
+      {activeTab === 'overview' && (
+      <>
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
@@ -264,9 +366,133 @@ export const SupportDashboard = () => {
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {activeTab === 'performance' && (
+      <>
+        {/* Agent Ranking */}
+        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50">
+            <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-2">
+              🏆 Ranking de Atendentes
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-zinc-50">
+                  <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Atendente</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">NPS</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Contatos</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Conversas</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Fechadas</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Msgs Enviadas</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">T. Resposta</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">T. Fechamento</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Pendentes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {agents.length > 0 ? (
+                  agents.map((a, i) => (
+                    <tr key={a.agent_name} className="hover:bg-zinc-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
+                            i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-zinc-100 text-zinc-600' : 'bg-zinc-50 text-zinc-400'
+                          }`}>
+                            {i + 1}º
+                          </span>
+                          <span className="font-bold text-sm text-zinc-800">{a.agent_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        {a.avg_nps !== null ? (
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${
+                            a.avg_nps >= 9 ? 'bg-emerald-50 text-emerald-700' :
+                            a.avg_nps >= 7 ? 'bg-amber-50 text-amber-700' :
+                            'bg-red-50 text-red-700'
+                          }`}>
+                            {a.avg_nps.toFixed(1)} ({a.nps_count})
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-center text-sm font-bold text-zinc-700">{a.total_contacts}</td>
+                      <td className="px-4 py-4 text-center text-sm text-zinc-500">{a.total_conversations}</td>
+                      <td className="px-4 py-4 text-center text-sm text-zinc-500">{a.closed_conversations}</td>
+                      <td className="px-4 py-4 text-center text-sm font-bold text-blue-600">{a.total_messages_sent}</td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="text-xs font-bold text-teal-600">{formatTime(a.avg_response_time_seconds)}</span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="text-xs font-bold text-zinc-500">{formatTime(a.avg_close_time_seconds)}</span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                          a.pending_tickets > 3 ? 'bg-red-50 text-red-600' : 'bg-zinc-50 text-zinc-500'
+                        }`}>
+                          {a.pending_tickets}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center text-sm text-zinc-400 italic">
+                      Nenhum dado de performance ainda. Importe os CSVs primeiro.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* NPS Feedbacks */}
+        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50">
+            <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-2">
+              💬 Feedbacks de NPS Recentes
+            </h2>
+          </div>
+          <div className="p-6 space-y-3 max-h-[400px] overflow-y-auto">
+            {npsFeedbacks.length > 0 ? (
+              npsFeedbacks.map((f: any) => (
+                <div key={f.id} className="flex items-start gap-4 p-4 rounded-xl border border-zinc-100 hover:bg-zinc-50 transition-colors">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                    f.nps_score >= 9 ? 'bg-emerald-100 text-emerald-700' :
+                    f.nps_score >= 7 ? 'bg-amber-100 text-amber-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {f.nps_score}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-zinc-800">{f.contact_name}</span>
+                      <span className="text-[10px] text-zinc-400">→</span>
+                      <span className="text-[10px] font-bold text-teal-600 uppercase">{f.agent_name || 'N/A'}</span>
+                    </div>
+                    {f.nps_comment && (
+                      <p className="text-xs text-zinc-500 leading-relaxed truncate">{f.nps_comment}</p>
+                    )}
+                    <span className="text-[10px] text-zinc-300">{f.date ? new Date(f.date).toLocaleDateString('pt-BR') : ''}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-sm text-zinc-400 italic">
+                Nenhum feedback de NPS encontrado.
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+      )}
     </div>
   );
 };
 
 export default SupportDashboard;
-// Final de arquivo limpo

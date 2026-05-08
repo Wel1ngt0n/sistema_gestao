@@ -1,7 +1,16 @@
 from flask import Blueprint, jsonify, request
-from app.models import SupportConversation, SupportMessage, SupportContact, SystemConfig, db
+from app.models import SupportConversation, SupportMessage, SupportContact, SupportAgentPerformance, SystemConfig, db
 from datetime import datetime
+import os
+import glob
 from app.services.event_processor_service import process_pending_zenvia_events
+from app.services.support_importer import (
+    import_zenvia_activities_csv,
+    enrich_contacts_from_conversations_csv,
+    import_agent_performance_csv,
+    import_agents_status_csv,
+    calculate_agent_nps
+)
 
 support_bp = Blueprint('support_bp', __name__)
 
@@ -40,16 +49,25 @@ def get_orphans():
 
 @support_bp.route('/api/support/messages', methods=['GET'])
 def get_recent_messages():
-    # Pega as últimas 50 mensagens
-    messages = SupportMessage.query.order_by(SupportMessage.id.desc()).limit(50).all()
-    return jsonify([{
-        "id": m.id,
-        "text": m.text,
-        "direction": m.direction,
-        "status": m.status,
-        "contact_name": m.conversation.contact.name,
-        "timestamp": m.timestamp.isoformat() if m.timestamp else None
-    } for m in messages])
+    # Pega as últimas 50 mensagens por timestamp
+    messages = SupportMessage.query.order_by(SupportMessage.timestamp.desc()).limit(50).all()
+    result = []
+    for m in messages:
+        contact_name = "Desconhecido"
+        try:
+            if m.conversation and m.conversation.contact:
+                contact_name = m.conversation.contact.name or "Desconhecido"
+        except:
+            pass
+        result.append({
+            "id": m.id,
+            "text": m.text,
+            "direction": m.direction,
+            "status": m.status,
+            "contact_name": contact_name,
+            "timestamp": m.timestamp.isoformat() if m.timestamp else None
+        })
+    return jsonify(result)
 
 @support_bp.route('/api/support/link-store', methods=['POST'])
 def link_store():
@@ -89,3 +107,108 @@ def sync_data():
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@support_bp.route('/api/support/import-csv', methods=['POST'])
+def import_csv():
+    """
+    Orquestra a importação de todos os CSVs da pasta excel_suporte.
+    Ordem: Conversas → Atividades → Performance → Agentes → Cálculo NPS
+    """
+    try:
+        base_dir = os.getcwd()
+        base_path = os.path.join(base_dir, 'excel_suporte')
+        results = []
+        
+        # 1. Processar planilhas de Cadastro (Conversas - *.csv)
+        for f in glob.glob(os.path.join(base_path, 'Conversas - *.csv')):
+            stats = enrich_contacts_from_conversations_csv(f)
+            results.append({"file": os.path.basename(f), "type": "contact_enrichment", "stats": stats})
+
+        # 2. Processar planilhas de Atividades (export-activities-*.csv)
+        for f in glob.glob(os.path.join(base_path, 'export-activities-*.csv')):
+            stats = import_zenvia_activities_csv(f)
+            results.append({"file": os.path.basename(f), "type": "message_import", "stats": stats})
+
+        # 3. Processar planilhas de Performance (Performance do grupo*.csv)
+        for f in glob.glob(os.path.join(base_path, 'Performance do grupo*.csv')):
+            stats = import_agent_performance_csv(f)
+            results.append({"file": os.path.basename(f), "type": "agent_performance", "stats": stats})
+
+        # 4. Processar planilha de Agentes (Agentes.csv)
+        agents_file = os.path.join(base_path, 'Agentes.csv')
+        if os.path.exists(agents_file):
+            stats = import_agents_status_csv(agents_file)
+            results.append({"file": "Agentes.csv", "type": "agent_status", "stats": stats})
+
+        # 5. Calcular NPS por Atendente (Pós-processamento)
+        nps_stats = calculate_agent_nps()
+        results.append({"file": "NPS Calculation", "type": "nps_calculation", "stats": nps_stats})
+
+        if not results:
+            return jsonify({"status": "error", "message": "Nenhum arquivo de suporte encontrado."}), 404
+            
+        # Salva timestamp da última importação
+        sync_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        config = SystemConfig.query.filter_by(key='last_support_import').first()
+        if config:
+            config.value = sync_time
+        else:
+            db.session.add(SystemConfig(key='last_support_import', value=sync_time, category='import', description='Última importação de CSV'))
+        db.session.commit()
+
+        return jsonify({"status": "success", "results": results})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ============================================================
+# NOVOS ENDPOINTS: PERFORMANCE DA EQUIPE
+# ============================================================
+
+@support_bp.route('/api/support/agent-performance', methods=['GET'])
+def get_agent_performance():
+    """
+    Retorna os dados de performance de todos os atendentes.
+    Query params: ?period=2026-05 (opcional, default=mês atual)
+    """
+    period = request.args.get('period', datetime.now().strftime('%Y-%m'))
+    
+    agents = SupportAgentPerformance.query.filter_by(period=period).all()
+    
+    return jsonify([{
+        "id": a.id,
+        "agent_name": a.agent_name,
+        "period": a.period,
+        "group_name": a.group_name,
+        "total_contacts": a.total_contacts,
+        "total_conversations": a.total_conversations,
+        "new_conversations": a.new_conversations,
+        "closed_conversations": a.closed_conversations,
+        "total_messages_sent": a.total_messages_sent,
+        "avg_response_time_seconds": a.avg_response_time_seconds,
+        "avg_close_time_seconds": a.avg_close_time_seconds,
+        "avg_nps": a.avg_nps,
+        "nps_count": a.nps_count,
+        "last_activity_at": a.last_activity_at.isoformat() if a.last_activity_at else None,
+        "activities_today": a.activities_today,
+        "pending_tickets": a.pending_tickets,
+        "open_tickets": a.open_tickets
+    } for a in agents])
+
+@support_bp.route('/api/support/nps-feedbacks', methods=['GET'])
+def get_nps_feedbacks():
+    """
+    Retorna as últimas conversas que tiveram NPS atribuído, com nome do atendente.
+    """
+    convs = SupportConversation.query.filter(
+        SupportConversation.nps_score.isnot(None)
+    ).order_by(SupportConversation.created_at_zenvia.desc()).limit(50).all()
+    
+    return jsonify([{
+        "id": c.id,
+        "agent_name": c.agent_name,
+        "nps_score": c.nps_score,
+        "nps_comment": c.nps_comment,
+        "contact_name": c.contact.name if c.contact else "Desconhecido",
+        "date": c.created_at_zenvia.isoformat() if c.created_at_zenvia else None
+    } for c in convs])

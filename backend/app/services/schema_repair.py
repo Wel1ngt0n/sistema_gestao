@@ -66,6 +66,37 @@ def repair_database_schema():
         "ALTER TABLE stores ALTER COLUMN rede TYPE VARCHAR(255);",
         "ALTER TABLE stores ALTER COLUMN status TYPE VARCHAR(255);",
         "ALTER TABLE stores ALTER COLUMN status_raw TYPE VARCHAR(255);",
+
+        # V3.1 - Support Performance & NPS
+        "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS agent_name VARCHAR(255);",
+        "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS nps_score INTEGER;",
+        "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS nps_comment TEXT;",
+        "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS response_time_seconds INTEGER;",
+        "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS resolution_time_seconds INTEGER;",
+        "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS close_reason VARCHAR(255);",
+
+        # V3.1 - Tabela SupportAgentPerformance
+        """CREATE TABLE IF NOT EXISTS support_agent_performance (
+            id SERIAL PRIMARY KEY,
+            agent_name VARCHAR(255) NOT NULL,
+            period VARCHAR(7) NOT NULL,
+            group_name VARCHAR(100),
+            total_contacts INTEGER DEFAULT 0,
+            total_conversations INTEGER DEFAULT 0,
+            new_conversations INTEGER DEFAULT 0,
+            closed_conversations INTEGER DEFAULT 0,
+            total_messages_sent INTEGER DEFAULT 0,
+            avg_response_time_seconds INTEGER DEFAULT 0,
+            avg_close_time_seconds INTEGER DEFAULT 0,
+            avg_nps FLOAT,
+            nps_count INTEGER DEFAULT 0,
+            last_activity_at TIMESTAMP,
+            activities_today INTEGER DEFAULT 0,
+            pending_tickets INTEGER DEFAULT 0,
+            open_tickets INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW(),
+            CONSTRAINT uix_agent_period UNIQUE (agent_name, period)
+        );""",
     ]
 
     

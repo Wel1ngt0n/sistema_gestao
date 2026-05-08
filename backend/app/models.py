@@ -729,6 +729,15 @@ class SupportConversation(db.Model):
     closed_at = db.Column(db.DateTime, nullable=True)
     last_message_at = db.Column(db.DateTime, nullable=True)
     first_response_at = db.Column(db.DateTime, nullable=True)
+    
+    # Novos campos para Performance (NPS)
+    agent_name = db.Column(db.String(255), nullable=True) # Nome do atendente humano
+    nps_score = db.Column(db.Integer, nullable=True)     # Nota de 0-10
+    nps_comment = db.Column(db.Text, nullable=True)      # Comentário do NPS
+    response_time_seconds = db.Column(db.Integer, nullable=True) # Tempo até primeira resposta
+    resolution_time_seconds = db.Column(db.Integer, nullable=True) # Tempo total de resolução
+    close_reason = db.Column(db.String(255), nullable=True) # Motivo do fechamento
+    
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     contact = db.relationship('SupportContact', backref='conversations')
@@ -756,3 +765,44 @@ class SupportAgentEvent(db.Model):
     expert_agent_id = db.Column(db.String(100), nullable=True)
     external_id = db.Column(db.String(100), nullable=True)
     timestamp = db.Column(db.DateTime, nullable=True)
+
+class SupportAgentPerformance(db.Model):
+    """
+    Performance histórica dos atendentes de suporte.
+    Um registro por agente por período (mês).
+    """
+    __tablename__ = 'support_agent_performance'
+    id = db.Column(db.Integer, primary_key=True)
+    agent_name = db.Column(db.String(255), nullable=False, index=True)
+    period = db.Column(db.String(7), nullable=False) # YYYY-MM
+    group_name = db.Column(db.String(100), nullable=True) # Ex: Suporte N1
+
+    # Volume
+    total_contacts = db.Column(db.Integer, default=0)
+    total_conversations = db.Column(db.Integer, default=0)
+    new_conversations = db.Column(db.Integer, default=0)
+    closed_conversations = db.Column(db.Integer, default=0)
+    total_messages_sent = db.Column(db.Integer, default=0)
+
+    # Tempos (em segundos)
+    avg_response_time_seconds = db.Column(db.Integer, default=0)
+    avg_close_time_seconds = db.Column(db.Integer, default=0)
+
+    # NPS
+    avg_nps = db.Column(db.Float, nullable=True)
+    nps_count = db.Column(db.Integer, default=0)
+
+    # Atividade
+    last_activity_at = db.Column(db.DateTime, nullable=True)
+    activities_today = db.Column(db.Integer, default=0)
+    pending_tickets = db.Column(db.Integer, default=0)
+    open_tickets = db.Column(db.Integer, default=0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('agent_name', 'period', name='uix_agent_period'),
+    )
+
+    def __repr__(self):
+        return f'<AgentPerf {self.agent_name} {self.period}>'
