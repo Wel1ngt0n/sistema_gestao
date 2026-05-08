@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, ChevronRight, Download, RefreshCw, Filter, Users, MessageSquare, Star } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { api } from '../services/api';
 
 interface OrphanContact {
@@ -49,6 +49,7 @@ export const SupportDashboard = () => {
   const [orphans, setOrphans] = useState<OrphanContact[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [agents, setAgents] = useState<AgentPerf[]>([]);
   const [npsFeedbacks, setNpsFeedbacks] = useState<any[]>([]);
@@ -566,6 +567,7 @@ export const SupportDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
+                {agents.length > 0 ? (
                   agents.map((a, i) => (
                     <tr key={a.agent_name} className="hover:bg-zinc-50 transition-colors">
                       <td className="px-6 py-4">
