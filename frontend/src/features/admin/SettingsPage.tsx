@@ -82,7 +82,7 @@ export default function SettingsPage() {
     const isUrl = (key: string) => key.includes('url');
 
     return (
-        <div className="p-6 md:p-10 space-y-8 min-h-screen bg-zinc-50#09090b] text-zinc-900">
+        <div className="p-6 md:p-10 space-y-8 min-h-screen bg-zinc-50 text-zinc-900">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
