@@ -100,7 +100,8 @@ def enrich_contacts_from_conversations_csv(data, period=None):
         "total_rows": len(df),
         "contacts_updated": 0,
         "contacts_created": 0,
-        "nps_extracted": 0
+        "nps_extracted": 0,
+        "months_breakdown": {}
     }
 
     # Se não houver período manual, usa o mês atual para o link do NPS
@@ -121,13 +122,6 @@ def enrich_contacts_from_conversations_csv(data, period=None):
             if not name or name == 'nan':
                 continue
 
-            # Parse timestamp
-            try:
-                conv_ts = pd.to_datetime(created_at).to_pydatetime()
-            except:
-                conv_ts = datetime.now()
-
-            # Extração de NPS do JSON no campo 'extra'
             nps_score = None
             nps_comment = None
             try:
@@ -179,11 +173,13 @@ def enrich_contacts_from_conversations_csv(data, period=None):
                 db.session.flush()
                 stats["contacts_created"] += 1
 
-            # Vincular NPS à conversa do período especificado
-            if nps_score is not None or nps_comment:
+                # Contador por mês para o log
+                month_display = f"{row_period_suffix[:4]}-{row_period_suffix[4:]}"
+                stats["months_breakdown"][month_display] = stats["months_breakdown"].get(month_display, 0) + 1
+
                 # Garante que conv_key não estoure o limite de 100 do conv_id
                 safe_slug = contact_slug[:60]
-                conv_key = f"{safe_slug}_{period_suffix}"
+                conv_key = f"{safe_slug}_{row_period_suffix}"
                 zenvia_conv_id = f"IMPORT_CONV_{conv_key}"
                 conv = SupportConversation.query.filter_by(zenvia_conversation_id=zenvia_conv_id).first()
                 if conv:
@@ -222,7 +218,8 @@ def import_zenvia_activities_csv(data, period=None):
         "messages_imported": 0,
         "contacts_created": 0,
         "conversations_created": 0,
-        "errors": 0
+        "errors": 0,
+        "months_breakdown": {}
     }
 
     contact_cache = {}
@@ -287,8 +284,15 @@ def import_zenvia_activities_csv(data, period=None):
                 contact_cache[contact_slug] = contact_id
 
             # 2. Conversa (Agrupamento mensal)
-            # Prioriza o período manual se fornecido para o sufixo da chave
-            suffix = period_suffix_override if period_suffix_override else ts.strftime('%Y%m')
+            # Inteligência: Tenta usar a data da linha, fallback para o período manual
+            suffix = ts.strftime('%Y%m') if ts else period_suffix_override
+            if not suffix:
+                continue # Sem data e sem manual period, não temos como agrupar
+                
+            # Contador por mês para o log
+            month_display = f"{suffix[:4]}-{suffix[4:]}"
+            stats["months_breakdown"][month_display] = stats["months_breakdown"].get(month_display, 0) + 1
+                
             safe_slug_for_conv = contact_slug[:60]
             conv_key = f"{safe_slug_for_conv}_{suffix}"
             zenvia_conv_id = f"IMPORT_CONV_{conv_key}"
