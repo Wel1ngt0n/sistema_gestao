@@ -1,3 +1,4 @@
+from flask import Blueprint, jsonify, request
 from app.models import SupportConversation, SupportMessage, SupportContact, SystemConfig, db
 from datetime import datetime
 from app.services.event_processor_service import process_pending_zenvia_events
