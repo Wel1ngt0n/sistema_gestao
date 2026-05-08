@@ -15,6 +15,7 @@ const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; colo
     weights: { label: 'Pesos de Pontuação', icon: <Scale size={18} />, color: 'text-blue-500', desc: 'Configuração de pesos para cálculo de pontos' },
     sla: { label: 'Prazos (SLA)', icon: <Clock size={18} />, color: 'text-amber-500', desc: 'Prazos máximos para implantação e integração' },
     notifications: { label: 'Notificações', icon: <Bell size={18} />, color: 'text-rose-500', desc: 'Configuração de alertas automáticos via Slack' },
+    webhooks: { label: 'Segurança e Integrações', icon: <Send size={18} />, color: 'text-emerald-500', desc: 'Tokens e configuração de webhooks de entrada' },
 };
 
 export default function SettingsPage() {
@@ -191,6 +192,26 @@ export default function SettingsPage() {
                                                     value={editValues[item.key] || ''}
                                                     onChange={e => updateValue(item.key, e.target.value)}
                                                 />
+                                            ) : item.key === 'webhook_token' ? (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 transition-all"
+                                                        value={editValues[item.key] || ''}
+                                                        onChange={e => updateValue(item.key, e.target.value)}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                                                            let t = 'wh_';
+                                                            for(let i=0; i<24; i++) t += chars.charAt(Math.floor(Math.random() * chars.length));
+                                                            updateValue(item.key, t);
+                                                        }}
+                                                        className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl text-sm font-semibold transition-colors"
+                                                    >
+                                                        Gerar
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <input
                                                     type="text"

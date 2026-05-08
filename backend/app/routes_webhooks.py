@@ -3,17 +3,20 @@ import json
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from app.models import db, ZenviaWebhookEvent
+from app.models import db, ZenviaWebhookEvent, SystemConfig
 
 webhook_bp = Blueprint('webhook_bp', __name__)
-
-ZENVIA_WEBHOOK_TOKEN = os.environ.get("ZENVIA_WEBHOOK_TOKEN", "my-secret-token") # default para dev
 
 @webhook_bp.route('/api/webhooks/zenvia', methods=['POST'])
 def zenvia_webhook():
     # 1. Validação do Token de Segurança
     token = request.headers.get("X-Zenvia-Token")
-    if token != ZENVIA_WEBHOOK_TOKEN:
+    
+    # Busca o token no DB ou usa a env var como fallback
+    db_token = SystemConfig.query.filter_by(key='webhook_token').first()
+    valid_token = db_token.value if db_token and db_token.value else os.environ.get("ZENVIA_WEBHOOK_TOKEN", "my-secret-token")
+    
+    if token != valid_token:
         return jsonify({"error": "Unauthorized"}), 401
     
     payload = request.json

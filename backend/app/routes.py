@@ -1447,6 +1447,8 @@ DEFAULT_CONFIGS = [
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automático", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
+    # Webhooks / Integrações
+    {"key": "webhook_token", "value": "my-secret-token", "description": "X-Zenvia-Token (Senha) para autenticar os webhooks recebidos", "category": "webhooks"},
 ]
 
 def seed_default_configs():
