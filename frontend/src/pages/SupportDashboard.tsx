@@ -56,8 +56,9 @@ export const SupportDashboard = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'performance'>('overview');
   
   // Estados para Filtro de Período
-  const [availablePeriods, setAvailablePeriods] = useState<string[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>(new Date().toISOString().substring(0, 7));
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  const [availablePeriods, setAvailablePeriods] = useState<string[]>([currentMonth]);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonth);
 
   const fetchPeriods = async () => {
     try {

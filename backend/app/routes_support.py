@@ -198,7 +198,13 @@ def get_periods():
     Retorna a lista de meses únicos (YYYY-MM) que possuem dados de performance.
     """
     periods = db.session.query(SupportAgentPerformance.period).distinct().order_by(SupportAgentPerformance.period.desc()).all()
-    return jsonify([p.period for p in periods])
+    result = [p.period for p in periods if p.period]
+    
+    # Se não houver períodos no banco, retorna o mês atual como fallback
+    if not result:
+        result = [datetime.now().strftime('%Y-%m')]
+        
+    return jsonify(result)
 
 # ============================================================
 # NOVOS ENDPOINTS: PERFORMANCE DA EQUIPE
