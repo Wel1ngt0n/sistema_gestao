@@ -4,12 +4,11 @@ import AdminPanel from './AdminPanel';
 import { SkeletonLoader } from './monitor/MonitorComponents';
 import MonitorTableView from './monitor/MonitorTableViewV2';
 import MonitorKanbanView from './monitor/MonitorKanbanView';
-import MonitorCardView from './monitor/MonitorCardView';
 import MonitorStoreModal from './monitor/MonitorStoreModal';
 import MonitorAIModal from './monitor/MonitorAIModal';
 import { Store } from './monitor/types';
 
-import { MonitorFilterPanel, FilterState } from './monitor/MonitorFilterPanel';
+import { FilterState } from './monitor/MonitorFilterPanel';
 import MonitorHeader from './monitor/MonitorHeader';
 import BulkActionBar from './monitor/BulkActionBar';
 import BulkUpdateModal from './monitor/BulkUpdateModal';
@@ -20,12 +19,10 @@ export default function MonitorV2() {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Estado da Visualização
-    const [viewMode, setViewMode] = useState<'table' | 'kanban' | 'cards'>('table');
+    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
 
     // Estado da UI
     const [globalFilter, setGlobalFilter] = useState('');
-    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
-
     // Estado dos Filtros Avançados
     const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
         startDate: '',
@@ -110,7 +107,15 @@ export default function MonitorV2() {
 
         if (globalFilter) {
             const lowerFilter = globalFilter.toLowerCase();
-            res = res.filter(s => s.name.toLowerCase().includes(lowerFilter) || String(s.id).includes(lowerFilter));
+            res = res.filter(s =>
+                s.name.toLowerCase().includes(lowerFilter) ||
+                String(s.id).includes(lowerFilter) ||
+                (s.implantador || '').toLowerCase().includes(lowerFilter) ||
+                (s.rede || '').toLowerCase().includes(lowerFilter) ||
+                (s.status || '').toLowerCase().includes(lowerFilter) ||
+                (s.erp || '').toLowerCase().includes(lowerFilter) ||
+                (s.crm || '').toLowerCase().includes(lowerFilter)
+            );
         }
 
         // 2. Filtros Avançados
@@ -275,7 +280,7 @@ export default function MonitorV2() {
         document.body.removeChild(link);
     };
 
-    // Estatísticas Memoizadas para Mini Cards
+    // Estatísticas memoizadas para o cabeçalho.
     const stats = useMemo(() => {
         const total = data.length;
         const delayed = data.filter(s => s.status_norm === 'IN_PROGRESS' && (s.dias_em_transito || 0) > s.tempo_contrato).length;
@@ -294,16 +299,6 @@ export default function MonitorV2() {
                 store={selectedStoreForAi}
             />
 
-            {/* Painel de Filtro Global */}
-            <MonitorFilterPanel
-                isOpen={isFilterPanelOpen}
-                onClose={() => setIsFilterPanelOpen(false)}
-                filters={advancedFilters}
-                setFilters={setAdvancedFilters}
-                uniqueAssignees={uniqueImplantadores}
-                uniqueStatuses={uniqueStatuses}
-            />
-
             {/* NOVO CABEÇALHO */}
             <MonitorHeader
                 stats={stats}
@@ -312,9 +307,10 @@ export default function MonitorV2() {
                 setGlobalFilter={setGlobalFilter}
                 filterStatus={filterStatus}
                 setFilterStatus={setFilterStatus}
-                isFilterPanelOpen={isFilterPanelOpen}
-                setIsFilterPanelOpen={setIsFilterPanelOpen}
                 advancedFilters={advancedFilters}
+                setAdvancedFilters={setAdvancedFilters}
+                uniqueAssignees={uniqueImplantadores}
+                uniqueStatuses={uniqueStatuses}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
                 setAdminOpen={setAdminOpen}
@@ -347,12 +343,6 @@ export default function MonitorV2() {
                         </div>
                     )}
 
-                    {viewMode === 'cards' && (
-                        <MonitorCardView
-                            data={filteredData}
-                            onEdit={handleEditClick}
-                        />
-                    )}
                 </div>
             </div>
 

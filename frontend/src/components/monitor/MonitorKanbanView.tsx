@@ -25,6 +25,18 @@ const KANBAN_COLUMNS = [
     { id: 'done', title: 'Loja Entregue', match: ['entregue', 'finaliz', 'conclu', 'done'] },
 ];
 
+const formatCurrency = (value: number | null) => {
+    if (!value) return '--';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
+};
+
+const Field = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
+    <div className="min-w-0 rounded-md bg-slate-50 px-2 py-1.5">
+        <div className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{label}</div>
+        <div className="mt-0.5 truncate text-[11px] font-semibold text-slate-700">{value || '--'}</div>
+    </div>
+);
+
 export default function MonitorKanbanView({ data, onEdit, onStatusChange }: MonitorKanbanViewProps) {
     const [draggedStoreId, setDraggedStoreId] = useState<number | null>(null);
 
@@ -135,7 +147,6 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                     {store.name}
                                 </h5>
 
-                                {/* Tags Row */}
                                 <div className="flex flex-wrap items-center gap-1.5 mb-3">
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium truncate max-w-[120px] border ${getStatusColor(store.status).includes('emerald')
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
@@ -150,32 +161,16 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                     )}
                                 </div>
 
-                                {/* Footer (Implantador & Date) */}
-                                <div className="flex justify-between items-end pt-2 border-t border-slate-50/50 mt-1">
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Responsável</span>
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            {store.implantador ? (
-                                                <>
-                                                    <div className="w-4 h-4 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[8px] font-bold border border-orange-50">
-                                                        {store.implantador.substring(0, 1)}
-                                                    </div>
-                                                    <span className="text-xs font-medium text-slate-600 truncate max-w-[80px]">
-                                                        {store.implantador.split(' ')[0]}
-                                                    </span>
-                                                </>
-                                            ) : (
-                                                <span className="text-xs text-slate-400 italic">--</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Previsão</span>
-                                        <span className={`text-xs font-mono font-medium mt-0.5 ${(store.days_late_predicted || 0) > 0 ? 'text-rose-500 font-bold' : 'text-slate-600'}`}>
-                                            {formatDate(store.data_previsao)}
-                                        </span>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-1.5 border-t border-slate-100 pt-3">
+                                    <Field label="Status" value={store.status} />
+                                    <Field label="Responsável" value={store.implantador || 'Sem responsável'} />
+                                    <Field label="Tempo" value={`${store.dias_em_transito || 0}d`} />
+                                    <Field label="Início" value={formatDate(store.data_inicio)} />
+                                    <Field label="Mensalidade" value={formatCurrency(store.valor_mensalidade)} />
+                                    <Field label="Previsão" value={formatDate(store.data_previsao)} />
+                                    <Field label="Conclusão" value={formatDate(store.data_fim || store.manual_finished_at)} />
+                                    <Field label="ERP" value={store.erp} />
+                                    <Field label="CRM" value={store.crm} />
                                 </div>
                             </div>
                         ))}

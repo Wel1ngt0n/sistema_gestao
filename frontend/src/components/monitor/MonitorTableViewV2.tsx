@@ -17,7 +17,7 @@ import {
 } from '@tanstack/react-table';
 import { Store } from './types';
 import { formatCurrency, formatDate, getStatusColor, getDeepSyncColor } from './monitorUtils';
-import { GripVertical, Check, EyeOff } from 'lucide-react';
+import { Bot, Check, Edit3, EyeOff, GripVertical, RefreshCw } from 'lucide-react';
 
 interface MonitorTableViewProps {
     data: Store[];
@@ -246,21 +246,21 @@ export default function MonitorTableViewV2({
                         className="p-1.5 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
                         title="Editar"
                     >
-                        ✏️
+                        <Edit3 size={14} />
                     </button>
                     <button
                         onClick={() => onAiAnalyze(props.row.original)}
                         className="p-1.5 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
                         title="IA"
                     >
-                        🤖
+                        <Bot size={14} />
                     </button>
                     <button
                         onClick={() => onRefetch()}
                         className="p-1.5 text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 rounded transition-colors"
                         title="Atualizar"
                     >
-                        🔄
+                        <RefreshCw size={14} />
                     </button>
                 </div>
             ),
@@ -339,7 +339,7 @@ export default function MonitorTableViewV2({
         <div className="flex flex-col gap-4">
 
             {/* Slim Toolbar for Table Actions */}
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end rounded-lg border border-zinc-200 bg-white px-4 py-3 shadow-sm">
                 <div className="text-sm text-zinc-500">
                     Mostrando <strong>{table.getRowModel().rows.length}</strong> registros
                 </div>
@@ -350,7 +350,7 @@ export default function MonitorTableViewV2({
                     <div className="relative">
                         <button
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${isColumnsOpen
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-semibold transition-all ${isColumnsOpen
                                 ? 'bg-zinc-100 border-zinc-300 text-zinc-900'
                                 : 'bg-white border-zinc-200 text-zinc-600 hover:border-orange-300'
                                 }`}
@@ -361,10 +361,10 @@ export default function MonitorTableViewV2({
 
                         {/* Enhanced Column Editor Dropdown */}
                         {isColumnsOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95">
+                            <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-lg shadow-xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95">
                                 <div className="p-3 border-b border-zinc-100 bg-zinc-50/50/50 flex justify-between items-center">
                                     <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Editar Colunas</h4>
-                                    <button onClick={() => setIsColumnsOpen(false)} className="text-zinc-400 hover:text-zinc-900">✕</button>
+                                    <button onClick={() => setIsColumnsOpen(false)} className="text-zinc-400 hover:text-zinc-900">Fechar</button>
                                 </div>
                                 <div className="max-h-[300px] overflow-y-auto p-2 space-y-0.5">
                                     {table.getAllLeafColumns().map((column) => {
@@ -410,7 +410,7 @@ export default function MonitorTableViewV2({
             </div>
 
             {/* Clean Table */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm w-full max-w-full overflow-hidden">
+            <div className="bg-white rounded-lg border border-zinc-200 shadow-sm w-full max-w-full overflow-hidden">
                 <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-zinc-300">
                     <table className="w-full text-left border-collapse min-w-full">
                         <thead className="bg-zinc-50 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
@@ -446,7 +446,7 @@ export default function MonitorTableViewV2({
                                 </tr>
                             ) : (
                                 table.getRowModel().rows.map(row => (
-                                    <tr key={row.id} className="group hover:bg-zinc-50/80/30 transition-colors">
+                                    <tr key={row.id} className="group hover:bg-zinc-50 transition-colors">
                                         {row.getVisibleCells().map(cell => (
                                             <td
                                                 key={cell.id}
@@ -464,7 +464,7 @@ export default function MonitorTableViewV2({
                 </div>
 
                 {/* Pagination */}
-                <div className="p-4 border-t border-zinc-200 bg-zinc-50/50 flex justify-between items-center text-xs text-zinc-500">
+                <div className="p-4 border-t border-zinc-200 bg-zinc-50 flex justify-between items-center text-xs text-zinc-500">
                     <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}

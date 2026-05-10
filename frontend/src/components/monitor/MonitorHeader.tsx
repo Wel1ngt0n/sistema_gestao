@@ -1,4 +1,5 @@
 import { FilterState } from './MonitorFilterPanel';
+import { Download, RefreshCw, Search, Settings, SlidersHorizontal } from 'lucide-react';
 
 interface MonitorHeaderProps {
     stats: { total: number; delayed: number; risk: number };
@@ -7,11 +8,12 @@ interface MonitorHeaderProps {
     setGlobalFilter: (val: string) => void;
     filterStatus: 'active' | 'concluded' | 'scheduled';
     setFilterStatus: (val: 'active' | 'concluded' | 'scheduled') => void;
-    isFilterPanelOpen: boolean;
-    setIsFilterPanelOpen: (val: boolean) => void;
     advancedFilters: FilterState;
-    viewMode: 'table' | 'kanban' | 'cards';
-    setViewMode: (val: 'table' | 'kanban' | 'cards') => void;
+    setAdvancedFilters: (filters: FilterState) => void;
+    uniqueAssignees: string[];
+    uniqueStatuses: string[];
+    viewMode: 'table' | 'kanban';
+    setViewMode: (val: 'table' | 'kanban') => void;
     setAdminOpen: (val: boolean) => void;
     handleExportCSV: () => void;
 }
@@ -23,30 +25,34 @@ export default function MonitorHeader({
     setGlobalFilter,
     filterStatus,
     setFilterStatus,
-    isFilterPanelOpen,
-    setIsFilterPanelOpen,
     advancedFilters,
+    setAdvancedFilters,
+    uniqueAssignees,
+    uniqueStatuses,
     viewMode,
     setViewMode,
     setAdminOpen,
     handleExportCSV
 }: MonitorHeaderProps) {
     const hasActiveFilters = Object.values(advancedFilters).some(v => Array.isArray(v) ? v.length > 0 : !!v);
+    const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+        setAdvancedFilters({ ...advancedFilters, [key]: value });
+    };
 
     return (
-        <header className="flex-none bg-white/80/80 backdrop-blur-xl border-b border-zinc-200 z-30 sticky top-0 transition-all duration-300">
-            <div className="px-6 py-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <header className="flex-none bg-white border border-zinc-200 rounded-lg shadow-sm z-30 transition-all duration-300">
+            <div className="p-5 space-y-5">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
 
                     {/* Left Side: Title & Bento Stats */}
                     <div className="flex items-center gap-6">
                         {/* Title Block */}
                         <div className="flex items-center gap-3 min-w-fit">
-                            <div className="p-2.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg shadow-orange-500/20">
-                                <span className="text-white text-xl">📊</span>
+                            <div className="p-2.5 bg-orange-50 rounded-lg border border-orange-100 text-[#ff7900]">
+                                <SlidersHorizontal className="w-5 h-5" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight text-zinc-900">
+                                <h1 className="text-xl font-semibold tracking-tight text-zinc-950">
                                     Monitor de Implantação
                                 </h1>
                                 <p className="text-xs font-medium text-zinc-500 flex items-center gap-2">
@@ -54,7 +60,7 @@ export default function MonitorHeader({
                                     {isRefreshing && (
                                         <span className="flex items-center gap-1 text-orange-500 animate-pulse ml-2 bg-orange-500/10 px-1.5 py-0.5 rounded-full">
                                             <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                            Syncing...
+                                            Atualizando...
                                         </span>
                                     )}
                                 </p>
@@ -64,7 +70,6 @@ export default function MonitorHeader({
                         {/* Divider */}
                         <div className="hidden md:block w-px h-10 bg-zinc-200"></div>
 
-                        {/* Bento Stats (Clean) */}
                         <div className="hidden md:flex items-center gap-3">
                             <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-zinc-50/50 transition-colors">
                                 <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Total</span>
@@ -81,120 +86,100 @@ export default function MonitorHeader({
                         </div>
                     </div>
 
-                    {/* Right Side: Controls */}
-                    <div className="flex items-center gap-3 self-start md:self-center w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
-
-                        {/* Search Bar */}
-                        <div className="relative group w-48 transition-all focus-within:w-64">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg className="h-4 w-4 text-zinc-400 group-focus-within:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Buscar..."
-                                value={globalFilter}
-                                onChange={(e) => setGlobalFilter(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all shadow-sm"
-                            />
-                        </div>
-
-                        {/* Status Toggle (Pill Switch) */}
-                        <div className="flex bg-zinc-100 p-1 rounded-xl gap-1 border border-zinc-200/50">
-                            <button
-                                onClick={() => setFilterStatus('active')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filterStatus === 'active'
-                                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-zinc-200'
-                                    : 'text-zinc-500 hover:text-zinc-700'
-                                    }`}
-                            >
-                                Ativas
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus('scheduled')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filterStatus === 'scheduled'
-                                    ? 'bg-white text-amber-600 shadow-sm ring-1 ring-zinc-200'
-                                    : 'text-zinc-500 hover:text-zinc-700'
-                                    }`}
-                            >
-                                Agendadas
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus('concluded')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filterStatus === 'concluded'
-                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-zinc-200'
-                                    : 'text-zinc-500 hover:text-zinc-700'
-                                    }`}
-                            >
-                                Concluídas
-                            </button>
-                        </div>
-
-                        {/* Filter Button */}
+                    <div className="flex items-center gap-2 self-start xl:self-center">
                         <button
-                            onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-                            className={`h-full px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${isFilterPanelOpen || hasActiveFilters
-                                ? 'bg-orange-50 text-orange-700 border-orange-200 ring-2 ring-orange-500/10'
-                                : 'bg-white text-zinc-600 border-zinc-200 hover:border-orange-300 hover:text-orange-600'
-                                }`}
+                            onClick={() => setAdminOpen(true)}
+                            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                            title="Configurações"
                         >
-                            <span>Filtros</span>
-                            {hasActiveFilters && (
-                                <span className="flex h-2 w-2 relative">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                </span>
-                            )}
+                            <Settings size={17} />
                         </button>
-
-                        <div className="w-px h-6 bg-zinc-200 mx-1"></div>
-
-                        {/* Settings & Export */}
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setAdminOpen(true)}
-                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
-                                title="Configurações Admin"
-                            >
-                                ⚙️
-                            </button>
-                            <button
-                                onClick={handleExportCSV}
-                                className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
-                                title="Exportar CSV"
-                            >
-                                📥
-                            </button>
-                        </div>
-
+                        <button
+                            onClick={handleExportCSV}
+                            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                            title="Exportar CSV"
+                        >
+                            <Download size={17} />
+                        </button>
                     </div>
                 </div>
 
-                {/* View Switcher Tabs (Bottom of Header) */}
-                <div className="mt-4 flex gap-6 border-b border-transparent">
-                    {[
-                        { id: 'table', icon: '📋', label: 'Lista' },
-                        { id: 'kanban', icon: '🏗️', label: 'Kanban' },
-                        { id: 'cards', icon: '🏙️', label: 'Cards' }
-                    ].map((view) => (
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                    <div className="relative lg:col-span-3">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar loja, ID ou rede"
+                            value={globalFilter}
+                            onChange={(e) => setGlobalFilter(e.target.value)}
+                            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-3 text-sm outline-none transition-all focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10"
+                        />
+                    </div>
+
+                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-2">
+                        <option value="active">Ativas</option>
+                        <option value="scheduled">Agendadas</option>
+                        <option value="concluded">Concluídas</option>
+                    </select>
+
+                    <select value={advancedFilters.assignee} onChange={(e) => updateFilter('assignee', e.target.value)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-2">
+                        <option value="">Todos responsáveis</option>
+                        {uniqueAssignees.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+
+                    <select value={advancedFilters.status[0] || ''} onChange={(e) => updateFilter('status', e.target.value ? [e.target.value] : [])} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-2">
+                        <option value="">Todos status</option>
+                        {uniqueStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+
+                    <select value={advancedFilters.financialStatus} onChange={(e) => updateFilter('financialStatus', e.target.value)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-1">
+                        <option value="">Financeiro</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Em dia">Em dia</option>
+                        <option value="Devendo">Devendo</option>
+                    </select>
+
+                    <select value={viewMode} onChange={(e) => setViewMode(e.target.value as any)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-2">
+                        <option value="kanban">Visualização: Kanban</option>
+                        <option value="table">Visualização: Lista</option>
+                    </select>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <button onClick={() => updateFilter('isHighRisk', !advancedFilters.isHighRisk)} className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${advancedFilters.isHighRisk ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'}`}>
+                        Alto risco
+                    </button>
+                    <button onClick={() => updateFilter('isLate', !advancedFilters.isLate)} className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${advancedFilters.isLate ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'}`}>
+                        Atrasadas
+                    </button>
+                    {hasActiveFilters && (
                         <button
-                            key={view.id}
-                            onClick={() => setViewMode(view.id as any)}
-                            className={`pb-3 text-sm font-medium transition-all relative ${viewMode === view.id
-                                ? 'text-orange-600'
-                                : 'text-zinc-500 hover:text-zinc-800'
-                                }`}
+                            onClick={() => setAdvancedFilters({ startDate: '', endDate: '', finishStartDate: '', finishEndDate: '', status: [], assignee: '', financialStatus: '', isHighRisk: false, isLate: false })}
+                            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-800"
                         >
-                            <span className="flex items-center gap-2">
-                                <span>{view.icon}</span>
-                                {view.label}
-                            </span>
-                            {viewMode === view.id && (
-                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-500 rounded-t-full"></span>
-                            )}
+                            Limpar filtros
                         </button>
-                    ))}
+                    )}
+                    {isRefreshing && <RefreshCw size={14} className="animate-spin text-orange-500" />}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Início de
+                        <input type="date" value={advancedFilters.startDate} onChange={(e) => updateFilter('startDate', e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10" />
+                    </label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Início até
+                        <input type="date" value={advancedFilters.endDate} onChange={(e) => updateFilter('endDate', e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10" />
+                    </label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Conclusão de
+                        <input type="date" value={advancedFilters.finishStartDate} onChange={(e) => updateFilter('finishStartDate', e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10" />
+                    </label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Conclusão até
+                        <input type="date" value={advancedFilters.finishEndDate} onChange={(e) => updateFilter('finishEndDate', e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10" />
+                    </label>
                 </div>
             </div>
         </header>
