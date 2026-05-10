@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import AdminPanel from './AdminPanel';
 import { SkeletonLoader } from './monitor/MonitorComponents';
 import MonitorTableView from './monitor/MonitorTableViewV2';
 import MonitorKanbanView, { DEFAULT_KANBAN_FIELDS, KanbanFieldKey } from './monitor/MonitorKanbanView';
@@ -48,8 +47,7 @@ export default function MonitorV2() {
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [selectedStoreForAi, setSelectedStoreForAi] = useState<Store | null>(null);
 
-    // Estado Admin & Matrizes
-    const [adminOpen, setAdminOpen] = useState(false);
+    // Estado das matrizes relacionadas as lojas.
     const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
 
     // Estado de Seleção em Massa
@@ -316,7 +314,6 @@ export default function MonitorV2() {
                 setViewMode={setViewMode}
                 kanbanFields={kanbanFields}
                 setKanbanFields={setKanbanFields}
-                setAdminOpen={setAdminOpen}
                 handleExportCSV={handleExportCSV}
             />
 
@@ -375,8 +372,6 @@ export default function MonitorV2() {
                 onDeepSync={handleRunDeepSync}
                 isDeepSyncing={deepSyncLoading}
             />
-
-            <AdminPanel isOpen={adminOpen} onClose={() => setAdminOpen(false)} />
         </div >
     );
 }
