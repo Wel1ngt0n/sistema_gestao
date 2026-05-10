@@ -143,12 +143,12 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
             {KANBAN_COLUMNS.map(col => (
                 <div
                     key={col.id}
-                    className="flex-none w-80 flex flex-col bg-slate-100/40/40 rounded-xl border border-slate-200/60 backdrop-blur-sm"
+                    className="flex-none w-80 flex flex-col rounded-xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-sm"
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, col.id)}
                 >
                     {/* Column Header */}
-                    <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-100/40/40 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
+                    <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-white/95 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
                         <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-orange-500' : 'bg-slate-300'}`}></div>
                             {col.title}
@@ -159,7 +159,7 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                     </div>
 
                     {/* Cards Container */}
-                    <div className="p-2 space-y-2.5 min-h-[150px]">
+                    <div className="p-2.5 space-y-2.5 min-h-[190px] rounded-b-xl bg-slate-50/40">
                         {columns[col.id]?.map(store => (
                             <div
                                 key={store.id}
@@ -220,20 +220,25 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                                 )}
                             </div>
                         ))}
+                        {columns[col.id]?.length === 0 && (
+                            <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center text-xs font-medium text-slate-400">
+                                Sem lojas nesta etapa
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}
 
             {/* Unmapped Column (Ghost) */}
             {columns['others']?.length > 0 && (
-                <div className="flex-none w-80 flex flex-col bg-slate-50/30/20 rounded-xl border border-dashed border-slate-300 opacity-70 hover:opacity-100 transition-opacity">
-                    <div className="p-3 border-b border-dashed border-slate-300 flex justify-between items-center bg-transparent">
-                        <h4 className="font-bold text-slate-400 text-xs uppercase tracking-wider">Outros / Não Mapeado</h4>
-                        <span className="text-xs font-mono bg-slate-200 px-2 py-0.5 rounded text-slate-500">{columns['others'].length}</span>
+                <div className="flex-none w-80 flex flex-col rounded-xl border border-dashed border-slate-300 bg-white/70 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+                    <div className="p-3 border-b border-dashed border-slate-200 flex justify-between items-center bg-white/80 rounded-t-xl">
+                        <h4 className="font-bold text-slate-500 text-xs uppercase tracking-wider">Outros / Não Mapeado</h4>
+                        <span className="text-xs font-mono bg-white px-2 py-0.5 rounded text-slate-500 border border-slate-200">{columns['others'].length}</span>
                     </div>
-                    <div className="p-2 space-y-2">
+                    <div className="p-2.5 space-y-2 bg-slate-50/40 rounded-b-xl">
                         {columns['others'].map(store => (
-                            <div key={store.id} onClick={() => onEdit(store)} className="cursor-pointer bg-white/50/50 p-3 rounded-lg border border-slate-200 hover:bg-white hover:shadow-sm transition-all">
+                            <div key={store.id} onClick={() => onEdit(store)} className="cursor-pointer bg-white p-3 rounded-lg border border-slate-200 hover:border-orange-200 hover:shadow-sm transition-all">
                                 <h5 className="font-medium text-sm text-slate-600">{store.name}</h5>
                                 <span className="text-[10px] text-slate-400">{store.status}</span>
                             </div>
