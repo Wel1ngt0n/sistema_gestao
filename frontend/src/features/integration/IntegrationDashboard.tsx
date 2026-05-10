@@ -46,13 +46,14 @@ const MetricCard = ({
     accent?: string;
     icon: any;
 }) => (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg">
+        <div className="absolute inset-x-0 top-0 h-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ backgroundColor: accent }} />
         <div className="mb-5 flex items-start justify-between gap-4">
             <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">{value}</p>
             </div>
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2" style={{ color: accent }}>
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white" style={{ color: accent }}>
                 <Icon size={18} strokeWidth={2} />
             </div>
         </div>
@@ -64,7 +65,7 @@ const MetricCard = ({
 );
 
 const SectionCard = ({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) => (
-    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
         <div className="mb-5 flex flex-col gap-1">
             <h2 className="text-sm font-semibold text-zinc-950">{title}</h2>
             {subtitle && <p className="text-sm text-zinc-500">{subtitle}</p>}
@@ -148,13 +149,13 @@ export default function IntegrationDashboard() {
     }, []);
 
     if (loading) return (
-        <div className="flex h-screen w-full items-center justify-center bg-[#f7f7f4]">
+        <div className="flex h-screen w-full items-center justify-center">
             <div className="h-10 w-10 rounded-full border-2 border-zinc-200 border-t-[#ff7900] animate-spin" />
         </div>
     );
 
     if (!data) return (
-        <div className="min-h-screen bg-[#f7f7f4] p-8 text-sm font-medium text-red-600">
+        <div className="min-h-screen p-8 text-sm font-medium text-red-600">
             Erro ao carregar dados.
         </div>
     );
@@ -167,8 +168,11 @@ export default function IntegrationDashboard() {
             label: 'Tickets em andamento',
             data: charts?.impl_values || [],
             backgroundColor: BRAND_ORANGE,
+            hoverBackgroundColor: '#e86f00',
             borderRadius: 4,
-            barThickness: 28,
+            borderSkipped: false,
+            categoryPercentage: 0.55,
+            barPercentage: 0.85,
         }],
     };
 
@@ -184,6 +188,9 @@ export default function IntegrationDashboard() {
             pointBackgroundColor: BRAND_GREEN,
             pointBorderColor: '#fff',
             pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
         }],
     };
 
@@ -203,24 +210,31 @@ export default function IntegrationDashboard() {
                 titleFont: { size: 13, weight: '600' as const },
             }
         },
+        interaction: {
+            intersect: false,
+            mode: 'index' as const,
+        },
+        layout: {
+            padding: { top: 8, right: 8, bottom: 0, left: 0 },
+        },
         scales: {
             y: {
-                grid: { color: 'rgba(24, 24, 27, 0.07)' },
+                grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
                 ticks: { color: '#71717a' },
                 border: { display: false }
             },
             x: {
                 grid: { display: false },
-                ticks: { color: '#71717a' },
+                ticks: { color: '#71717a', maxRotation: 0, autoSkip: true },
                 border: { display: false }
             }
         },
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#f7f7f4] text-zinc-950">
-            <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-                <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="w-full text-zinc-950">
+            <div className="space-y-6">
+                <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                         <div className="flex items-start gap-4">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white">
@@ -294,7 +308,7 @@ export default function IntegrationDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm xl:col-span-6">
+                    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-6">
                         <div className="flex items-center justify-between border-b border-zinc-100 p-5">
                             <div>
                                 <h2 className="text-sm font-semibold text-zinc-950">Risco operacional</h2>
@@ -304,7 +318,7 @@ export default function IntegrationDashboard() {
                         </div>
                         <div className="max-h-[360px] overflow-y-auto p-3">
                             {risk_stores.length > 0 ? risk_stores.map((s: any, idx: number) => (
-                                <div key={idx} className="flex items-center justify-between gap-4 border-b border-zinc-100 px-2 py-3 last:border-b-0">
+                                <div key={idx} className="flex items-center justify-between gap-4 rounded-md border-b border-zinc-100 px-2 py-3 transition-colors last:border-b-0 hover:bg-zinc-50">
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-medium text-zinc-900">{s.name}</p>
                                         <p className="mt-1 truncate text-xs text-zinc-500">{s.implantador || 'Sem responsável'}</p>
@@ -321,7 +335,7 @@ export default function IntegrationDashboard() {
                         </div>
                     </section>
 
-                    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm xl:col-span-6">
+                    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-6">
                         <div className="flex items-center justify-between border-b border-zinc-100 p-5">
                             <div>
                                 <h2 className="text-sm font-semibold text-zinc-950">Ranking do time</h2>
@@ -331,7 +345,7 @@ export default function IntegrationDashboard() {
                         </div>
                         <div className="max-h-[360px] overflow-y-auto p-3">
                             {rankings.slice(0, 6).map((r: any, i: number) => (
-                                <div key={i} className="flex items-center justify-between gap-4 border-b border-zinc-100 px-2 py-3 last:border-b-0">
+                                <div key={i} className="flex items-center justify-between gap-4 rounded-md border-b border-zinc-100 px-2 py-3 transition-colors last:border-b-0 hover:bg-zinc-50">
                                     <div className="flex min-w-0 items-center gap-3">
                                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-xs font-semibold text-zinc-700">
                                             {i + 1}
