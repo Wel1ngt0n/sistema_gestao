@@ -93,9 +93,8 @@ class ForecastService:
             if status and status != forecast_status:
                 continue
                 
-            # 3. Extrair UF se não existir (one-time logic or always check?)
-            # Vamos tentar preencher se estiver vazio no objeto (mas não salvar no banco aqui pa performance, 
-            # ideal é salvar no sync ou update)
+            # 3. Extrai UF se ainda nao existir.
+            # Preenche somente em memoria; persistencia fica para sincronismo ou edicao.
             if not s.state_uf and s.address:
                 s.state_uf = ForecastService.parse_estado_from_address(s.address)
                 

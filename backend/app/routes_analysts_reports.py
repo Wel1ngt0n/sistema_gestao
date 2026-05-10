@@ -210,7 +210,7 @@ def update_store_operational(payload, store_id):
             store.observacoes = data['observacoes']
             
         db.session.commit()
-        return jsonify({"message": "Operational data updated successfully"}), 200
+        return jsonify({"message": "Dados operacionais atualizados com sucesso"}), 200
     except Exception as e:
         import traceback
         traceback.print_exc()

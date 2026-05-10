@@ -13,7 +13,10 @@ from datetime import datetime
 import re
 import json
 import os
+import logging
 from app.models import db, SupportContact, SupportConversation, SupportMessage, SupportAgentPerformance, SystemConfig
+
+logger = logging.getLogger(__name__)
 
 def slugify(text):
     if not text:
@@ -81,7 +84,7 @@ def read_input_data(data, required_column=None):
     if df is not None:
         # Limpa espaços de todas as colunas
         df.columns = [c.strip() for c in df.columns]
-        print(f">>> Arquivo lido com sucesso. Colunas: {df.columns.tolist()[:5]}...")
+        logger.info(f"Arquivo CSV lido com sucesso. Primeiras colunas: {df.columns.tolist()[:5]}")
     return df
 
 # ============================================================

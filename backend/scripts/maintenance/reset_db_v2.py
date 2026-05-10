@@ -4,15 +4,15 @@ from app.models import *
 app = create_app()
 
 with app.app_context():
-    print("Dropping all tables...")
+    print("Removendo todas as tabelas...")
     db.drop_all()
-    print("Creating all tables (V2.5 Schema)...")
+    print("Criando todas as tabelas (schema V2.5)...")
     db.create_all()
     
-    # Init SyncState
+    # Inicializa SyncState.
     if not SyncState.query.get(1):
-        print("Initializing SyncState...")
+        print("Inicializando SyncState...")
         db.session.add(SyncState(id=1))
         db.session.commit()
         
-    print("Database reset successfully.")
+    print("Banco reiniciado com sucesso.")

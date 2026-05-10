@@ -11,12 +11,12 @@ with app.app_context():
         old_norm = s.status_norm
         new_norm = StatusNormalizer.normalize(s.status)
         if old_norm != new_norm:
-            print(f"Updating Store {s.id}: {s.status} -> {new_norm}")
+            print(f"Atualizando loja {s.id}: {s.status} -> {new_norm}")
             s.status_norm = new_norm
             count += 1
     
     if count > 0:
         db.session.commit()
-        print(f"Updated {count} stores.")
+        print(f"{count} lojas atualizadas.")
     else:
-        print("No stores needed updates.")
+        print("Nenhuma loja precisou de atualizacao.")

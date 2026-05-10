@@ -6,8 +6,10 @@ from app.services.security_service import (
     log_audit
 )
 import datetime
+import logging
 
 auth_bp = Blueprint('auth_bp', __name__)
+logger = logging.getLogger(__name__)
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
 def login():
@@ -21,7 +23,7 @@ def login():
     return login_logic()
 
 def login_logic():
-    """Endpoint inicial de Login. Se 2FA ativado, exige 2º passo."""
+    """Endpoint inicial de login. Se 2FA estiver ativo, exige segunda etapa."""
     data = request.json
     email = data.get('email')
     password = data.get('password')
@@ -31,7 +33,7 @@ def login_logic():
 
     user = User.query.filter_by(email=email).first()
     
-    # Falha Segura e Mitigação de Enumeração de Usuários (sempre deve demorar o mesmo tempo)
+    # Falha segura e mitigacao basica contra enumeracao de usuarios.
     if not user or not verify_password(password, user.password_hash):
         log_audit("LOGIN_FAILED", details=f"Tentativa de login falha para o email: {email}")
         return jsonify({"error": "Credenciais inválidas"}), 401
@@ -39,19 +41,12 @@ def login_logic():
     if not user.is_active:
         return jsonify({"error": "Usuário desativado pelo administrador"}), 403
 
-    # Se TOTP está ativo, não devolvemos o JWT Token definitivo ainda.
-    # if user.totp_enabled:
-    #     return jsonify({
-    #         "requires_2fa": True,
-    #         "user_id": user.id,
-    #         "message": "Código 2FA obrigatório"
-    #     }), 200
+    # Quando TOTP for reativado no login, emitir JWT apenas apos a segunda etapa.
 
-    # Atualiza o último login
+    # Atualiza o ultimo login somente apos credenciais validas.
     user.last_login = datetime.datetime.utcnow()
     db.session.commit()
 
-    # Gera o JWT
     token = generate_jwt_token(user.id, user.email)
     
     log_audit("LOGIN_SUCCESS", user_id=user.id, details="Login realizado com sucesso")
@@ -63,7 +58,7 @@ def login_logic():
 
 @auth_bp.route('/api/auth/verify-2fa', methods=['POST'])
 def verify_2fa():
-    """Verifica código 2FA pós-login e, se correto, conclui a emissão do JWT."""
+    """Verifica o codigo 2FA e conclui a emissao do JWT."""
     data = request.json
     user_id = data.get('user_id')
     code = data.get('code')
@@ -78,7 +73,7 @@ def verify_2fa():
     if not verify_totp_code(user.totp_secret, code):
         return jsonify({"error": "Código 2FA inválido ou expirado"}), 401
 
-    # Código correto, conclui o Login
+    # Codigo correto: conclui o login e emite o token definitivo.
     user.last_login = datetime.datetime.utcnow()
     db.session.commit()
 
@@ -93,7 +88,7 @@ def verify_2fa():
 @auth_bp.route('/api/auth/me', methods=['GET'])
 @require_auth
 def get_me(payload):
-    """Retorna os dados atualizados do usuário logado baseado no Token"""
+    """Retorna os dados atualizados do usuario autenticado."""
     user_id = payload.get('sub')
     user = User.query.get(user_id)
     
@@ -107,8 +102,8 @@ def get_me(payload):
 @require_auth
 def setup_2fa(payload):
     """
-    Gera as chaves TOTP para o usuário autenticado que deseja ligar a proteção 2FA.
-    Não ativa o 2FA até que ele forneça o primeiro código de validação com sucesso.
+    Gera as chaves TOTP para o usuario autenticado.
+    O 2FA so e ativado depois da primeira validacao bem-sucedida.
     """
     user = User.query.get(payload['sub'])
     if not user:
@@ -116,9 +111,9 @@ def setup_2fa(payload):
 
     secret = generate_totp_secret()
     
-    # Salva o secret de forma provisória no banco ou atualiza o antigo (desabilitado)
+    # Salva o secret de forma provisoria; a confirmacao ocorre em /enable-2fa.
     user.totp_secret = secret
-    user.totp_enabled = False # Só fica True na próxima rota confirmando que ele colou o Auth certo
+    user.totp_enabled = False
     db.session.commit()
 
     uri = generate_totp_uri(secret, user.email)
@@ -134,7 +129,7 @@ def setup_2fa(payload):
 @require_auth
 def enable_2fa(payload):
     """
-    Recebe o código de 6 dígitos após o setup e ativa o flag `totp_enabled = True` definitivamente.
+    Recebe o codigo de 6 digitos apos o setup e ativa o 2FA definitivamente.
     """
     data = request.json
     code = data.get('code')
@@ -144,14 +139,14 @@ def enable_2fa(payload):
 
     user = User.query.get(payload['sub'])
     
-    print(f"DEBUG 2FA: user_id={payload['sub']}, email={user.email if user else 'None'}")
-    print(f"DEBUG 2FA: secret_exists={bool(user.totp_secret)}, code_received={code}")
-    
+    if not user:
+        return jsonify({"error": "Usuário não encontrado"}), 404
+
     if not user.totp_secret:
         return jsonify({"error": "Precisa rodar setup-2fa antes de habilitar."}), 400
 
     is_valid = verify_totp_code(user.totp_secret, code)
-    print(f"DEBUG 2FA: code_valid={is_valid}")
+    logger.info(f"Validacao 2FA para usuario {payload['sub']}: {'sucesso' if is_valid else 'falha'}")
     
     if not is_valid:
         return jsonify({"error": "Código inválido. O 2FA não foi ativado. Verifique se o horário do seu celular e do servidor estão sincronizados.", "code": "INVALID_TOTP"}), 400

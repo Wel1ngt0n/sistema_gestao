@@ -1,14 +1,14 @@
 import sys
 import argparse
+import logging
 from app import create_app, db
 from app.services.sync_service import SyncService
 
 app = create_app()
+logger = logging.getLogger(__name__)
 
 def run_test_sync():
-    import logging
-    
-    # Configuração de logging
+    # Configuracao de logging para execucao manual do sincronismo.
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -31,25 +31,24 @@ def run_test_sync():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--test', action='store_true', help='Executar teste de sincronização em vez do servidor')
+    parser.add_argument('--test', action='store_true', help='Executar teste de sincronizacao em vez do servidor')
     args = parser.parse_args()
 
-    # Garantir que as tabelas existem (Caminho CLI local)
+    # O create_app ja inicializa tabelas e reparos; mantem contexto para compatibilidade local.
     with app.app_context():
-        # create_all e repair_database_schema já são chamados no create_app()
         pass
         
-        print(">>> Database initialized.")
+        logger.info("Banco de dados inicializado.")
 
 
     if args.test:
         run_test_sync()
     else:
-        # Executar Verificação de Backup (Inicialização)
+        # Verifica backup antes de subir o servidor local.
         try:
             from backup_manager import BackupManager
             BackupManager.check_and_run_backup()
         except Exception as e:
-            print(f"FAILED TO RUN STARTUP BACKUP: {e}")
+            logger.error(f"Falha ao executar backup de inicializacao: {e}")
 
         app.run(debug=True, host='0.0.0.0', port=5003)

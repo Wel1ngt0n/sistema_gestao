@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, Response, stream_with_context
+from flask import Blueprint, jsonify, request, Response, stream_with_context, current_app
 from app.models import db, Store, StoreSyncLog, SystemConfig
 from app.services.metrics import MetricsService
 from app.services.sync_service import SyncService
@@ -9,20 +9,19 @@ from sqlalchemy import func
 # Blueprint principal mantido para health checks e estrutura futura
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-# from app.routes_forecast import forecast_bp # REMOVED: unused
 
-# --- Rotas da API (Backend React V2.5) ---
+# Rotas principais consumidas pelo frontend React.
 
 @api_bp.route('/dashboard', methods=['GET'])
 @require_auth
 def get_dashboard_data(payload):
     from app.services.scoring_service import ScoringService
     
-    # Filtro de Status (Query Param)
-    # Opções: 'active' (padrão), 'concluded', 'all'
+    # Filtro de status vindo por query string.
+    # Opcoes: 'active' (padrao), 'concluded', 'all'.
     status_filter = request.args.get('status', 'active')
 
-    # Carregar Pesos
+    # Carrega pesos configuraveis de matriz/filial.
     w_matriz = 1.0
     w_filial = 0.7
     
@@ -38,34 +37,27 @@ def get_dashboard_data(payload):
 
     all_stores = Store.query.all()
     
-    # Listas Globais para Cálculo de KPI
-    # Regra V6: Ativas = Não concluídas E Início <= Hoje (ou detectado)
+    # Listas globais para calculo de KPIs.
+    # Regra V6: ativas = nao concluidas e inicio <= hoje.
     active_stores_global = [s for s in all_stores if not s.effective_finished_at and not s.is_scheduled]
     
     # Filtrar entregas: somente a partir de 2026
     concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
 
-    # Escopo Filtrado para Exibição (Risco, Listas de MRR, etc)
+    # Escopo filtrado para listas de risco, MRR e tabelas operacionais.
     if status_filter == 'active':
         scope_stores = active_stores_global
     elif status_filter == 'concluded':
         scope_stores = concluded_stores_global
-    else: # all
+    else: # all preservado como contrato da API
         scope_stores = all_stores
     
     # 1. KPIs
     count_wip = len(active_stores_global)
     count_done = len(concluded_stores_global)
     
-    # Calcular Pontos (WIP) - Baseado no Global para manter consistência dos top cards fixos?
-    # O usuário pediu: "É importante o sistema desconsiderar nas demais métricas de risco lojas que já foram concluídas"
-    # Entendo que os Cards de "Lojas em Progresso" e "Entregas Totais" são contadores absolutos do sistema.
-    # Mas o MRR em implantação e MRR que deve ser cobrado (financeiro) deve respeitar o filtro?
-    # O pedido diz: "lojas em progresso ativo como padrão... mostramos a quantidade de ativos... atrasadas e em risco que de fato ainda estão em progresso"
-    # Assim, os KPIs de topo (Cards) devem refletir a Visão Geral ou o Filtro?
-    # Geralmente Cards de Topo são "Big Numbers".
-    # WIP e DONE Total são "Big Numbers".
-    # Mas Risco e Listas abaixo respeitarão o scope_stores.
+    # KPIs de topo permanecem globais para dar contexto executivo.
+    # Listas analiticas abaixo respeitam o filtro selecionado.
     
     total_points_wip = 0.0
     for s in active_stores_global:
@@ -81,26 +73,20 @@ def get_dashboard_data(payload):
         else:
             total_points_done += w_filial
     
-    # % Prazo (Apenas concluídas) - KPI Global
+    # Percentual no prazo considera apenas lojas concluidas.
     on_time = sum(1 for s in concluded_stores_global if s.dias_totais_implantacao <= (s.tempo_contrato or 90))
     pct_prazo = (on_time / count_done * 100) if count_done > 0 else 0
     
-    # Métricas de MRR (Respeitando o Filtro para visualização operacional?)
-    # Se filtro = active, mostramos MRR em implantação.
-    # Se filtro = concluded, mostramos MRR entregue?
-    # O Card diz "MRR em Implantação". Se eu filtrar concluídas, mostrar 0 seria estranho se o label é fixo.
-    # Então KPIs fixos continuarão globais para dar contexto.
-    # AS LISTAS (Risco, Tabelas) respeitarão o scope_stores.
+    # MRR dos cards e global; MRR devedor respeita o filtro operacional.
 
     mrr_implantacao = sum(s.valor_mensalidade for s in active_stores_global if s.valor_mensalidade and s.status_norm != 'DONE')
     mrr_ja_pagando = sum(s.valor_mensalidade for s in all_stores if s.financeiro_status in ['Pago', 'Em dia'] and s.valor_mensalidade)
-    mrr_devendo = sum(s.valor_mensalidade for s in scope_stores if s.financeiro_status == 'Devendo' and s.valor_mensalidade) # Esse ajustado ao filtro
+    mrr_devendo = sum(s.valor_mensalidade for s in scope_stores if s.financeiro_status == 'Devendo' and s.valor_mensalidade)
     
     current_year = datetime.now().year
     mrr_concluidas_ano = sum(s.valor_mensalidade for s in concluded_stores_global if s.effective_finished_at and s.effective_finished_at.year == current_year and s.valor_mensalidade)
 
-    # 2. Rankings (Implantador) - Apenas implantadores com lojas ativas
-    # Identificar implantadores que têm pelo menos 1 loja ativa
+    # 2. Rankings: considera implantadores com pelo menos uma loja ativa.
     active_implantadores = set()
     for s in active_stores_global:
         if s.implantador:
@@ -117,7 +103,7 @@ def get_dashboard_data(payload):
         if not s.effective_finished_at:
              kpi_by_imp[imp]["wip"] += 1
 
-    # Contabilizar entregas 2026+ para implantadores ativos
+    # Contabiliza entregas 2026+ para implantadores ainda ativos.
     for s in concluded_stores_global:
         imp = s.implantador
         if not imp or imp not in active_implantadores:
@@ -140,11 +126,10 @@ def get_dashboard_data(payload):
         })
     rankings.sort(key=lambda x: x['done'], reverse=True)
 
-    # 3. Top 10 Risco (Respeitando Filtro 'status')
-    # Se filtro for 'concluded', risco não faz muito sentido, mas mostraremos se houver pendências
+    # 3. Top 10 de risco respeitando o filtro de status.
     risk_list = []
     for s in scope_stores:
-        # Se filter=active -> pega stores abertas. Se filter=concluded -> pega fechadas.
+        # Mantem compatibilidade com valores externos active/concluded.
         if status_filter == 'active' and s.effective_finished_at:
             continue
         if status_filter == 'concluded' and not s.effective_finished_at:
@@ -152,7 +137,7 @@ def get_dashboard_data(payload):
         
         risk_data = ScoringService.calculate_risk_score(s)
         
-        # Buscar Etapa Ativa (Gargalo)
+        # Identifica a etapa ativa para mostrar gargalo operacional.
         active_step_name = "N/A"
         for step in s.steps:
             if step.start_real_at and not step.end_real_at:
@@ -174,13 +159,13 @@ def get_dashboard_data(payload):
     risk_list.sort(key=lambda x: x['score'], reverse=True)
     top_risk = risk_list[:10]
 
-    # 4. Dados dos Gráficos
-    # 4.1 Volume por Implantador (Em Andamento) - Top 15
+    # 4. Dados dos graficos.
+    # 4.1 Volume por implantador em andamento.
     sorted_imps = sorted(kpi_by_imp.items(), key=lambda x: x[1]['wip'], reverse=True)
     impl_labels = [item[0] for item in sorted_imps[:15]]
     impl_values = [item[1]['wip'] for item in sorted_imps[:15]]
     
-    # 4.2 Evolução (Últimos 6 meses OU Todos disponíveis se menos)
+    # 4.2 Evolucao dos ultimos seis meses disponiveis.
     from collections import defaultdict
     evo_map = defaultdict(int)
     for s in concluded_stores_global:
@@ -188,17 +173,16 @@ def get_dashboard_data(payload):
             m_key = s.effective_finished_at.strftime('%m/%Y')
             evo_map[m_key] += 1
             
-    # Ordenar por data (Mês/Ano)
-    # Por segurança, usamos chaves datetime primeiro
+    # Ordena por datetime para evitar erro de ordenacao por string mes/ano.
     date_map = defaultdict(int) 
     for s in concluded_stores_global:
         if s.effective_finished_at:
-            # truncate to month start
+            # Normaliza para o inicio do mes.
             dt = s.effective_finished_at.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             date_map[dt] += 1
             
     sorted_dates = sorted(date_map.keys())
-    # Pegar os últimos 6
+    # Mantem apenas os seis meses mais recentes.
     sorted_dates = sorted_dates[-6:]
     
     evo_labels = [d.strftime('%m/%Y') for d in sorted_dates]
@@ -230,21 +214,21 @@ def get_dashboard_data(payload):
 @require_auth
 def get_stores(payload):
     from sqlalchemy import or_, and_
-    status_filter = request.args.get('status', 'active') # Default active
+    status_filter = request.args.get('status', 'active') # Padrao da API.
     
     query = Store.query
     today = datetime.now().date()
     
     if status_filter == 'active':
-        # Active = Não concluídas E (sem data manual ou data manual <= hoje)
+        # Active = nao concluidas e sem inicio futuro.
         query = query.filter(Store.manual_finished_at.is_(None), Store.end_real_at.is_(None), Store.finished_at.is_(None))
         query = query.filter(or_(Store.manual_start_date.is_(None), func.date(Store.manual_start_date) <= today))
     elif status_filter == 'scheduled':
-        # Scheduled = Não concluídas E data início manual no futuro
+        # Scheduled = nao concluidas com data de inicio manual futura.
         query = query.filter(Store.manual_finished_at.is_(None), Store.end_real_at.is_(None), Store.finished_at.is_(None))
         query = query.filter(Store.manual_start_date.isnot(None), func.date(Store.manual_start_date) > today)
     elif status_filter == 'concluded':
-        # Concluded = Pelo menos uma data de fim preenchida, somente 2026+
+        # Concluded = pelo menos uma data final preenchida, somente 2026+.
         cutoff = datetime(2026, 1, 1)
         query = query.filter(
             or_(Store.manual_finished_at.isnot(None), Store.end_real_at.isnot(None), Store.finished_at.isnot(None))
@@ -471,7 +455,7 @@ def update_store(payload, id):
     store = Store.query.get_or_404(id)
     data = request.json
     if not data:
-        return jsonify({"error": "No data"}), 400
+        return jsonify({"error": "Nenhum dado encontrado"}), 400
         
     service = MetricsService()
         
@@ -888,7 +872,7 @@ def analyze_store(payload, id):
                 if text:
                     comments_list.append(f"[LOJA]: {user}: {text}")
         except Exception as e:
-            print(f"Error fetching comments: {e}")
+            current_app.logger.warning(f"Erro ao buscar comentarios da loja para IA: {e}")
 
     # Buscar Comentários da Subtarefa Ativa (Onde está travado)
     # Procuramos o primeiro passo que está efetivamente EM PROGRESSO (iniciado mas não finalizado)
@@ -909,7 +893,7 @@ def analyze_store(payload, id):
                     if text:
                         comments_list.append(f"[{active_step.step_name}] {user}: {text}")
         except Exception as e:
-            print(f"Error fetching subtask comments: {e}")
+            current_app.logger.warning(f"Erro ao buscar comentarios da etapa para IA: {e}")
 
     comments_str = "\n".join(comments_list) if comments_list else "Nenhum comentário recente."
 
@@ -937,7 +921,7 @@ def analyze_store(payload, id):
         store.ai_analyzed_at = datetime.now()
         db.session.commit()
     except Exception as e:
-        print(f"Erro ao salvar cache de IA: {e}")
+        current_app.logger.warning(f"Erro ao salvar cache de IA: {e}")
         db.session.rollback()
 
     result['_cached'] = False
@@ -1237,7 +1221,7 @@ def export_monthly_excel(payload):
             download_name=f"relatorio_implantacao_{month_str}.xlsx"
         )
     except Exception as e:
-        print(f"Erro ao exportar excel: {e}")
+        current_app.logger.error(f"Erro ao exportar Excel mensal: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -1259,7 +1243,7 @@ def export_annual_excel(payload):
             download_name=f"visao_anual_implantacao_{year_str}.xlsx"
         )
     except Exception as e:
-        print(f"Erro ao exportar excel anual: {e}")
+        current_app.logger.error(f"Erro ao exportar Excel anual: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -1364,7 +1348,7 @@ def update_store_step(payload, store_id, step_id):
     data = request.json
     
     if not data:
-        return jsonify({"error": "No data"}), 400
+        return jsonify({"error": "Nenhum dado encontrado"}), 400
         
     try:
         if 'start_date' in data:
@@ -1477,7 +1461,7 @@ def seed_default_configs():
             )
             db.session.add(cfg)
         else:
-            # Update description and category if missing
+            # Completa descricao e categoria quando configs antigas nao tiverem esses campos.
             if not existing.description:
                 existing.description = cfg_data["description"]
             try:
@@ -1646,7 +1630,7 @@ def manual_backup():
         if success:
             return jsonify({'status': 'backup_created'}), 200
         else:
-            return jsonify({'error': 'Backup failed. Check server logs.'}), 500
+            return jsonify({'error': 'Falha ao criar backup. Verifique os logs do servidor.'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

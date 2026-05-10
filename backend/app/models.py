@@ -443,7 +443,7 @@ class SyncRun(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     started_at = db.Column(db.DateTime, default=datetime.now)
     finished_at = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(20), default="RUNNING") # RUNNING, SUCCESS, ERROR
+    status = db.Column(db.String(20), default="RUNNING") # Estados externos preservados.
     items_processed = db.Column(db.Integer, default=0)
     items_updated = db.Column(db.Integer, default=0)
     error_summary = db.Column(db.Text, nullable=True)

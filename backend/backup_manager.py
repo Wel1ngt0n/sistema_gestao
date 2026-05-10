@@ -1,27 +1,29 @@
 import os
 import shutil
 import glob
+import logging
 from datetime import datetime, timedelta
 
-# Configuration defaults
+# Caminhos padrao do backup local em SQLite.
 DB_PATH = os.path.join(os.path.dirname(__file__), 'instance', 'metrics.db')
 BACKUP_DIR = os.path.join(os.path.dirname(__file__), 'backups')
 RETENTION_DAYS = 15
+logger = logging.getLogger(__name__)
 
 class BackupManager:
     @staticmethod
     def ensure_backup_dir():
         if not os.path.exists(BACKUP_DIR):
             os.makedirs(BACKUP_DIR)
-            print(f">>> Backup directory created: {BACKUP_DIR}")
+            logger.info(f"Diretorio de backup criado: {BACKUP_DIR}")
 
     @staticmethod
     def run_backup():
-        """Creates a timestamped copy of the database and rotates old backups."""
+        """Cria uma copia datada do banco local e remove backups antigos."""
         BackupManager.ensure_backup_dir()
         
         if not os.path.exists(DB_PATH):
-            print(f">>> Database file not found at {DB_PATH}. Skipping backup.")
+            logger.info(f"Banco local nao encontrado em {DB_PATH}. Backup ignorado.")
             return False
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -30,38 +32,37 @@ class BackupManager:
         
         try:
             shutil.copy2(DB_PATH, backup_path)
-            print(f">>> Backup created successfully: {backup_filename}")
+            logger.info(f"Backup criado com sucesso: {backup_filename}")
             
-            # Rotation: Delete backups older than RETENTION_DAYS
+            # Rotacao: remove backups mais antigos que a retencao configurada.
             BackupManager.rotate_backups()
             return True
         except Exception as e:
-            print(f">>> Error creating backup: {e}")
+            logger.error(f"Erro ao criar backup: {e}")
             return False
 
     @staticmethod
     def rotate_backups():
-        """Deletes files in backup dir older than RETENTION_DAYS."""
+        """Remove arquivos de backup mais antigos que RETENTION_DAYS."""
         cutoff_date = datetime.now() - timedelta(days=RETENTION_DAYS)
         
         files = glob.glob(os.path.join(BACKUP_DIR, "metrics_*.db"))
         for f in files:
             try:
-                # Use file modification time
+                # Usa a data de modificacao do arquivo como referencia de retencao.
                 mtime = os.path.getmtime(f)
                 file_dt = datetime.fromtimestamp(mtime)
                 
                 if file_dt < cutoff_date:
                     os.remove(f)
-                    print(f">>> Old backup removed: {os.path.basename(f)}")
+                    logger.info(f"Backup antigo removido: {os.path.basename(f)}")
             except Exception as e:
-                print(f">>> Error checking/removing old backup {f}: {e}")
+                logger.error(f"Erro ao verificar/remover backup antigo {f}: {e}")
 
     @staticmethod
     def check_and_run_backup(interval_days=1):
         """
-        Standard Startup Check:
-        Wraps run_backup but only executes if the latest backup is older than interval_days.
+        Executa backup de inicializacao apenas quando o ultimo backup esta vencido.
         """
         BackupManager.ensure_backup_dir()
         
@@ -70,22 +71,21 @@ class BackupManager:
         should_run = False
         if not files:
             should_run = True
-            print(">>> No existing backups found. Running initial backup...")
+            logger.info("Nenhum backup existente encontrado. Executando backup inicial.")
         else:
-            # Sort by modification time (newest last)
+            # Seleciona o arquivo mais recente pela data de modificacao.
             latest_file = max(files, key=os.path.getmtime)
             last_mtime = datetime.fromtimestamp(os.path.getmtime(latest_file))
             
-            # Check age
             if datetime.now() - last_mtime > timedelta(days=interval_days):
-                print(f">>> Last backup ({os.path.basename(latest_file)}) is older than {interval_days} day(s). Running backup...")
+                logger.info(f"Ultimo backup ({os.path.basename(latest_file)}) tem mais de {interval_days} dia(s). Executando novo backup.")
                 should_run = True
             else:
-                print(f">>> Valid backup found ({os.path.basename(latest_file)}). Skipping startup backup.")
+                logger.info(f"Backup valido encontrado ({os.path.basename(latest_file)}). Backup de inicializacao ignorado.")
         
         if should_run:
             BackupManager.run_backup()
 
 if __name__ == "__main__":
-    # Manual run
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     BackupManager.run_backup()

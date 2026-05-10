@@ -6,17 +6,27 @@ load_dotenv()
 
 
 class Config:
-    # Security: Flask Secret Key for session/cookies
+    # Chave usada pelo Flask para sessoes/cookies.
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev_fallback_key_dont_use_in_prod")
     DEBUG = os.getenv("FLASK_ENV") == "development"
     
     CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY", "").strip()
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
-    # List IDs extracted from URLs
+    # Origens permitidas no CORS. Contratos externos continuam configuraveis por ambiente.
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ALLOWED_ORIGINS",
+            "http://localhost:5173,http://localhost:5177,http://localhost:5003,http://127.0.0.1:5173,http://127.0.0.1:5177"
+        ).split(",")
+        if origin.strip()
+    ]
+
+    # IDs das listas extraidos das URLs do ClickUp.
     LIST_ID_PRINCIPAL = "211186088"
     
-    # Step Lists (Logical Subtasks)
+    # Listas de etapas, mantidas com chaves do dominio externo.
     LIST_IDS_STEPS = {
         "SUBIR_APPS": "216936208",
         "INTEGRACAO": "211110999",
@@ -30,7 +40,7 @@ class Config:
         "POS_IMPLANTACAO": "901306837383"
     }
 
-    # Security: Ensure PostgreSQL is used correctly for Supabase, fallback to SQLite for dev
+    # Ajusta URLs antigas de Postgres e usa SQLite apenas como fallback de desenvolvimento.
     db_url = os.getenv('DATABASE_URL', 'sqlite:///metrics.db')
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -38,7 +48,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Connection stability for long-running syncs (Render/Postgres)
+    # Estabilidade para sincronismos longos em Render/Postgres.
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,

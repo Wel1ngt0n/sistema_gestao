@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file, current_app
 from app.services.forecast_service import ForecastService
 from app.models import db, Store
 from app.services.security_service import require_auth
@@ -21,10 +21,8 @@ def get_forecast(payload):
     rede = request.args.get('rede')
     status = request.args.get('status')
     
-    print(f"DEBUG FORECAST: year={year}, month={month}, impl={implantador}")
-    
     data = ForecastService.get_forecast_data(year, month, implantador, rede, status)
-    print(f"DEBUG FORECAST: Returning {len(data)} rows")
+    current_app.logger.info(f"Forecast consultado: {len(data)} linhas retornadas.")
     return jsonify(data)
 
 @forecast_bp.route('/summary', methods=['GET'])
@@ -46,7 +44,7 @@ def update_store_forecast(payload, store_id):
     store = Store.query.get_or_404(store_id)
     from app.services.audit_service import AuditService
     
-    # Update fields if present
+    # Atualiza apenas campos enviados no payload.
     if 'manual_go_live_date' in data:
         val = data['manual_go_live_date'] 
         new_dt = datetime.strptime(val, '%Y-%m-%d') if val else None
@@ -68,10 +66,10 @@ def update_store_forecast(payload, store_id):
         AuditService.log_forecast_change(store.id, 'include_in_forecast', store.include_in_forecast, new_val)
         store.include_in_forecast = new_val
     
-    # Auto-parse UF if address changed (optional logic)
+    # Ponto futuro: recalcular UF automaticamente se endereco mudar.
     
     db.session.commit()
-    return jsonify({"message": "Forecast updated", "id": store.id})
+    return jsonify({"message": "Forecast atualizado", "id": store.id})
 
 @forecast_bp.route('/export', methods=['GET'])
 @require_auth
@@ -79,23 +77,22 @@ def export_forecast(payload):
     """
     Gera Excel com colunas exatas solicitadas.
     """
-    # Mesmo filtros
+    # Reaproveita os mesmos filtros da consulta principal.
     year = request.args.get('year')
     month = request.args.get('month')
     implantador = request.args.get('implantador')
     
     data = ForecastService.get_forecast_data(year, month, implantador)
     
-    # Colunas: Implantador, Cliente, Estado, Lojas, Tinha Ecommerce?, Qual?, 
-    # Projeção Pedidos, Taxa, MRR Pedidos, Mes Inicio, Etapa, Mes Previsto, Data Go Live, Status
+    # Colunas exigidas pelo time de forecast.
     
     rows = []
     for item in data:
         rows.append({
             "Implantador": item['implantador'],
-            "Cliente": item['rede'], # Rede ou Loja Principal
+            "Cliente": item['rede'], # Rede ou loja principal.
             "Estado": item['state_uf'],
-            "Lojas": 1, # TODO: Agrupar por rede se quiser "Lojas vinculadas", aqui é item = loja
+            "Lojas": 1, # Cada linha representa uma loja nesta exportacao.
             "Tinha Ecommerce?": "Sim" if item['had_ecommerce'] else "Não",
             "Qual?": item['previous_platform'],
             "Projeção Pedidos/mês": item['projected_orders'],
@@ -114,7 +111,7 @@ def export_forecast(payload):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Forecast')
-        # Ajustes de coluna auto-width poderiam ser feitos aqui
+        # Ajustes de largura de coluna podem ser adicionados em uma rodada visual.
         
     output.seek(0)
     

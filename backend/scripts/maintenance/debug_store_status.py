@@ -5,41 +5,41 @@ from app.services.metrics import MetricsService
 app = create_app()
 
 with app.app_context():
-    # 1. Find the store
+    # 1. Localizar a loja
     search = "Mix Bahia Vilas"
     store = Store.query.filter(Store.store_name.ilike(f"%{search}%")).first()
     
     if not store:
-        print(f"Store '{search}' not found!")
+        print(f"Loja '{search}' nao encontrada!")
     else:
-        print(f"--- STORE BEFORE ---")
-        print(f"Name: {store.store_name}")
+        print("--- LOJA ANTES ---")
+        print(f"Nome: {store.store_name}")
         print(f"Status: {store.status}")
-        print(f"Status Norm: {store.status_norm}")
-        print(f"Manual Finished At: {store.manual_finished_at}")
-        print(f"Finished At: {store.finished_at}")
+        print(f"Status normalizado: {store.status_norm}")
+        print(f"Finalizacao manual em: {store.manual_finished_at}")
+        print(f"Finalizacao em: {store.finished_at}")
         
-        # Check Steps
-        print(f"--- TRAINING STEP ---")
+        # Verifica a etapa de treinamento.
+        print("--- ETAPA DE TREINAMENTO ---")
         training_step = None
         for s in store.steps:
             if "TREINAMENTO" in s.step_list_name:
                 training_step = s
-                print(f"Step: {s.step_name} | Status: {s.status} | End: {s.end_real_at}")
+                print(f"Etapa: {s.step_name} | Status: {s.status} | Fim: {s.end_real_at}")
         
-        # 2. Apply Rule
-        print(f"--- APPLYING RULE ---")
+        # 2. Aplicar regra de conclusao.
+        print("--- APLICANDO REGRA ---")
         metrics = MetricsService()
         metrics.apply_training_completion_rule(store)
         
         if db.session.dirty:
-            print("Changes detected!")
+            print("Alteracoes detectadas!")
             db.session.commit()
-            print("Saved.")
+            print("Salvo.")
         else:
-            print("No changes detected by SQLAlchemy.")
+            print("Nenhuma alteracao detectada pelo SQLAlchemy.")
             
-        print(f"--- STORE AFTER ---")
+        print("--- LOJA DEPOIS ---")
         print(f"Status: {store.status}")
-        print(f"Status Norm: {store.status_norm}")
-        print(f"Finished At: {store.finished_at}")
+        print(f"Status normalizado: {store.status_norm}")
+        print(f"Finalizacao em: {store.finished_at}")

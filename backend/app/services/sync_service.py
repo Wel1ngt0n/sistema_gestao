@@ -68,7 +68,7 @@ class SyncService:
     def run_sync(self, force_full=False):
         """
         Sync Incremental Otimizado.
-        param force_full: Ignora o último timestamp e faz scan completo.
+        param force_full: ignora o ultimo timestamp e faz varredura completa.
         """
         from app.models import SyncRun, SyncError
         import traceback
@@ -124,7 +124,7 @@ class SyncService:
                 for future in as_completed(future_to_list):
                      res = future.result()
                      if res:
-                         # Inject List Name
+                         # Injeta o nome da lista para preservar o tipo da etapa.
                          list_name = future_to_list[future]
                          for t in res:
                              t['step_type_name'] = list_name
@@ -215,7 +215,7 @@ class SyncService:
 
             self.logger.info("--- SYNC FINALIZADO ---")
             
-            # Post-sync: check notifications (non-blocking)
+            # Pos-sync: notificacoes nao devem bloquear o resultado principal.
             try:
                 from app.services.notification_service import check_sla_alerts
                 alert_result = check_sla_alerts()
@@ -227,7 +227,7 @@ class SyncService:
             return {"processed": processed_count, "steps_updated": len(all_steps)}
             
         except Exception as e:
-            self.logger.error(f"FATAL SYNC ERROR: {e}")
+            self.logger.error(f"Erro fatal no sincronismo: {e}")
             run_record.finished_at = datetime.now()
             run_record.status = "ERROR"
             run_record.error_summary = str(e)
@@ -243,14 +243,14 @@ class SyncService:
         try:
             store = Store.query.get(store_id)
             if not store:
-                return {"error": "Store not found"}
+                return {"error": "Loja nao encontrada"}
             
             self.logger.info(f"Iniciando Deep Sync para loja: {store.store_name} ({store.clickup_task_id})")
             
             # Buscar do ClickUp
             data = self.clickup.get_task_history(store.clickup_task_id)
             if not data:
-                return {"error": "Failed to fetch from ClickUp"}
+                return {"error": "Falha ao buscar historico no ClickUp"}
             
             # Atualizar Estado Deep Sync
             dss = StoreDeepSyncState.query.get(store_id)
@@ -269,7 +269,7 @@ class SyncService:
             status_history = data.get('status_history', [])
             for item in status_history:
                 status_name = item.get('status')
-                total_time = item.get('total_time', {}).get('by_minute', 0) # Minutos assumidos
+                total_time = item.get('total_time', {}).get('by_minute', 0) # Valor assumido em minutos.
                 
                 if total_time:
                     total_seconds = int(total_time) * 60
@@ -294,7 +294,7 @@ class SyncService:
         except Exception as e:
             self.logger.error(f"Erro Deep Sync {store_id}: {e}")
             
-            # Re-query safely to avoid session rollback issues
+            # Reconsulta apos rollback para evitar objeto preso em sessao invalida.
             db.session.rollback()
             dss = StoreDeepSyncState.query.get(store_id)
             if dss:
@@ -304,11 +304,11 @@ class SyncService:
             return {"error": str(e)}
 
     def run_sync_stream(self, force_full=False, vital_only=False):
-        """Gerador para SSE com Lógica Incremental e Logging V3.0 (Modular)"""
+        """Gerador SSE com sincronismo incremental e logs de progresso."""
         from app.models import SyncRun, SyncError
         import traceback
         
-        # Init Run Logic
+        # Registra a execucao antes de iniciar o streaming.
         run_record = SyncRun(status="RUNNING")
         db.session.add(run_record)
         db.session.commit()
@@ -376,7 +376,7 @@ class SyncService:
                                 try:
                                     tt_data = self.clickup.get_task_time_tracking(p_task.get('id'))
                                     total_ms = sum(int(entry.get('duration', 0)) for entry in tt_data)
-                                    p_task['total_time_tracked'] = int(total_ms / 1000) # s
+                                    p_task['total_time_tracked'] = int(total_ms / 1000) # segundos
                                 except (ValueError, TypeError, Exception): 
                                     pass
                             
@@ -415,7 +415,7 @@ class SyncService:
                             err = SyncError(
                                 sync_run_id=run_record.id,
                                 task_id=p_task.get('id'),
-                                error_msg=f"Update Store: {str(e)}",
+                                error_msg=f"Atualizacao de loja: {str(e)}",
                                 traceback=traceback.format_exc()
                             )
                             db.session.add(err)
@@ -426,7 +426,7 @@ class SyncService:
                             yield f"data: ⏳ [Deep] {stores_processed} lojas detalhadas processadas...\n\n"
                     
                     yield f"data: ⏳ Lote de lojas concluído. Total: {stores_processed}...\n\n"
-                    batch = None # GC
+                    batch = None # Libera referencia do lote processado.
 
             self.logger.info(f"--- FIM DO PROCESSAMENTO DE LOJAS: {stores_processed} processadas ---")
             yield f"data: ✅ {stores_processed} lojas sincronizadas.\n\n"
@@ -541,7 +541,7 @@ class SyncService:
 
         except Exception as e:
             # Log de Erro Fatal
-            self.logger.error(f"FATAL STREAM SYNC ERROR: {e}")
+            self.logger.error(f"Erro fatal no stream de sincronismo: {e}")
             run_record.finished_at = datetime.now()
             run_record.status = "ERROR"
             run_record.error_summary = str(e)
@@ -635,7 +635,7 @@ class SyncService:
                         # Em andamento: calcular dias até agora
                         metric.sla_days = (datetime.now() - metric.start_date).days
                     
-                    # Rate limit gentil - 100ms entre requests
+                    # Pequeno intervalo para respeitar o rate limit da API externa.
                     time_mod.sleep(0.1)
                     
                 except Exception as e:

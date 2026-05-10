@@ -89,19 +89,19 @@ class AnalysisService:
         details = []
 
         # Definição Padrão do Processo (Pode ser ajustada)
-        # Assumimos que todas as listas configuradas em Config são 'fases'
+        # Assumimos que todas as listas registradas sao fases do processo.
         required_steps = Config.LIST_IDS_STEPS.keys()
 
-        # Build map of current store steps
+        # Monta mapa das etapas atuais da loja.
         store_steps_map = { s.step_list_name: s for s in store.steps }
 
         for step_name in required_steps:
             stats = self.step_stats.get(step_name, {'avg': 5.0, 'std': 1.0, 'p50': 5.0, 'p75': 6.0})
             
-            # Check if store has this step
+            # Verifica se a loja possui esta etapa.
             current_step = store_steps_map.get(step_name)
             
-            # Determine Status
+            # Define o status interno da etapa.
             status = "TODO"
             if current_step:
                 if current_step.end_real_at: status = "DONE"
@@ -157,9 +157,8 @@ class AnalysisService:
         if low_data_steps > len(details) / 2: confidence = "LOW"
         elif low_data_steps > 0: confidence = "MEDIUM"
 
-        # Calcular Previsão
-        # predicted_date = datetime.now() + timedelta(days=remaining_days) # Old logic
-        predicted_date = date_p50 # P50 is the main one
+        # Calcula previsao usando P50 como estimativa principal.
+        predicted_date = date_p50
         
         # Calcular Risco contra Contrato
         contract_days = store.tempo_contrato or 90

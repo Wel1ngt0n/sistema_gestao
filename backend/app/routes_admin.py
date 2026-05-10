@@ -5,7 +5,7 @@ from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
-# --- System Config ---
+# Configuracoes globais do sistema.
 
 @admin_bp.route('/configs', methods=['GET'])
 @require_auth
@@ -27,7 +27,7 @@ def update_config(payload):
     key = data.get('key')
     value = data.get('value')
     
-    if not key: return jsonify({"error": "Key required"}), 400
+    if not key: return jsonify({"error": "Chave obrigatoria"}), 400
     
     config = SystemConfig.query.filter_by(key=key).first()
     if config:

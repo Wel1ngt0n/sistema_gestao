@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, jsonify, request
 from app.models import SupportConversation, SupportMessage, SupportContact, SupportAgentPerformance, SystemConfig, db
 from datetime import datetime
@@ -13,6 +14,7 @@ from app.services.support_importer import (
 )
 
 support_bp = Blueprint('support_bp', __name__)
+logger = logging.getLogger(__name__)
 
 @support_bp.route('/api/support/kpis', methods=['GET'])
 def get_kpis():
@@ -66,7 +68,7 @@ def get_orphans():
 
 @support_bp.route('/api/support/messages', methods=['GET'])
 def get_recent_messages():
-    # Pega as últimas 50 mensagens por timestamp
+    # Retorna as 50 mensagens mais recentes pelo horario do evento.
     messages = SupportMessage.query.order_by(SupportMessage.timestamp.desc()).limit(50).all()
     result = []
     for m in messages:
@@ -135,22 +137,19 @@ def import_csv():
         return jsonify({"status": "ok"}), 200
 
     try:
-        # Debug logs para Render
-        print(f"--- IMPORT CSV DEBUG ---")
-        print(f"FILES KEYS: {list(request.files.keys())}")
-        print(f"FORM KEYS: {list(request.form.keys())}")
+        logger.info(f"Importacao CSV suporte: arquivos={list(request.files.keys())}, form={list(request.form.keys())}")
 
-        # Pega todos os arquivos enviados (independente da chave) para validar se há algo
+        # Valida se algum arquivo foi enviado, independentemente do nome do campo.
         if not request.files:
-            print("ERROR: No files in request.files")
+            logger.warning("Importacao CSV suporte sem arquivos.")
             return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
 
-        # Pega o período manual (YYYY-MM) se enviado, senão usa o atual
+        # Usa periodo manual (YYYY-MM) quando informado; caso contrario, mes atual.
         period = request.form.get('period')
         if not period:
             period = datetime.now().strftime('%Y-%m')
-        
-        print(f"IMPORT PERIOD: {period}")
+
+        logger.info(f"Periodo da importacao CSV suporte: {period}")
 
         results = []
         
@@ -185,7 +184,7 @@ def import_csv():
         if not results:
             return jsonify({"status": "error", "message": "Nenhum arquivo compatível encontrado entre os enviados."}), 400
             
-        # Salva timestamp da última importação
+        # Salva o horario da ultima importacao.
         sync_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         config = SystemConfig.query.filter_by(key='last_support_import').first()
         if config:

@@ -1,10 +1,13 @@
 from datetime import datetime
 import json
+import logging
 from app.models import db, ZenviaWebhookEvent, SupportConversation, SupportMessage, SupportContact
+
+logger = logging.getLogger(__name__)
 
 def process_pending_zenvia_events():
     """
-    Background job to process raw Zenvia webhooks into relational tables.
+    Processa webhooks brutos da Zenvia e popula tabelas relacionais.
     """
     events = ZenviaWebhookEvent.query.filter_by(processed_at=None).all()
     stats = {"processed_count": 0, "new_conversations_count": 0}
@@ -24,7 +27,7 @@ def process_pending_zenvia_events():
             stats["processed_count"] += 1
         except Exception as e:
             db.session.rollback()
-            print(f"Error processing event {event.id}: {str(e)}")
+            logger.error(f"Erro ao processar evento Zenvia {event.id}: {str(e)}")
             
     return stats
 
@@ -53,9 +56,7 @@ def _process_message(payload, channel):
     elif contact.name == "Desconhecido" and visitor_name != "Desconhecido":
         contact.name = visitor_name
 
-    # Simulando Conversation ID (ou pegando do payload real)
-    # No evento CONVERSATION_MESSAGE vem payload['conversation']['id']
-    # No MESSAGE simples vinha no root do payload
+    # Usa o ID de conversa do payload quando existir; senao cria uma chave estavel.
     conv_data = payload.get('conversation', {})
     conv_id_str = conv_data.get('id') or payload.get('conversationId') or f"conv_{contact_phone}"
     

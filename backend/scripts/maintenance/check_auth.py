@@ -1,23 +1,26 @@
+import logging
 import requests
 from config import Config
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
 
 def check_token():
     url = "https://api.clickup.com/api/v2/user"
     headers = {"Authorization": Config.CLICKUP_API_KEY}
     
-    print(f"Testando Token: {Config.CLICKUP_API_KEY[:5]}...{Config.CLICKUP_API_KEY[-5:]}")
+    logger.info(f"Token ClickUp configurado: {'sim' if Config.CLICKUP_API_KEY else 'nao'}")
     
     response = requests.get(url, headers=headers)
     
-    print(f"Status Code: {response.status_code}")
-    print(f"Response: {response.text}")
+    logger.info(f"Status HTTP: {response.status_code}")
     
     if response.status_code == 200:
-        print("SUCESSO: Token válido!")
+        logger.info("SUCESSO: Token valido.")
         user = response.json().get('user')
-        print(f"Usuário: {user.get('username')} (ID: {user.get('id')})")
+        logger.info(f"Usuario: {user.get('username')} (ID: {user.get('id')})")
     else:
-        print("FALHA: Token inválido ou erro de conexão.")
+        logger.info("FALHA: Token invalido ou erro de conexao.")
 
 if __name__ == "__main__":
     check_token()

@@ -199,7 +199,7 @@ def save_review(payload):
     if not user_id:
         # Se usuário não existe (caso dummy), precisaríamos criar? 
         # Por enquanto obrigar ter user real para salvar review
-        return jsonify({"error": "User ID required"}), 400
+        return jsonify({"error": "ID do usuario obrigatorio"}), 400
         
     review = PerformanceReview.query.filter_by(user_id=user_id, cycle=cycle).first()
     if not review:

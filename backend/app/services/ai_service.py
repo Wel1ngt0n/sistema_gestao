@@ -16,11 +16,11 @@ class OperationalAIService:
             try:
                 self.client = OpenAI(api_key=self.api_key)
             except Exception as e:
-                logger.error(f"[AI] Error initializing OpenAI client: {e}")
+                logger.error(f"[AI] Erro ao inicializar cliente OpenAI: {e}")
                 self.client = None
         else:
             self.client = None
-            logger.warning("[AI] OpenAI API Key not found.")
+            logger.warning("[AI] OPENAI_API_KEY nao configurada.")
         
         self.clickup = ClickUpService()
 
@@ -31,13 +31,13 @@ class OperationalAIService:
         Coleta dados do banco e comentários do ClickUp.
         """
         if not self.client:
-            return {"error": "AI not configured"}
+            return {"error": "IA nao configurada"}
 
         target_store = Store.query.get(store_id)
         if not target_store:
-            return {"error": "Store not found"}
+            return {"error": "Loja nao encontrada"}
 
-        # 1. Check Cache
+        # 1. Verifica cache.
         if not force and target_store.ai_summary:
             try:
                 cached_data = json.loads(target_store.ai_summary)
@@ -45,7 +45,7 @@ class OperationalAIService:
                 cached_data['_analyzed_at'] = target_store.ai_analyzed_at.strftime('%d/%m/%Y %H:%M') if target_store.ai_analyzed_at else None
                 return cached_data
             except Exception as e:
-                logger.warning(f"[Gemini] Cache corrupted: {e}")
+                logger.warning(f"[Gemini] Cache corrompido: {e}")
 
         start_time = datetime.now()
             
@@ -79,7 +79,7 @@ class OperationalAIService:
             
             logger.info(f"[AI] Análise de rede concluída.")
             
-            # Return with metadata
+            # Metadados para o frontend diferenciar cache de resposta nova.
             result['_cached'] = False
             result['_analyzed_at'] = datetime.now().strftime('%d/%m/%Y %H:%M')
             return result
@@ -94,11 +94,11 @@ class OperationalAIService:
     def _save_analysis_to_db(self, store, result):
         """Salva o resultado no banco (Store e MetricsSnapshotDaily)."""
         try:
-            # 1. Save to Store (Persistent Cache)
+            # 1. Salva cache persistente na loja.
             store.ai_summary = json.dumps(result)
             store.ai_analyzed_at = datetime.now()
             
-            # 2. Try to save to Daily Snapshot (Historical)
+            # 2. Tenta salvar tambem no snapshot diario.
             today = datetime.today().date()
             snapshot = MetricsSnapshotDaily.query.filter_by(
                 store_id=store.id, 
@@ -114,7 +114,7 @@ class OperationalAIService:
             db.session.add(store)
             db.session.commit()
         except Exception as e:
-            logger.error(f"[Gemini] Failed to save analysis: {e}")
+            logger.error(f"[Gemini] Falha ao salvar analise: {e}")
             db.session.rollback()
 
     def _get_network_stores(self, store):
@@ -422,7 +422,7 @@ class OperationalAIService:
             }
 
         except Exception as e:
-            logger.error(f"[AI] Chat error: {e}")
+            logger.error(f"[AI] Erro no chat: {e}")
             return {"response": f"Erro ao processar sua pergunta via GPT-4o: {str(e)}", "sources": []}
 
 

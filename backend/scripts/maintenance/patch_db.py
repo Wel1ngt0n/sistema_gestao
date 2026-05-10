@@ -1,8 +1,10 @@
 from app import create_app, db
 from sqlalchemy import text
+import re
 import sys
 
 app = create_app()
+IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 def patch_database():
     """
@@ -23,10 +25,21 @@ def patch_database():
         try:
             print("Verificando colunas na tabela 'stores'...")
             
-            # Helper para checar e adicionar colunas
+            # Valida identificadores antes de montar DDL, que nao aceita parametros bind.
+            def validar_identificador(value):
+                if not IDENTIFIER_RE.match(value):
+                    raise ValueError(f"Identificador SQL invalido: {value}")
+
+            # Auxiliar para checar e adicionar colunas
             def check_and_add_column(table, column, type_def):
-                check_sql = text(f"SELECT column_name FROM information_schema.columns WHERE table_name='{table}' AND column_name='{column}'")
-                result = conn.execute(check_sql).fetchone()
+                validar_identificador(table)
+                validar_identificador(column)
+
+                check_sql = text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name=:table AND column_name=:column"
+                )
+                result = conn.execute(check_sql, {"table": table, "column": column}).fetchone()
                 if not result:
                     print(f" -> Adicionando coluna '{column}' em '{table}'...")
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {type_def}"))

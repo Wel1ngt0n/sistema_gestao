@@ -65,7 +65,7 @@ class ScoringService:
         else:
             r_financeiro = 0
 
-        # Data Quality Check (Se vazio e não mapeado como Ok, alerta?) - Por enquanto assume 0
+        # Checagem de qualidade de dados: vazio nao mapeado assume risco 0 por ora.
         
         # 4. R_QUALIDADE
         r_qualidade = 0
@@ -211,11 +211,11 @@ class ScoringService:
             if not s.implantador or s.implantador not in active_implantadores: continue
             stats[s.implantador]['wip'] += 1
             
-            # Data Quality Check
+            # Checagem de qualidade dos dados.
             if not s.financeiro_status and s.tempo_contrato and s.dias_em_transito > 15:
                 stats[s.implantador]['missing_financial'] += 1
 
-        # Processar DONE (Score + Data Quality)
+        # Processa lojas concluidas com score e qualidade dos dados.
         for s in stores_done:
             if not s.implantador: continue
             imp = s.implantador
@@ -227,7 +227,7 @@ class ScoringService:
             
             if s.teve_retrabalho: stats[imp]['rework'] += 1
             
-            # Data Quality Check (DONE)
+            # Checagem de qualidade dos dados em lojas concluidas.
             if not s.financeiro_status:
                 stats[imp]['missing_financial'] += 1
             

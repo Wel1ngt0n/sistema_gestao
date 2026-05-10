@@ -1,6 +1,9 @@
 from datetime import date, datetime
+import logging
 from app.models import db, Store, MetricsSnapshotDaily, SystemConfig
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 class SnapshotService:
     @staticmethod
@@ -12,7 +15,7 @@ class SnapshotService:
         if not target_date:
             target_date = date.today()
 
-        print(f"[Snapshot] Iniciando snapshot para {target_date}...")
+        logger.info(f"[Snapshot] Iniciando snapshot para {target_date}.")
         
         # 1. Buscar todas as lojas para "fotografar"
         # Incluímos DONE também? Sim, para ter histórico de quando estava DONE.
@@ -29,8 +32,8 @@ class SnapshotService:
             if s.teve_retrabalho: risk_score += 10
             
             # Pesos para cálculo de pontos
-            # (Poderíamos cachear a config fora do loop, mas ok para job background)
-            # Simplificação: assumir valores padrão se não carregar config
+            # Poderiamos cachear a configuracao fora do loop; mantido simples nesta rotina.
+            # Se a configuracao falhar, usa valores padrao.
             w_matriz = 1.0
             w_filial = 0.7
             if s.tipo_loja == 'Matriz': points = w_matriz
@@ -65,9 +68,9 @@ class SnapshotService:
         
         try:
             db.session.commit()
-            print(f"[Snapshot] Sucesso! Criados: {count_created}, Atualizados: {count_updated}")
+            logger.info(f"[Snapshot] Sucesso. Criados: {count_created}, atualizados: {count_updated}.")
             return True
         except Exception as e:
             db.session.rollback()
-            print(f"[Snapshot] Erro ao salvar: {str(e)}")
+            logger.error(f"[Snapshot] Erro ao salvar: {str(e)}")
             return False

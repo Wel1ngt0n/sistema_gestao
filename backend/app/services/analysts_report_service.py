@@ -2,6 +2,9 @@ from app.models import db, Store, SystemConfig
 from sqlalchemy import func, or_
 from datetime import datetime, timedelta
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AnalystsReportService:
     # Corte: Considerar apenas lojas a partir de 01/01/2026
@@ -1030,12 +1033,12 @@ Responda APENAS o JSON válido.
         llm = LLMService()
         result = llm.call_openai_diagnostic(prompt)
 
-        # Salvar em Memória de Longo Prazo para Auditoria e PDF
+        # Salva em memoria de longo prazo para auditoria e PDF.
         try:
             from app.models import AILongTermMemory
             from app import db
             
-            # Guardar como análise de perfil do implantador
+            # Guarda como analise de perfil do implantador.
             memory = AILongTermMemory(
                 analysis_type="individual_diagnostic",
                 query_prompt=f"Implantador: {implantador_name}",
@@ -1045,7 +1048,7 @@ Responda APENAS o JSON válido.
             db.session.add(memory)
             db.session.commit()
         except Exception as mem_e:
-            print(f"Erro ao salvar memória de IA: {mem_e}")
+            logger.warning(f"Erro ao salvar memoria de IA: {mem_e}")
 
         return result
 
@@ -1369,7 +1372,7 @@ Responda APENAS o JSON válido.
                             pdf.multi_cell(0, 6, f"    - {bl}")
                     pdf.ln(2)
 
-                # 6. Ações
+                # 6. Acoes recomendadas.
                 pdf.set_font("Helvetica", "B", 11)
                 pdf.set_text_color(153, 0, 0)
                 pdf.cell(0, 8, "6. Plano de Acao Recomendado:", ln=True)
@@ -1379,9 +1382,9 @@ Responda APENAS o JSON válido.
                     pdf.multi_cell(0, 6, f"  [ ] {a}")
 
         except Exception as pdf_ai_e:
-            print(f"Erro ao incluir IA no PDF: {pdf_ai_e}")
+            logger.warning(f"Erro ao incluir IA no PDF: {pdf_ai_e}")
 
-        # Footer
+        # Rodape do PDF.
         pdf.set_y(-15)
         pdf.set_font("Helvetica", "I", 8)
         pdf.set_text_color(150, 150, 150)

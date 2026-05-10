@@ -95,7 +95,7 @@ class AnalyticsService:
                     days = (end - start).days
                     total_days += max(0, days)
                     
-                    # OTD Check
+                    # Checagem de entrega no prazo.
                     contract_days = s.tempo_contrato or 90
                     target_date = start + timedelta(days=contract_days)
                     if end <= target_date:
@@ -562,8 +562,7 @@ class AnalyticsService:
             )
             item['score'] = round(final_score, 1)
             item['score'] = round(final_score, 1)
-            item['breakdown'] = raw_score_components # Expose for UI
-            # del item['_raw_components'] # Cleanup -> Now we keep it as breakdown
+            item['breakdown'] = raw_score_components # Exposto para a UI.
 
         return sorted(final_list, key=lambda x: x['score'], reverse=True)
 
@@ -763,16 +762,16 @@ class AnalyticsService:
     @staticmethod
     def get_team_capacity():
         """
-        Calcula a carga de trabalho atual de cada implantador + Esforço Semestral.
+        Calcula a carga de trabalho atual de cada implantador + esforco semestral.
         Regra:
-        - Load = Soma (Matriz * W_Matriz) + (Filial * W_Filial) das lojas IN_PROGRESS.
-        - Semester Done = Soma das lojas concluídas no semestre atual.
-        - Network Check: Agrupar redes.
+        - Carga = soma ponderada das lojas IN_PROGRESS.
+        - Entregas do semestre = soma das lojas concluidas no semestre atual.
+        - Redes = agrupamento por rede.
         """
-        # Configs
+        # Configuracoes de capacidade.
         w_matriz = 1.0
         w_filial = 0.7
-        max_points = 30.0 # Valor default
+        max_points = 30.0 # Valor padrao.
         
         try:
             cfg_m = SystemConfig.query.filter_by(key='weight_matriz').first()
@@ -1028,7 +1027,7 @@ class AnalyticsService:
             end = s.manual_finished_at or s.end_real_at or s.finished_at
             start = s.effective_started_at
             
-            # OTD Logic
+            # Logica de entrega no prazo.
             otd = "N/D"
             days = 0
             if start and end:

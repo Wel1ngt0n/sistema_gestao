@@ -11,17 +11,22 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Bulletproof CORS Config via after_request
+    # CORS via after_request para cobrir tambem respostas geradas por decorators.
     @app.after_request
     def add_cors_headers(response):
-        origin = request.headers.get('Origin', '*')
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        origin = request.headers.get('Origin')
+        allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [])
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        elif not origin:
+            response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Access-Control-Allow-Credentials'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         return response
     
-    # Security Headers (A05 - Security Headers)
+    # Cabecalhos de seguranca: mantem CSP explicita para o Flask-Talisman.
     csp = {
         'default-src': [
             '\'self\'',
@@ -34,10 +39,10 @@ def create_app():
         'style-src': ['\'self\'', '\'unsafe-inline\''],
         'connect-src': ['\'self\'', '*', 'ws://localhost:*', 'http://localhost:*']
     }
-    # Em desenvolvimento desabilitamos force_https pois localhost não é HTTPS por padrão
+    # Em desenvolvimento desabilitamos force_https porque localhost nao usa HTTPS por padrao.
     Talisman(app, content_security_policy=csp, force_https=(os.environ.get('FLASK_ENV') == 'production'))
 
-    # Rate Limiting (A04 - Brute Force Protection)
+    # Rate limit padrao para reduzir abuso sem bloquear preflight CORS.
     limiter = Limiter(
         key_func=get_remote_address,
         app=app,
@@ -49,35 +54,34 @@ def create_app():
     def header_whitelist():
         return request.method == "OPTIONS"
         
-    app.limiter = limiter # Expor para uso em Blueprints
+    app.limiter = limiter # Exposto para uso pontual em blueprints.
     
     db.init_app(app)
     Migrate(app, db)
     
-    # Inicializar Scheduler (Automação de Sync)
+    # Inicializa o agendador de sincronismo.
     from app.scheduler import init_scheduler
-    # No Render, queremos evitar múltiplas instâncias rodando scheduler se houver múltiplos workers
+    # No Render, evita multiplas instancias do scheduler quando houver varios workers.
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or os.environ.get('FLASK_ENV') == 'production':
         init_scheduler(app)
     
-    # Garantir que as tabelas existem (Caminho CLI local)
+    # Garante tabelas em execucao local/CLI e aplica reparos leves de schema.
     with app.app_context():
-        # create_all já é chamado no create_app()
         try:
             db.create_all()
             
-            # Reparação Automática de Schema (Raio-X)
+            # Reparo automatico de schema usado em ambientes legados.
             try:
                 from app.services.schema_repair import repair_database_schema
                 repair_database_schema()
             except Exception as repair_e:
-                app.logger.error(f"FAILED TO REPAIR SCHEMA: {repair_e}")
+                app.logger.error(f"Falha ao reparar schema automaticamente: {repair_e}")
         except Exception as e:
-            app.logger.error(f"Error during database initialization: {e}")
+            app.logger.error(f"Erro durante inicializacao do banco: {e}")
         
-    print(">>> Database initialized.")
+    app.logger.info("Banco de dados inicializado.")
         
-    # Register Blueprints
+    # Registro dos blueprints da aplicacao.
     from app.routes import main_bp, api_bp
     from app.routes_analytics import analytics_bp
     from app.routes_ai import ai_bp
