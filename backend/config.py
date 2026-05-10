@@ -13,15 +13,31 @@ class Config:
     CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY", "").strip()
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
-    # Origens permitidas no CORS. Contratos externos continuam configuraveis por ambiente.
-    CORS_ALLOWED_ORIGINS = [
+    # Origens permitidas no CORS. Mantem defaults de producao/desenvolvimento e
+    # permite complementar por CORS_ALLOWED_ORIGINS e FRONTEND_URL no ambiente.
+    _DEFAULT_CORS_ORIGINS = [
+        "https://sistema-gestao-one.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:5177",
+        "http://localhost:5003",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5177",
+    ]
+    _ENV_CORS_ORIGINS = [
         origin.strip()
-        for origin in os.getenv(
-            "CORS_ALLOWED_ORIGINS",
-            "http://localhost:5173,http://localhost:5177,http://localhost:5003,http://127.0.0.1:5173,http://127.0.0.1:5177"
-        ).split(",")
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
         if origin.strip()
     ]
+    _FRONTEND_URLS = [
+        origin.strip()
+        for origin in os.getenv("FRONTEND_URL", "").split(",")
+        if origin.strip()
+    ]
+    CORS_ALLOWED_ORIGINS = sorted({
+        origin.rstrip("/")
+        for origin in (_DEFAULT_CORS_ORIGINS + _ENV_CORS_ORIGINS + _FRONTEND_URLS)
+        if origin.strip()
+    })
 
     # IDs das listas extraidos das URLs do ClickUp.
     LIST_ID_PRINCIPAL = "211186088"

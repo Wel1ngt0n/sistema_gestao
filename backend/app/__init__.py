@@ -15,15 +15,19 @@ def create_app():
     @app.after_request
     def add_cors_headers(response):
         origin = request.headers.get('Origin')
+        normalized_origin = origin.rstrip("/") if origin else None
         allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [])
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
+        if normalized_origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = normalized_origin
             response.headers['Vary'] = 'Origin'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
         elif not origin:
             response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Access-Control-Allow-Credentials'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = (
+            'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        )
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '86400'
         return response
     
     # Cabecalhos de seguranca: mantem CSP explicita para o Flask-Talisman.
