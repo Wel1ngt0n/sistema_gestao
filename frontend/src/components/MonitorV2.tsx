@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import AdminPanel from './AdminPanel';
 import { SkeletonLoader } from './monitor/MonitorComponents';
 import MonitorTableView from './monitor/MonitorTableViewV2';
-import MonitorKanbanView from './monitor/MonitorKanbanView';
+import MonitorKanbanView, { DEFAULT_KANBAN_FIELDS, KanbanFieldKey } from './monitor/MonitorKanbanView';
 import MonitorStoreModal from './monitor/MonitorStoreModal';
 import MonitorAIModal from './monitor/MonitorAIModal';
 import { Store } from './monitor/types';
@@ -20,6 +20,7 @@ export default function MonitorV2() {
 
     // Estado da Visualização
     const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+    const [kanbanFields, setKanbanFields] = useState<KanbanFieldKey[]>(DEFAULT_KANBAN_FIELDS);
 
     // Estado da UI
     const [globalFilter, setGlobalFilter] = useState('');
@@ -291,7 +292,7 @@ export default function MonitorV2() {
     if (loading && data.length === 0) return <SkeletonLoader />;
 
     return (
-        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden">
+        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen gap-4 bg-[#EEF0F8] p-4 text-zinc-900 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden md:p-6">
 
             <MonitorAIModal
                 isOpen={aiModalOpen}
@@ -313,12 +314,14 @@ export default function MonitorV2() {
                 uniqueStatuses={uniqueStatuses}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
+                kanbanFields={kanbanFields}
+                setKanbanFields={setKanbanFields}
                 setAdminOpen={setAdminOpen}
                 handleExportCSV={handleExportCSV}
             />
 
             {/* Área de Conteúdo */}
-            <div aria-label="Monitor View" className="flex-1 p-0 md:p-6 w-full max-w-full overflow-hidden">
+            <div aria-label="Monitor View" className="flex-1 w-full max-w-full overflow-hidden">
                 <div aria-label="Monitor View" className={`mx-auto ${viewMode === 'kanban' ? 'w-full px-2' : 'max-w-full'} animate-fade-in-up transition-all duration-300`}>
 
                     {/* Conteúdo da Visualização */}
@@ -337,6 +340,7 @@ export default function MonitorV2() {
                         <div aria-label="Monitor View" className="overflow-x-auto pb-4">
                             <MonitorKanbanView
                                 data={filteredData}
+                                visibleFields={kanbanFields}
                                 onEdit={handleEditClick}
                                 onStatusChange={handleStatusChange}
                             />

@@ -3,9 +3,46 @@ import { useMemo, useState, DragEvent } from 'react';
 import { Store } from './types';
 import { getStatusColor, formatDate } from './monitorUtils';
 
+export type KanbanFieldKey =
+    | 'status'
+    | 'financialStatus'
+    | 'assignee'
+    | 'time'
+    | 'startDate'
+    | 'forecastDate'
+    | 'finishDate'
+    | 'monthlyValue'
+    | 'erp'
+    | 'crm';
+
+export const KANBAN_FIELD_OPTIONS: { key: KanbanFieldKey; label: string }[] = [
+    { key: 'status', label: 'Status' },
+    { key: 'financialStatus', label: 'Financeiro' },
+    { key: 'assignee', label: 'Responsável' },
+    { key: 'time', label: 'Tempo' },
+    { key: 'startDate', label: 'Início' },
+    { key: 'forecastDate', label: 'Previsão' },
+    { key: 'finishDate', label: 'Conclusão' },
+    { key: 'monthlyValue', label: 'Mensalidade' },
+    { key: 'erp', label: 'ERP' },
+    { key: 'crm', label: 'CRM' },
+];
+
+export const DEFAULT_KANBAN_FIELDS: KanbanFieldKey[] = [
+    'status',
+    'financialStatus',
+    'assignee',
+    'time',
+    'startDate',
+    'forecastDate',
+    'monthlyValue',
+    'erp',
+];
+
 interface MonitorKanbanViewProps {
     data: Store[];
     onEdit: (store: Store) => void;
+    visibleFields?: KanbanFieldKey[];
     // Callback para quando o card for movido para outra coluna
     // Status pode ser uma string que representa o novo status principal daquela coluna
     onStatusChange?: (storeId: number, newStatus: string) => void;
@@ -37,8 +74,9 @@ const Field = ({ label, value }: { label: string; value: string | number | null 
     </div>
 );
 
-export default function MonitorKanbanView({ data, onEdit, onStatusChange }: MonitorKanbanViewProps) {
+export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAULT_KANBAN_FIELDS, onStatusChange }: MonitorKanbanViewProps) {
     const [draggedStoreId, setDraggedStoreId] = useState<number | null>(null);
+    const visibleFieldSet = useMemo(() => new Set(visibleFields), [visibleFields]);
 
     // Agrupar Lojas por Coluna
     const columns = useMemo(() => {
@@ -147,31 +185,39 @@ export default function MonitorKanbanView({ data, onEdit, onStatusChange }: Moni
                                     {store.name}
                                 </h5>
 
-                                <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium truncate max-w-[120px] border ${getStatusColor(store.status).includes('emerald')
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                        : 'bg-slate-50 text-slate-600 border-slate-100/50'
-                                        }`}>
-                                        {store.status}
-                                    </span>
-                                    {store.financeiro_status === 'Devendo' && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 border border-amber-100">
-                                            $ Devendo
-                                        </span>
-                                    )}
-                                </div>
+                                {(visibleFieldSet.has('status') || visibleFieldSet.has('financialStatus')) && (
+                                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                                        {visibleFieldSet.has('status') && (
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium truncate max-w-[170px] border ${getStatusColor(store.status).includes('emerald')
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                                : 'bg-slate-50 text-slate-600 border-slate-100/50'
+                                                }`}>
+                                                {store.status}
+                                            </span>
+                                        )}
+                                        {visibleFieldSet.has('financialStatus') && store.financeiro_status && (
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${store.financeiro_status === 'Devendo'
+                                                ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                                }`}>
+                                                {store.financeiro_status}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
 
-                                <div className="grid grid-cols-2 gap-1.5 border-t border-slate-100 pt-3">
-                                    <Field label="Status" value={store.status} />
-                                    <Field label="Responsável" value={store.implantador || 'Sem responsável'} />
-                                    <Field label="Tempo" value={`${store.dias_em_transito || 0}d`} />
-                                    <Field label="Início" value={formatDate(store.data_inicio)} />
-                                    <Field label="Mensalidade" value={formatCurrency(store.valor_mensalidade)} />
-                                    <Field label="Previsão" value={formatDate(store.data_previsao)} />
-                                    <Field label="Conclusão" value={formatDate(store.data_fim || store.manual_finished_at)} />
-                                    <Field label="ERP" value={store.erp} />
-                                    <Field label="CRM" value={store.crm} />
-                                </div>
+                                {visibleFields.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-1.5 border-t border-slate-100 pt-3">
+                                        {visibleFieldSet.has('assignee') && <Field label="Responsável" value={store.implantador || 'Sem responsável'} />}
+                                        {visibleFieldSet.has('time') && <Field label="Tempo" value={`${store.dias_em_transito || 0}d`} />}
+                                        {visibleFieldSet.has('startDate') && <Field label="Início" value={formatDate(store.data_inicio)} />}
+                                        {visibleFieldSet.has('forecastDate') && <Field label="Previsão" value={formatDate(store.data_previsao)} />}
+                                        {visibleFieldSet.has('finishDate') && <Field label="Conclusão" value={formatDate(store.data_fim || store.manual_finished_at)} />}
+                                        {visibleFieldSet.has('monthlyValue') && <Field label="Mensalidade" value={formatCurrency(store.valor_mensalidade)} />}
+                                        {visibleFieldSet.has('erp') && <Field label="ERP" value={store.erp} />}
+                                        {visibleFieldSet.has('crm') && <Field label="CRM" value={store.crm} />}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
