@@ -611,8 +611,9 @@ class JarvisService:
                 {
                     "role": "user",
                     "content": (
-                        "Analise o contexto operacional abaixo e responda em português do Brasil. "
-                        "Use somente os dados fornecidos e declare limitações quando faltarem dados.\n\n"
+                        "Responda à pergunta do usuário usando o contexto operacional abaixo. "
+                        "Se a pergunta for direta, responda direto, em linguagem natural, sem transformar em relatório. "
+                        "Use somente os dados fornecidos e só declare limitações quando elas mudarem a decisão.\n\n"
                         f"{json.dumps(self._json_safe(context), ensure_ascii=False)}"
                     ),
                 },
@@ -629,11 +630,14 @@ Você é o JARVIS, copiloto operacional de gestão Instabuy.
 Modo de resposta: {response_mode}.
 
 Regras:
-- Responda com interpretação operacional, não apenas dados brutos.
-- Separe Fatos, Hipóteses e Recomendações quando houver diagnóstico, risco ou performance.
+- Fale como um copiloto operacional conversando com o gestor, não como relatório automático.
+- Seja curto por padrão: 1 parágrafo ou até 4 bullets. Só aprofunde quando o usuário pedir diagnóstico, ranking detalhado ou plano de ação.
+- Para perguntas diretas como "quem entregou?", "quais lojas?" ou "qual MRR?", responda primeiro a resposta objetiva e pare nos detalhes essenciais.
+- Não use títulos grandes como "Diagnóstico Operacional", nem seções fixas "Fatos/Hipóteses/Recomendações" em perguntas simples.
+- Use Fatos, Hipóteses e Recomendações apenas quando houver análise complexa, risco relevante ou pedido explícito de diagnóstico.
 - Quando houver risco, indique prioridade e próxima ação.
 - Quando envolver pessoas, compare com contexto de time e evite julgamento pessoal.
-- Quando houver incerteza ou falta de dados, declare a limitação.
+- Quando houver incerteza ou falta de dados, declare em uma frase curta.
 - Para modo Slack, escreva texto pronto para envio, curto e com bullets.
 - Não invente números, fontes ou entidades ausentes do contexto.
 """.strip()
@@ -645,33 +649,63 @@ Regras:
         limitations = context.get("limitations", [])
 
         if context.get("response_mode") == "slack":
-            lines = ["Resumo operacional:"]
+            lines = []
             for key, value in list(metrics.items())[:6]:
                 lines.append(f"- {key}: {value}")
             if alerts:
                 lines.append("- Atenção: " + self._alert_text(alerts[0]))
             return "\n".join(lines)
 
-        facts = [f"- {key}: {value}" for key, value in list(metrics.items())[:8]]
+        if self._is_direct_question(context.get("question", "")):
+            return self._direct_heuristic_response(context)
+
+        facts = [f"- {key}: {value}" for key, value in list(metrics.items())[:5]]
         if evidence:
             facts.append(f"- Evidências priorizadas: {len(evidence)} registros.")
-        hypotheses = [f"- {self._alert_text(alert)}" for alert in alerts[:4]] or ["- Não há alerta forte com os dados disponíveis."]
-        limitation_lines = [f"- {item}" for item in limitations[:4]] or ["- Sem limitações críticas além da cobertura dos dados consultados."]
+        hypotheses = [f"- {self._alert_text(alert)}" for alert in alerts[:2]]
+        limitation_lines = [f"- {item}" for item in limitations[:2]]
+
+        sections = ["Resumo", *(facts or ["- Não encontrei métricas suficientes para consolidar a leitura."])]
+        if hypotheses:
+            sections.extend(["", "Leitura", *hypotheses])
+        sections.extend(["", "Próximos passos", *self._default_recommendations(context, alerts)[:2]])
+        if limitation_lines:
+            sections.extend(["", "Limitação", *limitation_lines])
         return "\n".join(
-            [
-                "Fatos",
-                *(facts or ["- Não encontrei métricas suficientes para consolidar a leitura."]),
-                "",
-                "Hipóteses",
-                *hypotheses,
-                "",
-                "Recomendações",
-                *self._default_recommendations(context, alerts),
-                "",
-                "Limitações",
-                *limitation_lines,
-            ]
+            sections
         )
+
+    def _is_direct_question(self, question):
+        normalized = self._normalize_text(question)
+        direct_markers = ["quem", "quais", "qual", "quanto", "quantas", "foram de quem", "entregues foram"]
+        return any(marker in normalized for marker in direct_markers)
+
+    def _direct_heuristic_response(self, context):
+        evidence = context.get("evidence", [])
+        metrics = context.get("main_metrics", {})
+        question = self._normalize_text(context.get("question", ""))
+
+        if "quem" in question and evidence:
+            owners = {}
+            delivery_records = [
+                record for record in evidence if record.get("source_tool") == "get_monthly_delivery_summary"
+            ]
+            scoped_records = delivery_records or evidence
+            for record in scoped_records:
+                owner = record.get("implantador")
+                if not owner:
+                    continue
+                owners.setdefault(owner, 0)
+                owners[owner] += 1
+            if owners:
+                summary = ", ".join(f"{owner} ({count})" for owner, count in owners.items())
+                return f"As entregas foram de {summary}. Pelos registros disponíveis, foram {len(scoped_records)} lojas no contexto."
+
+        if metrics:
+            first_items = list(metrics.items())[:3]
+            return "Aqui está o essencial: " + "; ".join(f"{key}: {value}" for key, value in first_items) + "."
+
+        return "Não encontrei dados suficientes no contexto para responder com segurança."
 
     def _default_recommendations(self, context, alerts):
         intent = context.get("intent")
