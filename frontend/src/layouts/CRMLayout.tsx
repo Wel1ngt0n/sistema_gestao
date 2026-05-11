@@ -54,7 +54,6 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                         { to: '/monitor', label: 'Monitor', icon: LayoutList },
                         { to: '/analytics', label: 'Analytics', icon: BarChart },
                         { to: '/reports', label: 'Relatórios', icon: FileText },
-                        { to: '/team-diagnostics', label: 'Gestão do Time', icon: Users },
                     ]
                 },
                 {

@@ -1,7 +1,9 @@
-﻿import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Tab } from '@headlessui/react';
 import { Skeleton } from '../ui/Skeleton';
 import PerformanceDetailModal from './PerformanceDetailModal';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 // REMOVED DashboardContext usage in favor of URL Params
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
@@ -13,6 +15,8 @@ import { AnnualTrendCharts } from './AnnualTrendCharts';
 import { InfoTooltip } from './InfoTooltip';
 import { RiskScatterPlot } from './RiskScatterPlot';
 import { TeamPerformanceMatrix } from './TeamPerformanceMatrix';
+import { PerformanceScoreBadge } from '../reports/PerformanceScoreBadge';
+import { AnalystClassificationCards } from './AnalystClassificationCards';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -41,6 +45,7 @@ import {
     Target,
     Trophy,
     WalletCards,
+    Users,
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -69,6 +74,51 @@ export default function DashboardAnalytics() {
     const { filters } = useDashboardUrlParams();
     const { kpiData, trendData, annualTrendData, performanceData, bottleneckData, capacityData, forecastData, loading, refetch } = useAnalyticsData(filters);
     const [selectedImplantador, setSelectedImplantador] = useState<string | null>(null);
+    const navigate = useNavigate();
+
+    // Cockpit data for enriched Team & Performance tab
+    const [cockpitData, setCockpitData] = useState<any[]>([]);
+    const [cockpitSummary, setCockpitSummary] = useState<any>(null);
+    const [cockpitLoading, setCockpitLoading] = useState(false);
+    const [cockpitSortField, setCockpitSortField] = useState<string>('score');
+    const [cockpitSortAsc, setCockpitSortAsc] = useState(false);
+
+    useEffect(() => {
+        const fetchCockpit = async () => {
+            setCockpitLoading(true);
+            try {
+                const res = await api.get('/api/reports/implantadores/cockpit?period=all');
+                setCockpitData(res.data.analysts || []);
+                setCockpitSummary(res.data.summary);
+            } catch (err) {
+                console.error('Erro ao carregar cockpit:', err);
+            } finally {
+                setCockpitLoading(false);
+            }
+        };
+        fetchCockpit();
+    }, []);
+
+    const handleCockpitSort = (field: string) => {
+        if (cockpitSortField === field) setCockpitSortAsc(!cockpitSortAsc);
+        else { setCockpitSortField(field); setCockpitSortAsc(false); }
+    };
+
+    const sortedCockpitData = useMemo(() => {
+        return [...cockpitData].sort((a, b) => {
+            let valA: any = field(a, cockpitSortField);
+            let valB: any = field(b, cockpitSortField);
+            if (valA < valB) return cockpitSortAsc ? -1 : 1;
+            if (valA > valB) return cockpitSortAsc ? 1 : -1;
+            return 0;
+        });
+    }, [cockpitData, cockpitSortField, cockpitSortAsc]);
+
+    function field(obj: any, f: string): number {
+        if (f === 'score') return obj.score?.score_final || 0;
+        if (f === 'pct_retrabalho') return (obj as any).pct_retrabalho || 0;
+        return obj[f] ?? 0;
+    }
 
     // Preparar dados dos gráficos
     const safePerformanceData = Array.isArray(performanceData) ? performanceData : [];
@@ -543,14 +593,134 @@ export default function DashboardAnalytics() {
 
                     {/* --- ABA 3: TIME & PERFORMANCE --- */}
                     <Tab.Panel className="space-y-6 animate-fade-in-up focus:outline-none">
-                        <div aria-label="Dashboard Analytics" className="space-y-8 animate-fade-in-up duration-300">
-                            {capacityData && safePerformanceData && (
-                                <TeamPerformanceMatrix
-                                    capacityData={capacityData}
-                                    performanceData={safePerformanceData}
-                                    onSelectImplantador={setSelectedImplantador}
-                                />
+                        <div className="space-y-6 animate-fade-in-up duration-300">
+
+                            {/* Summary Metrics */}
+                            {cockpitSummary && (
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg" style={{ backgroundColor: (cockpitSummary.avg_sla || 0) >= 85 ? '#128131' : '#ff7900' }} />
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">SLA do Time</p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">{cockpitSummary.avg_sla || 0}%</p>
+                                        <p className="mt-3 text-sm text-zinc-500">Meta operacional: 85%</p>
+                                    </div>
+                                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-[#ff7900]" />
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Vazão Total</p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">{cockpitSummary.total_entregues_mes || 0}</p>
+                                        <p className="mt-3 text-sm text-zinc-500">Lojas entregues no período</p>
+                                    </div>
+                                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg" style={{ backgroundColor: (cockpitSummary.avg_retrabalho || 0) > 10 ? '#dc2626' : '#128131' }} />
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Retrabalho</p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">{cockpitSummary.avg_retrabalho || 0}%</p>
+                                        <p className="mt-3 text-sm text-zinc-500">Média do time</p>
+                                    </div>
+                                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-[#128131]" />
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Saúde do Time</p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                                            {cockpitSummary.team_health === 'Good' ? 'Consistente' : 'Atenção'}
+                                        </p>
+                                        <p className="mt-3 text-sm text-zinc-500">{cockpitSummary.total_ativos || 0} analistas ativos</p>
+                                    </div>
+                                </div>
                             )}
+
+                            {/* Analyst Comparative Table */}
+                            <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+                                <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-5 py-4">
+                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                        <Users size={16} className="text-[#128131]" />
+                                        Mesa Comparativa de Performance
+                                    </h3>
+                                    <span className="text-xs font-medium text-zinc-500">{cockpitData.length} Implantadores</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="border-b border-zinc-100 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                            <tr>
+                                                <th className="cursor-pointer px-6 py-4 transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('implantador')}>Analista</th>
+                                                <th className="cursor-pointer px-6 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('score')}>Score</th>
+                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('carga_ponderada')}>Carga</th>
+                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('entregas_mes')}>Entregas</th>
+                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_retrabalho')}>Retrabalho</th>
+                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('idle_medio')}>Idle</th>
+                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_sla_concluidas')}>SLA</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100">
+                                            {sortedCockpitData.map((item, idx) => (
+                                                <tr
+                                                    key={idx}
+                                                    onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
+                                                    className="group cursor-pointer transition-colors hover:bg-zinc-50"
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-500 transition-colors group-hover:border-orange-200">
+                                                                {item.implantador.substring(0, 2).toUpperCase()}
+                                                            </div>
+                                                            <span className="font-semibold text-zinc-700 transition-colors group-hover:text-[#ff7900]">{item.implantador}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-semibold text-zinc-600">
+                                                        {item.carga_ponderada?.toFixed(1)}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-semibold text-zinc-600">
+                                                        {item.entregas_mes}
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-right font-semibold ${((item as any).pct_retrabalho || 0) > 10 ? 'text-rose-700' : 'text-zinc-600'}`}>
+                                                        {(item as any).pct_retrabalho?.toFixed(0)}%
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-semibold text-zinc-600">
+                                                        {item.idle_medio}d
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-right font-semibold ${item.pct_sla_concluidas >= 85 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                        {item.pct_sla_concluidas}%
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {cockpitLoading && (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="h-6 w-6 rounded-full border-2 border-zinc-200 border-t-[#ff7900] animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Classification + Performance Matrix */}
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                                <div className="xl:col-span-8">
+                                    {capacityData && safePerformanceData && (
+                                        <TeamPerformanceMatrix
+                                            capacityData={capacityData}
+                                            performanceData={safePerformanceData}
+                                            onSelectImplantador={setSelectedImplantador}
+                                        />
+                                    )}
+                                </div>
+                                <aside className="xl:col-span-4">
+                                    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                                        <div className="mb-4 flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Ranking operacional</p>
+                                                <h3 className="mt-1 text-sm font-semibold text-zinc-950">Classificação do time</h3>
+                                            </div>
+                                            <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-500">
+                                                {cockpitData.length} analistas
+                                            </span>
+                                        </div>
+                                        <AnalystClassificationCards analysts={cockpitData} isVertical={true} />
+                                    </div>
+                                </aside>
+                            </div>
+
                         </div>
                     </Tab.Panel>
                 </Tab.Panels>
