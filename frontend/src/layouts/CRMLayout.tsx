@@ -19,7 +19,8 @@ import {
     User,
     LogOut,
     MessageSquare,
-    Cpu
+    Cpu,
+    Sparkles
 } from 'lucide-react'
 import logo from '../assets/logo.png'
 
@@ -45,14 +46,9 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
 
     const navItems = [
         {
-            section: 'INTELIGÊNCIA',
-            items: [
-                { to: '/jarvis', label: 'Jarvis 5.4 mini', icon: Cpu },
-            ]
-        },
-        {
             section: 'OPERACIONAL',
             items: [
+                { to: '/jarvis', label: 'Jarvis 5.4 mini', icon: Sparkles },
                 {
                     label: 'Implantação',
                     icon: Rocket,
