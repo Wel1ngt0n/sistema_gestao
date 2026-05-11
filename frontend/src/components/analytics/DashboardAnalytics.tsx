@@ -14,9 +14,10 @@ import { FinancialForecastChart } from './FinancialForecastChart';
 import { AnnualTrendCharts } from './AnnualTrendCharts';
 import { InfoTooltip } from './InfoTooltip';
 import { RiskScatterPlot } from './RiskScatterPlot';
-import { TeamPerformanceMatrix } from './TeamPerformanceMatrix';
 import { PerformanceScoreBadge } from '../reports/PerformanceScoreBadge';
 import { AnalystClassificationCards } from './AnalystClassificationCards';
+import { TeamActionsBlock } from './TeamActionsBlock';
+import { IntelligenceInsightBlock } from './IntelligenceInsightBlock';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -79,6 +80,8 @@ export default function DashboardAnalytics() {
     // Cockpit data for enriched Team & Performance tab
     const [cockpitData, setCockpitData] = useState<any[]>([]);
     const [cockpitSummary, setCockpitSummary] = useState<any>(null);
+    const [avgMetrics, setAvgMetrics] = useState<any>(null);
+    const [teamActions, setTeamActions] = useState<any[]>([]);
     const [cockpitLoading, setCockpitLoading] = useState(false);
     const [cockpitSortField, setCockpitSortField] = useState<string>('score');
     const [cockpitSortAsc, setCockpitSortAsc] = useState(false);
@@ -90,6 +93,8 @@ export default function DashboardAnalytics() {
                 const res = await api.get('/api/reports/implantadores/cockpit?period=all');
                 setCockpitData(res.data.analysts || []);
                 setCockpitSummary(res.data.summary);
+                setAvgMetrics(res.data.avg_metrics);
+                setTeamActions(res.data.team_actions || []);
             } catch (err) {
                 console.error('Erro ao carregar cockpit:', err);
             } finally {
@@ -627,85 +632,106 @@ export default function DashboardAnalytics() {
                                 </div>
                             )}
 
-                            {/* Analyst Comparative Table */}
-                            <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-                                <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-5 py-4">
-                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                                        <Users size={16} className="text-[#128131]" />
-                                        Mesa Comparativa de Performance
-                                    </h3>
-                                    <span className="text-xs font-medium text-zinc-500">{cockpitData.length} Implantadores</span>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="border-b border-zinc-100 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                            <tr>
-                                                <th className="cursor-pointer px-6 py-4 transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('implantador')}>Analista</th>
-                                                <th className="cursor-pointer px-6 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('score')}>Score</th>
-                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('carga_ponderada')}>Carga</th>
-                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('entregas_mes')}>Entregas</th>
-                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_retrabalho')}>Retrabalho</th>
-                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('idle_medio')}>Idle</th>
-                                                <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_sla_concluidas')}>SLA</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-zinc-100">
-                                            {sortedCockpitData.map((item, idx) => (
-                                                <tr
-                                                    key={idx}
-                                                    onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
-                                                    className="group cursor-pointer transition-colors hover:bg-zinc-50"
-                                                >
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-500 transition-colors group-hover:border-orange-200">
-                                                                {item.implantador.substring(0, 2).toUpperCase()}
-                                                            </div>
-                                                            <span className="font-semibold text-zinc-700 transition-colors group-hover:text-[#ff7900]">{item.implantador}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right font-semibold text-zinc-600">
-                                                        {item.carga_ponderada?.toFixed(1)}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right font-semibold text-zinc-600">
-                                                        {item.entregas_mes}
-                                                    </td>
-                                                    <td className={`px-6 py-4 text-right font-semibold ${((item as any).pct_retrabalho || 0) > 10 ? 'text-rose-700' : 'text-zinc-600'}`}>
-                                                        {(item as any).pct_retrabalho?.toFixed(0)}%
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right font-semibold text-zinc-600">
-                                                        {item.idle_medio}d
-                                                    </td>
-                                                    <td className={`px-6 py-4 text-right font-semibold ${item.pct_sla_concluidas >= 85 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                                        {item.pct_sla_concluidas}%
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                {cockpitLoading && (
-                                    <div className="flex items-center justify-center py-8">
-                                        <div className="h-6 w-6 rounded-full border-2 border-zinc-200 border-t-[#ff7900] animate-spin" />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Classification + Performance Matrix */}
+                            {/* Unified Performance Table + Classification Sidebar */}
                             <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                                <div className="xl:col-span-8">
-                                    {capacityData && safePerformanceData && (
-                                        <TeamPerformanceMatrix
-                                            capacityData={capacityData}
-                                            performanceData={safePerformanceData}
-                                            onSelectImplantador={setSelectedImplantador}
-                                        />
-                                    )}
+                                <div className="xl:col-span-9">
+                                    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+                                        <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-5 py-4">
+                                            <div>
+                                                <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                                    <Users size={16} className="text-[#128131]" />
+                                                    Time & Performance
+                                                </h3>
+                                                <p className="mt-1 text-xs text-zinc-500">Compare esforço, carga, entregas, risco e score por implantador.</p>
+                                            </div>
+                                            <span className="text-xs font-medium text-zinc-500">{cockpitData.length} Implantadores</span>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="border-b border-zinc-100 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                                    <tr>
+                                                        <th className="w-10 px-4 py-4 text-center">#</th>
+                                                        <th className="cursor-pointer px-4 py-4 transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('implantador')}>Analista</th>
+                                                        <th className="cursor-pointer px-4 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('score')}>Score</th>
+                                                        <th className="px-4 py-4 text-center">Risco</th>
+                                                        <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('carga_ponderada')}>Carga (pts)</th>
+                                                        <th className="px-4 py-4 text-right">WIP</th>
+                                                        <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('entregas_mes')}>Entregas</th>
+                                                        <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_retrabalho')}>Retrab.</th>
+                                                        <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('idle_medio')}>Idle</th>
+                                                        <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_sla_concluidas')}>SLA</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-zinc-100">
+                                                    {sortedCockpitData.map((item, idx) => {
+                                                        const cap = Array.isArray(capacityData) ? capacityData.find((c: any) => c.implantador === item.implantador) : null;
+                                                        const risk = cap?.risk_level || 'NORMAL';
+                                                        const wipCount = cap?.store_count || 0;
+                                                        const wipPts = cap?.current_points || 0;
+                                                        return (
+                                                        <tr
+                                                            key={idx}
+                                                            onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
+                                                            className={`group cursor-pointer transition-colors hover:bg-zinc-50 ${idx === 0 ? 'bg-orange-50/30' : ''}`}
+                                                        >
+                                                            <td className="px-4 py-4 text-center">
+                                                                <div className={`mx-auto flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold ${idx === 0 ? 'border border-orange-200 bg-orange-50 text-orange-700' : idx === 1 ? 'border border-zinc-200 bg-zinc-100 text-zinc-600' : idx === 2 ? 'border border-amber-200 bg-amber-50 text-amber-700' : 'text-zinc-400'}`}>
+                                                                    {idx + 1}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-500 transition-colors group-hover:border-orange-200">
+                                                                        {item.implantador.substring(0, 2).toUpperCase()}
+                                                                    </div>
+                                                                    <span className="font-semibold text-zinc-700 transition-colors group-hover:text-[#ff7900]">{item.implantador}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-4 text-center">
+                                                                <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
+                                                            </td>
+                                                            <td className="px-4 py-4 text-center">
+                                                                <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${risk === 'CRITICAL' ? 'border-red-100 bg-red-50 text-red-700' : risk === 'HIGH' ? 'border-orange-100 bg-orange-50 text-orange-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
+                                                                    {risk}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-4 text-right font-semibold text-zinc-600">
+                                                                {item.carga_ponderada?.toFixed(1)}
+                                                            </td>
+                                                            <td className="px-4 py-4 text-right">
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="text-sm font-semibold text-zinc-700">{wipCount}</span>
+                                                                    <span className="text-[10px] text-zinc-400">{wipPts?.toFixed(0)} pts</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-4 text-right font-semibold text-zinc-600">
+                                                                {item.entregas_mes}
+                                                            </td>
+                                                            <td className={`px-4 py-4 text-right font-semibold ${((item as any).pct_retrabalho || 0) > 10 ? 'text-rose-700' : 'text-zinc-600'}`}>
+                                                                {(item as any).pct_retrabalho?.toFixed(0)}%
+                                                            </td>
+                                                            <td className="px-4 py-4 text-right font-semibold text-zinc-600">
+                                                                {item.idle_medio}d
+                                                            </td>
+                                                            <td className={`px-4 py-4 text-right font-semibold ${item.pct_sla_concluidas >= 85 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                                {item.pct_sla_concluidas}%
+                                                            </td>
+                                                        </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {cockpitLoading && (
+                                            <div className="flex items-center justify-center py-8">
+                                                <div className="h-6 w-6 rounded-full border-2 border-zinc-200 border-t-[#ff7900] animate-spin" />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <aside className="xl:col-span-4">
+                                <aside className="space-y-4 xl:col-span-3">
+                                    <TeamActionsBlock actions={teamActions} isVertical={true} />
+
                                     <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
                                         <div className="mb-4 flex items-center justify-between gap-3">
                                             <div>
@@ -720,6 +746,11 @@ export default function DashboardAnalytics() {
                                     </div>
                                 </aside>
                             </div>
+
+                            <IntelligenceInsightBlock
+                                analysts={cockpitData}
+                                avgMetrics={avgMetrics}
+                            />
 
                         </div>
                     </Tab.Panel>
