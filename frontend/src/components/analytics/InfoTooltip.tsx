@@ -7,34 +7,30 @@ interface InfoTooltipProps {
 
 export const InfoTooltip: React.FC<InfoTooltipProps> = ({ text, position = 'top' }) => {
     return (
-        <div className="relative inline-block group ml-2 align-middle">
-            {/* Ícone de Informação (i) */}
-            <div className="flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 text-[10px] font-bold text-slate-400 cursor-help hover:border-blue-400 hover:text-blue-500 transition-colors">
+        <span className="group relative z-40 ml-2 inline-flex align-middle">
+            <span className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-zinc-300 bg-white text-[10px] font-semibold text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-700">
                 i
-            </div>
+            </span>
 
-            {/* Tooltip Popup */}
-            <div className={`
-                absolute z-50 w-64 p-3 
-                bg-slate-800 text-white text-xs font-medium leading-relaxed rounded-lg shadow-xl 
-                opacity-0 invisible group-hover:opacity-100 group-hover:visible 
-                transition-all duration-200 transform scale-95 group-hover:scale-100
-                ${position === 'top' ? 'bottom-full left-1/2 -translate-x-1/2 mb-2' : ''}
-                ${position === 'bottom' ? 'top-full left-1/2 -translate-x-1/2 mt-2' : ''}
-                ${position === 'left' ? 'right-full top-1/2 -translate-y-1/2 mr-2' : ''}
-                ${position === 'right' ? 'left-full top-1/2 -translate-y-1/2 ml-2' : ''}
+            <span className={`
+                pointer-events-auto absolute z-[9999] w-72 rounded-lg border border-zinc-200 bg-white p-3
+                text-xs font-medium leading-relaxed text-zinc-700 shadow-xl shadow-zinc-900/10
+                invisible opacity-0 transition-all duration-150 group-hover:visible group-hover:opacity-100
+                ${position === 'top' ? 'bottom-full left-1/2 mb-1 -translate-x-1/2' : ''}
+                ${position === 'bottom' ? 'left-1/2 top-full mt-1 -translate-x-1/2' : ''}
+                ${position === 'left' ? 'right-full top-1/2 mr-1 -translate-y-1/2' : ''}
+                ${position === 'right' ? 'left-full top-1/2 ml-1 -translate-y-1/2' : ''}
             `}>
                 {text}
 
-                {/* Seta do Tooltip */}
-                <div className={`
-                    absolute w-2 h-2 bg-slate-800 transform rotate-45
-                    ${position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' : ''}
-                    ${position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' : ''}
-                    ${position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' : ''}
-                    ${position === 'right' ? 'left-[-4px] top-1/2 -translate-y-1/2' : ''}
-                `}></div>
-            </div>
-        </div>
+                <span className={`
+                    absolute h-2 w-2 rotate-45 border-zinc-200 bg-white
+                    ${position === 'top' ? 'bottom-[-5px] left-1/2 -translate-x-1/2 border-b border-r' : ''}
+                    ${position === 'bottom' ? 'left-1/2 top-[-5px] -translate-x-1/2 border-l border-t' : ''}
+                    ${position === 'left' ? 'right-[-5px] top-1/2 -translate-y-1/2 border-r border-t' : ''}
+                    ${position === 'right' ? 'left-[-5px] top-1/2 -translate-y-1/2 border-b border-l' : ''}
+                `} />
+            </span>
+        </span>
     );
 };

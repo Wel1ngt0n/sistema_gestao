@@ -49,13 +49,13 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
     const Icon = icon;
 
     const textColors: any = {
-        orange: 'text-[#ff7900]',
-        green: 'text-emerald-600',
-        blue: 'text-blue-600',
-        amber: 'text-amber-600',
-        yellow: 'text-amber-600',
+        orange: 'text-zinc-950',
+        green: 'text-zinc-950',
+        blue: 'text-zinc-950',
+        amber: 'text-zinc-950',
+        yellow: 'text-zinc-950',
         slate: 'text-slate-600',
-        red: 'text-rose-600'
+        red: 'text-zinc-950'
     };
 
     const accentColors: any = {
@@ -68,9 +68,19 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
         red: 'bg-rose-600'
     };
 
+    const iconColors: any = {
+        orange: 'text-orange-500',
+        green: 'text-emerald-600',
+        blue: 'text-sky-600',
+        amber: 'text-orange-500',
+        yellow: 'text-amber-600',
+        slate: 'text-slate-600',
+        red: 'text-rose-600'
+    };
+
     return (
-        <div className="group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg">
-            <div className={`absolute inset-x-0 top-0 h-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${accentColors[color]}`} />
+        <div className="group relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+            <div className={`absolute inset-x-0 top-0 h-0.5 rounded-t-lg opacity-70 ${accentColors[color]}`} />
 
             <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
@@ -79,7 +89,7 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
                         {value}
                     </div>
                 </div>
-                <div className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${textColors[color]}`}>
+                <div className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${iconColors[color]}`}>
                     <Icon size={18} strokeWidth={2} />
                 </div>
                 {tooltip && (

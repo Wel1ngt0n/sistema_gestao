@@ -17,30 +17,41 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtex
     const IconComponent = icon && typeof icon !== 'string' ? icon : null;
 
     const colorClasses: Record<string, string> = {
-        orange: 'text-[#ff7900]',
+        orange: 'text-zinc-950',
+        green: 'text-zinc-950',
+        red: 'text-zinc-950',
+        yellow: 'text-zinc-950',
+        blue: 'text-zinc-950',
+        amber: 'text-zinc-950',
+        slate: 'text-slate-600',
+        emerald: 'text-zinc-950',
+    };
+
+    const accentClasses: Record<string, string> = {
+        orange: 'bg-orange-500',
+        green: 'bg-emerald-500',
+        red: 'bg-rose-500',
+        yellow: 'bg-amber-500',
+        blue: 'bg-sky-500',
+        amber: 'bg-orange-500',
+        slate: 'bg-slate-600',
+        emerald: 'bg-emerald-500',
+    };
+
+    const iconClasses: Record<string, string> = {
+        orange: 'text-orange-500',
         green: 'text-emerald-600',
         red: 'text-rose-600',
         yellow: 'text-amber-600',
-        blue: 'text-blue-600',
-        amber: 'text-[#ff7900]',
+        blue: 'text-sky-600',
+        amber: 'text-orange-500',
         slate: 'text-slate-600',
         emerald: 'text-emerald-600',
     };
 
-    const accentClasses: Record<string, string> = {
-        orange: 'bg-[#ff7900]',
-        green: 'bg-emerald-600',
-        red: 'bg-rose-600',
-        yellow: 'bg-amber-500',
-        blue: 'bg-blue-600',
-        amber: 'bg-[#ff7900]',
-        slate: 'bg-slate-600',
-        emerald: 'bg-emerald-600',
-    };
-
     return (
-        <div aria-label="KPI Card" className={`group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg ${className}`}>
-            <div aria-label="KPI Card" className={`absolute inset-x-0 top-0 h-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${accentClasses[color] || accentClasses.blue}`} />
+        <div aria-label="KPI Card" className={`group relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md ${className}`}>
+            <div aria-label="KPI Card" className={`absolute inset-x-0 top-0 h-0.5 rounded-t-lg opacity-70 ${accentClasses[color] || accentClasses.blue}`} />
 
             <div aria-label="KPI Card" className="mb-5 flex items-start justify-between gap-4">
                 <div aria-label="KPI Card">
@@ -53,7 +64,7 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtex
                     </h3>
                 </div>
                 {icon && (
-                    <div aria-label="KPI Card" className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${colorClasses[color] || colorClasses.blue}`}>
+                    <div aria-label="KPI Card" className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${iconClasses[color] || iconClasses.blue}`}>
                         {IconComponent ? <IconComponent size={18} strokeWidth={2} /> : <span className="text-base leading-none">{typeof icon === 'string' ? icon : null}</span>}
                     </div>
                 )}

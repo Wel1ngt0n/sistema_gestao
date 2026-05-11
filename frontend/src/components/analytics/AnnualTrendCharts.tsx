@@ -12,7 +12,8 @@ import {
     BarElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    ChartOptions
 } from 'chart.js';
 
 ChartJS.register(
@@ -42,38 +43,110 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
 
+    const commonChartOptions: ChartOptions<'bar'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index',
+        },
+        plugins: {
+            legend: {
+                position: 'bottom',
+                align: 'start',
+                labels: {
+                    boxHeight: 8,
+                    boxWidth: 18,
+                    color: '#52525b',
+                    padding: 18,
+                    usePointStyle: true,
+                    font: { size: 11, weight: 500 },
+                },
+            },
+            tooltip: {
+                backgroundColor: '#18181b',
+                titleColor: '#fff',
+                bodyColor: '#e4e4e7',
+                borderColor: '#27272a',
+                borderWidth: 1,
+                cornerRadius: 6,
+                displayColors: true,
+                padding: 12,
+            },
+        },
+        layout: {
+            padding: { top: 8, right: 8, bottom: 0, left: 0 },
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { color: '#71717a', font: { size: 11 } },
+                border: { display: false },
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
+                ticks: { color: '#71717a', font: { size: 11 } },
+                border: { display: false },
+                beginAtZero: true,
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: { drawOnChartArea: false, drawTicks: false },
+                ticks: { color: '#71717a', font: { size: 11 } },
+                border: { display: false },
+                beginAtZero: true,
+            },
+        },
+    };
+
     // 1. Gráfico de MRR (Acumulado vs Meta)
     const mrrChartData = {
         labels,
         datasets: [
             {
                 type: 'bar' as const,
-                label: 'MRR Entregue no Mês',
+                label: 'MRR mensal entregue',
                 data: data.trends.map(t => t.mrr_monthly),
-                backgroundColor: 'rgba(20, 184, 166, 0.5)', // Teal 500
-                borderColor: '#14b8a6',
+                backgroundColor: 'rgba(255, 121, 0, 0.28)',
+                hoverBackgroundColor: 'rgba(255, 121, 0, 0.42)',
+                borderColor: 'rgba(255, 121, 0, 0.55)',
                 borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
+                barPercentage: 0.55,
+                categoryPercentage: 0.8,
                 order: 3,
                 yAxisID: 'y'
             },
             {
                 type: 'line' as const,
-                label: 'MRR Acumulado (YTD)',
+                label: 'MRR acumulado no ano',
                 data: data.trends.map(t => t.cumulative_mrr),
-                borderColor: '#0ea5e9', // Sky 500
-                backgroundColor: '#0ea5e9',
-                borderWidth: 3,
-                tension: 0.3,
+                borderColor: '#128131',
+                backgroundColor: '#128131',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#128131',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.35,
                 order: 2,
                 yAxisID: 'y1'
             },
             {
                 type: 'line' as const,
-                label: 'Meta Ideal Acumulada',
+                label: 'Meta acumulada',
                 data: data.trends.map(t => t.target_cumulative_mrr),
-                borderColor: '#ef4444', // Red 500
+                borderColor: '#71717a',
+                backgroundColor: '#71717a',
                 borderWidth: 2,
-                borderDash: [5, 5],
+                borderDash: [6, 5],
                 pointRadius: 0,
                 tension: 0,
                 order: 1,
@@ -82,15 +155,12 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
         ]
     };
 
-    const mrrOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
+    const mrrOptions: ChartOptions<'bar'> = {
+        ...commonChartOptions,
         plugins: {
-            legend: {
-                position: 'top' as const,
-                labels: { color: '#71717a' }
-            },
+            ...commonChartOptions.plugins,
             tooltip: {
+                ...commonChartOptions.plugins?.tooltip,
                 callbacks: {
                     label: function (context: any) {
                         let label = context.dataset.label || '';
@@ -104,27 +174,17 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
             }
         },
         scales: {
-            x: {
-                grid: { display: false },
-                ticks: { color: '#71717a' },
-                border: { display: false }
-            },
+            ...commonChartOptions.scales,
             y: {
-                type: 'linear' as const,
-                display: true,
-                position: 'left' as const,
-                grid: { color: 'rgba(100, 116, 139, 0.12)' },
+                ...commonChartOptions.scales?.y,
+                title: { display: true, text: 'MRR mensal', color: '#71717a', font: { size: 11, weight: 500 } },
                 ticks: { color: '#71717a', callback: (val: any) => formatCurrency(val) },
-                border: { display: false }
             },
             y1: {
-                type: 'linear' as const,
-                display: true,
-                position: 'right' as const,
-                grid: { drawOnChartArea: false },
+                ...commonChartOptions.scales?.y1,
+                title: { display: true, text: 'Acumulado', color: '#71717a', font: { size: 11, weight: 500 } },
                 ticks: { color: '#71717a', callback: (val: any) => formatCurrency(val) },
-                border: { display: false }
-            }
+            },
         }
     };
 
@@ -134,32 +194,43 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
         datasets: [
             {
                 type: 'bar' as const,
-                label: 'Lojas Entregues (Mês)',
+                label: 'Lojas entregues no mês',
                 data: data.trends.map(t => t.stores_monthly),
-                backgroundColor: 'rgba(139, 92, 246, 0.5)', // orange 500
-                borderColor: '#f97316',
+                backgroundColor: 'rgba(255, 121, 0, 0.28)',
+                hoverBackgroundColor: 'rgba(255, 121, 0, 0.42)',
+                borderColor: 'rgba(255, 121, 0, 0.55)',
                 borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
+                barPercentage: 0.55,
+                categoryPercentage: 0.8,
                 order: 3,
                 yAxisID: 'y'
             },
             {
                 type: 'line' as const,
-                label: 'Lojas Acumuladas (YTD)',
+                label: 'Lojas acumuladas no ano',
                 data: data.trends.map(t => t.cumulative_stores),
-                borderColor: '#f59e0b', // Amber 500
-                backgroundColor: '#f59e0b',
-                borderWidth: 3,
-                tension: 0.3,
+                borderColor: '#128131',
+                backgroundColor: '#128131',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#128131',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.35,
                 order: 2,
                 yAxisID: 'y1'
             },
             {
                 type: 'line' as const,
-                label: 'Meta Ideal Acumulada',
+                label: 'Meta acumulada',
                 data: data.trends.map(t => t.target_cumulative_stores),
-                borderColor: '#ef4444', // Red 500
+                borderColor: '#71717a',
+                backgroundColor: '#71717a',
                 borderWidth: 2,
-                borderDash: [5, 5],
+                borderDash: [6, 5],
                 pointRadius: 0,
                 tension: 0,
                 order: 1,
@@ -168,38 +239,30 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
         ]
     };
 
-    const storesOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
+    const storesOptions: ChartOptions<'bar'> = {
+        ...commonChartOptions,
         plugins: {
-            legend: {
-                position: 'top' as const,
-                labels: { color: '#71717a' }
-            },
-            tooltip: {}
+            ...commonChartOptions.plugins,
+            tooltip: {
+                ...commonChartOptions.plugins?.tooltip,
+                callbacks: {
+                    label: function (context: any) {
+                        const label = context.dataset.label || '';
+                        return `${label}: ${context.parsed.y ?? 0}`;
+                    }
+                }
+            }
         },
         scales: {
-            x: {
-                grid: { display: false },
-                ticks: { color: '#71717a' },
-                border: { display: false }
-            },
+            ...commonChartOptions.scales,
             y: {
-                type: 'linear' as const,
-                display: true,
-                position: 'left' as const,
-                grid: { color: 'rgba(100, 116, 139, 0.12)' },
-                ticks: { color: '#71717a' },
-                border: { display: false }
+                ...commonChartOptions.scales?.y,
+                title: { display: true, text: 'Entregas mensais', color: '#71717a', font: { size: 11, weight: 500 } },
             },
             y1: {
-                type: 'linear' as const,
-                display: true,
-                position: 'right' as const,
-                grid: { drawOnChartArea: false },
-                ticks: { color: '#71717a' },
-                border: { display: false }
-            }
+                ...commonChartOptions.scales?.y1,
+                title: { display: true, text: 'Acumulado', color: '#71717a', font: { size: 11, weight: 500 } },
+            },
         }
     };
 
@@ -214,7 +277,8 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
                         position="right"
                     />
                 </h3>
-                <div className="h-[300px] mt-6">
+                <p className="text-sm text-zinc-500">Barras mostram o realizado no mês; linhas mostram acumulado e meta.</p>
+                <div className="mt-5 h-[340px]">
                     <Chart type='bar' data={mrrChartData} options={mrrOptions} />
                 </div>
             </div>
@@ -228,7 +292,8 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
                         position="left"
                     />
                 </h3>
-                <div className="h-[300px] mt-6">
+                <p className="text-sm text-zinc-500">Compare o volume mensal com a curva acumulada de entregas no ano.</p>
+                <div className="mt-5 h-[340px]">
                     <Chart type='bar' data={storesChartData} options={storesOptions} />
                 </div>
             </div>
