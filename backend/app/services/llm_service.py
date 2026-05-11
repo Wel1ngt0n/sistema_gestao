@@ -47,18 +47,20 @@ class LLMService:
 
     def call_jarvis(self, messages, tools=None):
         """
-        Interface principal do Jarvis 5.4 (gpt-4o-mini).
+        Interface principal do Jarvis.
         Suporta histórico de mensagens e ferramentas (functions).
         """
         if not self.openai_client:
             return {"error": "OpenAI API Key not configured."}
 
         try:
+            jarvis_model = os.getenv("JARVIS_MODEL", "gpt-5.4-mini")
             params = {
-                "model": "gpt-4o-mini",
+                "model": jarvis_model,
                 "messages": messages,
-                "temperature": 0.7
             }
+            if not jarvis_model.startswith("gpt-5"):
+                params["temperature"] = 0.7
             if tools:
                 params["tools"] = tools
                 params["tool_choice"] = "auto"

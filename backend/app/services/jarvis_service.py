@@ -140,7 +140,20 @@ class JarvisService:
         elif any(token in text_lower for token in ["funil", "pipeline", "status das lojas", "status geral"]):
             intent, confidence = "STORE_ANALYSIS", 0.84
             tools = ["get_store_pipeline_status", "get_critical_stores"]
-        elif any(token in text_lower for token in ["entregas", "entregues", "lojas entregues", "fechamento do mes"]):
+        elif any(
+            token in text_lower
+            for token in [
+                "entregas",
+                "entregou",
+                "entregaram",
+                "entregues",
+                "quem entregou",
+                "lojas entregues",
+                "loja esse mes",
+                "loja este mes",
+                "fechamento do mes",
+            ]
+        ):
             intent, confidence = "EXECUTIVE_SUMMARY", 0.82
             tools = ["get_monthly_delivery_summary", "get_team_performance", "get_mrr_summary"]
         elif any(token in text_lower for token in ["sla", "risco", "critica", "criticas", "atraso", "parada", "paradas"]):
@@ -250,9 +263,26 @@ class JarvisService:
             re.IGNORECASE,
         )
         if match:
-            return match.group(1).strip(" ?.,")
+            candidate = match.group(1).strip(" ?.,")
+            if self._looks_like_time_expression(candidate):
+                return None
+            return candidate
         id_match = re.search(r"\b(?:id|#)\s*(\d{1,8})\b", user_message, re.IGNORECASE)
         return id_match.group(1) if id_match else None
+
+    def _looks_like_time_expression(self, value):
+        normalized = self._normalize_text(value).strip()
+        temporal_terms = [
+            "esse mes",
+            "este mes",
+            "mes",
+            "hoje",
+            "agora",
+            "semana",
+            "esse mes ja",
+            "este mes ja",
+        ]
+        return any(normalized == term or normalized.startswith(f"{term} ") for term in temporal_terms)
 
     def _extract_limit(self, text_lower):
         match = re.search(r"\b(?:top|limite|listar|mostre)\s*(\d{1,2})\b", text_lower)
@@ -699,7 +729,13 @@ Regras:
                 owners[owner] += 1
             if owners:
                 summary = ", ".join(f"{owner} ({count})" for owner, count in owners.items())
-                return f"As entregas foram de {summary}. Pelos registros disponíveis, foram {len(scoped_records)} lojas no contexto."
+                store_names = [
+                    record.get("name")
+                    for record in scoped_records[:4]
+                    if record.get("name")
+                ]
+                stores_text = f": {', '.join(store_names)}" if store_names else ""
+                return f"Foi {summary}. Foram {len(scoped_records)} loja(s) no período{stores_text}."
 
         if metrics:
             first_items = list(metrics.items())[:3]
