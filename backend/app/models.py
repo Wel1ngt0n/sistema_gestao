@@ -806,3 +806,22 @@ class SupportAgentPerformance(db.Model):
 
     def __repr__(self):
         return f'<AgentPerf {self.agent_name} {self.period}>'
+
+class JarvisChatSession(db.Model):
+    __tablename__ = 'jarvis_chat_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = db.relationship('User', backref='jarvis_sessions')
+    messages = db.relationship('JarvisChatMessage', backref='session', cascade="all, delete-orphan", order_by="JarvisChatMessage.created_at")
+
+class JarvisChatMessage(db.Model):
+    __tablename__ = 'jarvis_chat_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('jarvis_chat_sessions.id'), nullable=False)
+    role = db.Column(db.String(50), nullable=False) # user, assistant, system
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
