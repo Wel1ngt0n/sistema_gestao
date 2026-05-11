@@ -19,7 +19,6 @@ import {
     User,
     LogOut,
     MessageSquare,
-    Cpu,
     Sparkles
 } from 'lucide-react'
 import logo from '../assets/logo.png'
