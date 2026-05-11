@@ -16,6 +16,8 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
+import ReactMarkdown from 'react-markdown';
+
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -39,6 +41,11 @@ const Jarvis: React.FC = () => {
 
   useEffect(() => {
     fetchSessions();
+    // Tenta recuperar a última sessão ativa do localStorage
+    const savedSessionId = localStorage.getItem('jarvis_active_session_id');
+    if (savedSessionId && savedSessionId !== 'null') {
+      loadSession(parseInt(savedSessionId));
+    }
   }, []);
 
   useEffect(() => {
@@ -62,6 +69,7 @@ const Jarvis: React.FC = () => {
   const loadSession = async (sessionId: number) => {
     setLoading(true);
     setActiveSessionId(sessionId);
+    localStorage.setItem('jarvis_active_session_id', sessionId.toString());
     setShowHistory(false);
     try {
       const res = await api.get(`/api/jarvis/history/${sessionId}`);
@@ -70,6 +78,9 @@ const Jarvis: React.FC = () => {
       }
     } catch (err) {
       console.error('Error loading history:', err);
+      // Se der erro 404, a sessão pode ter sido excluída
+      localStorage.removeItem('jarvis_active_session_id');
+      setActiveSessionId(null);
     } finally {
       setLoading(false);
     }
@@ -78,6 +89,7 @@ const Jarvis: React.FC = () => {
   const createNewChat = () => {
     setMessages([]);
     setActiveSessionId(null);
+    localStorage.removeItem('jarvis_active_session_id');
     setShowHistory(false);
   };
 
@@ -113,13 +125,15 @@ const Jarvis: React.FC = () => {
       if (response.data && response.data.response) {
         setMessages([...newMessages, { role: 'assistant', content: response.data.response }]);
         if (!activeSessionId) {
-          setActiveSessionId(response.data.session_id);
+          const newId = response.data.session_id;
+          setActiveSessionId(newId);
+          localStorage.setItem('jarvis_active_session_id', newId.toString());
           fetchSessions();
         }
       }
     } catch (error) {
       console.error('Error talking to Jarvis:', error);
-      setMessages([...newMessages, { role: 'assistant', content: 'Desculpe, tive um problema ao processar sua solicitação.' }]);
+      setMessages([...newMessages, { role: 'assistant', content: 'Desculpe, tive um problema ao processar sua solicitação. Verifique sua conexão ou tente novamente.' }]);
     } finally {
       setLoading(false);
     }
@@ -258,9 +272,28 @@ const Jarvis: React.FC = () => {
                       ? 'bg-zinc-900 text-white shadow-lg' 
                       : 'bg-white border border-zinc-100 text-zinc-700 shadow-sm'
                   }`}>
-                    <div className="whitespace-pre-wrap font-medium">
-                      {msg.content}
-                    </div>
+                    {msg.role === 'user' ? (
+                      <div className="whitespace-pre-wrap font-medium">
+                        {msg.content}
+                      </div>
+                    ) : (
+                      <div className="markdown-content text-zinc-700 leading-relaxed space-y-2">
+                        <ReactMarkdown 
+                          components={{
+                            p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                            ul: ({children}) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
+                            ol: ({children}) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
+                            li: ({children}) => <li className="text-sm">{children}</li>,
+                            strong: ({children}) => <strong className="font-bold text-zinc-900">{children}</strong>,
+                            code: ({children}) => <code className="bg-zinc-100 px-1 rounded text-xs font-mono">{children}</code>,
+                            h1: ({children}) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                            h2: ({children}) => <h2 className="text-base font-bold mb-1">{children}</h2>,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
