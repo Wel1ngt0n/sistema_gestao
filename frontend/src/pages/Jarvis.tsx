@@ -13,7 +13,7 @@ import {
   Menu,
   Sparkles
 } from 'lucide-react';
-import axios from 'axios';
+import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Message {
@@ -50,9 +50,7 @@ const Jarvis: React.FC = () => {
   const fetchSessions = async () => {
     if (!token) return;
     try {
-      const res = await axios.get('/api/jarvis/sessions', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await api.get('/api/jarvis/sessions');
       if (Array.isArray(res.data)) {
         setSessions(res.data);
       }
@@ -66,9 +64,7 @@ const Jarvis: React.FC = () => {
     setActiveSessionId(sessionId);
     setShowHistory(false);
     try {
-      const res = await axios.get(`/api/jarvis/history/${sessionId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await api.get(`/api/jarvis/history/${sessionId}`);
       if (Array.isArray(res.data)) {
         setMessages(res.data);
       }
@@ -89,9 +85,7 @@ const Jarvis: React.FC = () => {
     e.stopPropagation();
     if (!window.confirm('Excluir esta conversa permanentemente?')) return;
     try {
-      await axios.delete(`/api/jarvis/session/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await api.delete(`/api/jarvis/session/${id}`);
       fetchSessions();
       if (activeSessionId === id) createNewChat();
     } catch (err) {
@@ -109,11 +103,10 @@ const Jarvis: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/jarvis/chat', {
+      const response = await api.post('/api/jarvis/chat', {
         messages: newMessages,
         session_id: activeSessionId
       }, { 
-        headers: { 'Authorization': `Bearer ${token}` },
         withCredentials: true 
       });
 
