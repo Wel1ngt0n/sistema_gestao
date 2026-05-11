@@ -12,7 +12,8 @@ import {
     BarElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    ChartOptions
 } from 'chart.js';
 
 ChartJS.register(
@@ -33,10 +34,7 @@ interface FinancialForecastChartProps {
 
 export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ data, className = '' }) => {
 
-    // Preparar dados
-    // Preparar dados
     const labels = data.map(d => d.month);
-    // Mostrar SEMPRE o realizado e o projetado, permitindo sobreposição no mês atual
     const realizedData = data.map(d => d.realized);
     const projectedData = data.map(d => d.projected);
 
@@ -45,39 +43,67 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
         datasets: [
             {
                 type: 'bar' as const,
-                label: 'Realizado (Histórico)',
+                label: 'MRR realizado',
                 data: realizedData,
-                backgroundColor: '#f97316', // Orange-500
-                hoverBackgroundColor: '#ea580c',
+                backgroundColor: 'rgba(255, 121, 0, 0.34)',
+                hoverBackgroundColor: 'rgba(255, 121, 0, 0.48)',
+                borderColor: 'rgba(255, 121, 0, 0.65)',
+                borderWidth: 1,
                 borderRadius: 4,
-                order: 1, // Draw First (Bottom)
-                stack: 'stack1'
+                borderSkipped: false,
+                barPercentage: 0.56,
+                categoryPercentage: 0.82,
+                order: 1,
+                stack: 'stack1',
             },
             {
                 type: 'bar' as const,
-                label: 'Projetado (Forecast)',
+                label: 'MRR projetado',
                 data: projectedData,
-                backgroundColor: 'rgba(132, 204, 22, 0.2)', // Lime-500 Transparent
-                borderColor: '#84cc16', // Lime-500
+                backgroundColor: 'rgba(18, 129, 49, 0.16)',
+                hoverBackgroundColor: 'rgba(18, 129, 49, 0.26)',
+                borderColor: 'rgba(18, 129, 49, 0.55)',
                 borderWidth: 1,
-                borderDash: [5, 5], // Tracejado
+                borderDash: [5, 5],
                 borderRadius: 4,
-                order: 2, // Draw Second (Top)
-                stack: 'stack1'
+                borderSkipped: false,
+                barPercentage: 0.56,
+                categoryPercentage: 0.82,
+                order: 2,
+                stack: 'stack1',
             }
         ]
     };
 
-    const options = {
+    const options: ChartOptions<'bar'> = {
         responsive: true,
         maintainAspectRatio: false,
-        maxBarThickness: 50, // Limita largura da barra
+        interaction: {
+            intersect: false,
+            mode: 'index',
+        },
         plugins: {
             legend: {
-                position: 'top' as const,
-                labels: { color: '#71717a' }
+                position: 'bottom',
+                align: 'start',
+                labels: {
+                    boxHeight: 8,
+                    boxWidth: 18,
+                    color: '#52525b',
+                    padding: 18,
+                    usePointStyle: true,
+                    font: { size: 11, weight: 500 },
+                },
             },
             tooltip: {
+                backgroundColor: '#18181b',
+                titleColor: '#fff',
+                bodyColor: '#e4e4e7',
+                borderColor: '#27272a',
+                borderWidth: 1,
+                cornerRadius: 6,
+                displayColors: true,
+                padding: 12,
                 callbacks: {
                     label: function (context: any) {
                         let label = context.dataset.label || '';
@@ -92,18 +118,35 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
                 }
             }
         },
+        layout: {
+            padding: { top: 8, right: 8, bottom: 0, left: 0 },
+        },
         scales: {
             y: {
                 stacked: true,
-                grid: { color: 'rgba(100, 116, 139, 0.12)' },
-                ticks: { color: '#71717a' },
-                border: { display: false }
+                grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
+                ticks: {
+                    color: '#71717a',
+                    font: { size: 11 },
+                    callback: (val: any) => new Intl.NumberFormat('pt-BR', {
+                        notation: 'compact',
+                        compactDisplay: 'short',
+                    }).format(Number(val)),
+                },
+                title: {
+                    display: true,
+                    text: 'MRR previsto',
+                    color: '#71717a',
+                    font: { size: 11, weight: 500 },
+                },
+                border: { display: false },
+                beginAtZero: true,
             },
             x: {
                 stacked: true,
                 grid: { display: false },
-                ticks: { color: '#71717a' },
-                border: { display: false }
+                ticks: { color: '#71717a', font: { size: 11 } },
+                border: { display: false },
             }
         }
     };
@@ -120,10 +163,10 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
                     />
                 </h3>
                 <p className="text-sm text-zinc-500">
-                Projeção de entrada de receita baseada no ritmo atual e data estimada de conclusão.
+                    Receita ativada e projetada por mês, empilhada para indicar o potencial total.
                 </p>
             </div>
-            <div className="h-[300px]">
+            <div className="h-[340px]">
                 <Chart type='bar' data={chartData} options={options} />
             </div>
         </div>

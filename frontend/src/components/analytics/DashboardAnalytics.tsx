@@ -170,17 +170,67 @@ export default function DashboardAnalytics() {
         labels: trendLabels,
         datasets: [
             {
-                label: 'Lojas Entregues',
+                label: 'Lojas entregues',
                 data: safeTrendData.map(d => d.throughput),
-                backgroundColor: '#f97316', // Orange-500
-                hoverBackgroundColor: '#ea580c', // Orange-600
-                borderRadius: 6,
+                backgroundColor: 'rgba(255, 121, 0, 0.32)',
+                hoverBackgroundColor: 'rgba(255, 121, 0, 0.46)',
+                borderColor: 'rgba(255, 121, 0, 0.65)',
+                borderWidth: 1,
+                borderRadius: 4,
                 borderSkipped: false,
-                barPercentage: 0.6,
-                categoryPercentage: 0.8,
-                maxBarThickness: 40
+                barPercentage: 0.56,
+                categoryPercentage: 0.82,
+                maxBarThickness: 44,
             },
         ],
+    };
+
+    const throughputChartOptions: ChartOptions = {
+        ...chartOptions,
+        plugins: {
+            ...chartOptions.plugins,
+            legend: {
+                display: true,
+                position: 'bottom' as const,
+                align: 'start' as const,
+                labels: {
+                    boxHeight: 8,
+                    boxWidth: 18,
+                    color: '#52525b',
+                    padding: 18,
+                    usePointStyle: true,
+                    font: { size: 11, weight: 500 },
+                },
+            },
+            tooltip: {
+                ...chartOptions.plugins?.tooltip,
+                callbacks: {
+                    label: function (context: any) {
+                        return `Lojas entregues: ${context.parsed.y ?? 0}`;
+                    }
+                }
+            }
+        },
+        layout: { padding: { top: 8, right: 8, bottom: 0, left: 0 } },
+        scales: {
+            y: {
+                grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
+                ticks: { color: '#71717a', font: { size: 11 }, precision: 0 },
+                title: {
+                    display: true,
+                    text: 'Entregas no mês',
+                    color: '#71717a',
+                    font: { size: 11, weight: 500 },
+                },
+                border: { display: false },
+                beginAtZero: true,
+            },
+            x: {
+                grid: { display: false },
+                ticks: { color: '#71717a', font: { size: 11 }, maxRotation: 0, autoSkip: true },
+                border: { display: false },
+            }
+        },
     };
 
 
@@ -294,13 +344,14 @@ export default function DashboardAnalytics() {
 
                             {/* Evolução de Entregas */}
                             <div aria-label="Dashboard Analytics" className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                                <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-950">
                                     <BarChart3 size={16} className="text-[#ff7900]" />
                                     Evolução de Entregas
                                     <InfoTooltip text="Número absoluto de lojas implantadas (status DONE) por mês." />
                                 </h3>
-                                <div aria-label="Dashboard Analytics" className="h-[350px]">
-                                    <Chart type='bar' data={throughputChartData} options={chartOptions} />
+                                <p className="text-sm text-zinc-500">Volume mensal de lojas concluídas no período selecionado.</p>
+                                <div aria-label="Dashboard Analytics" className="mt-5 h-[340px]">
+                                    <Chart type='bar' data={throughputChartData} options={throughputChartOptions} />
                                 </div>
                             </div>
                         </div>
