@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { ChevronDown, ChevronUp, Download, Bot, FileText, Loader2, Users, CheckCircle, Clock, Target, TrendingUp, TrendingDown, BarChart3, Building2, Layers, Printer } from 'lucide-react';
+import logo from '../../assets/logo.png';
 import { Dialog } from '@headlessui/react';
 import MonitorStoreModal from '../monitor/MonitorStoreModal';
 import MonitorStoreModalV2 from '../monitor/MonitorStoreModalV2';
@@ -337,8 +338,12 @@ const MonthlyReport: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-zinc-400">Carregando relatório...</div>;
-    if (!reportData) return <div className="p-8 text-center text-zinc-400">Sem dados disponíveis.</div>;
+    if (loading) return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <div className="h-10 w-10 rounded-full border-2 border-zinc-200 border-t-[#ff7900] animate-spin" />
+        </div>
+    );
+    if (!reportData) return <div className="min-h-screen p-8 text-sm font-medium text-red-600">Sem dados disponíveis.</div>;
 
     const { annual_goals: goals, wip_overview: wip, months: data } = reportData;
 
@@ -348,26 +353,37 @@ const MonthlyReport: React.FC = () => {
     };
 
     return (
-        <div className="p-0 space-y-8 bg-zinc-50 min-h-screen text-zinc-900 transition-colors duration-300">
-            <header className="px-6 md:px-10 pt-6">
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-500 to-cyan-600">
-                    Relatório Mensal de Implantação
-                </h1>
-                <p className="text-zinc-500 mt-2">
-                    Resultados, metas anuais, eficiência do time e previsibilidade.
-                </p>
+        <div className="w-full space-y-6 text-zinc-950">
+            <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white">
+                            <img src={logo} alt="Instabuy" className="h-7 w-auto object-contain" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Implantação</p>
+                            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+                                Relatório mensal
+                            </h1>
+                            <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+                                Resultados, metas anuais, eficiência do time e previsibilidade.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
             </header>
 
             {/* ═══ ANNUAL GOALS ═══ */}
-            <div className="px-6 md:px-10">
-                <div className="bg-white rounded-3xl border border-zinc-200 p-6 shadow-sm">
+            <div className="animate-fade-in-up">
+                <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
                     <div className="flex items-center justify-between mb-5 flex-wrap gap-4">
                         <div className="flex items-center gap-2">
-                            <Target className="text-teal-500" size={20} />
-                            <h2 className="text-lg font-bold text-zinc-800">Metas Anuais 2026</h2>
+                            <Target className="text-[#ff7900]" size={18} />
+                            <h2 className="text-sm font-semibold text-zinc-950">Metas Anuais 2026</h2>
                         </div>
                         <button onClick={handleExportAnnualExcel}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-semibold shadow-sm text-sm">
+                            className="flex items-center gap-2 px-3 py-2 rounded-md border border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100">
                             <Download size={16} /> Exportar Visão Anual YTD
                         </button>
                     </div>
@@ -378,12 +394,12 @@ const MonthlyReport: React.FC = () => {
                                 <span className="text-sm font-semibold text-zinc-600">MRR Recorrente</span>
                                 <span className="text-xs text-zinc-500">Meta: R$ {goals.mrr_target.toLocaleString('pt-BR')}</span>
                             </div>
-                            <div className="relative h-4 bg-zinc-200 rounded-full overflow-hidden">
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-1000"
+                            <div className="relative h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+                                <div className="absolute inset-0 rounded-full bg-[#ff7900] transition-all duration-1000"
                                     style={{ width: `${Math.min(goals.mrr_pct, 100)}%` }} />
                             </div>
                             <div className="flex justify-between text-xs text-zinc-500">
-                                <span className="font-semibold text-emerald-600">
+                                <span className="font-semibold text-[#ff7900]">
                                     R$ {goals.mrr_ytd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({goals.mrr_pct}%)
                                 </span>
                                 <span>~R$ {goals.mrr_avg_monthly.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}/mês • Projeção: {projLabel(goals.mrr_projection_month)}</span>
@@ -396,12 +412,12 @@ const MonthlyReport: React.FC = () => {
                                 <span className="text-sm font-semibold text-zinc-600">Lojas Entregues</span>
                                 <span className="text-xs text-zinc-500">Meta: {goals.stores_target} lojas</span>
                             </div>
-                            <div className="relative h-4 bg-zinc-200 rounded-full overflow-hidden">
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-1000"
+                            <div className="relative h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+                                <div className="absolute inset-0 rounded-full bg-[#128131] transition-all duration-1000"
                                     style={{ width: `${Math.min(goals.stores_pct, 100)}%` }} />
                             </div>
                             <div className="flex justify-between text-xs text-zinc-500">
-                                <span className="font-semibold text-cyan-600">
+                                <span className="font-semibold text-[#128131]">
                                     {goals.stores_ytd} lojas ({goals.stores_pct}%)
                                 </span>
                                 <span>~{goals.stores_avg_monthly}/mês • Projeção: {projLabel(goals.stores_projection_month)}</span>
@@ -412,7 +428,7 @@ const MonthlyReport: React.FC = () => {
                     {/* Pontos YTD */}
                     <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-wrap gap-6">
                         <div className="flex items-center gap-2">
-                            <BarChart3 size={14} className="text-teal-500" />
+                            <BarChart3 size={14} className="text-[#ff7900]" />
                             <span className="text-sm text-zinc-500">Pontos YTD:</span>
                             <span className="font-bold text-zinc-800">{goals.points_ytd}</span>
                         </div>
@@ -424,9 +440,9 @@ const MonthlyReport: React.FC = () => {
                                     <span className="font-bold text-amber-600">{wip.total_wip} lojas</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Building2 size={14} className="text-cyan-500" />
+                                    <Building2 size={14} className="text-[#128131]" />
                                     <span className="text-sm text-zinc-500">MRR Backlog:</span>
-                                    <span className="font-bold text-cyan-600">
+                                    <span className="font-bold text-[#128131]">
                                         R$ {wip.mrr_backlog.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
@@ -441,7 +457,7 @@ const MonthlyReport: React.FC = () => {
                             <div className="flex flex-wrap gap-2">
                                 {wip.board_stages.map(st => (
                                     <span key={st.stage} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-lg text-xs font-medium text-zinc-700">
-                                        <span className="w-2 h-2 rounded-full bg-teal-500" />
+                                        <span className="w-2 h-2 rounded-full bg-[#ff7900]" />
                                         {st.stage}: <strong>{st.count}</strong>
                                     </span>
                                 ))}
@@ -452,15 +468,15 @@ const MonthlyReport: React.FC = () => {
             </div>
 
             {/* ═══ MONTHS ═══ */}
-            <div className="space-y-6 px-6 md:px-10 pb-10">
+            <div className="space-y-4 pb-10 animate-fade-in-up animation-delay-200 opacity-0">
                 {data.map((monthData) => (
-                    <div key={monthData.month} className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={monthData.month} className="rounded-lg border border-zinc-200 bg-white overflow-hidden shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
                         <div
                             className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer group"
                             onClick={() => toggleMonth(monthData.month)}
                         >
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-teal-100 rounded-xl text-teal-600 group-hover:scale-110 transition-transform">
+                                <div className="p-2 bg-orange-50 rounded-lg text-[#ff7900] group-hover:scale-110 transition-transform">
                                     <FileText size={24} />
                                 </div>
                                 <div>
@@ -494,7 +510,7 @@ const MonthlyReport: React.FC = () => {
                                 </div>
                                 <div className="text-right hidden sm:block">
                                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Tempo Médio</p>
-                                    <p className="text-lg font-bold text-teal-600">{monthData.stats.avg_days} dias</p>
+                                    <p className="text-lg font-bold text-zinc-700">{monthData.stats.avg_days} dias</p>
                                 </div>
                                 <div className="ml-2">
                                     {expandedMonth === monthData.month ? <ChevronUp className="text-zinc-400" /> : <ChevronDown className="text-zinc-400" />}
@@ -503,12 +519,12 @@ const MonthlyReport: React.FC = () => {
                         </div>
 
                         {expandedMonth === monthData.month && (
-                            <div className="border-t border-zinc-100 p-6 bg-zinc-50/50/10 animation-fade-in">
+                            <div className="border-t border-zinc-100 p-5 bg-zinc-50/30">
                                 {/* Action Buttons - Hiding them on Print */}
                                 <div className="flex flex-wrap gap-4 mb-6 justify-end items-center print:hidden">
                                     <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-zinc-200">
                                         <button onClick={(e) => { e.stopPropagation(); handleGenerateSummary(monthData, 'simple'); }}
-                                            className="flex items-center gap-2 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-lg transition-colors font-medium">
+                                            className="flex items-center gap-2 px-3 py-2 bg-[#ff7900] hover:bg-[#e86f00] text-white text-sm rounded-md transition-colors font-medium">
                                             <Bot size={16} /> Resumo Slack
                                         </button>
                                         <button onClick={(e) => { e.stopPropagation(); handleGenerateSummary(monthData, 'email'); }}
@@ -517,11 +533,11 @@ const MonthlyReport: React.FC = () => {
                                         </button>
                                     </div>
                                     <button onClick={(e) => { e.stopPropagation(); handlePrintPDF(monthData); }}
-                                        className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-colors">
+                                        className="flex items-center gap-2 px-3 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition-colors text-sm font-medium">
                                         <Printer size={18} /> Exportar PDF
                                     </button>
                                     <button onClick={(e) => { e.stopPropagation(); handleExportExcel(monthData); }}
-                                        className="flex items-center gap-2 px-4 py-2 bg-zinc-200 text-zinc-800 rounded-xl hover:bg-zinc-300 transition-colors">
+                                        className="flex items-center gap-2 px-3 py-2 border border-zinc-200 bg-zinc-50 text-zinc-700 rounded-md hover:bg-zinc-100 transition-colors text-sm font-medium">
                                         <Download size={18} /> Exportar Excel
                                     </button>
                                 </div>
@@ -532,13 +548,13 @@ const MonthlyReport: React.FC = () => {
                                         { label: 'Lojas', value: monthData.stats.total_stores, color: 'text-zinc-800' },
                                         { label: 'MRR', value: `R$ ${(monthData.stats.total_mrr / 1000).toFixed(1)}k`, color: 'text-emerald-600' },
                                         { label: 'Ticket Médio', value: `R$ ${monthData.stats.ticket_medio.toFixed(0)}`, color: 'text-emerald-600' },
-                                        { label: 'Pontos', value: monthData.stats.total_points.toFixed(1), color: 'text-teal-600' },
+                                        { label: 'Pontos', value: monthData.stats.total_points.toFixed(1), color: 'text-[#ff7900]' },
                                         { label: 'Média Dias', value: monthData.stats.avg_days, color: 'text-zinc-800' },
                                         { label: 'Mediana', value: monthData.stats.median_days, color: 'text-zinc-800' },
                                         { label: 'No Prazo', value: `${monthData.stats.on_time_count}/${monthData.stats.total_stores}`, color: monthData.stats.on_time_pct >= 70 ? 'text-emerald-600' : 'text-amber-600' },
-                                        { label: 'Matriz/Filial', value: `${monthData.type_breakdown.matriz_count}/${monthData.type_breakdown.filial_count}`, color: 'text-cyan-600' },
+                                        { label: 'Matriz/Filial', value: `${monthData.type_breakdown.matriz_count}/${monthData.type_breakdown.filial_count}`, color: 'text-zinc-700' },
                                     ].map(item => (
-                                        <div key={item.label} className="bg-white p-3 rounded-2xl text-center border border-zinc-100">
+                                        <div key={item.label} className="bg-white p-3 rounded-lg text-center border border-zinc-100">
                                             <p className="text-[10px] text-zinc-500 uppercase font-semibold">{item.label}</p>
                                             <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
                                         </div>
@@ -587,7 +603,7 @@ const MonthlyReport: React.FC = () => {
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {monthData.implantadores.map((imp, idx) => (
-                                                <div key={imp.name} className="bg-white p-4 rounded-2xl border border-zinc-100 hover:border-teal-300 transition-colors">
+                                                <div key={imp.name} className="bg-white p-4 rounded-lg border border-zinc-100 hover:border-zinc-300 transition-colors">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div className="flex items-center gap-2">
                                                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-zinc-400' : idx === 2 ? 'bg-orange-600' : 'bg-zinc-600'}`}>
@@ -596,7 +612,7 @@ const MonthlyReport: React.FC = () => {
                                                             <span className="font-semibold text-zinc-800">{imp.name}</span>
                                                         </div>
                                                         <div className="flex flex-col items-end">
-                                                            <span className="text-sm font-bold text-teal-600">
+                                                            <span className="text-sm font-bold text-[#ff7900]">
                                                                 {imp.points} pts
                                                             </span>
                                                             <span className="text-[10px] font-bold text-emerald-600">
@@ -662,7 +678,7 @@ const MonthlyReport: React.FC = () => {
                                                     <td className="px-4 py-3 font-medium text-zinc-800">{store.name}</td>
                                                     <td className="px-4 py-3 text-zinc-600">{store.implantador}</td>
                                                     <td className="px-4 py-3">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${store.tipo === 'Matriz' ? 'bg-teal-100 text-teal-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                        <span className={`px-2 py-1 rounded-md text-xs font-semibold ${store.tipo === 'Matriz' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'}`}>
                                                             {store.tipo}
                                                         </span>
                                                     </td>
@@ -683,7 +699,7 @@ const MonthlyReport: React.FC = () => {
                                                     <td className="px-4 py-3 text-center space-x-1">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleEditClick(store.id); }}
-                                                            className="p-1.5 text-zinc-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                                            className="p-1.5 text-zinc-400 hover:text-[#ff7900] hover:bg-orange-50 rounded transition-colors"
                                                             title="Editar (V1)"
                                                         >
                                                             ✏️
@@ -711,17 +727,17 @@ const MonthlyReport: React.FC = () => {
             <Dialog open={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} className="relative z-50">
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Panel className="mx-auto max-w-2xl w-full bg-white rounded-3xl shadow-2xl border border-zinc-200 overflow-hidden">
+                    <Dialog.Panel className="mx-auto max-w-2xl w-full bg-white rounded-lg shadow-2xl border border-zinc-200 overflow-hidden">
                         <div className="p-6 border-b border-zinc-200 flex justify-between items-center">
-                            <Dialog.Title className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                                <Bot className="text-teal-500" /> Resumo Executivo - {selectedMonthForAi}
+                            <Dialog.Title className="text-sm font-semibold text-zinc-950 flex items-center gap-2">
+                                <Bot className="text-[#ff7900]" /> Resumo Executivo - {selectedMonthForAi}
                             </Dialog.Title>
                             <button onClick={() => setIsAiModalOpen(false)} className="text-zinc-400 hover:text-zinc-600">X</button>
                         </div>
                         <div className="p-6">
                             {aiLoading ? (
                                 <div className="flex flex-col items-center justify-center py-12 gap-4">
-                                    <Loader2 className="animate-spin text-teal-500" size={32} />
+                                    <Loader2 className="animate-spin text-[#ff7900]" size={32} />
                                     <p className="text-zinc-500">A Inteligência Artificial está escrevendo o relatório...</p>
                                 </div>
                             ) : (
@@ -729,14 +745,14 @@ const MonthlyReport: React.FC = () => {
                                     <label htmlFor="ai-summary" className="text-sm text-zinc-500 block mb-2">Copie o texto abaixo para enviar:</label>
                                     <textarea
                                         id="ai-summary"
-                                        className="w-full h-64 p-4 bg-zinc-50 text-zinc-900 rounded-xl border border-zinc-200 font-mono text-sm resize-none focus:ring-2 focus:ring-teal-500 outline-none"
+                                        className="w-full h-64 p-4 bg-zinc-50 text-zinc-900 rounded-lg border border-zinc-200 font-mono text-sm resize-none focus:ring-2 focus:ring-orange-500/20 outline-none"
                                         value={aiSummary}
                                         readOnly
                                     />
                                     <div className="flex justify-end">
                                         <button
                                             onClick={() => navigator.clipboard.writeText(aiSummary)}
-                                            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors font-medium"
+                                            className="px-4 py-2 bg-[#ff7900] hover:bg-[#e86f00] text-white rounded-md transition-colors font-medium"
                                         >
                                             Copiar Texto
                                         </button>
