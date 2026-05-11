@@ -12,6 +12,7 @@ import {
   Cpu
 } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -19,6 +20,7 @@ interface Message {
 }
 
 const Jarvis: React.FC = () => {
+  const { token } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Olá! Eu sou o **Jarvis 5.4 mini**. Estou conectado ao banco de dados e pronto para te ajudar com análises, consultas e gestão do time. O que deseja saber hoje?' }
   ]);
@@ -44,7 +46,12 @@ const Jarvis: React.FC = () => {
     try {
       const response = await axios.post('/api/jarvis/chat', {
         messages: newMessages
-      }, { withCredentials: true });
+      }, { 
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true 
+      });
 
       if (response.data && response.data.response) {
         setMessages([...newMessages, { role: 'assistant', content: response.data.response }]);
