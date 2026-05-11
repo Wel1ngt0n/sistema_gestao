@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Download, TrendingUp, Activity,
-    Clock, LayoutDashboard, Search, ChevronRight
+    Clock, LayoutDashboard, Search, ChevronRight,
+    Users, ShieldCheck, RotateCcw, RefreshCw, HeartPulse
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { PeriodFilter, DateRange } from '../../components/ui/PeriodFilter'
@@ -29,6 +30,34 @@ interface AnalystResume {
     recommendation?: string
     action_priority?: string
 }
+
+const MetricCard = ({
+    label,
+    value,
+    helper,
+    icon: Icon,
+    accent = '#ff7900',
+}: {
+    label: string
+    value: string | number
+    helper: string
+    icon: React.ElementType
+    accent?: string
+}) => (
+    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg opacity-70" style={{ backgroundColor: accent }} />
+        <div className="flex items-start justify-between gap-4">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">{value}</p>
+            </div>
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2" style={{ color: accent }}>
+                <Icon size={18} strokeWidth={2} />
+            </div>
+        </div>
+        <p className="mt-3 text-sm text-zinc-500">{helper}</p>
+    </div>
+)
 
 export const TeamDiagnosticsView: React.FC = () => {
     const navigate = useNavigate()
@@ -104,6 +133,12 @@ export const TeamDiagnosticsView: React.FC = () => {
         return 0
     })
 
+    const teamHealthLabel = summary?.team_health === 'Good' ? 'Consistente' : 'Atenção'
+    const avgSla = summary?.avg_sla || 0
+    const avgRetrabalho = summary?.avg_retrabalho || 0
+    const totalEntregas = summary?.total_entregues_mes || 0
+    const totalAtivos = summary?.total_ativos || 0
+
     // Extreme value helpers for table highlighting
     const extremes = React.useMemo(() => {
         if (!data.length) return null
@@ -147,105 +182,84 @@ export const TeamDiagnosticsView: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
                                 <PeriodFilter value={period} onChange={setPeriod} />
                             </div>
-                            <button className="rounded-lg border border-zinc-200 bg-white p-2.5 text-zinc-500 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-950">
-                                <Download size={18} />
+                            <button
+                                onClick={fetchUnifiedData}
+                                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                            >
+                                <RefreshCw size={16} />
+                                Atualizar
+                            </button>
+                            <button className="inline-flex items-center gap-2 rounded-lg bg-[#128131] px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#0f6f2a]">
+                                <Download size={16} />
+                                Exportar
                             </button>
                         </div>
                     </div>
                     <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
                 </header>
 
-                {/* 2. KPI GRID */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-[#ff7900] opacity-70"></div>
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Analistas Ativos</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">{summary?.total_ativos || 0}</span>
-                            <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600">
-                                <TrendingUp size={12} /> +2
-                            </span>
-                        </div>
+                {/* 2. ESSENTIAL METRICS */}
+                <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:col-span-8">
+                        <MetricCard
+                            label="SLA do Time"
+                            value={`${avgSla}%`}
+                            helper="Meta operacional: 85%"
+                            icon={ShieldCheck}
+                            accent={avgSla >= 85 ? '#128131' : '#ff7900'}
+                        />
+                        <MetricCard
+                            label="Vazão Total"
+                            value={totalEntregas}
+                            helper="Lojas entregues no período"
+                            icon={TrendingUp}
+                            accent="#ff7900"
+                        />
+                        <MetricCard
+                            label="Retrabalho"
+                            value={`${avgRetrabalho}%`}
+                            helper="Média do time no período"
+                            icon={RotateCcw}
+                            accent={avgRetrabalho > 10 ? '#dc2626' : '#128131'}
+                        />
                     </div>
-                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-emerald-500 opacity-70"></div>
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">SLA do Time</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">
-                                {summary?.avg_sla || 0}%
-                            </span>
-                            <span className="text-xs font-medium text-zinc-500">Meta: 85%</span>
-                        </div>
-                    </div>
-                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-sky-500 opacity-70"></div>
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Vazão Total</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">{summary?.total_entregues_mes || 0}</span>
-                            <span className="text-xs font-medium text-zinc-500">no período</span>
-                        </div>
-                    </div>
-                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-orange-500 opacity-70"></div>
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Status Saúde</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-semibold text-zinc-950">
-                                {summary?.team_health === 'Good' ? 'Consistente' : 'Atenção'}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-rose-500 opacity-70"></div>
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Taxa de Retrabalho</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">
-                                {summary?.avg_retrabalho || 0}%
-                            </span>
-                            <span className="text-xs font-medium text-zinc-500">média time</span>
-                        </div>
-                    </div>
-                </div>
 
-                {/* 3. PROJECTION & ACTIONS GRID */}
-                <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
-                    {/* LEFT: PROJECTION */}
-                    <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-8" aria-label="Projeção de MRR">
-                        <div className="mb-5 flex items-center gap-3">
-                            <div className="rounded-md border border-emerald-100 bg-emerald-50 p-2">
-                                <TrendingUp size={18} className="text-emerald-600" />
-                            </div>
+                    <aside className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-4">
+                        <div className="flex items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-sm font-semibold text-zinc-950">Projeção de Performance</h2>
-                                <p className="text-sm text-zinc-500">Faturamento real vs projetado por matriz e filial.</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Resumo operacional</p>
+                                <h2 className="mt-1 text-lg font-semibold text-zinc-950">{teamHealthLabel}</h2>
+                            </div>
+                            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2 text-[#128131]">
+                                <HeartPulse size={18} />
                             </div>
                         </div>
-                        <div className="flex-1 min-h-[300px]">
-                            {companyProjection ? (
-                                <MRRNetProjectionWidget data={companyProjection} />
-                            ) : (
-                                <div className="flex h-full items-center justify-center text-sm font-medium text-zinc-400">Carregando projeção...</div>
-                            )}
+
+                        <div className="mt-5 grid grid-cols-2 gap-3">
+                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                <div className="flex items-center gap-2 text-zinc-500">
+                                    <Users size={14} />
+                                    <span className="text-xs font-medium">Ativos</span>
+                                </div>
+                                <p className="mt-2 text-2xl font-semibold text-zinc-950">{totalAtivos}</p>
+                            </div>
+                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                                <div className="flex items-center gap-2 text-zinc-500">
+                                    <Activity size={14} />
+                                    <span className="text-xs font-medium">Ações</span>
+                                </div>
+                                <p className="mt-2 text-2xl font-semibold text-zinc-950">{teamActions.length}</p>
+                            </div>
                         </div>
-                    </div>
+                    </aside>
+                </section>
 
-                    {/* RIGHT: QUICK ACTIONS */}
-                    <div className="xl:col-span-4 flex flex-col h-full">
-                        <TeamActionsBlock actions={teamActions} isVertical={true} />
-                    </div>
-                </div>
-
-                {/* 4. PERFORMANCE ANALYSIS GRID: CLASSIFICATION + TABLE */}
-                <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
-                    {/* CLASSIFICATION (LEFT 4) */}
-                    <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-4">
-                        <AnalystClassificationCards analysts={data} isVertical={true} />
-                    </div>
-
-                    {/* TABLE (RIGHT 8) */}
+                {/* 3. MAIN WORKSPACE */}
+                <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
                     <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm xl:col-span-8">
                         <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 p-5">
                             <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
@@ -310,52 +324,85 @@ export const TeamDiagnosticsView: React.FC = () => {
                             </table>
                         </div>
                     </div>
-                </div>
 
-                {/* 5. DIAGNOSTICS & INTELLIGENCE GRID: 3 EQUAL COLUMNS */}
-                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
-                    {/* DIAGNOSTICO CAUSA */}
-                    <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                            <Activity size={16} className="text-[#128131]" />
-                            Diagnóstico por Causa
-                        </h4>
-                        <div className="flex-1 min-h-[250px] relative flex items-center justify-center">
-                            {diagnostics && <BottleneckDonutChart data={diagnostics.causas_distribuicao} />}
-                        </div>
-                    </div>
+                    <aside className="space-y-4 xl:col-span-4">
+                        <TeamActionsBlock actions={teamActions} isVertical={true} />
 
-                    {/* GARGALOS ETAPA */}
-                    <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                            <Clock size={16} className="text-[#128131]" />
-                            Gargalos por Etapa
-                        </h4>
-                        <div className="flex-1 space-y-1">
-                            {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
-                                <div key={i} className="group flex items-center justify-between rounded-lg border border-transparent bg-zinc-50 p-2.5 transition-all hover:border-zinc-200">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{g.etapa}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-semibold text-zinc-900">{g.count}</span>
-                                        <ChevronRight size={12} className="text-zinc-300 transition-colors group-hover:text-[#ff7900]" />
-                                    </div>
+                        <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                            <div className="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Ranking operacional</p>
+                                    <h3 className="mt-1 text-sm font-semibold text-zinc-950">Classificação do time</h3>
                                 </div>
-                            ))}
+                                <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-500">
+                                    {data.length} analistas
+                                </span>
+                            </div>
+                            <AnalystClassificationCards analysts={data} isVertical={true} />
+                        </div>
+                    </aside>
+                </section>
+
+                {/* 4. PROJECTION & DIAGNOSTICS */}
+                <section className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
+                    <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-7" aria-label="Projeção de MRR">
+                        <div className="mb-5 flex items-center gap-3">
+                            <div className="rounded-md border border-emerald-100 bg-emerald-50 p-2">
+                                <TrendingUp size={18} className="text-emerald-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-semibold text-zinc-950">Projeção de Performance</h2>
+                                <p className="text-sm text-zinc-500">Faturamento real vs projetado por matriz e filial.</p>
+                            </div>
+                        </div>
+                        <div className="min-h-[300px] flex-1">
+                            {companyProjection ? (
+                                <MRRNetProjectionWidget data={companyProjection} />
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-sm font-medium text-zinc-400">Carregando projeção...</div>
+                            )}
                         </div>
                     </div>
 
-                    {/* INTELLIGENCE JARVIS */}
-                    <div className="h-full">
-                        <IntelligenceInsightBlock 
-                            analysts={data}
-                            avgMetrics={avgMetrics}
-                        />
+                    <div className="grid grid-cols-1 gap-4 xl:col-span-5">
+                        <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                            <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <Activity size={16} className="text-[#128131]" />
+                                Diagnóstico por Causa
+                            </h4>
+                            <div className="relative flex min-h-[220px] flex-1 items-center justify-center">
+                                {diagnostics && <BottleneckDonutChart data={diagnostics.causas_distribuicao} />}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                            <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <Clock size={16} className="text-[#128131]" />
+                                Gargalos por Etapa
+                            </h4>
+                            <div className="flex-1 space-y-1">
+                                {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
+                                    <div key={i} className="group flex items-center justify-between rounded-lg border border-transparent bg-zinc-50 p-2.5 transition-all hover:border-zinc-200">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{g.etapa}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-semibold text-zinc-900">{g.count}</span>
+                                            <ChevronRight size={12} className="text-zinc-300 transition-colors group-hover:text-[#ff7900]" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
+
+                <IntelligenceInsightBlock
+                    analysts={data}
+                    avgMetrics={avgMetrics}
+                />
 
                 {/* 6. BOTTOM ACTIONS */}
-                <div className="flex justify-end pt-4">
-                    <button className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 py-3 text-xs font-semibold text-zinc-700 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md active:scale-[0.98]">
+                <div className="flex justify-end border-t border-zinc-200 pt-5">
+                    <button className="inline-flex items-center gap-2 rounded-lg bg-zinc-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.98]">
                         <Download size={14} />
                         Gerar Relatório Estratégico Completo
                     </button>
