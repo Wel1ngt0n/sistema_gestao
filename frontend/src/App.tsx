@@ -23,6 +23,7 @@ import SuperAdminDashboard from './features/admin/SuperAdminDashboard'
 import SettingsPage from './features/admin/SettingsPage'
 import UserManagementPage from './features/admin/UserManagementPage'
 import { ProfilePage } from './features/profile/ProfilePage'
+import Jarvis from './pages/Jarvis'
 
 function App() {
     const [showDictionary, setShowDictionary] = useState(false)
@@ -40,6 +41,7 @@ function App() {
                     </ProtectedRoute>
                 }>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/jarvis" element={<Jarvis />} />
                     <Route path="/jarvis-cockpit" element={<Navigate to="/analytics" replace />} />
                     <Route path="/monitor" element={<Monitor />} />
                     <Route path="/team-diagnostics" element={<Navigate to="/analytics" replace />} />

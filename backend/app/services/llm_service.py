@@ -27,8 +27,10 @@ class LLMService:
             return {"error": "OpenAI API Key not configured."}
 
         try:
+            # Usando gpt-4o-mini como padrão de custo-benefício para diagnósticos rápidos se solicitado, 
+            # mas mantendo gpt-4o para diagnósticos complexos.
             response = self.openai_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_role},
                     {"role": "user", "content": prompt}
@@ -42,6 +44,31 @@ class LLMService:
         except Exception as e:
             self.logger.error(f"Erro ao chamar OpenAI: {e}")
             return {"error": str(e)}
+
+    def call_jarvis(self, messages, tools=None):
+        """
+        Interface principal do Jarvis 5.4 (gpt-4o-mini).
+        Suporta histórico de mensagens e ferramentas (functions).
+        """
+        if not self.openai_client:
+            return {"error": "OpenAI API Key not configured."}
+
+        try:
+            params = {
+                "model": "gpt-4o-mini",
+                "messages": messages,
+                "temperature": 0.7
+            }
+            if tools:
+                params["tools"] = tools
+                params["tool_choice"] = "auto"
+
+            response = self.openai_client.chat.completions.create(**params)
+            return response.choices[0].message
+            
+        except Exception as e:
+            self.logger.error(f"Erro no call_jarvis: {e}")
+            return None
 
     def analyze_store_risks(self, store_data):
         """

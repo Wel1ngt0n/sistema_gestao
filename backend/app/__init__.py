@@ -105,6 +105,9 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
     
+    from app.routes_jarvis import jarvis_bp
+    app.register_blueprint(jarvis_bp)
+    
 
     from app.routes_forecast import forecast_bp
     app.register_blueprint(forecast_bp)
