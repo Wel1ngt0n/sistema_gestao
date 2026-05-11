@@ -14,9 +14,14 @@ from app.models import (
     Store,
     SupportAgentPerformance,
     SupportConversation,
+    TaskStep,
 )
 from app.services.analysts_report_service import AnalystsReportService
+from app.services.analytics_service import AnalyticsService
+from app.services.forecast_service import ForecastService
+from app.services.integration_analytics_service import IntegrationAnalyticsService
 from app.services.llm_service import LLMService
+from app.services.scoring_service import ScoringService
 
 logger = logging.getLogger(__name__)
 
@@ -136,10 +141,28 @@ class JarvisService:
             tools = ["get_support_summary"]
         elif any(token in text_lower for token in ["mrr", "mensalidade", "financeiro", "receita", "travado"]):
             intent, confidence = "FINANCIAL_MRR", 0.88
-            tools = ["get_mrr_summary", "get_critical_stores"]
+            tools = ["get_mrr_summary", "get_financial_forecast", "get_critical_stores"]
+        elif any(token in text_lower for token in ["forecast", "previsao", "previsão", "go live", "projecao", "projeção"]):
+            intent, confidence = "EXECUTIVE_SUMMARY", 0.86
+            tools = ["get_forecast_summary", "get_financial_forecast"]
+        elif any(token in text_lower for token in ["integracao", "integração", "integrador", "bugs", "documentacao", "documentação"]):
+            intent, confidence = "EXECUTIVE_SUMMARY", 0.86
+            tools = ["get_integration_overview"]
+        elif any(token in text_lower for token in ["score", "scoring", "capacidade", "ranking", "otd", "retrabalho"]):
+            intent, confidence = "TEAM_PERFORMANCE", 0.86
+            tools = ["get_scoring_overview", "get_team_performance"]
+        elif any(token in text_lower for token in ["gargalo", "gargalos", "bottleneck", "etapas lentas"]):
+            intent, confidence = "SLA_RISK", 0.84
+            tools = ["get_operational_dashboard", "get_final_stage_stores"]
         elif any(token in text_lower for token in ["funil", "pipeline", "status das lojas", "status geral"]):
             intent, confidence = "STORE_ANALYSIS", 0.84
             tools = ["get_store_pipeline_status", "get_critical_stores"]
+        elif any(
+            token in text_lower
+            for token in ["cadastro de produto", "subir apps", "qualidade", "treinamento", "partes finais"]
+        ):
+            intent, confidence = "STORE_ANALYSIS", 0.86
+            tools = ["get_final_stage_stores"]
         elif any(
             token in text_lower
             for token in [
@@ -170,7 +193,10 @@ class JarvisService:
             tools = ["get_team_performance", "get_critical_stores"]
         elif any(token in text_lower for token in ["resumo", "executivo", "diretoria", "geral"]):
             intent, confidence = "EXECUTIVE_SUMMARY", 0.78
-            tools = ["get_team_performance", "get_mrr_summary", "get_support_summary"]
+            tools = ["get_operational_dashboard", "get_team_performance", "get_mrr_summary", "get_support_summary"]
+        elif any(token in text_lower for token in ["metricas", "métricas", "indicadores", "sistema", "modulos", "módulos"]):
+            intent, confidence = "GENERAL_QUESTION", 0.76
+            tools = ["get_metric_catalog", "get_operational_dashboard"]
 
         if not tools:
             tools = ["query_database"]
@@ -301,6 +327,13 @@ class JarvisService:
             "get_support_summary": self._get_support_summary,
             "get_monthly_delivery_summary": self._get_monthly_delivery_summary,
             "get_store_pipeline_status": self._get_store_pipeline_status,
+            "get_final_stage_stores": self._get_final_stage_stores,
+            "get_metric_catalog": self._get_metric_catalog,
+            "get_operational_dashboard": self._get_operational_dashboard,
+            "get_scoring_overview": self._get_scoring_overview,
+            "get_forecast_summary": self._get_forecast_summary,
+            "get_financial_forecast": self._get_financial_forecast,
+            "get_integration_overview": self._get_integration_overview,
         }
 
     def _run_tools(self, route):
@@ -371,9 +404,9 @@ class JarvisService:
         }
 
     def _get_analyst_performance(self, route):
-        analyst_name = route.get("entities", {}).get("analyst") or self._infer_analyst_from_question(route["question"])
+        analyst_name = route.get("entities", {}).get("analyst")
         if not analyst_name:
-            return self._tool_error("get_analyst_performance", "Não foi possível identificar o analista na pergunta.")
+            return self._tool_error("get_analyst_performance", "Nome do analista não identificado.")
 
         period = route["period"]
         details = AnalystsReportService.get_analyst_details(analyst_name, period.get("start"), period.get("end"))
@@ -600,6 +633,220 @@ class JarvisService:
             "limitations": [],
         }
 
+    def _get_final_stage_stores(self, route):
+        target_stages = [
+            "CADASTRO_PRODUTOS",
+            "CADASTRO PRODUTOS",
+            "CADASTRO DE PRODUTOS",
+            "CADASTRO DE PRODUTO",
+            "SUBIR_APPS",
+            "SUBIR APPS",
+            "QUALIDADE",
+            "TREINAMENTO",
+            "TREINAMENTOS",
+        ]
+        normalized_targets = {self._normalize_text(stage).replace("_", " ") for stage in target_stages}
+        steps = (
+            TaskStep.query.join(Store)
+            .filter(Store.status_norm.notin_(["DONE", "CANCELED"]))
+            .filter(TaskStep.end_real_at.is_(None))
+            .all()
+        )
+        matched = []
+        for step in steps:
+            stage_name = step.step_list_name or step.step_name or ""
+            normalized_stage = self._normalize_text(stage_name).replace("_", " ")
+            if not any(target in normalized_stage or normalized_stage in target for target in normalized_targets):
+                continue
+            matched.append(step)
+
+        matched = sorted(matched, key=lambda step: (step.step_list_name or "", -(step.idle_days or 0)))[:50]
+        stage_counts = {}
+        records = []
+        for step in matched:
+            stage = step.step_list_name or step.step_name or "Etapa sem nome"
+            stage_counts[stage] = stage_counts.get(stage, 0) + 1
+            store = step.store
+            records.append(
+                {
+                    "store_id": store.id,
+                    "name": store.store_name,
+                    "stage": stage,
+                    "step": step.step_name,
+                    "status": step.status,
+                    "implantador": store.implantador_atual or store.implantador,
+                    "idle_days": step.idle_days,
+                    "mrr": store.valor_mensalidade,
+                }
+            )
+
+        return {
+            "tool": "get_final_stage_stores",
+            "status": "ok",
+            "period": self._public_period(route["period"]),
+            "metrics": {
+                "total": len(records),
+                "by_stage": stage_counts,
+            },
+            "records": records,
+            "alerts": [],
+            "limitations": [] if records else ["Não encontrei lojas ativas nessas etapas finais."],
+        }
+
+    def _get_metric_catalog(self, route):
+        domains = [
+            {
+                "domain": "implantacao",
+                "description": "KPIs gerais de implantação, WIP, entregas, MRR, OTD, cycle time, idle, risco e gargalos.",
+                "tools": ["get_operational_dashboard", "get_store_pipeline_status", "get_sla_risks"],
+                "metrics": ["wip_stores", "throughput_period", "mrr_backlog", "mrr_done_period", "cycle_time_avg", "otd_percentage", "idle_stores_count", "avg_risk_score"],
+            },
+            {
+                "domain": "performance_implantadores",
+                "description": "Ranking, carga, capacidade, score, entregas, SLA, retrabalho e carteira por implantador.",
+                "tools": ["get_team_performance", "get_analyst_performance", "get_scoring_overview"],
+                "metrics": ["score", "carga_ponderada", "utilization_pct", "entregas_mes", "pct_sla_concluidas", "idle_medio"],
+            },
+            {
+                "domain": "lojas_e_etapas",
+                "description": "Detalhe de loja, funil, etapas atuais, etapas finais, idle por etapa e bloqueios.",
+                "tools": ["get_store_details", "get_final_stage_stores", "get_critical_stores"],
+                "metrics": ["status_norm", "step_list_name", "idle_days", "total_time_days", "mrr", "risk_score"],
+            },
+            {
+                "domain": "financeiro_forecast",
+                "description": "MRR entregue, MRR em implantação, MRR travado, projeção futura e go-live previsto.",
+                "tools": ["get_mrr_summary", "get_financial_forecast", "get_forecast_summary"],
+                "metrics": ["delivered_mrr", "active_mrr", "blocked_or_idle_mrr", "realized", "projected", "go_live_date"],
+            },
+            {
+                "domain": "integracao",
+                "description": "Volume de integrações, andamento, SLA, qualidade, bugs pós-go-live, documentação e churn risk.",
+                "tools": ["get_integration_overview"],
+                "metrics": ["total_volume", "ongoing", "done", "sla_pct", "quality_pct", "bugs_count", "churn_risk_count"],
+            },
+            {
+                "domain": "suporte",
+                "description": "Conversas, status, NPS, tempo de resposta/resolução, performance por atendente e tickets abertos.",
+                "tools": ["get_support_summary"],
+                "metrics": ["conversations", "open", "closed", "avg_nps", "avg_response_time_seconds", "open_tickets", "pending_tickets"],
+            },
+        ]
+        return {
+            "tool": "get_metric_catalog",
+            "status": "ok",
+            "period": self._public_period(route["period"]),
+            "metrics": {"domains_count": len(domains)},
+            "records": domains,
+            "alerts": [],
+            "limitations": ["Catálogo descreve cobertura operacional do Jarvis; permissões de escrita continuam fora do escopo."],
+        }
+
+    def _get_operational_dashboard(self, route):
+        period = route["period"]
+        kpis = AnalyticsService.get_kpi_cards(period.get("start"), period.get("end"))
+        trends = AnalyticsService.get_monthly_trends(months=6)
+        bottlenecks = AnalyticsService.get_bottlenecks()
+        capacity = AnalyticsService.get_team_capacity()
+        return {
+            "tool": "get_operational_dashboard",
+            "status": "ok",
+            "period": self._public_period(period),
+            "metrics": {
+                **kpis,
+                "trend_months": len(trends),
+                "bottleneck_count": len(bottlenecks),
+                "capacity_people": len(capacity),
+            },
+            "records": {
+                "trends": trends[-6:],
+                "bottlenecks": bottlenecks[:10],
+                "capacity": capacity[:12],
+            },
+            "alerts": self._capacity_alerts(capacity),
+            "limitations": ["Dashboard usa os mesmos cálculos do AnalyticsService; algumas métricas são calculadas em Python por propriedades do model."],
+        }
+
+    def _get_scoring_overview(self, route):
+        period = route["period"]
+        ranking = ScoringService.get_performance_ranking(period.get("start"), period.get("end"))
+        capacity = ScoringService.get_team_capacity()
+        records = ranking[:12] if isinstance(ranking, list) else []
+        return {
+            "tool": "get_scoring_overview",
+            "status": "ok",
+            "period": self._public_period(period),
+            "metrics": {
+                "ranked_people": len(records),
+                "capacity_people": len(capacity) if isinstance(capacity, list) else 0,
+                "top_score": records[0].get("score") if records and isinstance(records[0], dict) else None,
+            },
+            "records": {
+                "ranking": records,
+                "capacity": capacity[:12] if isinstance(capacity, list) else [],
+            },
+            "alerts": [],
+            "limitations": ["Ranking de scoring exige lojas WIP e entregas 2026+; amostras pequenas devem ser interpretadas com cautela."],
+        }
+
+    def _get_forecast_summary(self, route):
+        period = route["period"]
+        forecast_rows = ForecastService.get_forecast_data()
+        summary = ForecastService.get_summary_by_month()
+        current_month = period.get("value")
+        month_rows = [row for row in forecast_rows if row.get("month_go_live") == current_month] if current_month else []
+        risk_rows = [row for row in forecast_rows if row.get("status") == "ATRASADA"]
+        return {
+            "tool": "get_forecast_summary",
+            "status": "ok",
+            "period": self._public_period(period),
+            "metrics": {
+                "forecast_stores": len(forecast_rows),
+                "current_month_stores": len(month_rows),
+                "late_stores": len(risk_rows),
+                "summary_months": len(summary),
+            },
+            "records": {
+                "current_month": month_rows[:20],
+                "late": risk_rows[:15],
+                "monthly_summary": summary[:12],
+            },
+            "alerts": [{"type": "forecast_late", "message": f"{len(risk_rows)} lojas atrasadas no forecast."}] if risk_rows else [],
+            "limitations": ["Forecast usa data manual de go-live quando existe; caso contrário usa SLA/data inicial estimada."],
+        }
+
+    def _get_financial_forecast(self, route):
+        forecast = AnalyticsService.get_financial_forecast(months=6)
+        future = [row for row in forecast if row.get("is_future")]
+        return {
+            "tool": "get_financial_forecast",
+            "status": "ok",
+            "period": self._public_period(route["period"]),
+            "metrics": {
+                "months": len(forecast),
+                "future_projected_mrr": round(sum(row.get("projected", 0) for row in future), 2),
+                "future_realized_mrr": round(sum(row.get("realized", 0) for row in future), 2),
+            },
+            "records": forecast,
+            "alerts": [],
+            "limitations": ["Projeção financeira usa cycle time médio recente e MRR das lojas em progresso."],
+        }
+
+    def _get_integration_overview(self, route):
+        kpis = IntegrationAnalyticsService.get_kpi_cards()
+        trends = IntegrationAnalyticsService.get_monthly_trends(months=6)
+        return {
+            "tool": "get_integration_overview",
+            "status": "ok",
+            "period": self._public_period(route["period"]),
+            "metrics": {**kpis, "trend_months": len(trends)},
+            "records": trends,
+            "alerts": [
+                {"type": "integration_churn_risk", "message": f"{kpis.get('churn_risk_count', 0)} integrações com risco de churn."}
+            ] if kpis.get("churn_risk_count") else [],
+            "limitations": ["Integração usa IntegrationMetric; dados dependem de snapshot/atualização desse módulo."],
+        }
+
     def _query_database_fallback(self, route):
         return {
             "tool": "query_database",
@@ -714,6 +961,18 @@ Regras:
         evidence = context.get("evidence", [])
         metrics = context.get("main_metrics", {})
         question = self._normalize_text(context.get("question", ""))
+
+        final_stage_records = [
+            record for record in evidence if record.get("source_tool") == "get_final_stage_stores"
+        ]
+        if final_stage_records and any(marker in question for marker in ["quais", "lojas", "partes finais"]):
+            lines = []
+            for record in final_stage_records[:12]:
+                owner = f" — {record.get('implantador')}" if record.get("implantador") else ""
+                idle = f", {record.get('idle_days')}d idle" if record.get("idle_days") is not None else ""
+                lines.append(f"- {record.get('name')} ({record.get('stage')}{idle}){owner}")
+            total = metrics.get("get_final_stage_stores.total", len(final_stage_records))
+            return f"Encontrei {total} loja(s) nessas etapas finais:\n" + "\n".join(lines)
 
         if "quem" in question and evidence:
             owners = {}
@@ -910,6 +1169,20 @@ Regras:
             }
         ]
 
+    def _capacity_alerts(self, capacity):
+        alerts = []
+        for person in capacity[:5]:
+            risk = person.get("risk_level")
+            if risk in {"HIGH", "CRITICAL"}:
+                alerts.append(
+                    {
+                        "type": "capacity",
+                        "priority": "high" if risk == "CRITICAL" else "medium",
+                        "message": f"{person.get('implantador')} está com utilização em {person.get('utilization_pct')}%.",
+                    }
+                )
+        return alerts
+
     def _trim_dict(self, source, keys):
         return {key: source.get(key) for key in keys if key in source}
 
@@ -937,6 +1210,13 @@ Regras:
             "get_support_summary": ["support_conversations", "support_agent_performance"],
             "get_monthly_delivery_summary": ["stores"],
             "get_store_pipeline_status": ["stores"],
+            "get_final_stage_stores": ["stores", "tasks_steps"],
+            "get_metric_catalog": [],
+            "get_operational_dashboard": ["stores", "tasks_steps", "metrics_snapshot_daily"],
+            "get_scoring_overview": ["stores"],
+            "get_forecast_summary": ["stores"],
+            "get_financial_forecast": ["stores"],
+            "get_integration_overview": ["stores", "integration_metrics"],
             "query_database": list(self.SQL_ALLOWED_TABLES),
         }
         return mapping.get(tool_name, [])
@@ -970,8 +1250,20 @@ Regras:
     def _collect_records(self, results, limit=18):
         records = []
         for result in results:
-            for record in result.get("records") or []:
-                records.append({"source_tool": result.get("tool"), **record})
+            raw_records = result.get("records") or []
+            if isinstance(raw_records, dict):
+                iterable = []
+                for group_name, group_records in raw_records.items():
+                    if isinstance(group_records, list):
+                        for record in group_records:
+                            if isinstance(record, dict):
+                                iterable.append({"record_group": group_name, **record})
+                    elif isinstance(group_records, dict):
+                        iterable.append({"record_group": group_name, **group_records})
+                raw_records = iterable
+            for record in raw_records:
+                if isinstance(record, dict):
+                    records.append({"source_tool": result.get("tool"), **record})
         return records[:limit]
 
     def _load_operational_memory(self, session_id):

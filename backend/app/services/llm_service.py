@@ -54,7 +54,7 @@ class LLMService:
             return {"error": "OpenAI API Key not configured."}
 
         try:
-            jarvis_model = os.getenv("JARVIS_MODEL", "gpt-5.4-mini")
+            jarvis_model = os.getenv("JARVIS_MODEL", "gpt-4o-mini")
             params = {
                 "model": jarvis_model,
                 "messages": messages,
