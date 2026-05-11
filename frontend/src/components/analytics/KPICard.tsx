@@ -6,7 +6,7 @@ interface KPICardProps {
     value: string | number;
     subValue?: string;
     subtext?: string;
-    icon?: string;
+    icon?: React.ElementType | string;
     trend?: 'up' | 'down' | 'neutral';
     color?: 'orange' | 'green' | 'red' | 'yellow' | 'blue' | 'amber' | 'slate' | 'emerald';
     tooltip?: string;
@@ -14,82 +14,66 @@ interface KPICardProps {
 }
 
 export const KPICard: React.FC<KPICardProps> = ({ label, value, subValue, subtext, icon, trend, color = 'blue', tooltip, className = '' }) => {
+    const IconComponent = icon && typeof icon !== 'string' ? icon : null;
 
     const colorClasses: Record<string, string> = {
-        orange: 'text-orange-500',
+        orange: 'text-[#ff7900]',
         green: 'text-emerald-600',
         red: 'text-rose-600',
-        yellow: 'text-amber-500',
+        yellow: 'text-amber-600',
         blue: 'text-blue-600',
-        amber: 'text-orange-500',
+        amber: 'text-[#ff7900]',
         slate: 'text-slate-600',
         emerald: 'text-emerald-600',
     };
 
-    const bgIconClasses: Record<string, string> = {
-        orange: 'text-orange-400',
-        green: 'text-emerald-400',
-        red: 'text-rose-400',
-        yellow: 'text-amber-400',
-        blue: 'text-blue-400',
-        amber: 'text-orange-400',
-        slate: 'text-slate-400',
-        emerald: 'text-emerald-400',
+    const accentClasses: Record<string, string> = {
+        orange: 'bg-[#ff7900]',
+        green: 'bg-emerald-600',
+        red: 'bg-rose-600',
+        yellow: 'bg-amber-500',
+        blue: 'bg-blue-600',
+        amber: 'bg-[#ff7900]',
+        slate: 'bg-slate-600',
+        emerald: 'bg-emerald-600',
     };
 
     return (
-        <div aria-label="KPI Card" className={`relative bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between transition-all duration-300 hover:shadow-md group ${className}`}>
+        <div aria-label="KPI Card" className={`group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg ${className}`}>
+            <div aria-label="KPI Card" className={`absolute inset-x-0 top-0 h-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${accentClasses[color] || accentClasses.blue}`} />
 
-            {/* Background Decorator */}
-            <div aria-label="KPI Card" className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-                {icon && (
-                    <div aria-label="KPI Card" className={`absolute -right-6 -top-6 text-[100px] opacity-[0.04] group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 ${bgIconClasses[color] || bgIconClasses.blue}`}>
-                        {icon}
+            <div aria-label="KPI Card" className="mb-5 flex items-start justify-between gap-4">
+                <div aria-label="KPI Card">
+                    <div aria-label="KPI Card" className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</span>
+                        {tooltip && <InfoTooltip text={tooltip} />}
                     </div>
-                )}
-                {/* Bottom accent bar */}
-                <div aria-label="KPI Card" className="absolute bottom-0 left-0 w-full h-1 bg-slate-100">
-                    <div aria-label="KPI Card" className={`h-full opacity-40 ${(colorClasses[color] || colorClasses.blue).replace('text-', 'bg-')}`} style={{ width: '40%' }}></div>
-                </div>
-            </div>
-
-            <div aria-label="KPI Card" className="relative z-10 flex flex-col h-full justify-between">
-                <div>
-                    <div aria-label="KPI Card" className="flex justify-between items-start mb-2">
-                        <div aria-label="KPI Card" className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-                            {tooltip && <InfoTooltip text={tooltip} />}
-                        </div>
-                    </div>
-
-                    <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter ${colorClasses[color] || colorClasses.blue} transition-colors`}>
+                    <h3 className={`mt-2 text-3xl font-semibold tracking-tight text-zinc-950 ${colorClasses[color] || colorClasses.blue}`}>
                         {value}
                     </h3>
                 </div>
+                {icon && (
+                    <div aria-label="KPI Card" className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${colorClasses[color] || colorClasses.blue}`}>
+                        {IconComponent ? <IconComponent size={18} strokeWidth={2} /> : <span className="text-base leading-none">{typeof icon === 'string' ? icon : null}</span>}
+                    </div>
+                )}
+            </div>
 
-                <div aria-label="KPI Card" className="mt-4">
-                    {(subValue || subtext) && (
-                        <div aria-label="KPI Card" className="flex flex-col">
-                            {subValue && <span className="text-sm font-bold text-slate-700">{subValue}</span>}
-                            {subtext && <span className="text-xs text-slate-400 font-medium">{subtext}</span>}
-                        </div>
-                    )}
+            <div aria-label="KPI Card" className="h-1 w-full rounded-full bg-zinc-100">
+                <div aria-label="KPI Card" className={`h-1 w-2/5 rounded-full ${accentClasses[color] || accentClasses.blue}`} />
+            </div>
 
+            {(subValue || subtext || trend) && (
+                <div aria-label="KPI Card" className="mt-3">
+                    {subValue && <span className="text-sm font-semibold text-zinc-700">{subValue}</span>}
+                    {subtext && <p className="text-sm text-zinc-500">{subtext}</p>}
                     {trend && (
-                        <div aria-label="KPI Card" className="mt-2 flex items-center text-xs">
-                            {trend === 'up' ? (
-                                <span className="text-emerald-600 font-bold flex items-center gap-1">
-                                    <span className="bg-emerald-100 p-0.5 rounded-full">↑</span> Melhorou
-                                </span>
-                            ) : (
-                                <span className="text-rose-600 font-bold flex items-center gap-1">
-                                    <span className="bg-rose-100 p-0.5 rounded-full">↓</span> Piorou
-                                </span>
-                            )}
-                        </div>
+                        <p className={`mt-2 text-xs font-semibold ${trend === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {trend === 'up' ? 'Melhorou' : 'Piorou'}
+                        </p>
                     )}
                 </div>
-            </div>
+            )}
         </div>
     );
 };

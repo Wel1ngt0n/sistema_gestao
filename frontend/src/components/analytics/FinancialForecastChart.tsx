@@ -2,6 +2,7 @@
 import { Chart } from 'react-chartjs-2';
 import { ForecastData } from './useAnalyticsData';
 import { InfoTooltip } from './InfoTooltip';
+import { TrendingUp } from 'lucide-react';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -74,7 +75,7 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
         plugins: {
             legend: {
                 position: 'top' as const,
-                labels: { color: '#94a3b8' }
+                labels: { color: '#71717a' }
             },
             tooltip: {
                 callbacks: {
@@ -94,29 +95,34 @@ export const FinancialForecastChart: React.FC<FinancialForecastChartProps> = ({ 
         scales: {
             y: {
                 stacked: true,
-                grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                ticks: { color: '#94a3b8' }
+                grid: { color: 'rgba(100, 116, 139, 0.12)' },
+                ticks: { color: '#71717a' },
+                border: { display: false }
             },
             x: {
                 stacked: true,
                 grid: { display: false },
-                ticks: { color: '#94a3b8' }
+                ticks: { color: '#71717a' },
+                border: { display: false }
             }
         }
     };
 
     return (
-        <div className={`bg-white p-8 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow ${className}`}>
-            <h3 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-                🔮 Forecast de Ativação (MRR)
-                <InfoTooltip
-                    text="Projeção de receita (MRR) futura. 'Realizado' são lojas já concluídas. 'Projetado' são lojas em andamento alocadas na data estimada de conclusão (Data Início + Cycle Time Médio)."
-                    position="left"
-                />
-            </h3>
-            <p className="text-sm text-slate-500 mb-6">
+        <div className={`rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md ${className}`}>
+            <div className="mb-5 flex flex-col gap-1">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                    <TrendingUp size={16} className="text-[#ff7900]" />
+                    Forecast de Ativação (MRR)
+                    <InfoTooltip
+                        text="Projeção de receita (MRR) futura. 'Realizado' são lojas já concluídas. 'Projetado' são lojas em andamento alocadas na data estimada de conclusão (Data Início + Cycle Time Médio)."
+                        position="left"
+                    />
+                </h3>
+                <p className="text-sm text-zinc-500">
                 Projeção de entrada de receita baseada no ritmo atual e data estimada de conclusão.
-            </p>
+                </p>
+            </div>
             <div className="h-[300px]">
                 <Chart type='bar' data={chartData} options={options} />
             </div>

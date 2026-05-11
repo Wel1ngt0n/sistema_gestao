@@ -5,6 +5,16 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { api } from '../../services/api';
 import { IntegrationTeamMatrix } from './components/IntegrationTeamMatrix';
 import {
+    AlertTriangle,
+    BarChart3,
+    CheckCircle2,
+    Clock3,
+    LayoutDashboard,
+    ShieldCheck,
+    Trophy,
+} from 'lucide-react';
+import logo from '../../assets/logo.png';
+import {
     Chart as ChartJS,
     CategoryScale,
     LinearScale,
@@ -35,20 +45,11 @@ function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ');
 }
 
-// Inline Generic KPI Card for Integration
 const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
-    const bgColors: any = {
-        orange: 'bg-orange-500',
-        green: 'bg-emerald-500',
-        blue: 'bg-blue-500',
-        amber: 'bg-amber-500',
-        yellow: 'bg-amber-500',
-        slate: 'bg-slate-500',
-        red: 'bg-rose-500'
-    };
+    const Icon = icon;
 
     const textColors: any = {
-        orange: 'text-orange-600',
+        orange: 'text-[#ff7900]',
         green: 'text-emerald-600',
         blue: 'text-blue-600',
         amber: 'text-amber-600',
@@ -57,28 +58,39 @@ const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
         red: 'text-rose-600'
     };
 
-    return (
-        <div className="bg-white border border-zinc-200 p-6 rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-            <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 blur-xl transition-transform group-hover:scale-150 ${bgColors[color]}`}></div>
+    const accentColors: any = {
+        orange: 'bg-[#ff7900]',
+        green: 'bg-emerald-600',
+        blue: 'bg-blue-600',
+        amber: 'bg-amber-500',
+        yellow: 'bg-amber-500',
+        slate: 'bg-slate-600',
+        red: 'bg-rose-600'
+    };
 
-            <div className="flex justify-between items-start mb-4 relative z-10">
-                <div className="flex items-center gap-2">
-                    <span className="text-2xl">{icon}</span>
-                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{label}</h3>
+    return (
+        <div className="group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg">
+            <div className={`absolute inset-x-0 top-0 h-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${accentColors[color]}`} />
+
+            <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</h3>
+                    <div className={`mt-2 text-3xl font-semibold tracking-tight ${textColors[color]}`}>
+                        {value}
+                    </div>
+                </div>
+                <div className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${textColors[color]}`}>
+                    <Icon size={18} strokeWidth={2} />
                 </div>
                 {tooltip && (
-                    <div className="text-zinc-300 cursor-help" title={tooltip}>
-                        ℹ️
-                    </div>
+                    <span className="sr-only">{tooltip}</span>
                 )}
             </div>
 
-            <div className="relative z-10">
-                <div className={`text-4xl font-extrabold tracking-tight mb-2 ${textColors[color]}`}>
-                    {value}
-                </div>
-                {subtext && <p className="text-xs font-medium text-zinc-500">{subtext}</p>}
+            <div className="h-1 w-full rounded-full bg-zinc-100">
+                <div className={`h-1 w-2/5 rounded-full ${accentColors[color]}`} />
             </div>
+            {subtext && <p className="mt-3 text-sm text-zinc-500">{subtext}</p>}
         </div>
     );
 };
@@ -115,15 +127,15 @@ export default function IntegrationAnalytics() {
                 <div className="p-6 lg:p-10 space-y-10 w-full max-w-[1920px] mx-auto">
                     <div>
                         <Skeleton width={180} height={24} className="mb-5" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                             {Array(8).fill(0).map((_, i) => (
-                                <Skeleton key={i} height={120} className="rounded-3xl" />
+                                <Skeleton key={i} height={120} className="rounded-lg" />
                             ))}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <Skeleton height={400} className="rounded-3xl" />
-                        <Skeleton height={400} className="rounded-3xl" />
+                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        <Skeleton height={400} className="rounded-lg" />
+                        <Skeleton height={400} className="rounded-lg" />
                     </div>
                 </div>
             </div>
@@ -243,31 +255,43 @@ export default function IntegrationAnalytics() {
     };
 
     return (
-        <div className="min-h-screen w-full text-zinc-900 p-0 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
-            {/* Header: Nexus Style */}
-            <header className="mb-8 flex flex-col md:flex-row justify-between items-end">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900">
-                        Analytics de Integração
-                    </h1>
-                    <p className="text-zinc-500 font-medium text-sm tracking-wide mt-1 uppercase">
-                        Deep Dive Operacional & Qualidade
-                    </p>
+        <div className="w-full space-y-6 text-zinc-950">
+            <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white">
+                            <img src={logo} alt="Instabuy" className="h-7 w-auto object-contain" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Integração</p>
+                            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+                                Analytics operacional
+                            </h1>
+                            <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+                                Deep dive de SLA, qualidade, bugs, riscos e performance do time.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600">
+                        <span className="h-2 w-2 rounded-full bg-[#128131]" />
+                        Atualizado em tempo real
+                    </div>
                 </div>
+                <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
             </header>
 
             <Tab.Group>
-                <Tab.List className="flex space-x-2 rounded-full bg-zinc-200/50/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-zinc-200 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5">
+                <Tab.List className="sticky top-5 z-20 mb-6 flex max-w-fit gap-1 rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
                     {['Visão Geral', 'Eficiência', 'Time & Performance'].map((tabName) => (
                         <Tab as={Fragment} key={tabName}>
                             {({ selected }) => (
                                 <button
                                     className={classNames(
-                                        'rounded-full px-6 py-2.5 text-sm font-bold tracking-wide transition-all duration-300 ease-out',
+                                        'rounded-md px-4 py-2 text-sm font-semibold transition-all duration-200',
                                         'focus:outline-none focus:ring-2 focus:ring-orange-500/20',
                                         selected
-                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105'
-                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50'
+                                            ? 'bg-[#ff7900] text-white shadow-sm'
+                                            : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-950'
                                     )}
                                 >
                                     {tabName}
@@ -280,17 +304,18 @@ export default function IntegrationAnalytics() {
                 <Tab.Panels>
                     {/* --- ABA 1: VISÃO GERAL --- */}
                     <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up animation-delay-100">
-                            <KPICard label="WIP (Integrações Ativas)" value={kpis.wip} color="orange" icon="🚀" subtext="Lojas sendo integradas" />
-                            <KPICard label="SLA (No Prazo)" value={`${kpis.pct_prazo}%`} color={kpis.pct_prazo >= 90 ? 'green' : 'red'} icon="✅" subtext="Integrações em dias" />
-                            <KPICard label="Qualidade" value={`${kpis.quality_pct}%`} color="blue" icon="💎" subtext="Sem bugs pós go-live" />
-                            <KPICard label="Volume de Pontos" value={kpis.volume_points} color="amber" icon="🏅" subtext="Complexidade em andamento" />
-                            <KPICard label="Risco de Churn" value={kpis.risk_count} color="red" icon="⚠️" subtext="Integrações com alerta" />
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in-up animation-delay-100">
+                            <KPICard label="WIP (Integrações Ativas)" value={kpis.wip} color="orange" icon={LayoutDashboard} subtext="Lojas sendo integradas" />
+                            <KPICard label="SLA (No Prazo)" value={`${kpis.pct_prazo}%`} color={kpis.pct_prazo >= 90 ? 'green' : 'red'} icon={CheckCircle2} subtext="Integrações em dias" />
+                            <KPICard label="Qualidade" value={`${kpis.quality_pct}%`} color="blue" icon={ShieldCheck} subtext="Sem bugs pós go-live" />
+                            <KPICard label="Volume de Pontos" value={kpis.volume_points} color="amber" icon={Trophy} subtext="Complexidade em andamento" />
+                            <KPICard label="Risco de Churn" value={kpis.risk_count} color="red" icon={AlertTriangle} subtext="Integrações com alerta" />
                         </div>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200">
-                            <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-md transition-shadow duration-300 xl:col-span-2">
-                                <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
+                        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 animate-fade-in-up animation-delay-200">
+                            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-2">
+                                <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                    <BarChart3 size={16} className="text-[#ff7900]" />
                                     Evolução Mensal (Integração vs Bugs)
                                 </h3>
                                 <div className="h-[350px]">
@@ -318,8 +343,9 @@ export default function IntegrationAnalytics() {
 
                     {/* --- ABA 2: EFICIÊNCIA --- */}
                     <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                        <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
-                            <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
+                        <div className="h-full rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                            <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <Clock3 size={16} className="text-[#128131]" />
                                 Lead Time de Integração
                             </h3>
                             <div className="h-[400px]">

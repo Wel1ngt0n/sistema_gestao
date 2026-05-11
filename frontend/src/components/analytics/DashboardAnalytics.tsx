@@ -31,6 +31,18 @@ import {
     ChartOptions
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
+import {
+    AlertTriangle,
+    BarChart3,
+    Building2,
+    CheckCircle2,
+    Clock3,
+    LayoutDashboard,
+    Target,
+    Trophy,
+    WalletCards,
+} from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 
 ChartJS.register(
@@ -71,7 +83,7 @@ export default function DashboardAnalytics() {
         return (
             <div aria-label="Dashboard Analytics" className="w-full">
                 {/* Header Skeleton */}
-                <div aria-label="Dashboard Analytics" className="bg-white border-b border-slate-200/50 sticky top-0 z-30 shadow-sm px-6 py-5">
+                <div aria-label="Dashboard Analytics" className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
                     <div aria-label="Dashboard Analytics" className="flex justify-between items-center">
                         <div aria-label="Dashboard Analytics" className="space-y-2">
                             <Skeleton width={200} height={32} />
@@ -89,17 +101,17 @@ export default function DashboardAnalytics() {
                     {/* KPIs Skeleton */}
                     <div>
                         <Skeleton width={180} height={24} className="mb-5" />
-                        <div aria-label="Dashboard Analytics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                             {Array(8).fill(0).map((_, i) => (
-                                <Skeleton key={i} height={120} className="rounded-3xl" />
+                                <Skeleton key={i} height={120} className="rounded-lg" />
                             ))}
                         </div>
                     </div>
 
                     {/* Charts Skeleton */}
-                    <div aria-label="Dashboard Analytics" className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <Skeleton height={400} className="rounded-3xl" />
-                        <Skeleton height={400} className="rounded-3xl" />
+                    <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        <Skeleton height={400} className="rounded-lg" />
+                        <Skeleton height={400} className="rounded-lg" />
                     </div>
                 </div>
             </div>
@@ -212,38 +224,46 @@ export default function DashboardAnalytics() {
     };
 
     return (
-        <div aria-label="Dashboard Analytics" className="min-h-screen w-full bg-zinc-50#09090b] text-zinc-900 p-0 font-sans selection:bg-orange-500/30 selection:text-orange-500 animate-in fade-in duration-700 transition-colors duration-300">
-            {/* Header: Nexus Style */}
-            <header className="mb-8 flex flex-col md:flex-row justify-between items-end">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900">
-                        Sistema de Gestão de Operações
-                    </h1>
-                    <p className="text-zinc-500 font-medium text-sm tracking-wide mt-1 uppercase">
-                        Deep Dive Operacional & Performance
-                    </p>
+        <div aria-label="Dashboard Analytics" className="w-full space-y-6 text-zinc-950">
+            <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white">
+                            <img src={logo} alt="Instabuy" className="h-7 w-auto object-contain" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Implantação</p>
+                            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+                                Analytics operacional
+                            </h1>
+                            <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+                                Deep dive de performance, eficiência, risco e capacidade do time.
+                            </p>
+                        </div>
+                    </div>
+                    <div aria-label="Dashboard Analytics" className="flex flex-col items-start gap-3 lg:items-end">
+                        <AnalyticsFilters
+                            availableImplantadores={availableImplantadores}
+                            onRefresh={refetch}
+                            isRefreshing={loading}
+                        />
+                    </div>
                 </div>
-                <div aria-label="Dashboard Analytics" className="flex flex-col items-end gap-3">
-                    <AnalyticsFilters
-                        availableImplantadores={availableImplantadores}
-                        onRefresh={refetch}
-                        isRefreshing={loading}
-                    />
-                </div>
+                <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
             </header>
 
             <Tab.Group>
-                <Tab.List className="flex space-x-2 rounded-full bg-zinc-200/50/50 p-1.5 mb-10 max-w-fit mx-auto md:mx-0 border border-zinc-200 backdrop-blur-sm sticky top-5 z-20 shadow-lg shadow-black/5">
+                <Tab.List className="sticky top-5 z-20 mb-6 flex max-w-fit gap-1 rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
                     {['Visão Geral', 'Eficiência & Risco', 'Time & Performance'].map((tabName) => (
                         <Tab as={Fragment} key={tabName}>
                             {({ selected }) => (
                                 <button
                                     className={classNames(
-                                        'rounded-full px-6 py-2.5 text-sm font-bold tracking-wide transition-all duration-300 ease-out',
+                                        'rounded-md px-4 py-2 text-sm font-semibold transition-all duration-200',
                                         'focus:outline-none focus:ring-2 focus:ring-orange-500/20',
                                         selected
-                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105'
-                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-white/50/50'
+                                            ? 'bg-[#ff7900] text-white shadow-sm'
+                                            : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-950'
                                     )}
                                 >
                                     {tabName}
@@ -258,23 +278,24 @@ export default function DashboardAnalytics() {
                     <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
                         {/* KPIs Executivos */}
                         {kpiData && (
-                            <div aria-label="Dashboard Analytics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
-                                <KPICard label="WIP (Pipeline Ativo)" value={kpiData.wip_stores} color="orange" icon="🚀" subtext="Lojas em implantação" tooltip="Work In Progress. Número total de lojas que estão atualmente em fase de implantação." />
-                                <KPICard label="Entregas (No Período)" value={kpiData.throughput_period} color="green" icon="✅" subtext="Projetos concluídos" tooltip="Total de projetos concluídos no período." />
-                                <KPICard label="MRR em Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon="💰" subtext="Pipeline de receita" tooltip="Valor total da mensalidade (MRR) de todas as lojas em WIP." />
-                                <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="amber" icon="📈" subtext="Receita entregue" tooltip="Valor total de MRR acumulado das lojas concluídas no período." />
-                                <KPICard label="Pontos Entregues" value={kpiData.total_points_done} color="yellow" icon="🏅" subtext="Pontuação conquistada" tooltip="Soma dos pontos de todas as lojas entregues no período." />
-                                <KPICard label="Cycle Time Médio" value={`${kpiData.cycle_time_avg || 0} dias`} color="slate" icon="⏱️" subtext="Tempo de navegação" tooltip="Média de dias decorridos entre o início e a conclusão." />
+                            <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in-up animation-delay-100 opacity-0">
+                                <KPICard label="WIP (Pipeline Ativo)" value={kpiData.wip_stores} color="orange" icon={LayoutDashboard} subtext="Lojas em implantação" tooltip="Work In Progress. Número total de lojas que estão atualmente em fase de implantação." />
+                                <KPICard label="Entregas (No Período)" value={kpiData.throughput_period} color="green" icon={CheckCircle2} subtext="Projetos concluídos" tooltip="Total de projetos concluídos no período." />
+                                <KPICard label="MRR em Backlog" value={`R$ ${(kpiData.mrr_backlog || 0).toLocaleString('pt-BR')}`} color="blue" icon={WalletCards} subtext="Pipeline de receita" tooltip="Valor total da mensalidade (MRR) de todas as lojas em WIP." />
+                                <KPICard label="MRR Ativado" value={`R$ ${(kpiData.mrr_done_period || 0).toLocaleString('pt-BR')}`} color="amber" icon={BarChart3} subtext="Receita entregue" tooltip="Valor total de MRR acumulado das lojas concluídas no período." />
+                                <KPICard label="Pontos Entregues" value={kpiData.total_points_done} color="yellow" icon={Trophy} subtext="Pontuação conquistada" tooltip="Soma dos pontos de todas as lojas entregues no período." />
+                                <KPICard label="Cycle Time Médio" value={`${kpiData.cycle_time_avg || 0} dias`} color="slate" icon={Clock3} subtext="Tempo de navegação" tooltip="Média de dias decorridos entre o início e a conclusão." />
                             </div>
                         )}
 
-                        <div aria-label="Dashboard Analytics" className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
+                        <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-4 xl:grid-cols-2 animate-fade-in-up animation-delay-200 opacity-0">
                             {/* Forecast Financeiro */}
                             {forecastData && <FinancialForecastChart data={forecastData} />}
 
                             {/* Evolução de Entregas */}
-                            <div aria-label="Dashboard Analytics" className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-md transition-shadow duration-300">
-                                <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
+                            <div aria-label="Dashboard Analytics" className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                                <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                    <BarChart3 size={16} className="text-[#ff7900]" />
                                     Evolução de Entregas
                                     <InfoTooltip text="Número absoluto de lojas implantadas (status DONE) por mês." />
                                 </h3>
@@ -295,24 +316,25 @@ export default function DashboardAnalytics() {
                     <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
                         {/* 1. KPIs Operacionais (Topo) */}
                         {kpiData && (
-                            <div aria-label="Dashboard Analytics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up animation-delay-100 opacity-0">
-                                <KPICard label="On-Time Delivery (OTD)" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon="🎯" subtext="Aderência ao prazo" tooltip="% de projetos entregues dentro do prazo." />
-                                <KPICard label="Risco Preditivo" value={kpiData.avg_risk_score} color="red" icon="🤖" subtext="Score médio de risco" tooltip="Fórmula: (Prazo x 45%) + (Ociosidade x 25%) + (Financeiro x 20%) + (Qualidade x 10%)" />
-                                <KPICard label="Lojas Estagnadas" value={kpiData.idle_stores_count} color="orange" icon="⚠️" subtext="> 5 dias sem updates" tooltip="Lojas sem movimentação recente em tarefas." />
-                                <KPICard label="Matriz vs Filial (WIP)" value={`${kpiData.matrix_count} / ${kpiData.filial_count}`} color="slate" icon="🏢" subtext="Mix de complexidade" tooltip="Proporção de lojas Matriz (Complexas) vs Filiais (Simples) em andamento." />
+                            <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up animation-delay-100 opacity-0">
+                                <KPICard label="On-Time Delivery (OTD)" value={`${kpiData.otd_percentage || 0}%`} color={(kpiData.otd_percentage || 0) >= 80 ? 'green' : 'red'} icon={Target} subtext="Aderência ao prazo" tooltip="% de projetos entregues dentro do prazo." />
+                                <KPICard label="Risco Preditivo" value={kpiData.avg_risk_score} color="red" icon={AlertTriangle} subtext="Score médio de risco" tooltip="Fórmula: (Prazo x 45%) + (Ociosidade x 25%) + (Financeiro x 20%) + (Qualidade x 10%)" />
+                                <KPICard label="Lojas Estagnadas" value={kpiData.idle_stores_count} color="orange" icon={Clock3} subtext="> 5 dias sem updates" tooltip="Lojas sem movimentação recente em tarefas." />
+                                <KPICard label="Matriz vs Filial (WIP)" value={`${kpiData.matrix_count} / ${kpiData.filial_count}`} color="slate" icon={Building2} subtext="Mix de complexidade" tooltip="Proporção de lojas Matriz (Complexas) vs Filiais (Simples) em andamento." />
                             </div>
                         )}
 
                         {/* 2. Gráficos Lado a Lado */}
-                        <div aria-label="Dashboard Analytics" className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-fade-in-up animation-delay-200 opacity-0">
+                        <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-4 xl:grid-cols-2 animate-fade-in-up animation-delay-200 opacity-0">
                             {/* Gráfico de Risco */}
                             <div aria-label="Dashboard Analytics" className="h-full">
                                 <RiskScatterPlot />
                             </div>
 
                             {/* Eficiência Operacional */}
-                            <div aria-label="Dashboard Analytics" className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm h-full hover:shadow-md transition-shadow duration-300">
-                                <h3 className="text-xl font-bold text-zinc-800 mb-6 flex items-center gap-2">
+                            <div aria-label="Dashboard Analytics" className="h-full rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                                <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                    <Target size={16} className="text-[#128131]" />
                                     Eficiência Operacional
                                     <InfoTooltip text="Combinação de Cycle Time e OTD ao longo do tempo." />
                                 </h3>
@@ -333,15 +355,16 @@ export default function DashboardAnalytics() {
                         </div>
 
                         {/* 3. Gargalos (Visual Moderno - Progress List) */}
-                        <div aria-label="Dashboard Analytics" className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden animate-fade-in-up animation-delay-300 opacity-0 hover:shadow-md transition-shadow duration-300">
-                            <div aria-label="Dashboard Analytics" className="p-8 border-b border-zinc-100 bg-zinc-50/50/50">
-                                <h3 className="text-xl font-bold text-zinc-800 flex items-center gap-2">
-                                    <span className="text-amber-500">⏳</span> Gargalos de Processo
+                        <div aria-label="Dashboard Analytics" className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md animate-fade-in-up animation-delay-300 opacity-0">
+                            <div aria-label="Dashboard Analytics" className="border-b border-zinc-100 bg-zinc-50 p-5">
+                                <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                    <Clock3 size={16} className="text-amber-500" />
+                                    Gargalos de Processo
                                     <InfoTooltip text="Etapas onde os projetos passam mais tempo parados." />
                                 </h3>
                             </div>
 
-                            <div aria-label="Dashboard Analytics" className="p-6 grid grid-cols-1 gap-4">
+                            <div aria-label="Dashboard Analytics" className="grid grid-cols-1 gap-3 p-5">
                                 {(Array.isArray(bottleneckData) ? bottleneckData : []).slice(0, 8).map((b, i) => (
                                     <div key={i} className="group relative flex items-center gap-4 p-4 rounded-xl hover:bg-zinc-50/30 transition-all cursor-default border border-transparent hover:border-zinc-200/50">
 
@@ -369,7 +392,7 @@ export default function DashboardAnalytics() {
 
                                             {/* Stats */}
                                             <div aria-label="Dashboard Analytics" className="md:col-span-3 flex flex-col items-center md:items-start pl-4 border-l border-zinc-100/50">
-                                                <span className="text-[10px] uppercase tracking-wider text-zinc-4000 font-bold">Tempo Total</span>
+                                                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">Tempo Total</span>
                                                 <span className="text-zinc-700 font-mono font-bold">{b.total_days}d</span>
                                             </div>
 

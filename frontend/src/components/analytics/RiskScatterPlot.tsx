@@ -4,6 +4,7 @@ import { EChartWrapper } from './EChartWrapper';
 import { useAnalyticsData } from './useAnalyticsData';
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
 import * as echarts from 'echarts'; // Import full echarts for Gradient
+import { Target } from 'lucide-react';
 
 export const RiskScatterPlot: React.FC = () => {
     const { filters } = useDashboardUrlParams();
@@ -73,8 +74,8 @@ export const RiskScatterPlot: React.FC = () => {
             nameLocation: 'middle',
             nameGap: 30,
             splitLine: { show: false }, // Cleaner look
-            axisLine: { lineStyle: { color: '#52525b' } }, // Zinc-600
-            axisLabel: { color: '#a1a1aa', fontFamily: 'Inter' } // Zinc-400
+            axisLine: { lineStyle: { color: '#d4d4d8' } },
+            axisLabel: { color: '#71717a', fontFamily: 'Inter' }
         },
         yAxis: {
             type: 'value',
@@ -87,7 +88,7 @@ export const RiskScatterPlot: React.FC = () => {
                 lineStyle: { type: 'dashed', opacity: 0.15, color: '#a1a1aa' }
             },
             axisLine: { show: false },
-            axisLabel: { color: '#a1a1aa', fontFamily: 'Inter' }
+            axisLabel: { color: '#71717a', fontFamily: 'Inter' }
         },
         series: [
             {
@@ -150,14 +151,15 @@ export const RiskScatterPlot: React.FC = () => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/50 h-full hover:shadow-md transition-shadow duration-300">
+        <div className="h-full rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-bold text-slate-700 flex items-center gap-2">
-                    <span>🎯</span> Matriz de Risco vs. Tempo
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                    <Target size={16} className="text-[#ff7900]" />
+                    Matriz de Risco vs. Tempo
                     <InfoTooltip text="Eixo Y: Score de Risco Calculado. Eixo X: Dias parado no gargalo atual. Bolha: Valor do Contrato (MRR)." />
                 </h3>
             </div>
-            <p className="text-xs text-slate-5000 mb-4">
+            <p className="mb-4 text-sm text-zinc-500">
                 Lojas no topo (risco) e à direita (tempo parado) são críticas. Bolha indica MRR.
             </p>
 

@@ -2,6 +2,7 @@
 import { Chart } from 'react-chartjs-2';
 import { AnnualTrendData } from './useAnalyticsData';
 import { InfoTooltip } from './InfoTooltip';
+import { Store, TrendingUp } from 'lucide-react';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -87,7 +88,7 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
         plugins: {
             legend: {
                 position: 'top' as const,
-                labels: { color: '#94a3b8' }
+                labels: { color: '#71717a' }
             },
             tooltip: {
                 callbacks: {
@@ -105,21 +106,24 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
         scales: {
             x: {
                 grid: { display: false },
-                ticks: { color: '#94a3b8' }
+                ticks: { color: '#71717a' },
+                border: { display: false }
             },
             y: {
                 type: 'linear' as const,
                 display: true,
                 position: 'left' as const,
-                grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                ticks: { color: '#94a3b8', callback: (val: any) => formatCurrency(val) }
+                grid: { color: 'rgba(100, 116, 139, 0.12)' },
+                ticks: { color: '#71717a', callback: (val: any) => formatCurrency(val) },
+                border: { display: false }
             },
             y1: {
                 type: 'linear' as const,
                 display: true,
                 position: 'right' as const,
                 grid: { drawOnChartArea: false },
-                ticks: { color: '#94a3b8', callback: (val: any) => formatCurrency(val) }
+                ticks: { color: '#71717a', callback: (val: any) => formatCurrency(val) },
+                border: { display: false }
             }
         }
     };
@@ -170,37 +174,41 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
         plugins: {
             legend: {
                 position: 'top' as const,
-                labels: { color: '#94a3b8' }
+                labels: { color: '#71717a' }
             },
             tooltip: {}
         },
         scales: {
             x: {
                 grid: { display: false },
-                ticks: { color: '#94a3b8' }
+                ticks: { color: '#71717a' },
+                border: { display: false }
             },
             y: {
                 type: 'linear' as const,
                 display: true,
                 position: 'left' as const,
-                grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                ticks: { color: '#94a3b8' }
+                grid: { color: 'rgba(100, 116, 139, 0.12)' },
+                ticks: { color: '#71717a' },
+                border: { display: false }
             },
             y1: {
                 type: 'linear' as const,
                 display: true,
                 position: 'right' as const,
                 grid: { drawOnChartArea: false },
-                ticks: { color: '#94a3b8' }
+                ticks: { color: '#71717a' },
+                border: { display: false }
             }
         }
     };
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
-            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-                    📈 Evolução MRR ({data.year})
+        <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                    <TrendingUp size={16} className="text-[#128131]" />
+                    Evolução MRR ({data.year})
                     <InfoTooltip
                         text="Acompanhe o MRR mensal entregue e a linha acumulada no ano para atingimento da meta."
                         position="right"
@@ -211,9 +219,10 @@ export const AnnualTrendCharts: React.FC<AnnualTrendChartsProps> = ({ data }) =>
                 </div>
             </div>
 
-            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-                    🏪 Entregas de Lojas ({data.year})
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                    <Store size={16} className="text-[#ff7900]" />
+                    Entregas de Lojas ({data.year})
                     <InfoTooltip
                         text="Acompanhe as lojas entregues por mês e a linha acumulada no ano contra a meta."
                         position="left"

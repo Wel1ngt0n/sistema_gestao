@@ -95,10 +95,10 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
     );
 
     return (
-        <div className="bg-white rounded-3xl border border-slate-200/50 shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/50 text-xs font-bold text-slate-5000 uppercase tracking-wider">
+                    <thead className="bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                         <tr>
                             <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('implantador')}>
                                 <div className="flex items-center gap-2">Integrador <SortIcon field="implantador" /></div>
@@ -121,20 +121,20 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-zinc-100">
                         {sortedData.map((row) => (
                             <tr
                                 key={row.implantador}
-                                className="hover:bg-slate-50/20 transition-colors group cursor-default"
+                                className="group cursor-default transition-colors hover:bg-zinc-50"
                             >
                                 {/* Integrador */}
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-xs shadow-sm bg-gradient-to-br from-orange-200 to-rose-300 text-orange-900`}>
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-700">
                                             {row.implantador.substring(0, 2).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-700 text-sm group-hover:text-orange-500 transition-colors">
+                                            <p className="text-sm font-semibold text-zinc-700 transition-colors group-hover:text-[#ff7900]">
                                                 {row.implantador}
                                             </p>
                                         </div>
@@ -194,7 +194,7 @@ export const IntegrationTeamMatrix: React.FC<IntegrationTeamMatrixProps> = ({ in
                 </table>
             </div>
             {teamData.length === 0 && (
-                <div className="text-center py-12 text-slate-4000">
+                <div className="py-12 text-center text-zinc-400">
                     Nenhum dado atribuído a integradores.
                 </div>
             )}
