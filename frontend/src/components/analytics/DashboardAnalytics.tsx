@@ -15,7 +15,6 @@ import { AnnualTrendCharts } from './AnnualTrendCharts';
 import { InfoTooltip } from './InfoTooltip';
 import { RiskScatterPlot } from './RiskScatterPlot';
 import { PerformanceScoreBadge } from '../reports/PerformanceScoreBadge';
-import { AnalystClassificationCards } from './AnalystClassificationCards';
 import { TeamActionsBlock } from './TeamActionsBlock';
 import { IntelligenceInsightBlock } from './IntelligenceInsightBlock';
 import {
@@ -747,19 +746,6 @@ export default function DashboardAnalytics() {
                                 )}
 
                                 <TeamActionsBlock actions={teamActions} isVertical={true} />
-
-                                <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:border-zinc-300">
-                                    <div className="mb-4 flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Classificação</p>
-                                            <h3 className="mt-0.5 text-xs font-bold text-zinc-950">Ranking do Time</h3>
-                                        </div>
-                                        <div className="flex h-6 w-6 items-center justify-center rounded bg-zinc-100 text-[10px] font-black text-zinc-500">
-                                            {cockpitData.length}
-                                        </div>
-                                    </div>
-                                    <AnalystClassificationCards analysts={cockpitData} isVertical={true} />
-                                </div>
                             </aside>
                         </div>
                     </Tab.Panel>

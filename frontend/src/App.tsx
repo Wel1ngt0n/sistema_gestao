@@ -11,7 +11,6 @@ import IntegrationDashboard from './features/integration/IntegrationDashboard'
 import IntegrationMonitor from './features/integration/IntegrationMonitor'
 import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
-import TeamDiagnosticsView from './pages/implantadores/TeamDiagnosticsView'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
 import { SupportDashboard } from './pages/SupportDashboard'
 
@@ -41,9 +40,9 @@ function App() {
                     </ProtectedRoute>
                 }>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/jarvis-cockpit" element={<Navigate to="/team-diagnostics" replace />} />
+                    <Route path="/jarvis-cockpit" element={<Navigate to="/analytics" replace />} />
                     <Route path="/monitor" element={<Monitor />} />
-                    <Route path="/team-diagnostics" element={<TeamDiagnosticsView />} />
+                    <Route path="/team-diagnostics" element={<Navigate to="/analytics" replace />} />
                     <Route path="/team-diagnostics/:name" element={<AnalystProfileView />} />
 
                     {/* Suíte de Integração */}
