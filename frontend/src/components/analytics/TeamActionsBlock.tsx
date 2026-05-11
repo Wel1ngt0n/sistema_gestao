@@ -18,13 +18,13 @@ interface TeamActionsBlockProps {
 export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions, isVertical = false }) => {
     if (!actions || actions.length === 0) {
         return (
-            <div className="bg-white border border-emerald-100 rounded-2xl p-6 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
-                    <CheckCircle2 className="text-emerald-500" size={24} />
+            <div className="flex items-center gap-4 rounded-lg border border-emerald-100 bg-white p-5 shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-emerald-100 bg-emerald-50">
+                    <CheckCircle2 className="text-emerald-600" size={20} />
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900">Operação Normal</h3>
-                    <p className="text-sm text-slate-500">Nenhuma ação crítica pendente para o time.</p>
+                    <h3 className="text-sm font-semibold text-zinc-950">Operação Normal</h3>
+                    <p className="text-sm text-zinc-500">Nenhuma ação crítica pendente para o time.</p>
                 </div>
             </div>
         )
@@ -32,18 +32,18 @@ export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions, isV
 
     const getImpactStyle = (impact: string) => {
         switch (impact) {
-            case 'alto': return 'bg-rose-50 border-rose-500 text-rose-700'
-            case 'medio': return 'bg-amber-50 border-amber-500 text-amber-700'
-            default: return 'bg-blue-50 border-blue-500 text-blue-700'
+            case 'alto': return 'border-rose-100 text-rose-700'
+            case 'medio': return 'border-orange-100 text-orange-700'
+            default: return 'border-zinc-200 text-zinc-700'
         }
     }
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'overload': return <ShieldAlert size={20} className="text-rose-500" />
-            case 'idle': return <Clock size={20} className="text-rose-500" />
-            case 'warning': return <AlertCircle size={20} className="text-amber-500" />
-            case 'sla': return <Zap size={20} className="text-indigo-500" />
+            case 'overload': return <ShieldAlert size={18} className="text-rose-600" />
+            case 'idle': return <Clock size={18} className="text-rose-600" />
+            case 'warning': return <AlertCircle size={18} className="text-orange-500" />
+            case 'sla': return <Zap size={18} className="text-[#128131]" />
             default: return <AlertCircle size={20} />
         }
     }
@@ -51,52 +51,52 @@ export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions, isV
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <Zap className="text-indigo-500" size={20} />
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                    <Zap className="text-[#128131]" size={16} />
                     O Que Fazer Agora
                 </h2>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-full">
+                <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-medium text-zinc-500">
                     {actions.length} Ações Prioritárias
                 </span>
             </div>
 
             <div className={`grid gap-4 ${isVertical ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
                 {actions.map((action, idx) => (
-                    <div 
-                        key={idx} 
-                        className={`relative border-l-4 rounded-xl p-5 shadow-sm transition-all hover:shadow-md ${getImpactStyle(action.impact)} bg-white border-y border-r border-slate-100`}
+                    <div
+                        key={idx}
+                        className={`rounded-lg border bg-white p-5 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md ${getImpactStyle(action.impact)}`}
                     >
                         <div className="flex justify-between items-start mb-3">
-                            <div className={`p-2 rounded-lg ${
-                                action.impact === 'alto' ? 'bg-rose-100' : 
-                                action.impact === 'medio' ? 'bg-amber-100' : 'bg-blue-100'
+                            <div className={`rounded-md border p-2 ${
+                                action.impact === 'alto' ? 'border-rose-100 bg-rose-50' :
+                                action.impact === 'medio' ? 'border-orange-100 bg-orange-50' : 'border-zinc-200 bg-zinc-50'
                             }`}>
                                 {getIcon(action.type)}
                             </div>
-                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                                action.impact === 'alto' ? 'bg-rose-500 text-white' : 
-                                action.impact === 'medio' ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white'
+                            <span className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase ${
+                                action.impact === 'alto' ? 'bg-rose-50 text-rose-700' :
+                                action.impact === 'medio' ? 'bg-orange-50 text-orange-700' : 'bg-zinc-100 text-zinc-600'
                             }`}>
                                 {action.impact} Impacto
                             </span>
                         </div>
 
-                        <h4 className="font-bold text-slate-900 mb-1">{action.title}</h4>
-                        <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                        <h4 className="mb-1 text-sm font-semibold text-zinc-950">{action.title}</h4>
+                        <p className="mb-4 text-sm leading-relaxed text-zinc-500">
                             {action.description}
                         </p>
 
                         {action.affected.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mb-4">
                                 {action.affected.map((name, i) => (
-                                    <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                                    <span key={i} className="rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600">
                                         {name.split(' ')[0]}
                                     </span>
                                 ))}
                             </div>
                         )}
 
-                        <button className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:gap-2 transition-all">
+                        <button className="flex items-center gap-1 text-xs font-semibold text-[#128131] transition-all hover:gap-2">
                             Ver detalhes <ChevronRight size={12} />
                         </button>
                     </div>

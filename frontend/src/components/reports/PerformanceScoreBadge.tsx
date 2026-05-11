@@ -11,24 +11,24 @@ export const PerformanceScoreBadge: React.FC<PerformanceScoreBadgeProps> = ({ sc
     let bgColorClass = '';
     
     if (score >= 75) {
-        colorClass = 'text-emerald-400';
-        bgColorClass = 'bg-emerald-400/10 border-emerald-400/20';
+        colorClass = 'text-emerald-700';
+        bgColorClass = 'bg-emerald-50 border-emerald-100';
     } else if (score >= 50) {
-        colorClass = 'text-yellow-400';
-        bgColorClass = 'bg-yellow-400/10 border-yellow-400/20';
+        colorClass = 'text-amber-700';
+        bgColorClass = 'bg-amber-50 border-amber-100';
     } else {
-        colorClass = 'text-rose-400';
-        bgColorClass = 'bg-rose-400/10 border-rose-400/20';
+        colorClass = 'text-rose-700';
+        bgColorClass = 'bg-rose-50 border-rose-100';
     }
 
     const sizes = {
-        sm: 'text-xs px-2 py-0.5',
+        sm: 'text-xs px-2.5 py-1',
         md: 'text-sm px-3 py-1',
-        lg: 'text-xl px-4 py-2 font-bold'
+        lg: 'text-lg px-4 py-2 font-semibold'
     };
 
     return (
-        <span className={`inline-flex items-center justify-center font-medium rounded-full border ${bgColorClass} ${colorClass} ${sizes[size]}`}>
+        <span className={`inline-flex items-center justify-center rounded-md border font-semibold ${bgColorClass} ${colorClass} ${sizes[size]}`}>
             Score: {(score || 0).toFixed(1)}
         </span>
     );

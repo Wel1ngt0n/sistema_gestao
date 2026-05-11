@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-    Brain, Download, TrendingUp, Activity, 
+import {
+    Download, TrendingUp, Activity,
     Clock, LayoutDashboard, Search, ChevronRight
 } from 'lucide-react'
 import { api } from '../../services/api'
@@ -12,6 +12,7 @@ import { TeamActionsBlock } from '../../components/analytics/TeamActionsBlock'
 import { AnalystClassificationCards } from '../../components/analytics/AnalystClassificationCards'
 import { IntelligenceInsightBlock } from '../../components/analytics/IntelligenceInsightBlock'
 import { BottleneckDonutChart } from '../../components/reports/BottleneckDonutChart'
+import logo from '../../assets/logo.png'
 
 interface AnalystResume {
     implantador: string
@@ -117,108 +118,116 @@ export const TeamDiagnosticsView: React.FC = () => {
 
     if (loading && !data.length) {
         return (
-            <div className="flex flex-col items-center justify-center h-[70vh] gap-4 bg-[#EEF0F8]">
-                <div className="w-12 h-12 rounded-full border-4 border-[#128131]/20 border-t-[#128131] animate-spin"></div>
-                <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Sincronizando Cockpit Instabuy...</p>
+            <div className="flex h-[70vh] flex-col items-center justify-center gap-4 bg-[#EEF0F8]">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-200 border-t-[#ff7900]"></div>
+                <p className="text-sm font-medium text-zinc-500">Carregando relatórios do time...</p>
             </div>
         )
     }
 
     return (
         <div className="min-h-screen bg-[#EEF0F8] pb-20">
-            <div className="max-w-[1600px] mx-auto px-4 md:px-8 space-y-6 pt-8">
-                
-                {/* 1. TOP HEADER */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-[#128131] font-black text-[10px] uppercase tracking-[0.3em]">
-                            <Brain size={14} className="animate-pulse" />
-                            Instabuy Intelligence v3.5
-                        </div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900">
-                            Dashboard de Operações
-                        </h1>
-                    </div>
+            <div className="mx-auto max-w-[1600px] space-y-6 px-4 pt-8 md:px-8">
 
-                    <div className="flex items-center gap-3">
-                        <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex items-center">
-                            <PeriodFilter value={period} onChange={setPeriod} />
+                {/* 1. TOP HEADER */}
+                <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="flex items-start gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white">
+                                <img src={logo} alt="Instabuy" className="h-7 w-auto object-contain" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Gestão do Time</p>
+                                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+                                    Relatórios do time
+                                </h1>
+                                <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+                                    Visão consolidada de performance, capacidade, riscos e ações prioritárias.
+                                </p>
+                            </div>
                         </div>
-                        <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-                            <Download size={18} className="text-slate-500" />
-                        </button>
+
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
+                                <PeriodFilter value={period} onChange={setPeriod} />
+                            </div>
+                            <button className="rounded-lg border border-zinc-200 bg-white p-2.5 text-zinc-500 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-950">
+                                <Download size={18} />
+                            </button>
+                        </div>
                     </div>
-                </div>
+                    <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
+                </header>
 
                 {/* 2. KPI GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-[#ff7900]"></div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Analistas Ativos</span>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-[#ff7900] opacity-70"></div>
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Analistas Ativos</span>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-black text-slate-900">{summary?.total_ativos || 0}</span>
-                            <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
+                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">{summary?.total_ativos || 0}</span>
+                            <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600">
                                 <TrendingUp size={12} /> +2
                             </span>
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">SLA do Time</span>
+                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-emerald-500 opacity-70"></div>
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">SLA do Time</span>
                         <div className="flex items-baseline gap-2">
-                            <span className={`text-3xl font-black ${summary?.avg_sla >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">
                                 {summary?.avg_sla || 0}%
                             </span>
-                            <span className="text-xs font-bold text-slate-400">Meta: 85%</span>
+                            <span className="text-xs font-medium text-zinc-500">Meta: 85%</span>
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Vazão Total</span>
+                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-sky-500 opacity-70"></div>
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Vazão Total</span>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-black text-slate-900">{summary?.total_entregues_mes || 0}</span>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">no período</span>
+                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">{summary?.total_entregues_mes || 0}</span>
+                            <span className="text-xs font-medium text-zinc-500">no período</span>
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Status Saúde</span>
+                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-orange-500 opacity-70"></div>
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Status Saúde</span>
                         <div className="flex items-center gap-2">
-                            <span className={`text-xl font-black uppercase ${summary?.team_health === 'Good' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                            <span className="text-xl font-semibold text-zinc-950">
                                 {summary?.team_health === 'Good' ? 'Consistente' : 'Atenção'}
                             </span>
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Taxa de Retrabalho</span>
+                    <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <div className="absolute left-0 top-0 h-0.5 w-full rounded-t-lg bg-rose-500 opacity-70"></div>
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Taxa de Retrabalho</span>
                         <div className="flex items-baseline gap-2">
-                            <span className={`text-3xl font-black ${summary?.avg_retrabalho > 10 ? 'text-rose-500' : 'text-slate-900'}`}>
+                            <span className="text-3xl font-semibold tracking-tight text-zinc-950">
                                 {summary?.avg_retrabalho || 0}%
                             </span>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">média time</span>
+                            <span className="text-xs font-medium text-zinc-500">média time</span>
                         </div>
                     </div>
                 </div>
 
                 {/* 3. PROJECTION & ACTIONS GRID */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+                <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
                     {/* LEFT: PROJECTION */}
-                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm flex flex-col" aria-label="Projeção de MRR">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-emerald-50 rounded-xl">
-                                <TrendingUp size={20} className="text-emerald-600" />
+                    <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-8" aria-label="Projeção de MRR">
+                        <div className="mb-5 flex items-center gap-3">
+                            <div className="rounded-md border border-emerald-100 bg-emerald-50 p-2">
+                                <TrendingUp size={18} className="text-emerald-600" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-black text-slate-900 tracking-tight">Projeção de Performance</h2>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-left">Faturamento Real vs Projetado (Matriz/Filial)</p>
+                                <h2 className="text-sm font-semibold text-zinc-950">Projeção de Performance</h2>
+                                <p className="text-sm text-zinc-500">Faturamento real vs projetado por matriz e filial.</p>
                             </div>
                         </div>
                         <div className="flex-1 min-h-[300px]">
                             {companyProjection ? (
                                 <MRRNetProjectionWidget data={companyProjection} />
                             ) : (
-                                <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase tracking-[0.2em]">Carregando Projeção...</div>
+                                <div className="flex h-full items-center justify-center text-sm font-medium text-zinc-400">Carregando projeção...</div>
                             )}
                         </div>
                     </div>
@@ -230,69 +239,69 @@ export const TeamDiagnosticsView: React.FC = () => {
                 </div>
 
                 {/* 4. PERFORMANCE ANALYSIS GRID: CLASSIFICATION + TABLE */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+                <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
                     {/* CLASSIFICATION (LEFT 4) */}
-                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
+                    <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-4">
                         <AnalystClassificationCards analysts={data} isVertical={true} />
                     </div>
 
                     {/* TABLE (RIGHT 8) */}
-                    <div className="xl:col-span-8 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-                        <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                                <LayoutDashboard className="text-slate-400" size={18} />
+                    <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm xl:col-span-8">
+                        <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 p-5">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <LayoutDashboard className="text-[#128131]" size={16} />
                                 Mesa Comparativa de Performance
                             </h3>
-                            <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
-                                <Search size={14} className="text-slate-400" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{data.length} Implantadores</span>
+                            <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-1.5">
+                                <Search size={14} className="text-zinc-400" />
+                                <span className="text-xs font-medium text-zinc-500">{data.length} Implantadores</span>
                             </div>
                         </div>
-                        
+
                         <div className="overflow-x-auto flex-1">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50/50 border-b border-slate-100">
+                                <thead className="border-b border-zinc-100 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                                     <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('implantador')}>Analista</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('score')}>Score</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('carga_ponderada')}>Carga</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('entregas_mes')}>Entregas</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('pct_retrabalho' as any)}>Retrabalho</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('idle_medio')}>Idle</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#ff7900] transition-colors" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
+                                        <th className="cursor-pointer px-6 py-4 transition-colors hover:text-[#ff7900]" onClick={() => handleSort('implantador')}>Analista</th>
+                                        <th className="cursor-pointer px-6 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleSort('score')}>Score</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('carga_ponderada')}>Carga</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('entregas_mes')}>Entregas</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('pct_retrabalho' as any)}>Retrabalho</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('idle_medio')}>Idle</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('pct_sla_concluidas')}>SLA</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
+                                <tbody className="divide-y divide-zinc-100">
                                     {sortedData.map((item, idx) => (
                                         <tr 
                                             key={idx} 
                                             onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
-                                            className="group hover:bg-slate-50 transition-all cursor-pointer"
+                                            className="group cursor-pointer transition-colors hover:bg-zinc-50"
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-[10px] border border-slate-200 group-hover:border-indigo-400 transition-colors">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-500 transition-colors group-hover:border-orange-200">
                                                         {item.implantador.substring(0, 2).toUpperCase()}
                                                     </div>
-                                                    <span className="font-bold text-slate-700">{item.implantador}</span>
+                                                    <span className="font-semibold text-zinc-700 transition-colors group-hover:text-[#ff7900]">{item.implantador}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
                                             </td>
-                                            <td className={`px-6 py-4 text-right font-bold ${item.carga_ponderada === extremes?.maxCarga ? 'text-indigo-600 bg-indigo-50/30' : 'text-slate-600'}`}>
+                                            <td className={`px-6 py-4 text-right font-semibold ${item.carga_ponderada === extremes?.maxCarga ? 'bg-orange-50/40 text-orange-700' : 'text-zinc-600'}`}>
                                                 {item.carga_ponderada.toFixed(1)}
                                             </td>
-                                            <td className={`px-6 py-4 text-right font-bold ${item.entregas_mes === extremes?.maxEntregas ? 'text-emerald-600 bg-emerald-50/30' : 'text-slate-600'}`}>
+                                            <td className={`px-6 py-4 text-right font-semibold ${item.entregas_mes === extremes?.maxEntregas ? 'bg-emerald-50/40 text-emerald-700' : 'text-zinc-600'}`}>
                                                 {item.entregas_mes}
                                             </td>
-                                            <td className={`px-6 py-4 text-right font-bold ${(item as any).pct_retrabalho === extremes?.maxRetrabalho && (item as any).pct_retrabalho > 0 ? 'text-rose-600 bg-rose-50' : 'text-slate-600'}`}>
+                                            <td className={`px-6 py-4 text-right font-semibold ${(item as any).pct_retrabalho === extremes?.maxRetrabalho && (item as any).pct_retrabalho > 0 ? 'bg-rose-50 text-rose-700' : 'text-zinc-600'}`}>
                                                 {(item as any).pct_retrabalho?.toFixed(0)}%
                                             </td>
-                                            <td className={`px-6 py-4 text-right font-bold ${item.idle_medio === extremes?.maxIdle ? 'text-rose-600 bg-rose-50/30' : 'text-slate-600'}`}>
+                                            <td className={`px-6 py-4 text-right font-semibold ${item.idle_medio === extremes?.maxIdle ? 'bg-rose-50/40 text-rose-700' : 'text-zinc-600'}`}>
                                                 {item.idle_medio}d
                                             </td>
-                                            <td className={`px-6 py-4 text-right font-bold ${item.pct_sla_concluidas === extremes?.minSla ? 'text-rose-600 bg-rose-50/30' : 'text-emerald-600'}`}>
+                                            <td className={`px-6 py-4 text-right font-semibold ${item.pct_sla_concluidas === extremes?.minSla ? 'bg-rose-50/40 text-rose-700' : 'text-emerald-700'}`}>
                                                 {item.pct_sla_concluidas}%
                                             </td>
                                         </tr>
@@ -304,11 +313,11 @@ export const TeamDiagnosticsView: React.FC = () => {
                 </div>
 
                 {/* 5. DIAGNOSTICS & INTELLIGENCE GRID: 3 EQUAL COLUMNS */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
                     {/* DIAGNOSTICO CAUSA */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                        <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                            <Activity size={14} className="text-indigo-500" />
+                    <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                            <Activity size={16} className="text-[#128131]" />
                             Diagnóstico por Causa
                         </h4>
                         <div className="flex-1 min-h-[250px] relative flex items-center justify-center">
@@ -317,18 +326,18 @@ export const TeamDiagnosticsView: React.FC = () => {
                     </div>
 
                     {/* GARGALOS ETAPA */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                            <Clock size={14} className="text-indigo-500" />
+                    <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+                        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                            <Clock size={16} className="text-[#128131]" />
                             Gargalos por Etapa
                         </h4>
                         <div className="flex-1 space-y-1">
                             {diagnostics?.top_gargalos_etapa?.slice(0, 5).map((g: any, i: number) => (
-                                <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-xl border border-transparent hover:border-indigo-500/20 transition-all group">
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{g.etapa}</span>
+                                <div key={i} className="group flex items-center justify-between rounded-lg border border-transparent bg-zinc-50 p-2.5 transition-all hover:border-zinc-200">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{g.etapa}</span>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-black text-slate-900">{g.count}</span>
-                                        <ChevronRight size={12} className="text-slate-200 group-hover:text-indigo-500 transition-colors" />
+                                        <span className="text-xs font-semibold text-zinc-900">{g.count}</span>
+                                        <ChevronRight size={12} className="text-zinc-300 transition-colors group-hover:text-[#ff7900]" />
                                     </div>
                                 </div>
                             ))}
@@ -346,7 +355,7 @@ export const TeamDiagnosticsView: React.FC = () => {
 
                 {/* 6. BOTTOM ACTIONS */}
                 <div className="flex justify-end pt-4">
-                    <button className="px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2">
+                    <button className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 py-3 text-xs font-semibold text-zinc-700 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md active:scale-[0.98]">
                         <Download size={14} />
                         Gerar Relatório Estratégico Completo
                     </button>

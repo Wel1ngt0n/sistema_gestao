@@ -29,17 +29,17 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
     const isChurnWarning = churnPct >= 80 && churnPct < 100;
 
     return (
-        <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border-color)] overflow-hidden">
-            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-color)]/50 flex justify-between items-center">
+        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+            <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 p-4">
                 <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-[var(--brand-primary)]/10 rounded-lg">
-                        <TrendingUp className="w-5 h-5 text-[var(--brand-primary)]" />
+                    <div className="rounded-md border border-emerald-100 bg-emerald-50 p-2">
+                        <TrendingUp className="h-5 w-5 text-[#128131]" />
                     </div>
-                    <h3 className="text-[var(--text-color)] font-medium">Projeção MRR Líquido</h3>
+                    <h3 className="text-sm font-semibold text-zinc-950">Projeção MRR Líquido</h3>
                 </div>
                 <div className="text-right">
-                    <p className="text-sm text-[var(--text-muted)]">Meta Esperada</p>
-                    <p className="text-sm font-semibold text-[var(--text-color)]">{formatBRL(data.net_mrr_target)}</p>
+                    <p className="text-sm text-zinc-500">Meta Esperada</p>
+                    <p className="text-sm font-semibold text-zinc-950">{formatBRL(data.net_mrr_target)}</p>
                 </div>
             </div>
 
@@ -47,39 +47,39 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
                 <div className="grid grid-cols-3 gap-6 mb-8">
                     {/* Ganhos/Projetado */}
                     <div className="space-y-1">
-                        <p className="text-sm text-[var(--text-muted)]">Ganho Realizado</p>
-                        <p className="text-xl font-bold text-emerald-500">+{formatBRL(data.delivered_mrr)}</p>
-                        <p className="text-xs text-[var(--text-muted)] mt-1 opacity-70">
+                        <p className="text-sm text-zinc-500">Ganho Realizado</p>
+                        <p className="text-xl font-semibold text-emerald-700">+{formatBRL(data.delivered_mrr)}</p>
+                        <p className="mt-1 text-xs text-zinc-500">
                             + Projetado: {formatBRL(data.projected_mrr)}
                         </p>
                     </div>
 
                     {/* Churn */}
-                    <div className="space-y-1 relative pl-6 border-l border-[var(--border-color)]">
-                        <p className="text-sm text-[var(--text-muted)] flex items-center gap-1">
+                    <div className="relative space-y-1 border-l border-zinc-200 pl-6">
+                        <p className="flex items-center gap-1 text-sm text-zinc-500">
                             Churn MRR
                             {(isChurnWarning || isChurnCritical) && (
-                                <AlertTriangle className={`w-3 h-3 ${isChurnCritical ? 'text-red-500' : 'text-yellow-500'}`} />
+                                <AlertTriangle className={`h-3 w-3 ${isChurnCritical ? 'text-red-600' : 'text-orange-500'}`} />
                             )}
                         </p>
-                        <p className={`text-xl font-bold ${isChurnCritical ? 'text-red-500' : 'text-rose-400'}`}>
+                        <p className={`text-xl font-semibold ${isChurnCritical ? 'text-red-700' : 'text-rose-700'}`}>
                             -{formatBRL(data.churn_mrr)}
                         </p>
-                        <div className="w-full bg-[var(--bg-color)] rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
                             <div
-                                className={`h-full rounded-full ${isChurnCritical ? 'bg-red-500' : isChurnWarning ? 'bg-yellow-500' : 'bg-emerald-500'}`}
+                                className={`h-full rounded-full ${isChurnCritical ? 'bg-red-600' : isChurnWarning ? 'bg-orange-500' : 'bg-emerald-500'}`}
                                 style={{ width: `${Math.min(100, churnPct)}%` }}
                             />
                         </div>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                        <p className="mt-1 text-[10px] text-zinc-500">
                             Limite do período: {formatBRL(data.churn_limit)}
                         </p>
                     </div>
 
                     {/* Resultado Líquido */}
-                    <div className="space-y-1 relative pl-6 border-l border-[var(--border-color)]">
-                        <p className="text-sm text-[var(--text-muted)]">MRR Líquido</p>
-                        <p className={`text-2xl font-black ${data.net_mrr_result >= 0 ? 'text-[var(--brand-primary)]' : 'text-red-500'}`}>
+                    <div className="relative space-y-1 border-l border-zinc-200 pl-6">
+                        <p className="text-sm text-zinc-500">MRR Líquido</p>
+                        <p className={`text-2xl font-semibold ${data.net_mrr_result >= 0 ? 'text-[#128131]' : 'text-red-700'}`}>
                             {formatBRL(data.net_mrr_result)}
                         </p>
                     </div>
@@ -88,22 +88,22 @@ export const MRRNetProjectionWidget: React.FC<MRRNetProjectionWidgetProps> = ({ 
                 {/* Termômetro Net MRR */}
                 <div>
                     <div className="flex justify-between items-end mb-2">
-                        <span className="text-sm font-medium text-[var(--text-color)]">Progresso da Meta</span>
-                        <span className="text-lg font-bold text-[var(--brand-primary)]">{targetProgress.toFixed(1)}%</span>
+                        <span className="text-sm font-medium text-zinc-700">Progresso da Meta</span>
+                        <span className="text-lg font-semibold text-[#128131]">{targetProgress.toFixed(1)}%</span>
                     </div>
-                    <div className="w-full bg-[var(--bg-color)] rounded-full h-4 relative overflow-hidden ring-1 ring-inset ring-white/5">
+                    <div className="relative h-3 w-full overflow-hidden rounded-full bg-zinc-100">
                         <div
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]/70 transition-all duration-1000 ease-out flex items-center justify-end pr-2 shadow-[0_0_10px_rgba(var(--brand-primary-rgb),0.5)]"
+                            className="absolute left-0 top-0 flex h-full items-center justify-end bg-[#128131] pr-2 transition-all duration-1000 ease-out"
                             style={{ width: `${targetProgress}%` }}
                         >
                             {targetProgress >= 15 && (
-                                <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80" />
+                                <div className="h-1.5 w-1.5 rounded-full bg-white opacity-80" />
                             )}
                         </div>
                         {/* Marcadores */}
-                        <div className="absolute top-0 left-1/4 h-full border-l border-white/10" />
-                        <div className="absolute top-0 left-2/4 h-full border-l border-white/20" />
-                        <div className="absolute top-0 left-3/4 h-full border-l border-white/10" />
+                        <div className="absolute left-1/4 top-0 h-full border-l border-white/30" />
+                        <div className="absolute left-2/4 top-0 h-full border-l border-white/40" />
+                        <div className="absolute left-3/4 top-0 h-full border-l border-white/30" />
                     </div>
                 </div>
             </div>

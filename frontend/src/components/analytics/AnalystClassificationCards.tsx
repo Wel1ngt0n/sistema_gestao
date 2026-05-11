@@ -35,16 +35,16 @@ export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProp
             case 'HEALTHY': 
                 return { 
                     label: 'Saudável', 
-                    color: 'text-blue-700 bg-blue-50 border-blue-100',
-                    dot: 'bg-blue-500',
-                    icon: <TrendingUp size={12} className="text-blue-500" />
+                    color: 'text-sky-700 bg-sky-50 border-sky-100',
+                    dot: 'bg-sky-500',
+                    icon: <TrendingUp size={12} className="text-sky-600" />
                 }
             case 'WARNING': 
                 return { 
                     label: 'Atenção', 
-                    color: 'text-amber-700 bg-amber-50 border-amber-100',
-                    dot: 'bg-amber-500',
-                    icon: <AlertTriangle size={12} className="text-amber-500" />
+                    color: 'text-orange-700 bg-orange-50 border-orange-100',
+                    dot: 'bg-orange-500',
+                    icon: <AlertTriangle size={12} className="text-orange-500" />
                 }
             case 'OVERLOADED': 
             case 'CRITICAL_IDLE':
@@ -57,9 +57,9 @@ export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProp
             default: 
                 return { 
                     label: 'Em Análise', 
-                    color: 'text-slate-700 bg-slate-50 border-slate-100',
+                    color: 'text-zinc-700 bg-zinc-50 border-zinc-100',
                     dot: 'bg-slate-400',
-                    icon: <User size={12} className="text-slate-400" />
+                    icon: <User size={12} className="text-zinc-400" />
                 }
         }
     }
@@ -73,8 +73,8 @@ export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProp
     return (
         <div className={`space-y-4 ${isVertical ? 'h-full flex flex-col' : ''}`} aria-label="Classificação de Performance do Time">
             {!isVertical && (
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <BarChart3 className="text-indigo-500" size={20} />
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                    <BarChart3 className="text-[#128131]" size={16} />
                     Classificação do Time
                 </h2>
             )}
@@ -86,53 +86,53 @@ export const AnalystClassificationCards: React.FC<AnalystClassificationCardsProp
                         <div 
                             key={idx}
                             onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(analyst.implantador)}`)}
-                            className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                            className="group cursor-pointer rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md"
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 group-hover:border-indigo-400 transition-colors">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-600 transition-colors group-hover:border-orange-200">
                                         {analyst.implantador.substring(0, 2).toUpperCase()}
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                        <h4 className="text-sm font-semibold text-zinc-950 transition-colors group-hover:text-[#ff7900]">
                                             {analyst.implantador.split(' ')[0]}
                                         </h4>
-                                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase mt-1 ${config.color}`}>
+                                        <div className={`mt-1 flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase ${config.color}`}>
                                             {config.icon}
                                             {config.label}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Score</div>
-                                    <div className={`text-lg font-black ${
-                                        analyst.score.score_final > 80 ? 'text-emerald-500' :
-                                        analyst.score.score_final > 60 ? 'text-blue-500' :
-                                        analyst.score.score_final > 40 ? 'text-amber-500' : 'text-rose-500'
+                                    <div className="text-[10px] font-semibold uppercase text-zinc-400">Score</div>
+                                    <div className={`text-lg font-semibold ${
+                                        analyst.score.score_final > 80 ? 'text-emerald-700' :
+                                        analyst.score.score_final > 60 ? 'text-sky-700' :
+                                        analyst.score.score_final > 40 ? 'text-orange-700' : 'text-rose-700'
                                     }`}>
                                         {analyst.score.score_final}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                            <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4">
                                 <div>
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Carga</div>
-                                    <div className="text-xs font-bold text-slate-700">{analyst.carga_ponderada.toFixed(1)} pts</div>
+                                    <div className="mb-0.5 text-[10px] font-semibold uppercase text-zinc-400">Carga</div>
+                                    <div className="text-xs font-semibold text-zinc-700">{analyst.carga_ponderada.toFixed(1)} pts</div>
                                 </div>
                                 <div>
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">SLA</div>
-                                    <div className={`text-xs font-bold ${analyst.pct_sla_concluidas < 75 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                    <div className="mb-0.5 text-[10px] font-semibold uppercase text-zinc-400">SLA</div>
+                                    <div className={`text-xs font-semibold ${analyst.pct_sla_concluidas < 75 ? 'text-rose-700' : 'text-emerald-700'}`}>
                                         {analyst.pct_sla_concluidas}%
                                     </div>
                                 </div>
                             </div>
 
                             <div className="mt-4 flex items-center justify-between">
-                                <span className="text-[10px] text-slate-400 italic truncate pr-4">
+                                <span className="truncate pr-4 text-xs text-zinc-500">
                                     {analyst.recommendation}
                                 </span>
-                                <ChevronRight size={14} className="text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                                <ChevronRight size={14} className="text-zinc-300 transition-all group-hover:translate-x-1 group-hover:text-[#ff7900]" />
                             </div>
                         </div>
                     )

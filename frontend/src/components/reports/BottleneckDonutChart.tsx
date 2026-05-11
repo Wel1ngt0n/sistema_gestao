@@ -44,19 +44,19 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
     }
 
     const bgMap: Record<string, string> = {
-        CLIENTE: 'rgba(99, 102, 241, 0.85)', // orange-500
-        IMPLANTADOR: 'rgba(249, 115, 22, 0.85)', // orange-500
-        CARGA: 'rgba(239, 68, 68, 0.85)', // red-500
-        ETAPA: 'rgba(14, 165, 233, 0.85)', // sky-500
-        NO_PRAZO: 'rgba(16, 185, 129, 0.85)' // emerald-500
+        CLIENTE: 'rgba(14, 165, 233, 0.55)',
+        IMPLANTADOR: 'rgba(255, 121, 0, 0.55)',
+        CARGA: 'rgba(220, 38, 38, 0.55)',
+        ETAPA: 'rgba(113, 113, 122, 0.45)',
+        NO_PRAZO: 'rgba(18, 129, 49, 0.55)'
     };
 
     const borderMap: Record<string, string> = {
-        CLIENTE: 'rgba(99, 102, 241, 1)',
-        IMPLANTADOR: 'rgba(249, 115, 22, 1)',
-        CARGA: 'rgba(239, 68, 68, 1)',
-        ETAPA: 'rgba(14, 165, 233, 1)',
-        NO_PRAZO: 'rgba(16, 185, 129, 1)'
+        CLIENTE: 'rgba(14, 165, 233, 0.9)',
+        IMPLANTADOR: 'rgba(255, 121, 0, 0.9)',
+        CARGA: 'rgba(220, 38, 38, 0.9)',
+        ETAPA: 'rgba(113, 113, 122, 0.85)',
+        NO_PRAZO: 'rgba(18, 129, 49, 0.9)'
     };
 
     const backgroundColor = Object.keys(data).map(k => bgMap[k] || 'rgba(156, 163, 175, 0.85)');
@@ -70,7 +70,7 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
                 backgroundColor,
                 borderColor,
                 borderWidth: 2,
-                hoverOffset: 15,
+                hoverOffset: 8,
                 borderRadius: 4,
                 spacing: 2
             },
@@ -84,26 +84,26 @@ export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data
             legend: {
                 position: 'bottom' as const,
                 labels: {
-                    color: '#94a3b8', // slate-400
+                    color: '#52525b',
                     usePointStyle: true,
                     pointStyle: 'circle',
                     padding: 20,
                     font: {
                         size: 10,
-                        weight: '600',
+                        weight: 500,
                         family: "'Inter', sans-serif"
                     }
                 }
             },
             tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                backgroundColor: '#18181b',
                 titleColor: '#fff',
                 bodyColor: '#cbd5e1',
                 borderColor: 'rgba(255,255,255,0.1)',
                 borderWidth: 1,
                 padding: 12,
                 boxPadding: 8,
-                cornerRadius: 12,
+                cornerRadius: 6,
                 displayColors: true,
             }
         },
