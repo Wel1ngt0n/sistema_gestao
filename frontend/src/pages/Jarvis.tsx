@@ -4,16 +4,10 @@ import {
   Send, 
   Database, 
   Brain, 
-  Activity, 
   MessageSquare, 
   Terminal,
-  ChevronRight,
-  RefreshCw,
-  Cpu,
   Plus,
-  History,
   Trash2,
-  MoreVertical,
   X,
   Menu,
   Sparkles
@@ -42,18 +36,6 @@ const Jarvis: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Welcome message with rich formatting
-  const welcomeMessage = `
-Olá! Eu sou o **Jarvis 5.4 mini**, sua inteligência operacional. 🚀
-
-Estou conectado diretamente ao banco de dados e pronto para extrair insights estratégicos para você. 
-
-**Como posso ajudar hoje?**
-*   📊 *Analisar o ranking de performance dos analistas*
-*   ⚠️ *Identificar lojas com SLA de implantação crítico*
-*   💡 *Gerar um resumo do NPS e suporte da semana*
-*   📉 *Verificar o churn risk da rede*
-  `;
 
   useEffect(() => {
     fetchSessions();
