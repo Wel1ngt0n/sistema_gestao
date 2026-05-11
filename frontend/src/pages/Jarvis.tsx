@@ -4,6 +4,7 @@ import {
   Send, 
   Database, 
   Brain, 
+  Activity,
   MessageSquare, 
   Terminal,
   Plus,
