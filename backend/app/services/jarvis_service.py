@@ -2,7 +2,7 @@ import logging
 import json
 from datetime import datetime
 from sqlalchemy import text
-from app.models import db, Store, User, TaskStep, IntegrationMetric, PerformanceReview, JarvisChatSession, JarvisChatMessage
+from app.models import db, JarvisChatSession, JarvisChatMessage
 from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class JarvisService:
         # Atualiza o timestamp da sessão
         session.updated_at = datetime.utcnow()
 
-        system_prompt = f"""
+        system_prompt = """
 Você é o JARVIS 5.4 mini, o braço direito inteligente da gestão Instabuy.
 Você tem acesso aos dados da operação (Implantadores, Lojas, SLAs, Financeiro e Suporte).
 
