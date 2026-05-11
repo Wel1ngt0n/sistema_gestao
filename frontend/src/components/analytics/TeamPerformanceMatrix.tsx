@@ -1,6 +1,6 @@
 ﻿import React, { useMemo, useState } from 'react';
 import { CapacityData, PerformanceData } from './useAnalyticsData';
-import { ArrowUpDown, AlertCircle, CheckCircle, TrendingUp, Zap } from 'lucide-react';
+import { ArrowUpDown, AlertCircle, CheckCircle, TrendingUp, Users, Zap } from 'lucide-react';
 
 interface TeamPerformanceMatrixProps {
     performanceData: PerformanceData[];
@@ -120,18 +120,34 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
 
     return (
         <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+            <div className="border-b border-zinc-100 bg-zinc-50 px-5 py-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                            <Users size={16} className="text-[#128131]" />
+                            Time & Performance
+                        </h3>
+                        <p className="mt-1 text-sm text-zinc-500">
+                            Compare esforço, carga atual, entregas e score por implantador.
+                        </p>
+                    </div>
+                    <span className="text-xs font-medium text-zinc-500">
+                        Clique em uma linha para abrir o detalhe
+                    </span>
+                </div>
+            </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                         <tr>
                             <th className="px-6 py-4 text-center w-16">#</th>
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('implantador')}>
+                            <th className="px-6 py-4 cursor-pointer transition-colors hover:bg-zinc-100" onClick={() => handleSort('implantador')}>
                                 <div className="flex items-center gap-2">Implantador <SortIcon field="implantador" /></div>
                             </th>
 
                             {/* New Workload Index Column */}
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('workload_index')}>
-                                <div className="flex items-center justify-end gap-2 text-orange-600 group relative">
+                            <th className="px-6 py-4 cursor-pointer text-right transition-colors hover:bg-zinc-100" onClick={() => handleSort('workload_index')}>
+                                <div className="group relative flex items-center justify-end gap-2 text-zinc-700">
                                     Índice de Esforço (Período) <SortIcon field="workload_index" />
                                     <div className="absolute bottom-full mb-2 hidden group-hover:block w-max rounded-md bg-zinc-800 px-3 py-2 text-xs font-medium text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none right-0">
                                         Soma dos pontos de WIP atual e entregas no período selecionado.
@@ -141,15 +157,15 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
 
                             <th className="px-6 py-4 text-center">Status (Risco)</th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('wip_current')}>
+                            <th className="px-6 py-4 cursor-pointer text-right transition-colors hover:bg-zinc-100" onClick={() => handleSort('wip_current')}>
                                 <div className="flex items-center justify-end gap-2">Carga Atual (WIP) <SortIcon field="wip_current" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('done_semester')}>
+                            <th className="px-6 py-4 cursor-pointer transition-colors hover:bg-zinc-100" onClick={() => handleSort('done_semester')}>
                                 <div className="flex items-center gap-2">Entregas do Semestre <SortIcon field="done_semester" /></div>
                             </th>
 
-                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('score')}>
+                            <th className="px-6 py-4 cursor-pointer text-right transition-colors hover:bg-zinc-100" onClick={() => handleSort('score')}>
                                 <div className="flex items-center justify-end gap-2">Score Total <SortIcon field="score" /></div>
                             </th>
                         </tr>
@@ -158,16 +174,16 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                         {sortedData.map((row) => (
                             <tr
                                 key={row.implantador}
-                                className={`group cursor-pointer transition-colors hover:bg-zinc-50 ${row.officialRank === 1 ? 'bg-amber-50/50' : ''
+                                className={`group cursor-pointer transition-colors hover:bg-zinc-50 ${row.officialRank === 1 ? 'bg-orange-50/40' : ''
                                     }`}
                                 onClick={() => onSelectImplantador?.(row.implantador)}
                             >
                                 {/* Rank */}
                                 <td className="px-6 py-4 text-center">
-                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full font-black text-sm shadow-sm ${row.officialRank === 1 ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-300' :
-                                        row.officialRank === 2 ? 'bg-slate-200 text-slate-700 ring-2 ring-slate-300' :
-                                            row.officialRank === 3 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-300' :
-                                                'bg-slate-50 text-slate-400'
+                                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-semibold ${row.officialRank === 1 ? 'border-orange-200 bg-orange-50 text-orange-700' :
+                                        row.officialRank === 2 ? 'border-zinc-200 bg-zinc-100 text-zinc-700' :
+                                            row.officialRank === 3 ? 'border-amber-200 bg-amber-50 text-amber-700' :
+                                                'border-zinc-200 bg-zinc-50 text-zinc-500'
                                         }`}>
                                         {row.officialRank}
                                     </div>
@@ -190,14 +206,14 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 {/* Workload Index */}
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex flex-col items-end">
-                                        <span className="text-base font-black text-orange-600">
+                                        <span className="text-base font-semibold text-zinc-900">
                                             {row.total_stores_semester || 0} Lojas
                                         </span>
                                         <div className="flex flex-col items-end">
-                                            <span className="text-xs text-slate-500 font-bold">
+                                            <span className="text-xs font-semibold text-zinc-500">
                                                 {(row.workload_index || 0).toFixed(1)} pts
                                             </span>
-                                            <span className="text-[10px] text-slate-400 font-mono">
+                                            <span className="font-mono text-[10px] text-zinc-400">
                                                 {(row.wip_current_points || 0).toFixed(1)} WIP + {(row.done_filtered_points || 0).toFixed(1)} Done
                                             </span>
                                         </div>
@@ -206,9 +222,9 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
 
                                 {/* Status / Risco */}
                                 <td className="px-6 py-4 text-center">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${row.risk === 'CRITICAL' ? 'bg-red-50 text-red-700 border-red-100' :
-                                        row.risk === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                            'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold ${row.risk === 'CRITICAL' ? 'border-red-100 bg-red-50 text-red-700' :
+                                        row.risk === 'HIGH' ? 'border-orange-100 bg-orange-50 text-orange-700' :
+                                            'border-emerald-100 bg-emerald-50 text-emerald-700'
                                         }`}>
                                         {row.risk === 'CRITICAL' ? <AlertCircle size={12} /> :
                                             row.risk === 'HIGH' ? <TrendingUp size={12} /> :
@@ -221,11 +237,11 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-sm font-bold text-slate-700">{row.wip_current_count} Lojas</span>
-                                            <span className="text-[10px] text-slate-400">({row.wip_current_points?.toFixed(0)} pts)</span>
+                                            <span className="text-sm font-semibold text-zinc-700">{row.wip_current_count} Lojas</span>
+                                            <span className="text-[10px] text-zinc-400">({row.wip_current_points?.toFixed(0)} pts)</span>
                                         </div>
-                                        <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-orange-500" style={{ width: `${Math.min(100, row.wip_current_count * 5)}%` }}></div>
+                                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-zinc-100">
+                                            <div className="h-full bg-orange-400" style={{ width: `${Math.min(100, row.wip_current_count * 5)}%` }}></div>
                                         </div>
                                     </div>
                                 </td>
@@ -235,11 +251,11 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                     <div className="flex flex-col gap-1">
                                         <div className="flex justify-between items-baseline">
                                             {/* Show Semester TOTAL points here */}
-                                            <span className="text-sm font-bold text-slate-800">{(row.capacity_semester_done || 0).toFixed(1)} pts</span>
-                                            <span className="text-xs text-slate-400">Semestre</span>
+                                            <span className="text-sm font-semibold text-zinc-800">{(row.capacity_semester_done || 0).toFixed(1)} pts</span>
+                                            <span className="text-xs text-zinc-400">Semestre</span>
                                         </div>
-                                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
-                                            <div className="h-full bg-lime-500" style={{ width: `${Math.min(100, (row.capacity_semester_done / (row.capacity_semester_total || 1)) * 100)}%` }}></div>
+                                        <div className="flex h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+                                            <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (row.capacity_semester_done / (row.capacity_semester_total || 1)) * 100)}%` }}></div>
                                         </div>
                                     </div>
                                 </td>
@@ -247,11 +263,11 @@ export const TeamPerformanceMatrix: React.FC<TeamPerformanceMatrixProps> = ({ pe
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <div className="flex flex-col items-end">
-                                            <span className="text-base font-black text-slate-900">{row.score?.toFixed(1)}</span>
-                                            <span className="text-[10px] text-lime-500 font-bold uppercase tracking-wider">Points</span>
+                                            <span className="text-base font-semibold text-zinc-900">{row.score?.toFixed(1)}</span>
+                                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">Points</span>
                                         </div>
-                                        <div className="p-2 bg-yellow-50 rounded-lg text-yellow-600">
-                                            <Zap size={16} fill="currentColor" />
+                                        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2 text-amber-600">
+                                            <Zap size={16} />
                                         </div>
                                     </div>
                                 </td>

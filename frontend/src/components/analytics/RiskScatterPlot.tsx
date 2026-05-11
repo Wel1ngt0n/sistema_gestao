@@ -3,7 +3,6 @@ import React, { useMemo } from 'react';
 import { EChartWrapper } from './EChartWrapper';
 import { useAnalyticsData } from './useAnalyticsData';
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
-import * as echarts from 'echarts'; // Import full echarts for Gradient
 import { Target } from 'lucide-react';
 
 export const RiskScatterPlot: React.FC = () => {
@@ -19,42 +18,42 @@ export const RiskScatterPlot: React.FC = () => {
         backgroundColor: 'transparent',
         tooltip: {
             trigger: 'item',
-            backgroundColor: 'rgba(24, 24, 27, 0.8)', // Zinc-900 (High Opacity)
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: '#fff',
+            borderColor: '#e4e4e7',
             borderWidth: 1,
             padding: 0,
-            textStyle: { color: '#f4f4f5' },
-            extraCssText: 'backdrop-filter: blur(12px); border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);',
+            textStyle: { color: '#3f3f46' },
+            extraCssText: 'border-radius: 8px; box-shadow: 0 16px 30px -18px rgba(24, 24, 27, 0.35);',
             formatter: (params: any) => {
                 const [days, score, mrr, name, status] = params.data;
                 const mrrFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrr || 0);
 
-                let statusColor = '#10b981'; // Emerald
-                if (score > 80) statusColor = '#ef4444'; // Red
-                else if (score > 50) statusColor = '#f97316'; // Orange (Nexus)
+                let statusColor = '#128131';
+                if (score > 80) statusColor = '#dc2626';
+                else if (score > 50) statusColor = '#ff7900';
 
                 return `
-                    <div style="padding: 16px; min-width: 220px; font-family: 'Inter', sans-serif;">
-                        <div style="font-weight: 800; font-size: 14px; margin-bottom: 8px; color: #fff; letter-spacing: -0.02em;">
+                    <div style="padding: 14px; min-width: 220px; font-family: 'Inter', sans-serif;">
+                        <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px; color: #18181b;">
                             ${name}
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${statusColor}; box-shadow: 0 0 8px ${statusColor};"></span>
-                             <span style="font-size: 12px; font-weight: 600; color: ${statusColor}; text-transform: uppercase; letter-spacing: 0.05em;">${status}</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${statusColor};"></span>
+                             <span style="font-size: 11px; font-weight: 700; color: ${statusColor}; text-transform: uppercase; letter-spacing: 0.04em;">${status}</span>
                         </div>
-                        
-                        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; display: grid; gap: 8px;">
+
+                        <div style="background: #fafafa; border: 1px solid #f4f4f5; border-radius: 8px; padding: 10px; display: grid; gap: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: #a1a1aa; font-size: 12px;">Risco</span>
-                                <b style="color: #fff; font-size: 13px;">${score}/100</b>
+                                <span style="color: #71717a; font-size: 12px;">Risco</span>
+                                <b style="color: #18181b; font-size: 13px;">${score}/100</b>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: #a1a1aa; font-size: 12px;">Tempo (Gargalo)</span>
-                                <b style="color: #fff; font-size: 13px;">${days} dias</b>
+                                <span style="color: #71717a; font-size: 12px;">Dias no gargalo</span>
+                                <b style="color: #18181b; font-size: 13px;">${days} dias</b>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: #a1a1aa; font-size: 12px;">MRR</span>
-                                <b style="color: #fff; font-size: 13px;">${mrrFormatted}</b>
+                                <span style="color: #71717a; font-size: 12px;">MRR</span>
+                                <b style="color: #18181b; font-size: 13px;">${mrrFormatted}</b>
                             </div>
                         </div>
                     </div>
@@ -62,10 +61,10 @@ export const RiskScatterPlot: React.FC = () => {
             }
         },
         grid: {
-            left: '5%',
-            right: '5%',
+            left: '4%',
+            right: '4%',
             top: '8%',
-            bottom: '12%',
+            bottom: '13%',
             containLabel: true
         },
         xAxis: {
@@ -73,9 +72,10 @@ export const RiskScatterPlot: React.FC = () => {
             name: 'Dias na Etapa',
             nameLocation: 'middle',
             nameGap: 30,
-            splitLine: { show: false }, // Cleaner look
+            splitLine: { lineStyle: { color: 'rgba(100, 116, 139, 0.08)' } },
             axisLine: { lineStyle: { color: '#d4d4d8' } },
-            axisLabel: { color: '#71717a', fontFamily: 'Inter' }
+            axisLabel: { color: '#71717a', fontFamily: 'Inter', fontSize: 11 },
+            nameTextStyle: { color: '#71717a', fontSize: 11, fontWeight: 500 }
         },
         yAxis: {
             type: 'value',
@@ -85,10 +85,11 @@ export const RiskScatterPlot: React.FC = () => {
             min: 0,
             max: 100,
             splitLine: {
-                lineStyle: { type: 'dashed', opacity: 0.15, color: '#a1a1aa' }
+                lineStyle: { type: 'dashed', opacity: 0.2, color: '#a1a1aa' }
             },
             axisLine: { show: false },
-            axisLabel: { color: '#71717a', fontFamily: 'Inter' }
+            axisLabel: { color: '#71717a', fontFamily: 'Inter', fontSize: 11 },
+            nameTextStyle: { color: '#71717a', fontSize: 11, fontWeight: 500 }
         },
         series: [
             {
@@ -96,29 +97,20 @@ export const RiskScatterPlot: React.FC = () => {
                 name: 'Lojas',
                 symbolSize: (data: any) => {
                     const mrr = data[2];
-                    return Math.max(12, Math.min(70, Math.sqrt(mrr || 0) * 0.9));
+                    return Math.max(10, Math.min(42, Math.sqrt(mrr || 0) * 0.58));
                 },
                 data: chartData,
                 itemStyle: {
                     color: (params: any) => {
                         const score = params.data[1];
-                        let colorStops;
-
-                        if (score >= 80) { // High Risk (Red)
-                            colorStops = [{ offset: 0, color: '#f87171' }, { offset: 1, color: '#dc2626' }];
-                        } else if (score >= 50) { // Medium (Orange)
-                            colorStops = [{ offset: 0, color: '#fbbf24' }, { offset: 1, color: '#f97316' }];
-                        } else { // Low (Emerald)
-                            colorStops = [{ offset: 0, color: '#34d399' }, { offset: 1, color: '#059669' }];
-                        }
-
-                        return new echarts.graphic.RadialGradient(0.4, 0.3, 1, [
-                            ...colorStops,
-                        ]);
+                        if (score >= 80) return 'rgba(220, 38, 38, 0.68)';
+                        if (score >= 50) return 'rgba(255, 121, 0, 0.68)';
+                        return 'rgba(18, 129, 49, 0.66)';
                     },
-                    shadowBlur: 15,
-                    shadowColor: 'rgba(0, 0, 0, 0.3)',
-                    opacity: 0.9
+                    borderColor: '#fff',
+                    borderWidth: 1,
+                    shadowBlur: 0,
+                    opacity: 0.9,
                 },
                 markLine: {
                     silent: true,
@@ -126,23 +118,23 @@ export const RiskScatterPlot: React.FC = () => {
                     label: {
                         position: 'insideEndTop',
                         formatter: '{b}',
-                        color: '#71717a', // Zinc-500
+                        color: '#52525b',
                         fontSize: 11,
-                        fontWeight: 'bold',
+                        fontWeight: 600,
                         padding: [4, 8],
                         borderRadius: 4,
-                        backgroundColor: 'rgba(24, 24, 27, 0.5)'
+                        backgroundColor: '#f4f4f5'
                     },
                     data: [
                         {
                             yAxis: 80,
                             name: 'CRÍTICO',
-                            lineStyle: { color: '#ef4444', type: 'solid', width: 2, shadowBlur: 5, shadowColor: '#ef4444' }
+                            lineStyle: { color: 'rgba(220, 38, 38, 0.45)', type: 'solid', width: 1.5 }
                         },
                         {
                             yAxis: 50,
                             name: 'ATENÇÃO',
-                            lineStyle: { color: '#f97316', type: 'dashed', width: 1.5 }
+                            lineStyle: { color: 'rgba(255, 121, 0, 0.55)', type: 'dashed', width: 1.5 }
                         }
                     ]
                 }
@@ -162,8 +154,13 @@ export const RiskScatterPlot: React.FC = () => {
             <p className="mb-4 text-sm text-zinc-500">
                 Lojas no topo (risco) e à direita (tempo parado) são críticas. Bolha indica MRR.
             </p>
+            <div className="mb-3 flex flex-wrap gap-3 text-xs font-medium text-zinc-500">
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#128131]" /> Baixo</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#ff7900]" /> Atenção</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-600" /> Crítico</span>
+            </div>
 
-            <div className="relative w-full h-[400px]">
+            <div className="relative h-[380px] w-full">
                 {(!chartData || chartData.length === 0) && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50/80 z-10 backdrop-blur-sm rounded-xl">
                         <span className="text-sm font-medium text-slate-500">Aguardando dados...</span>

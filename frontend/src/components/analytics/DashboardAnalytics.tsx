@@ -242,21 +242,15 @@ export default function DashboardAnalytics() {
                 type: 'line' as const,
                 label: 'Cycle Time Médio (dias)',
                 data: safeTrendData.map(d => d.cycle_time_avg),
-                borderColor: '#84cc16', // Lime-500
-                backgroundColor: (context: any) => {
-                    const ctx = context.chart.ctx;
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                    gradient.addColorStop(0, 'rgba(132, 204, 22, 0.4)');
-                    gradient.addColorStop(1, 'rgba(132, 204, 22, 0.0)');
-                    return gradient;
-                },
-                pointBackgroundColor: '#84cc16',
+                borderColor: '#128131',
+                backgroundColor: 'rgba(18, 129, 49, 0.08)',
+                pointBackgroundColor: '#128131',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                borderWidth: 3,
-                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                borderWidth: 2.5,
+                tension: 0.35,
                 fill: true,
                 yAxisID: 'y',
             },
@@ -264,13 +258,98 @@ export default function DashboardAnalytics() {
                 type: 'bar' as const,
                 label: 'OTD %',
                 data: safeTrendData.map(d => d.otd_percentage),
-                backgroundColor: '#10b981', // Emerald-500
-                hoverBackgroundColor: '#059669', // Emerald-600
+                backgroundColor: 'rgba(255, 121, 0, 0.24)',
+                hoverBackgroundColor: 'rgba(255, 121, 0, 0.36)',
+                borderColor: 'rgba(255, 121, 0, 0.55)',
+                borderWidth: 1,
                 borderRadius: 4,
-                barPercentage: 0.4,
+                borderSkipped: false,
+                barPercentage: 0.45,
+                categoryPercentage: 0.8,
                 yAxisID: 'y1',
             },
         ],
+    };
+
+    const efficiencyChartOptions: ChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'bottom' as const,
+                align: 'start' as const,
+                labels: {
+                    boxHeight: 8,
+                    boxWidth: 18,
+                    color: '#52525b',
+                    padding: 18,
+                    usePointStyle: true,
+                    font: { size: 11, weight: 500 },
+                },
+            },
+            tooltip: {
+                backgroundColor: '#18181b',
+                titleColor: '#fff',
+                bodyColor: '#e4e4e7',
+                borderColor: '#27272a',
+                borderWidth: 1,
+                cornerRadius: 6,
+                displayColors: true,
+                padding: 12,
+                callbacks: {
+                    label: function (context: any) {
+                        if (context.dataset.label === 'OTD %') {
+                            return `OTD: ${context.parsed.y ?? 0}%`;
+                        }
+                        return `Cycle time: ${context.parsed.y ?? 0} dias`;
+                    }
+                }
+            },
+        },
+        layout: { padding: { top: 8, right: 8, bottom: 0, left: 0 } },
+        scales: {
+            y: {
+                position: 'left' as const,
+                grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
+                ticks: { color: '#71717a', font: { size: 11 } },
+                title: {
+                    display: true,
+                    text: 'Cycle time (dias)',
+                    color: '#71717a',
+                    font: { size: 11, weight: 500 },
+                },
+                border: { display: false },
+                beginAtZero: true,
+            },
+            y1: {
+                position: 'right' as const,
+                grid: { drawOnChartArea: false, drawTicks: false },
+                ticks: {
+                    color: '#71717a',
+                    font: { size: 11 },
+                    callback: (val: any) => `${val}%`,
+                },
+                title: {
+                    display: true,
+                    text: 'OTD',
+                    color: '#71717a',
+                    font: { size: 11, weight: 500 },
+                },
+                border: { display: false },
+                min: 0,
+                max: 100,
+            },
+            x: {
+                grid: { display: false },
+                ticks: { color: '#71717a', font: { size: 11 }, maxRotation: 0, autoSkip: true },
+                border: { display: false },
+            },
+        },
     };
 
     return (
@@ -384,22 +463,17 @@ export default function DashboardAnalytics() {
 
                             {/* Eficiência Operacional */}
                             <div aria-label="Dashboard Analytics" className="h-full rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                                <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-950">
                                     <Target size={16} className="text-[#128131]" />
                                     Eficiência Operacional
                                     <InfoTooltip text="Combinação de Cycle Time e OTD ao longo do tempo." />
                                 </h3>
-                                <div aria-label="Dashboard Analytics" className="h-[350px]">
+                                <p className="text-sm text-zinc-500">Acompanhe prazo médio de entrega e percentual no prazo ao longo dos meses.</p>
+                                <div aria-label="Dashboard Analytics" className="mt-5 h-[400px]">
                                     <Chart
                                         type='line'
                                         data={efficiencyChartData}
-                                        options={{
-                                            ...chartOptions,
-                                            scales: {
-                                                y: { ...chartOptions.scales!.y, position: 'left' },
-                                                y1: { ...chartOptions.scales!.y, position: 'right', grid: { drawOnChartArea: false } }
-                                            }
-                                        }}
+                                        options={efficiencyChartOptions}
                                     />
                                 </div>
                             </div>
