@@ -618,16 +618,16 @@ export default function DashboardAnalytics() {
                                         <table className="w-full text-sm text-left">
                                             <thead className="border-b border-zinc-100 bg-zinc-50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                                                 <tr>
-                                                    <th className="w-10 px-4 py-4 text-center">#</th>
-                                                    <th className="cursor-pointer px-4 py-4 transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('implantador')}>Analista</th>
-                                                    <th className="cursor-pointer px-4 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('score')}>Score</th>
-                                                    <th className="px-4 py-4 text-center">Risco</th>
-                                                    <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('carga_ponderada')}>Carga (pts)</th>
-                                                    <th className="px-4 py-4 text-right">WIP</th>
-                                                    <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('entregas_mes')}>Entregas</th>
-                                                    <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_retrabalho')}>Retrab.</th>
-                                                    <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('idle_medio')}>Idle</th>
-                                                    <th className="cursor-pointer px-4 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_sla_concluidas')}>SLA</th>
+                                                    <th className="w-8 px-3 py-3 text-center">#</th>
+                                                    <th className="cursor-pointer px-3 py-3 transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('implantador')}>Analista</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('score')}>Score</th>
+                                                    <th className="px-3 py-3 text-center">Risco</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('carga_ponderada')}>Carga</th>
+                                                    <th className="px-3 py-3 text-right">WIP</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('entregas_mes')}>Entregas</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_retrabalho')}>Retr.</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('idle_medio')}>Idle</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_sla_concluidas')}>SLA</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-zinc-100">
@@ -642,12 +642,12 @@ export default function DashboardAnalytics() {
                                                             onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
                                                             className={`group cursor-pointer transition-all hover:bg-zinc-50/80 ${idx === 0 ? 'bg-orange-50/20' : ''}`}
                                                         >
-                                                            <td className="px-4 py-4 text-center">
-                                                                <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded text-[10px] font-black ${idx === 0 ? 'bg-orange-100 text-orange-700' : idx === 1 ? 'bg-zinc-100 text-zinc-500' : idx === 2 ? 'bg-amber-100 text-amber-700' : 'text-zinc-300'}`}>
+                                                            <td className="px-3 py-2.5 text-center">
+                                                                <div className={`mx-auto flex h-5 w-5 items-center justify-center rounded text-[10px] font-black ${idx === 0 ? 'bg-orange-100 text-orange-700' : idx === 1 ? 'bg-zinc-100 text-zinc-500' : idx === 2 ? 'bg-amber-100 text-amber-700' : 'text-zinc-300'}`}>
                                                                     {idx + 1}
                                                                 </div>
                                                             </td>
-                                                            <td className="px-4 py-4">
+                                                            <td className="px-3 py-2.5">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-[10px] font-bold text-zinc-400 group-hover:border-orange-200 group-hover:text-orange-500 transition-colors">
                                                                         {item.implantador.substring(0, 2).toUpperCase()}
@@ -655,18 +655,18 @@ export default function DashboardAnalytics() {
                                                                     <span className="font-semibold text-zinc-700 group-hover:text-zinc-950 transition-colors">{item.implantador}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-4 py-4 text-center">
+                                                            <td className="px-3 py-2.5 text-center">
                                                                 <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
                                                             </td>
-                                                            <td className="px-4 py-4 text-center">
+                                                            <td className="px-3 py-2.5 text-center">
                                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${risk === 'CRITICAL' ? 'bg-red-50 text-red-600' : risk === 'HIGH' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>
                                                                     {risk}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-4 py-4 text-right font-mono text-xs font-bold text-zinc-600">
+                                                            <td className="px-3 py-2.5 text-right font-mono text-xs font-bold text-zinc-600">
                                                                 {item.carga_ponderada?.toFixed(1)}
                                                             </td>
-                                                            <td className="px-4 py-4 text-right">
+                                                            <td className="px-3 py-2.5 text-right">
                                                                 <div className="flex flex-col items-end">
                                                                     <span className="text-xs font-bold text-zinc-700">{wipCount}</span>
                                                                     <span className="text-[9px] font-medium text-zinc-400">{wipPts?.toFixed(0)} pts</span>
