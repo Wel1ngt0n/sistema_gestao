@@ -1,75 +1,129 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
+import {
+    AlertCircle,
+    AtSign,
+    BadgeCheck,
+    Camera,
+    CheckCircle2,
+    Fingerprint,
+    ImageOff,
+    KeyRound,
+    LockKeyhole,
+    LogOut,
+    Mail,
+    QrCode,
+    Save,
+    ShieldAlert,
+    ShieldCheck,
+    Upload,
+    User,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
-import {
-    User, Mail, ShieldAlert, ShieldCheck, Camera,
-    Save, KeyRound, QrCode, LogOut
-} from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 
 export const ProfilePage = () => {
+    const navigate = useNavigate();
     const { user, login, logout } = useAuth();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Form States
     const [name, setName] = useState(user?.name || '');
+    const [email, setEmail] = useState(user?.email || '');
+    const [currentPassword, setCurrentPassword] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [profilePic, setProfilePic] = useState<string | null>(user?.profile_picture || null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Feedback States
     const [loading, setLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
-    // 2FA States
     const [qrCodeUri, setQrCodeUri] = useState<string | null>(null);
     const [verifyCode, setVerifyCode] = useState('');
     const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
 
+    const emailChanged = email.trim().toLowerCase() !== (user?.email || '').toLowerCase();
+    const changingPassword = Boolean(password || confirmPassword);
+    const needsCurrentPassword = emailChanged || changingPassword;
+    const initials = (name || user?.name || 'U')
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase();
+
     useEffect(() => {
         if (user) {
             setName(user.name);
+            setEmail(user.email);
             setProfilePic(user.profile_picture || null);
         }
     }, [user]);
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) { // 2MB limit
-                setErrorMsg('A imagem deve ter no máximo 2MB.');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfilePic(reader.result as string);
-                setErrorMsg('');
-            };
-            reader.readAsDataURL(file);
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            setErrorMsg('A imagem deve ter no maximo 2MB.');
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setProfilePic(reader.result as string);
+            setErrorMsg('');
+        };
+        reader.readAsDataURL(file);
     };
 
-    const handleSaveProfile = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSaveProfile = async (event: React.FormEvent) => {
+        event.preventDefault();
         setSuccessMsg('');
         setErrorMsg('');
 
-        if (password && password !== confirmPassword) {
-            setErrorMsg('As senhas não conferem.');
+        if (!name.trim()) {
+            setErrorMsg('Informe seu nome completo.');
+            return;
+        }
+
+        if (!email.trim()) {
+            setErrorMsg('Informe seu e-mail.');
+            return;
+        }
+
+        if (password && password.length < 8) {
+            setErrorMsg('A nova senha deve ter pelo menos 8 caracteres.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setErrorMsg('As senhas nao conferem.');
+            return;
+        }
+
+        if (needsCurrentPassword && !currentPassword) {
+            setErrorMsg('Informe sua senha atual para alterar e-mail ou senha.');
             return;
         }
 
         setLoading(true);
         try {
-            const payload: any = { name, profile_picture: profilePic };
+            const payload: Record<string, string | null> = {
+                name: name.trim(),
+                email: email.trim().toLowerCase(),
+                profile_picture: profilePic,
+            };
+
+            if (currentPassword) payload.current_password = currentPassword;
             if (password) payload.password = password;
 
-            const res = await api.put('/api/profile', payload);
-
-            login(res.data.user);
-
-            setSuccessMsg('Perfil atualizado com sucesso!');
+            const response = await api.put('/api/profile', payload);
+            login(response.data.user);
+            setSuccessMsg('Perfil atualizado com sucesso.');
+            setCurrentPassword('');
             setPassword('');
             setConfirmPassword('');
         } catch (err: any) {
@@ -81,265 +135,350 @@ export const ProfilePage = () => {
 
     const handleSetup2FA = async () => {
         setIs2FAModalOpen(true);
+        setErrorMsg('');
         try {
-            const res = await api.post('/api/auth/setup-2fa');
-            setQrCodeUri(res.data.uri);
+            const response = await api.post('/api/auth/setup-2fa');
+            setQrCodeUri(response.data.uri);
             setVerifyCode('');
-        } catch (err: any) {
+        } catch {
             setErrorMsg('Erro ao configurar 2FA.');
+            setIs2FAModalOpen(false);
         }
     };
 
-    const handleVerifyAndEnable2FA = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleVerifyAndEnable2FA = async (event: React.FormEvent) => {
+        event.preventDefault();
         setErrorMsg('');
         try {
             await api.post('/api/auth/enable-2fa', { code: verifyCode });
-
-            if (user) {
-                login({ ...user, totp_enabled: true });
-            }
-
+            if (user) login({ ...user, totp_enabled: true });
             setIs2FAModalOpen(false);
-            setSuccessMsg('Autenticação em Dois Fatores (2FA) Ativada com Sucesso!');
+            setSuccessMsg('Autenticacao em dois fatores ativada com sucesso.');
         } catch (err: any) {
-            setErrorMsg(err.response?.data?.error || 'Código inválido. Tente novamente.');
+            setErrorMsg(err.response?.data?.error || 'Codigo invalido. Tente novamente.');
         }
     };
 
-    return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            {/* SEO Metadata for Audit */}
-            <div className="hidden" aria-hidden="true">
-                <meta name="description" content="Perfil do Usuário - Sistema de Gestão Instabuy" />
-                <meta property="og:title" content="Meu Perfil" />
-            </div>
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login', { replace: true });
+    };
 
-            <header className="mb-8">
-                <h1 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Meu Perfil</h1>
-                <p className="text-zinc-500 mt-2">Gerencie suas informações pessoais e configurações de segurança da conta.</p>
+    return (
+        <div className="mx-auto max-w-7xl space-y-6">
+            <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-600 shadow-sm">
+                        <Fingerprint className="h-4 w-4" />
+                        Conta e seguranca
+                    </div>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-950">Meu perfil</h1>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                        Atualize dados pessoais, contato, foto, senha e protecao da conta.
+                    </p>
+                </div>
+
+                <button
+                    onClick={handleLogout}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-600 transition hover:bg-red-100"
+                >
+                    <LogOut className="h-4 w-4" />
+                    Sair da conta
+                </button>
             </header>
 
             {successMsg && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-medium rounded-xl flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 shrink-0" /> {successMsg}
+                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                    <CheckCircle2 className="h-5 w-5" />
+                    {successMsg}
                 </div>
             )}
 
             {errorMsg && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 font-medium rounded-xl flex items-center gap-2">
-                    <ShieldAlert className="w-5 h-5 shrink-0" /> {errorMsg}
+                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    <AlertCircle className="h-5 w-5" />
+                    {errorMsg}
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Lateral Esquerda - Avatar & Segurança Básica */}
-                <div className="lg:col-span-1 space-y-6">
-                    {/* AVATAR UPLOAD */}
-                    <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
-                        <div className="relative group mb-4">
-                            <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-100 border-4 border-white shadow-xl relative">
-                                {profilePic ? (
-                                    <img src={profilePic} alt="Avatar" className="w-full h-full object-cover" />
-                                ) : (
-                                    <User className="w-16 h-16 text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                                )}
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_1fr]">
+                <aside className="space-y-6">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="relative">
+                                <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-xl ring-1 ring-slate-200">
+                                    {profilePic ? (
+                                        <img src={profilePic} alt="Avatar" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <span className="text-4xl font-black text-slate-400">{initials}</span>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute bottom-1 right-1 flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg transition hover:bg-orange-600"
+                                    title="Alterar foto"
+                                >
+                                    <Camera className="h-5 w-5" />
+                                </button>
                             </div>
 
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="absolute bottom-0 right-0 p-3 rounded-full bg-orange-600 text-white shadow-lg hover:bg-orange-500 transition-transform hover:scale-105"
-                                title="Alterar Foto"
-                            >
-                                <Camera className="w-5 h-5" />
-                            </button>
                             <input
-                                type="file"
                                 ref={fileInputRef}
+                                type="file"
                                 className="hidden"
                                 accept="image/png, image/jpeg, image/webp"
                                 onChange={handleImageUpload}
                             />
-                        </div>
-                        <h3 className="text-lg font-bold text-zinc-900 truncate w-full">{user?.name}</h3>
-                        <p className="text-sm text-zinc-500 flex items-center justify-center gap-1.5"><Mail className="w-4 h-4" /> {user?.email}</p>
 
-                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                            {user?.roles.map(role => (
-                                <span key={role} className="px-2.5 py-1 bg-orange-500/10 text-orange-600 border border-orange-500/20 text-xs font-bold rounded-md uppercase tracking-wider">
-                                    {role}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
+                            <h2 className="mt-5 max-w-full truncate text-xl font-black text-slate-950">{user?.name}</h2>
+                            <p className="mt-1 flex max-w-full items-center justify-center gap-2 truncate text-sm text-slate-500">
+                                <Mail className="h-4 w-4 shrink-0" />
+                                {user?.email}
+                            </p>
 
-                    {/* STATUS 2FA */}
-                    <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                        <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4" /> Segurança (2FA)
-                        </h4>
+                            <div className="mt-4 flex flex-wrap justify-center gap-2">
+                                {user?.roles.map((role) => (
+                                    <span key={role} className="rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-orange-600">
+                                        {role}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                <Upload className="h-4 w-4" />
+                                Enviar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setProfilePic(null)}
+                                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                <ImageOff className="h-4 w-4" />
+                                Remover
+                            </button>
+                        </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Seguranca</h3>
+                                <p className="mt-1 text-xs text-slate-500">Status de protecao da sua conta.</p>
+                            </div>
+                            {user?.totp_enabled ? (
+                                <BadgeCheck className="h-6 w-6 text-emerald-500" />
+                            ) : (
+                                <ShieldAlert className="h-6 w-6 text-orange-500" />
+                            )}
+                        </div>
 
                         {user?.totp_enabled ? (
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
-                                <ShieldCheck className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                                <h5 className="font-bold text-emerald-600">2FA Ativado</h5>
-                                <p className="text-xs text-emerald-600/70 mt-1">Sua conta está protegida por dupla validação.</p>
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                                <ShieldCheck className="mb-3 h-8 w-8 text-emerald-600" />
+                                <h4 className="font-black text-emerald-700">2FA ativo</h4>
+                                <p className="mt-1 text-sm leading-5 text-emerald-700/75">Sua conta exige codigo temporario no login.</p>
                             </div>
                         ) : (
-                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 text-center">
-                                <ShieldAlert className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                                <h5 className="font-bold text-orange-600">2FA Desativado</h5>
-                                <p className="text-xs text-orange-600/70 mt-1 mb-4">Adicione uma camada extra de proteção.</p>
+                            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                                <ShieldAlert className="mb-3 h-8 w-8 text-orange-600" />
+                                <h4 className="font-black text-orange-700">2FA pendente</h4>
+                                <p className="mt-1 text-sm leading-5 text-orange-700/75">Ative a segunda etapa para reduzir risco de acesso indevido.</p>
                                 <button
+                                    type="button"
                                     onClick={handleSetup2FA}
-                                    className="w-full py-2 bg-orange-600 hover:bg-orange-500 text-white font-medium rounded-lg text-sm transition-colors"
+                                    className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 text-sm font-black text-white transition hover:bg-orange-600"
                                 >
+                                    <QrCode className="h-4 w-4" />
                                     Configurar 2FA
                                 </button>
                             </div>
                         )}
-                    </div>
+                    </section>
+                </aside>
 
-                    {/* LOGOUT */}
-                    <button
-                        onClick={logout}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-xl transition-colors border border-red-200"
-                    >
-                        <LogOut className="w-5 h-5" /> Sair da Conta
-                    </button>
-                </div>
-
-                {/* Área Principal - Forms */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white border border-zinc-200 rounded-2xl p-8 shadow-sm">
-                        <h2 className="text-xl font-bold text-zinc-900 mb-6">Informações Pessoais</h2>
-
-                        <form onSubmit={handleSaveProfile} className="space-y-5">
+                <form onSubmit={handleSaveProfile} className="space-y-6">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+                        <div className="mb-6 flex items-start justify-between gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Nome Completo</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <User className="w-5 h-5 text-zinc-400" />
-                                    </div>
+                                <h2 className="text-xl font-black text-slate-950">Informacoes pessoais</h2>
+                                <p className="mt-1 text-sm text-slate-500">Nome e contato usados para identificacao no sistema.</p>
+                            </div>
+                            <User className="h-6 w-6 text-orange-500" />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                            <label className="space-y-2">
+                                <span className="text-xs font-black uppercase tracking-wide text-slate-500">Nome completo</span>
+                                <span className="relative block">
+                                    <User className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="text"
                                         value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 font-medium transition-shadow"
+                                        onChange={(event) => setName(event.target.value)}
+                                        className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
                                         required
                                     />
-                                </div>
+                                </span>
+                            </label>
+
+                            <label className="space-y-2">
+                                <span className="text-xs font-black uppercase tracking-wide text-slate-500">E-mail</span>
+                                <span className="relative block">
+                                    <AtSign className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(event) => setEmail(event.target.value)}
+                                        className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
+                                        required
+                                    />
+                                </span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+                        <div className="mb-6 flex items-start justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-black text-slate-950">Credenciais</h2>
+                                <p className="mt-1 text-sm text-slate-500">Use a senha atual para confirmar alteracoes sensiveis.</p>
                             </div>
-
-                            <div className="pt-4 border-t border-zinc-100/50">
-                                <h3 className="text-sm font-bold text-zinc-900 mb-4">Alterar Senha</h3>
-                                <p className="text-xs text-zinc-500 mb-4">Deixe em branco caso não queira alterar sua senha atual.</p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Nova Senha</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <KeyRound className="w-5 h-5 text-zinc-400" />
-                                            </div>
-                                            <input
-                                                type="password"
-                                                value={password}
-                                                onChange={e => setPassword(e.target.value)}
-                                                placeholder="Nova Senha"
-                                                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-shadow"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Confirmar Nova Senha</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <KeyRound className="w-5 h-5 text-zinc-400" />
-                                            </div>
-                                            <input
-                                                type="password"
-                                                value={confirmPassword}
-                                                onChange={e => setConfirmPassword(e.target.value)}
-                                                placeholder="Confirme a Senha"
-                                                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-shadow"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-6 flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="px-6 py-3 bg-zinc-900 text-white font-bold rounded-xl flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    {loading ? 'Salvando...' : (
-                                        <>
-                                            <Save className="w-5 h-5" /> Salvar Alterações
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {/* Modal de Configuração do 2FA */}
-            {is2FAModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-8 duration-300">
-                        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-950/50">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2"><QrCode className="w-5 h-5 text-orange-500" /> Configurar Autenticador</h2>
+                            <LockKeyhole className="h-6 w-6 text-orange-500" />
                         </div>
 
-                        <div className="p-8">
-                            <ol className="list-decimal list-inside text-zinc-400 space-y-4 mb-8">
-                                <li>Baixe o <strong>Google Authenticator</strong> ou Authy.</li>
-                                <li>Escaneie o QR Code abaixo com o aplicativo.</li>
-                                <li>Digite o código de 6 dígitos gerado para confirmar.</li>
-                            </ol>
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                            <label className="space-y-2">
+                                <span className="text-xs font-black uppercase tracking-wide text-slate-500">Senha atual</span>
+                                <span className="relative block">
+                                    <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(event) => setCurrentPassword(event.target.value)}
+                                        placeholder={needsCurrentPassword ? 'Obrigatoria' : 'Opcional'}
+                                        className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
+                                        autoComplete="current-password"
+                                    />
+                                </span>
+                            </label>
 
-                            <div className="flex justify-center mb-8 p-4 bg-white rounded-2xl w-fit mx-auto">
+                            <label className="space-y-2">
+                                <span className="text-xs font-black uppercase tracking-wide text-slate-500">Nova senha</span>
+                                <span className="relative block">
+                                    <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(event) => setPassword(event.target.value)}
+                                        placeholder="Minimo 8 caracteres"
+                                        className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
+                                        autoComplete="new-password"
+                                    />
+                                </span>
+                            </label>
+
+                            <label className="space-y-2">
+                                <span className="text-xs font-black uppercase tracking-wide text-slate-500">Confirmar senha</span>
+                                <span className="relative block">
+                                    <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(event) => setConfirmPassword(event.target.value)}
+                                        placeholder="Repita a senha"
+                                        className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
+                                        autoComplete="new-password"
+                                    />
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-500">
+                            Alterar e-mail ou senha exige a senha atual. Alteracoes simples, como nome e foto, podem ser salvas sem confirmar credenciais.
+                        </div>
+                    </section>
+
+                    <div className="flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex h-12 min-w-48 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {loading ? (
+                                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    Salvar alteracoes
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {is2FAModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                            <div>
+                                <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+                                    <QrCode className="h-5 w-5 text-orange-500" />
+                                    Configurar autenticador
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">Escaneie o QR Code e confirme o codigo.</p>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="mx-auto mb-6 flex w-fit justify-center rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 {qrCodeUri ? (
                                     <QRCodeSVG value={qrCodeUri} size={200} level="M" />
                                 ) : (
-                                    <div className="w-[200px] h-[200px] bg-zinc-100 flex items-center justify-center text-zinc-400">Gerando...</div>
+                                    <div className="flex h-[200px] w-[200px] items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-slate-400">
+                                        Gerando...
+                                    </div>
                                 )}
                             </div>
 
-                            <form onSubmit={handleVerifyAndEnable2FA}>
-                                <div className="space-y-2 mb-6">
-                                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block text-center">Código do Aplicativo</label>
+                            <form onSubmit={handleVerifyAndEnable2FA} className="space-y-5">
+                                <label className="block space-y-2">
+                                    <span className="block text-center text-xs font-black uppercase tracking-wide text-slate-500">Codigo do aplicativo</span>
                                     <input
                                         type="text"
                                         value={verifyCode}
-                                        onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full max-w-xs mx-auto block text-center tracking-[0.5em] text-3xl py-4 bg-zinc-950 border border-zinc-800 rounded-xl text-white placeholder-zinc-800 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-mono"
+                                        onChange={(event) => setVerifyCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        className="mx-auto block h-16 w-full max-w-xs rounded-xl border border-slate-200 bg-slate-50 text-center font-mono text-3xl font-black tracking-[0.5em] text-slate-950 outline-none transition placeholder:text-slate-300 focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
                                         placeholder="000000"
                                         required
                                         autoFocus
                                         maxLength={6}
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
                                     />
-                                </div>
+                                </label>
 
-                                <div className="flex gap-4">
+                                <div className="flex flex-col gap-3 sm:flex-row">
                                     <button
                                         type="button"
                                         onClick={() => setIs2FAModalOpen(false)}
-                                        className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
+                                        className="h-12 rounded-xl border border-slate-200 px-6 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={verifyCode.length !== 6}
-                                        className="flex-1 py-3 px-4 bg-orange-600 hover:bg-orange-500 disabled:bg-orange-600/50 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+                                        className="flex h-12 flex-1 items-center justify-center rounded-xl bg-orange-500 px-6 text-sm font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        Validar e Ativar
+                                        Validar e ativar
                                     </button>
                                 </div>
                             </form>

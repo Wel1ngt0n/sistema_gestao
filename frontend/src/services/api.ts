@@ -15,6 +15,8 @@ export const setAccessToken = (token?: string | null) => {
     inMemoryAccessToken = token || null;
 };
 
+export const getAccessToken = () => inMemoryAccessToken;
+
 export const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5003',
     withCredentials: true,
