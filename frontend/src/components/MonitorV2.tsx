@@ -290,7 +290,7 @@ export default function MonitorV2() {
     if (loading && data.length === 0) return <SkeletonLoader />;
 
     return (
-        <div aria-label="Monitor View" className="relative flex flex-col min-h-screen gap-4 bg-[#EEF0F8] p-4 text-zinc-900 font-sans transition-colors duration-300 w-full max-w-full overflow-x-hidden md:p-6">
+        <div aria-label="Monitor View" className="relative flex h-full min-h-0 w-full max-w-full flex-col gap-4 overflow-hidden bg-[#EEF0F8] p-4 font-sans text-zinc-900 transition-colors duration-300 md:p-6">
 
             <MonitorAIModal
                 isOpen={aiModalOpen}
@@ -318,8 +318,8 @@ export default function MonitorV2() {
             />
 
             {/* Área de Conteúdo */}
-            <div aria-label="Monitor View" className="flex-1 w-full max-w-full overflow-hidden">
-                <div aria-label="Monitor View" className={`mx-auto ${viewMode === 'kanban' ? 'w-full px-2' : 'max-w-full'} animate-fade-in-up transition-all duration-300`}>
+            <div aria-label="Monitor View" className="min-h-0 w-full max-w-full flex-1 overflow-hidden">
+                <div aria-label="Monitor View" className={`mx-auto h-full min-w-0 ${viewMode === 'kanban' ? 'w-full' : 'max-w-full overflow-y-auto'} animate-fade-in-up transition-all duration-300`}>
 
                     {/* Conteúdo da Visualização */}
                     {viewMode === 'table' && (
@@ -334,7 +334,7 @@ export default function MonitorV2() {
                     )}
 
                     {viewMode === 'kanban' && (
-                        <div aria-label="Monitor View" className="overflow-x-auto pb-4">
+                        <div aria-label="Monitor View" className="h-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 pr-1">
                             <MonitorKanbanView
                                 data={filteredData}
                                 visibleFields={kanbanFields}

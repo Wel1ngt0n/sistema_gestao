@@ -96,7 +96,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
     ]
 
     return (
-        <div className="flex min-h-screen bg-[#EEF0F8] text-slate-900">
+        <div className="flex h-screen overflow-hidden bg-[#EEF0F8] text-slate-900">
             {/* SEO Metadata */}
             <div className="hidden" aria-hidden="true">
                 <meta name="description" content="CRM Instabuy - Gestão Operacional de E-commerce" />
@@ -276,12 +276,12 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
 
             {/* Main Content */}
             <main
-                className={`flex-1 flex flex-col min-h-screen transition-all duration-300
+                className={`flex-1 flex min-w-0 flex-col h-screen overflow-hidden transition-all duration-300
                 ${collapsed ? 'ml-20' : 'ml-72'} print:ml-0 print:w-full print:bg-white
                 `}
             >
                 {/* Topbar */}
-                <header className="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-8 flex items-center justify-end gap-4 print:hidden">
+                <header className="sticky top-0 z-30 flex h-16 w-full shrink-0 items-center justify-end gap-4 border-b border-slate-200 bg-white/90 px-8 backdrop-blur-xl print:hidden">
                     <button
                         onClick={() => setShowDictionary(true)}
                         className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
@@ -317,8 +317,8 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     </button>
                 </header>
 
-                <div className={location.pathname.includes('/monitor') ? 'p-0 print:p-0' : 'p-8 print:p-0'}>
-                    <div className={`${location.pathname.includes('/monitor') ? 'max-w-full' : 'max-w-7xl'} mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+                <div className={location.pathname.includes('/monitor') ? 'min-h-0 flex-1 overflow-hidden p-0 print:p-0' : 'min-h-0 flex-1 overflow-y-auto p-8 print:p-0'}>
+                    <div className={`${location.pathname.includes('/monitor') ? 'h-full min-w-0 max-w-full overflow-hidden' : 'max-w-7xl'} mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500`}>
                         <Outlet />
                     </div>
                 </div>
