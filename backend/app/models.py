@@ -807,6 +807,54 @@ class SupportAgentPerformance(db.Model):
     def __repr__(self):
         return f'<AgentPerf {self.agent_name} {self.period}>'
 
+class SupportImportBatch(db.Model):
+    """
+    Historico de importacoes feitas pela tela de suporte.
+    Os arquivos sao enviados pelo usuario no sistema online; a pasta excel_suporte
+    e usada apenas como amostra de formatos durante o desenvolvimento.
+    """
+    __tablename__ = 'support_import_batches'
+    id = db.Column(db.Integer, primary_key=True)
+    period = db.Column(db.String(7), nullable=False, index=True)
+    status = db.Column(db.String(30), nullable=False, default='processing')
+    files_count = db.Column(db.Integer, default=0)
+    rows_total = db.Column(db.Integer, default=0)
+    rows_imported = db.Column(db.Integer, default=0)
+    errors_count = db.Column(db.Integer, default=0)
+    stats_json = db.Column(db.Text, nullable=True)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SupportMetricSnapshot(db.Model):
+    """
+    Metricas agregadas extraidas dos relatórios CSV da Zenvia.
+    Permite armazenar paineis, series diarias, motivos, qualidade e horarios
+    sem criar uma tabela especifica para cada exportacao.
+    """
+    __tablename__ = 'support_metric_snapshots'
+    id = db.Column(db.Integer, primary_key=True)
+    period = db.Column(db.String(7), nullable=False, index=True)
+    source = db.Column(db.String(120), nullable=False, index=True)
+    metric_type = db.Column(db.String(80), nullable=False, index=True)
+    metric_key = db.Column(db.String(160), nullable=False, index=True)
+    dimension_hash = db.Column(db.String(32), nullable=False)
+    dimensions_json = db.Column(db.Text, nullable=True)
+    value_float = db.Column(db.Float, nullable=True)
+    value_text = db.Column(db.Text, nullable=True)
+    captured_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'period',
+            'source',
+            'metric_type',
+            'metric_key',
+            'dimension_hash',
+            name='uix_support_metric_snapshot'
+        ),
+    )
+
 class JarvisChatSession(db.Model):
     __tablename__ = 'jarvis_chat_sessions'
     id = db.Column(db.Integer, primary_key=True)

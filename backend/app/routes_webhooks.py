@@ -70,5 +70,6 @@ def get_webhook_events():
         "id": e.id,
         "payload_type": e.event_type or 'Unknown',
         "received_at": e.created_at.strftime('%d/%m %H:%M:%S') if e.created_at else '---',
-        "status": "Recebido"
+        "processed_at": e.processed_at.strftime('%d/%m %H:%M:%S') if e.processed_at else None,
+        "status": "Processado" if e.processed_at else "Pendente"
     } for e in events])

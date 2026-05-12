@@ -1,272 +1,165 @@
 import logging
-from flask import Blueprint, jsonify, request
-from app.models import SupportConversation, SupportMessage, SupportContact, SupportAgentPerformance, SystemConfig, db
 from datetime import datetime
-import os
-import glob
+
+from flask import Blueprint, jsonify, request
+
+from app.models import SupportContact, db
 from app.services.event_processor_service import process_pending_zenvia_events
-from app.services.support_importer import (
-    import_zenvia_activities_csv,
-    enrich_contacts_from_conversations_csv,
-    import_agent_performance_csv,
-    import_agents_status_csv,
-    calculate_agent_nps
+from app.services.support_importer import import_support_files
+from app.services.support_metrics_service import (
+    get_agent_performance,
+    get_conversations,
+    get_import_history,
+    get_nps_feedbacks,
+    get_overview,
+    get_periods,
+    get_recent_messages,
+    get_source_health,
+    get_support_kpis,
 )
 
-support_bp = Blueprint('support_bp', __name__)
+support_bp = Blueprint("support_bp", __name__)
 logger = logging.getLogger(__name__)
 
-@support_bp.route('/api/support/kpis', methods=['GET'])
-def get_kpis():
-    period = request.args.get('period', datetime.now().strftime('%Y-%m'))
-    
-    # Filtro por mês para conversas e mensagens
-    # Busca por string prefixo (YYYY-MM) no created_at_zenvia
-    open_convs = SupportConversation.query.filter_by(status='OPEN').count()
-    
-    # Para dados históricos, filtramos pelo mês
-    closed_convs = SupportConversation.query.filter(
-        SupportConversation.status == 'CLOSED',
-        db.cast(SupportConversation.created_at_zenvia, db.String).like(f"{period}%")
-    ).count()
-    
-    msgs_in = SupportMessage.query.filter(
-        SupportMessage.direction == 'IN',
-        db.cast(SupportMessage.timestamp, db.String).like(f"{period}%")
-    ).count()
-    
-    msgs_out = SupportMessage.query.filter(
-        SupportMessage.direction == 'OUT',
-        db.cast(SupportMessage.timestamp, db.String).like(f"{period}%")
-    ).count()
-    
-    # Busca o último sync nas configurações
-    last_sync = SystemConfig.query.filter_by(key='last_support_sync').first()
-    
-    return jsonify({
-        "open_conversations": open_convs,
-        "closed_conversations": closed_convs,
-        "messages_in": msgs_in,
-        "messages_out": msgs_out,
-        "avg_response_time": "15m", # Placeholder for MVP
-        "last_sync": last_sync.value if last_sync else "Nunca"
-    })
 
-@support_bp.route('/api/support/orphans', methods=['GET'])
+@support_bp.route("/api/support/kpis", methods=["GET"])
+def get_kpis():
+    period = request.args.get("period")
+    return jsonify(get_support_kpis(period))
+
+
+@support_bp.route("/api/support/overview", methods=["GET"])
+def support_overview():
+    period = request.args.get("period")
+    return jsonify(get_overview(period))
+
+
+@support_bp.route("/api/support/source-health", methods=["GET"])
+def support_source_health():
+    period = request.args.get("period")
+    return jsonify(get_source_health(period))
+
+
+@support_bp.route("/api/support/imports", methods=["GET"])
+def support_imports():
+    period = request.args.get("period")
+    limit = int(request.args.get("limit", 20))
+    return jsonify(get_import_history(period, limit))
+
+
+@support_bp.route("/api/support/conversations", methods=["GET"])
+def support_conversations():
+    period = request.args.get("period")
+    status = request.args.get("status")
+    agent = request.args.get("agent")
+    q = request.args.get("q")
+    page = int(request.args.get("page", 1))
+    page_size = min(int(request.args.get("page_size", 50)), 200)
+    return jsonify(get_conversations(period, status, agent, q, page, page_size))
+
+
+@support_bp.route("/api/support/orphans", methods=["GET"])
 def get_orphans():
-    # Retorna contatos que não têm store_id (sistema) nem linked_store_name (legado)
     contacts = SupportContact.query.filter(
         SupportContact.store_id.is_(None),
-        SupportContact.linked_store_name.is_(None)
-    ).all()
+        SupportContact.linked_store_name.is_(None),
+    ).limit(100).all()
     return jsonify([{
-        "id": c.id, 
-        "phone": c.phone, 
+        "id": c.id,
+        "phone": c.phone,
         "name": c.name,
-        "created_at": c.created_at_zenvia.isoformat() if c.created_at_zenvia else None
+        "created_at": c.created_at_zenvia.isoformat() if c.created_at_zenvia else None,
     } for c in contacts])
 
-@support_bp.route('/api/support/messages', methods=['GET'])
-def get_recent_messages():
-    # Retorna as 50 mensagens mais recentes pelo horario do evento.
-    messages = SupportMessage.query.order_by(SupportMessage.timestamp.desc()).limit(50).all()
-    result = []
-    for m in messages:
-        contact_name = "Desconhecido"
-        try:
-            if m.conversation and m.conversation.contact:
-                contact_name = m.conversation.contact.name or "Desconhecido"
-        except:
-            pass
-        result.append({
-            "id": m.id,
-            "text": m.text,
-            "direction": m.direction,
-            "status": m.status,
-            "contact_name": contact_name,
-            "timestamp": m.timestamp.isoformat() if m.timestamp else None
-        })
-    return jsonify(result)
 
-@support_bp.route('/api/support/link-store', methods=['POST'])
+@support_bp.route("/api/support/messages", methods=["GET"])
+def get_messages():
+    limit = min(int(request.args.get("limit", 50)), 200)
+    return jsonify(get_recent_messages(limit))
+
+
+@support_bp.route("/api/support/link-store", methods=["POST"])
 def link_store():
-    data = request.json
-    contact_id = data.get('contact_id')
-    store_name = data.get('store_name')
-    
-    contact = SupportContact.query.get(contact_id)
-    if contact:
-        contact.linked_store_name = store_name
-        db.session.commit()
-        return jsonify({"status": "success", "message": f"Contato vinculado à loja {store_name}"})
-    
-    return jsonify({"status": "error", "message": "Contato não encontrado"}), 404
+    data = request.json or {}
+    contact_id = data.get("contact_id")
+    store_name = (data.get("store_name") or "").strip()
+    if not contact_id or not store_name:
+        return jsonify({"status": "error", "message": "Contato e loja sao obrigatorios."}), 400
 
-@support_bp.route('/api/support/sync', methods=['POST'])
+    contact = SupportContact.query.get(contact_id)
+    if not contact:
+        return jsonify({"status": "error", "message": "Contato nao encontrado."}), 404
+
+    contact.linked_store_name = store_name
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"Contato vinculado a loja {store_name}"})
+
+
+@support_bp.route("/api/support/sync", methods=["POST"])
 def sync_data():
     try:
         results = process_pending_zenvia_events()
-        
-        # Salva o horário do último sync no DB
-        sync_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-        config = SystemConfig.query.filter_by(key='last_support_sync').first()
+        sync_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        from app.models import SystemConfig
+
+        config = SystemConfig.query.filter_by(key="last_support_sync").first()
         if config:
             config.value = sync_time
         else:
-            config = SystemConfig(key='last_support_sync', value=sync_time, category='webhooks', description='Última sincronização manual de eventos de suporte')
-            db.session.add(config)
-        
+            db.session.add(SystemConfig(
+                key="last_support_sync",
+                value=sync_time,
+                category="webhooks",
+                description="Ultima sincronizacao manual de eventos de suporte",
+            ))
         db.session.commit()
-
         return jsonify({
-            "status": "success", 
-            "processed": results.get('processed_count', 0),
-            "conversations": results.get('new_conversations_count', 0),
-            "last_sync": sync_time
+            "status": "success",
+            "processed": results.get("processed_count", 0),
+            "conversations": results.get("new_conversations_count", 0),
+            "errors": results.get("errors_count", 0),
+            "last_sync": sync_time,
         })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as exc:
+        logger.exception("Erro ao sincronizar suporte")
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
-@support_bp.route('/api/support/import-csv', methods=['POST', 'OPTIONS'])
+
+@support_bp.route("/api/support/import-csv", methods=["POST", "OPTIONS"])
 def import_csv():
     """
-    Orquestra a importação de múltiplos arquivos CSV enviados pelo usuário.
-    Ordem: Conversas → Atividades → Performance → Agentes → Cálculo NPS
+    Importa CSVs enviados pela tela do sistema online.
+    Nao le automaticamente a pasta excel_suporte.
     """
-    if request.method == 'OPTIONS':
+    if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
 
+    if not request.files:
+        return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
+
+    period = request.form.get("period") or datetime.now().strftime("%Y-%m")
     try:
-        logger.info(f"Importacao CSV suporte: arquivos={list(request.files.keys())}, form={list(request.form.keys())}")
-
-        # Valida se algum arquivo foi enviado, independentemente do nome do campo.
-        if not request.files:
-            logger.warning("Importacao CSV suporte sem arquivos.")
-            return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
-
-        # Usa periodo manual (YYYY-MM) quando informado; caso contrario, mes atual.
-        period = request.form.get('period')
-        if not period:
-            period = datetime.now().strftime('%Y-%m')
-
-        logger.info(f"Periodo da importacao CSV suporte: {period}")
-
-        results = []
-        
-        # 1. Processar planilhas de Cadastro (NPS e Contatos)
-        conversas_files = request.files.getlist('conversas')
-        for f in conversas_files:
-            stats = enrich_contacts_from_conversations_csv(f, period=period)
-            results.append({"file": f.filename, "type": "contact_enrichment", "stats": stats})
-
-        # 2. Processar planilhas de Atividades (Mensagens)
-        activities_files = request.files.getlist('activities')
-        for f in activities_files:
-            stats = import_zenvia_activities_csv(f, period=period)
-            results.append({"file": f.filename, "type": "message_import", "stats": stats})
-
-        # 3. Processar planilhas de Performance (KPIs Agregados)
-        performance_files = request.files.getlist('performance')
-        for f in performance_files:
-            stats = import_agent_performance_csv(f, period=period)
-            results.append({"file": f.filename, "type": "agent_performance", "stats": stats})
-
-        # 4. Processar planilha de Agentes (Estado Atual)
-        agents_files = request.files.getlist('agents')
-        for f in agents_files:
-            stats = import_agents_status_csv(f, period=period)
-            results.append({"file": f.filename, "type": "agent_status", "stats": stats})
-
-        # 5. Calcular NPS por Atendente (Pós-processamento)
-        nps_stats = calculate_agent_nps(period=period)
-        results.append({"file": "NPS Calculation", "type": "nps_calculation", "stats": nps_stats})
-
-        if not results:
-            return jsonify({"status": "error", "message": "Nenhum arquivo compatível encontrado entre os enviados."}), 400
-            
-        # Salva o horario da ultima importacao.
-        sync_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-        config = SystemConfig.query.filter_by(key='last_support_import').first()
-        if config:
-            config.value = sync_time
-        else:
-            db.session.add(SystemConfig(key='last_support_import', value=sync_time, category='import', description='Última importação de CSV'))
-        db.session.commit()
-
-        return jsonify({"status": "success", "results": results})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        result = import_support_files(request.files, request.form, period)
+        status_code = 200 if result.get("status") in {"success", "partial"} else 400
+        return jsonify(result), status_code
+    except Exception as exc:
+        logger.exception("Erro na importacao CSV de suporte")
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
-@support_bp.route('/api/support/periods', methods=['GET'])
-def get_periods():
-    """
-    Retorna a lista de meses únicos (YYYY-MM) que possuem dados de performance.
-    """
-    periods = db.session.query(SupportAgentPerformance.period).distinct().order_by(SupportAgentPerformance.period.desc()).all()
-    result = [p.period for p in periods if p.period]
-    
-    # Se não houver períodos no banco, retorna o mês atual como fallback
-    if not result:
-        result = [datetime.now().strftime('%Y-%m')]
-        
-    return jsonify(result)
+@support_bp.route("/api/support/periods", methods=["GET"])
+def support_periods():
+    return jsonify(get_periods())
 
-# ============================================================
-# NOVOS ENDPOINTS: PERFORMANCE DA EQUIPE
-# ============================================================
 
-@support_bp.route('/api/support/agent-performance', methods=['GET'])
-def get_agent_performance():
-    """
-    Retorna os dados de performance de todos os atendentes.
-    Query params: ?period=2026-05 (opcional, default=mês atual)
-    """
-    period = request.args.get('period', datetime.now().strftime('%Y-%m'))
-    
-    agents = SupportAgentPerformance.query.filter_by(period=period).all()
-    
-    # Se não houver dados no período solicitado (ex: mês atual), busca o período mais recente disponível
-    if not agents:
-        latest_perf = SupportAgentPerformance.query.order_by(SupportAgentPerformance.period.desc()).first()
-        if latest_perf:
-            period = latest_perf.period
-            agents = SupportAgentPerformance.query.filter_by(period=period).all()
-    
-    return jsonify([{
-        "id": a.id,
-        "agent_name": a.agent_name,
-        "period": a.period,
-        "group_name": a.group_name,
-        "total_contacts": a.total_contacts,
-        "total_conversations": a.total_conversations,
-        "new_conversations": a.new_conversations,
-        "closed_conversations": a.closed_conversations,
-        "total_messages_sent": a.total_messages_sent,
-        "avg_response_time_seconds": a.avg_response_time_seconds,
-        "avg_close_time_seconds": a.avg_close_time_seconds,
-        "avg_nps": a.avg_nps,
-        "nps_count": a.nps_count,
-        "last_activity_at": a.last_activity_at.isoformat() if a.last_activity_at else None,
-        "activities_today": a.activities_today,
-        "pending_tickets": a.pending_tickets,
-        "open_tickets": a.open_tickets
-    } for a in agents])
+@support_bp.route("/api/support/agent-performance", methods=["GET"])
+def support_agent_performance():
+    period = request.args.get("period")
+    return jsonify(get_agent_performance(period))
 
-@support_bp.route('/api/support/nps-feedbacks', methods=['GET'])
-def get_nps_feedbacks():
-    """
-    Retorna as últimas conversas que tiveram NPS atribuído, com nome do atendente.
-    """
-    convs = SupportConversation.query.filter(
-        SupportConversation.nps_score.isnot(None)
-    ).order_by(SupportConversation.created_at_zenvia.desc()).limit(50).all()
-    
-    return jsonify([{
-        "id": c.id,
-        "agent_name": c.agent_name,
-        "nps_score": c.nps_score,
-        "nps_comment": c.nps_comment,
-        "contact_name": c.contact.name if c.contact else "Desconhecido",
-        "date": c.created_at_zenvia.isoformat() if c.created_at_zenvia else None
-    } for c in convs])
+
+@support_bp.route("/api/support/nps-feedbacks", methods=["GET"])
+def support_nps_feedbacks():
+    period = request.args.get("period")
+    limit = min(int(request.args.get("limit", 50)), 200)
+    return jsonify(get_nps_feedbacks(period, limit))
