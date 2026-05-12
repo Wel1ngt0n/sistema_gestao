@@ -1,9 +1,23 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+    AlertCircle,
+    ArrowRight,
+    BarChart3,
+    CheckCircle2,
+    Eye,
+    EyeOff,
+    KeyRound,
+    Lock,
+    Mail,
+    ShieldCheck,
+} from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, KeyRound, ArrowRight, AlertCircle } from 'lucide-react';
 import logo from '../assets/logo.png';
+
+const BRAND_ORANGE = '#ff7900';
+const BRAND_GREEN = '#128131';
 
 const LoginScreen = () => {
     const navigate = useNavigate();
@@ -12,17 +26,17 @@ const LoginScreen = () => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Estado para 2FA
     const [requires2FA, setRequires2FA] = useState(false);
     const [userId, setUserId] = useState<number | null>(null);
     const [totpCode, setTotpCode] = useState('');
 
-    const from = location.state?.from?.pathname || "/";
+    const from = location.state?.from?.pathname || '/';
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
@@ -44,7 +58,7 @@ const LoginScreen = () => {
         }
     };
 
-    const handleVerify2FA = async (e: React.FormEvent) => {
+    const handleVerify2FA = async (e: FormEvent) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
@@ -52,184 +66,239 @@ const LoginScreen = () => {
         try {
             const response = await api.post('/api/auth/verify-2fa', {
                 user_id: userId,
-                code: totpCode
+                code: totpCode,
             });
 
             login(response.data.token, response.data.user);
             navigate(from, { replace: true });
-
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Código 2FA Inválido.');
+            setError(err.response?.data?.error || 'Codigo 2FA invalido.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex text-zinc-100 font-sans bg-[#09090b] relative overflow-hidden">
-            {/* Global Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#ff7900] via-[#09090b] to-[#09090b] opacity-90 pointer-events-none z-0"></div>
-            <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#ff7900] via-transparent to-transparent pointer-events-none z-0"></div>
+        <main className="relative flex min-h-screen overflow-hidden bg-[#f7f8fb] text-slate-950">
+            <div className="absolute inset-0 bg-[linear-gradient(125deg,#ffffff_0%,#ffffff_34%,#fff7ed_60%,#ffe8cc_100%)]" />
+            <div className="absolute inset-y-0 left-0 w-[58%] bg-[radial-gradient(circle_at_18%_18%,rgba(255,121,0,0.18),transparent_32%),radial-gradient(circle_at_8%_78%,rgba(18,129,49,0.08),transparent_30%)]" />
+            <div className="absolute right-0 top-0 h-full w-1/2 bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(255,121,0,0.10))]" />
 
-            {/* Lado Esquerdo - Info/Branding */}
-            <div className="hidden lg:flex w-1/2 p-12 flex-col justify-between relative z-10">
-
-                <div>
-                    <div className="flex items-center gap-3 mb-16">
-                        <img src={logo} alt="Instabuy" className="w-10 h-10 rounded-lg drop-shadow-md brightness-0 invert" />
-                        <span className="text-2xl font-black tracking-tight text-white uppercase">Instabuy<span className="text-[#ff7900] ml-1">Operações</span></span>
-                    </div>
-
-                    <h2 className="text-5xl font-bold leading-tight mb-6 text-white">
-                        Gestão Inteligente.
-                    </h2>
-                    <p className="text-lg text-orange-100/80 max-w-md">
-                        Faça login para acessar o painel de monitoramento, relatórios operacionais e previsão de indicadores críticos.
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm text-orange-200/50">
-                    <p>Módulo Operacional</p>
-                    <div className="w-1 h-1 bg-orange-500/50 rounded-full"></div>
-                    <p>Instabuy &copy; 2026</p>
-                </div>
-            </div>
-
-            {/* Lado Direito - Form de Login */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative z-10">
-                <div className="w-full max-w-md">
-
-                    <div className="mb-10 lg:hidden flex flex-col items-center justify-center gap-3 text-center">
-                        <div className="w-12 h-12 bg-[#ff7900] rounded-lg flex items-center justify-center shadow-lg">
-                            <img src={logo} alt="Instabuy" className="w-8 h-8 object-contain brightness-0 invert" />
+            <section className="relative z-10 grid min-h-screen w-full grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+                <div className="hidden flex-col justify-between px-10 py-10 lg:flex xl:px-14">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-orange-100">
+                                <img src={logo} alt="Instabuy" className="h-8 w-8 object-contain" />
+                            </div>
+                            <div className="text-2xl font-black uppercase tracking-tight text-slate-950">
+                                <span>Instabuy</span>
+                                <span className="ml-2" style={{ color: BRAND_ORANGE }}>Operacoes</span>
+                            </div>
                         </div>
-                        <span className="text-xl font-black tracking-tight text-white uppercase text-center">Instabuy<br /><span className="text-[#ff7900] text-2xl">Operações</span></span>
+
+                        <div className="mt-24 max-w-2xl">
+                            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-700 shadow-sm backdrop-blur">
+                                <ShieldCheck size={14} />
+                                Painel operacional seguro
+                            </div>
+                            <h1 className="text-6xl font-black leading-[0.95] tracking-tight text-slate-950 xl:text-7xl">
+                                Gestao inteligente para operacoes.
+                            </h1>
+                            <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">
+                                Acesse monitoramento, suporte, integracoes, relatorios e indicadores criticos em uma experiencia unificada.
+                            </p>
+                        </div>
+
+                        <div className="mt-12 grid max-w-2xl grid-cols-3 gap-3">
+                            {[
+                                { label: 'SLA', value: 'Tempo real', icon: BarChart3 },
+                                { label: 'Dados', value: 'Unificados', icon: CheckCircle2 },
+                                { label: 'Acesso', value: 'Protegido', icon: ShieldCheck },
+                            ].map((item) => (
+                                <div key={item.label} className="rounded-xl border border-orange-100 bg-white/75 p-4 shadow-sm backdrop-blur">
+                                    <item.icon className="mb-3 h-5 w-5 text-orange-500" />
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
+                                    <p className="mt-1 text-sm font-bold text-slate-900">{item.value}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="bg-[#121214] border border-zinc-800/50 p-8 rounded-2xl shadow-2xl">
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <span>Modulo Operacional</span>
+                        <span className="h-1 w-1 rounded-full bg-orange-400" />
+                        <span>Instabuy © 2026</span>
+                    </div>
+                </div>
 
-                        {!requires2FA ? (
-                            <>
-                                <h3 className="text-2xl font-bold mb-2">Acesso ao Sistema</h3>
-                                <p className="text-zinc-500 text-sm mb-8">Insira suas credenciais para continuar.</p>
+                <div className="flex items-center justify-center px-5 py-8 sm:px-8 lg:px-12">
+                    <div className="w-full max-w-[460px]">
+                        <div className="mb-8 flex flex-col items-center gap-3 text-center lg:hidden">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-orange-100">
+                                <img src={logo} alt="Instabuy" className="h-9 w-9 object-contain" />
+                            </div>
+                            <div className="text-xl font-black uppercase tracking-tight text-slate-950">
+                                Instabuy <span className="text-[#ff7900]">Operacoes</span>
+                            </div>
+                        </div>
 
-                                {error && (
-                                    <div className="mb-6 p-4 bg-red-950/30 border border-red-500/20 rounded-xl flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                                        <p className="text-red-400 text-sm font-medium">{error}</p>
-                                    </div>
-                                )}
+                        <div className="rounded-3xl border border-orange-100/80 bg-white/90 p-6 shadow-2xl shadow-orange-900/10 backdrop-blur-xl sm:p-8">
+                            <div className="mb-8 flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-400">
+                                        {requires2FA ? 'Verificacao' : 'Acesso ao sistema'}
+                                    </p>
+                                    <h2 className="text-3xl font-black tracking-tight text-slate-950">
+                                        {requires2FA ? 'Confirme sua identidade' : 'Bem-vindo de volta'}
+                                    </h2>
+                                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                                        {requires2FA
+                                            ? 'Insira o codigo de 6 digitos do seu aplicativo autenticador.'
+                                            : 'Entre com suas credenciais para continuar no painel operacional.'}
+                                    </p>
+                                </div>
+                                <div className="hidden rounded-xl border border-orange-100 bg-orange-50 p-3 text-orange-500 sm:block">
+                                    {requires2FA ? <KeyRound size={22} /> : <Lock size={22} />}
+                                </div>
+                            </div>
 
+                            {error && (
+                                <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4" role="alert">
+                                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                                    <p className="text-sm font-medium text-red-700">{error}</p>
+                                </div>
+                            )}
+
+                            {!requires2FA ? (
                                 <form onSubmit={handleLogin} className="space-y-5">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Email</label>
+                                        <label htmlFor="email" className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                            Email
+                                        </label>
                                         <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Mail className="h-5 w-5 text-zinc-500" />
-                                            </div>
+                                            <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                                             <input
+                                                id="email"
                                                 type="email"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-3 bg-[#09090b] border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium"
+                                                className="h-14 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-base font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-400/80 focus:ring-4 focus:ring-orange-500/10"
                                                 placeholder="operador@instabuy.com.br"
+                                                autoComplete="email"
                                                 required
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Senha</label>
-                                        </div>
+                                        <label htmlFor="password" className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                            Senha
+                                        </label>
                                         <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Lock className="h-5 w-5 text-zinc-500" />
-                                            </div>
+                                            <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                                             <input
-                                                type="password"
+                                                id="password"
+                                                type={showPassword ? 'text' : 'password'}
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-3 bg-[#09090b] border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium"
-                                                placeholder="••••••••"
+                                                className="h-14 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-12 text-base font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-400/80 focus:ring-4 focus:ring-orange-500/10"
+                                                placeholder="Digite sua senha"
+                                                autoComplete="current-password"
                                                 required
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword((value) => !value)}
+                                                className="absolute right-3 top-1/2 rounded-lg p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600"
+                                                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
                                         </div>
                                     </div>
 
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full mt-8 py-3 px-4 bg-[#ff7900] hover:bg-[#e66d00] disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-black rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-orange-500/10"
+                                        className="group mt-7 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#ff7900] px-4 text-base font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-[#e66d00] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
                                     >
                                         {loading ? (
-                                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/25 border-t-white" />
                                         ) : (
                                             <>
                                                 Entrar
-                                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                                             </>
                                         )}
                                     </button>
                                 </form>
-                            </>
-                        ) : (
-                            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                                <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 border border-orange-500/20">
-                                    <KeyRound className="w-6 h-6 text-orange-500" />
-                                </div>
-                                <h3 className="text-2xl font-bold mb-2">Autenticação 2FA</h3>
-                                <p className="text-zinc-500 text-sm mb-6">Insira o código de 6 dígitos gerado pelo seu aplicativo autenticador.</p>
-
-                                {error && (
-                                    <div className="mb-6 p-4 bg-red-950/30 border border-red-500/20 rounded-xl flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                                        <p className="text-red-400 text-sm font-medium">{error}</p>
-                                    </div>
-                                )}
-
+                            ) : (
                                 <form onSubmit={handleVerify2FA} className="space-y-6">
-                                    <div className="space-y-2">
-                                        <input
-                                            type="text"
-                                            value={totpCode}
-                                            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                            className="w-full text-center tracking-[0.5em] text-3xl py-4 bg-[#09090b] border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-800 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono"
-                                            placeholder="000000"
-                                            required
-                                            autoFocus
-                                            maxLength={6}
-                                        />
+                                    <div className="rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                                                <KeyRound size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-950">Autenticacao em duas etapas</p>
+                                                <p className="text-xs text-slate-500">Use o codigo temporario do seu autenticador.</p>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="flex gap-4">
+                                    <input
+                                        type="text"
+                                        value={totpCode}
+                                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        className="h-16 w-full rounded-xl border border-slate-200 bg-white text-center font-mono text-3xl font-bold tracking-[0.5em] text-slate-950 outline-none transition placeholder:text-slate-300 focus:border-orange-400/80 focus:ring-4 focus:ring-orange-500/10"
+                                        placeholder="000000"
+                                        required
+                                        autoFocus
+                                        maxLength={6}
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                    />
+
+                                    <div className="flex flex-col gap-3 sm:flex-row">
                                         <button
                                             type="button"
-                                            onClick={() => setRequires2FA(false)}
-                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
+                                            onClick={() => {
+                                                setRequires2FA(false);
+                                                setTotpCode('');
+                                                setError(null);
+                                            }}
+                                            className="h-12 rounded-xl border border-slate-200 px-6 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                                         >
                                             Voltar
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={loading || totpCode.length !== 6}
-                                            className="flex-1 py-3 px-4 bg-orange-600 hover:bg-orange-500 disabled:bg-orange-600/50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+                                            className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[#ff7900] px-4 text-sm font-black text-white transition hover:bg-[#e66d00] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
                                         >
                                             {loading ? (
-                                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/25 border-t-white" />
                                             ) : (
-                                                'Validar Código'
+                                                'Validar codigo'
                                             )}
                                         </button>
                                     </div>
                                 </form>
-                            </div>
-                        )}
+                            )}
 
+                            <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5 text-xs text-slate-500">
+                                <span>Ambiente operacional Instabuy</span>
+                                <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: BRAND_GREEN }}>
+                                    <span className="h-1.5 w-1.5 rounded-full bg-[#128131]" />
+                                    Online
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     );
 };
 
