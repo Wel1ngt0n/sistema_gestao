@@ -33,14 +33,13 @@ export default function SyncPage() {
     const handleSync = async (mode: 'vital' | 'deep') => {
         setLoading(true)
         setLogs([`🚀 Iniciando SYNC ${mode.toUpperCase()}...`])
-        const token = localStorage.getItem('auth_token')
         const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
 
         // Parâmetros: full=true para deep, vital_only=true para vital
         const isDeep = mode === 'deep'
-        const url = `${baseUrl}/api/sync/stream?full=${isDeep}&vital_only=${!isDeep}&token=${token}`
+        const url = `${baseUrl}/api/sync/stream?full=${isDeep}&vital_only=${!isDeep}`
 
-        const eventSource = new EventSource(url)
+        const eventSource = new EventSource(url, { withCredentials: true })
 
         eventSource.onopen = () => {
             setLogs(prev => [...prev, '📡 Conexão estabelecida com o Sync Engine.'])

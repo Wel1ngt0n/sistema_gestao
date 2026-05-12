@@ -8,7 +8,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 
 export const ProfilePage = () => {
-    const { user, login, logout, token } = useAuth();
+    const { user, login, logout } = useAuth();
 
     // Form States
     const [name, setName] = useState(user?.name || '');
@@ -67,10 +67,7 @@ export const ProfilePage = () => {
 
             const res = await api.put('/api/profile', payload);
 
-            // Atualiza o contexto (simula um re-login com novos dados)
-            if (token) {
-                login(token, res.data.user);
-            }
+            login(res.data.user);
 
             setSuccessMsg('Perfil atualizado com sucesso!');
             setPassword('');
@@ -99,9 +96,8 @@ export const ProfilePage = () => {
         try {
             await api.post('/api/auth/enable-2fa', { code: verifyCode });
 
-            // Update Context to reflect 2FA enabled
-            if (token && user) {
-                login(token, { ...user, totp_enabled: true });
+            if (user) {
+                login({ ...user, totp_enabled: true });
             }
 
             setIs2FAModalOpen(false);

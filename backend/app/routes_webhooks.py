@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from app.models import db, ZenviaWebhookEvent, SystemConfig
+from app.services.security_service import require_auth, require_permission
 
 webhook_bp = Blueprint('webhook_bp', __name__)
 logger = logging.getLogger(__name__)
@@ -17,6 +18,9 @@ def zenvia_webhook():
     # Busca o token no banco ou usa variavel de ambiente como fallback.
     db_token = SystemConfig.query.filter_by(key='webhook_token').first()
     valid_token = db_token.value if db_token and db_token.value else os.environ.get("ZENVIA_WEBHOOK_TOKEN", "my-secret-token")
+    if os.environ.get("FLASK_ENV") == "production" and valid_token == "my-secret-token":
+        logger.error("[Zenvia Webhook] Token default detectado em producao. Configure ZENVIA_WEBHOOK_TOKEN.")
+        return jsonify({"error": "Webhook nao configurado"}), 503
     
     if token != valid_token:
         return jsonify({"error": "Nao autorizado"}), 401
@@ -63,7 +67,9 @@ def zenvia_webhook():
     return jsonify({"message": "Evento recebido com sucesso"}), 200
 
 @webhook_bp.route('/api/webhooks/events', methods=['GET'])
-def get_webhook_events():
+@require_auth
+@require_permission("webhooks:view")
+def get_webhook_events(_payload):
     # Retorna os ultimos eventos recebidos para diagnostico no dashboard.
     events = ZenviaWebhookEvent.query.order_by(ZenviaWebhookEvent.id.desc()).limit(20).all()
     return jsonify([{

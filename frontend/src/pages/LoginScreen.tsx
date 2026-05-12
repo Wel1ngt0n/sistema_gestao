@@ -32,6 +32,7 @@ const LoginScreen = () => {
 
     const [requires2FA, setRequires2FA] = useState(false);
     const [userId, setUserId] = useState<number | null>(null);
+    const [twoFAChallenge, setTwoFAChallenge] = useState('');
     const [totpCode, setTotpCode] = useState('');
 
     const from = location.state?.from?.pathname || '/';
@@ -47,8 +48,9 @@ const LoginScreen = () => {
             if (response.data.requires_2fa) {
                 setRequires2FA(true);
                 setUserId(response.data.user_id);
+                setTwoFAChallenge(response.data.challenge || '');
             } else {
-                login(response.data.token, response.data.user);
+                login(response.data.user, response.data.csrf_token);
                 navigate(from, { replace: true });
             }
         } catch (err: any) {
@@ -67,9 +69,10 @@ const LoginScreen = () => {
             const response = await api.post('/api/auth/verify-2fa', {
                 user_id: userId,
                 code: totpCode,
+                challenge: twoFAChallenge,
             });
 
-            login(response.data.token, response.data.user);
+            login(response.data.user, response.data.csrf_token);
             navigate(from, { replace: true });
         } catch (err: any) {
             setError(err.response?.data?.error || 'Codigo 2FA invalido.');
@@ -266,6 +269,7 @@ const LoginScreen = () => {
                                             onClick={() => {
                                                 setRequires2FA(false);
                                                 setTotpCode('');
+                                                setTwoFAChallenge('');
                                                 setError(null);
                                             }}
                                             className="h-12 rounded-xl border border-slate-200 px-6 text-sm font-bold text-slate-700 transition hover:bg-slate-50"

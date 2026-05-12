@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api, setCsrfToken } from '../services/api';
 
 interface User {
     id: number;
@@ -13,8 +14,8 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (token: string, userData: User) => void;
-    logout: () => void;
+    login: (userData: User, csrfToken?: string | null) => void;
+    logout: () => Promise<void>;
     loading: boolean;
     hasPermission: (perm: string) => boolean;
 }
@@ -23,52 +24,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const loadStoredData = async () => {
-            const storedToken = localStorage.getItem('auth_token');
-            const storedUser = localStorage.getItem('auth_user');
-
-            if (storedToken && storedUser) {
-                setToken(storedToken);
-                setUser(JSON.parse(storedUser));
+        const loadSession = async () => {
+            try {
+                const response = await api.get('/api/auth/me');
+                setUser(response.data.user);
+                setCsrfToken(response.data.csrf_token);
+                localStorage.removeItem('auth_token');
+                localStorage.setItem('auth_user', JSON.stringify(response.data.user));
+            } catch {
+                setUser(null);
+                setCsrfToken(null);
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_user');
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
-        loadStoredData();
+        loadSession();
     }, []);
 
-    const login = (newToken: string, userData: User) => {
-        setToken(newToken);
+    const login = (userData: User, csrfToken?: string | null) => {
         setUser(userData);
-        localStorage.setItem('auth_token', newToken);
+        if (csrfToken !== undefined) {
+            setCsrfToken(csrfToken);
+        }
+        localStorage.removeItem('auth_token');
         localStorage.setItem('auth_user', JSON.stringify(userData));
     };
 
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
+    const logout = async () => {
+        try {
+            await api.post('/api/auth/logout');
+        } catch {
+            // Mesmo se o cookie ja expirou, limpamos o estado local.
+        } finally {
+            setUser(null);
+            setCsrfToken(null);
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+        }
     };
 
     const hasPermission = (_permission: string): boolean => {
-        // Por hora, no frontend, se for Super Admin, tem tudo.
-        // As permissões granulares virão nas próximas atualizações quando o backend 
-        // retornar a lista exata de permissions no `/me` ou atreladas a Role.
         if (user?.roles.includes('Super Admin')) return true;
-
-        // Exemplo: se as permissoes vierem no token ou payload (precisaria ajustar o backend pra isso)
-        // return user?.permissions.includes(permission) || false;
-
         return false;
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading, hasPermission }}>
+        <AuthContext.Provider value={{ user, token: null, login, logout, loading, hasPermission }}>
             {children}
         </AuthContext.Provider>
     );

@@ -1,15 +1,29 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, make_response
 from app.models import db, User
 from app.services.security_service import (
     generate_jwt_token, verify_password,
-    generate_totp_secret, generate_totp_uri, verify_totp_code, require_auth,
-    log_audit
+    generate_2fa_challenge_token, decode_2fa_challenge_token,
+    decode_jwt_token,
+    generate_totp_secret, generate_totp_uri, verify_totp_code,
+    require_auth, set_auth_cookie, clear_auth_cookie, log_audit
 )
 import datetime
 import logging
 
 auth_bp = Blueprint('auth_bp', __name__)
 logger = logging.getLogger(__name__)
+
+def auth_response(user, token):
+    payload = {
+        "user": user.to_dict(),
+        "csrf_token": decode_jwt_token_for_csrf(token),
+    }
+    response = make_response(jsonify(payload), 200)
+    return set_auth_cookie(response, token)
+
+def decode_jwt_token_for_csrf(token):
+    payload = decode_jwt_token(token) or {}
+    return payload.get("csrf")
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
 def login():
@@ -24,7 +38,7 @@ def login():
 
 def login_logic():
     """Endpoint inicial de login. Se 2FA estiver ativo, exige segunda etapa."""
-    data = request.json
+    data = request.json or {}
     email = data.get('email')
     password = data.get('password')
 
@@ -41,7 +55,15 @@ def login_logic():
     if not user.is_active:
         return jsonify({"error": "Usuário desativado pelo administrador"}), 403
 
-    # Quando TOTP for reativado no login, emitir JWT apenas apos a segunda etapa.
+    if user.totp_enabled and user.totp_secret:
+        challenge = generate_2fa_challenge_token(user.id, user.email)
+        log_audit("LOGIN_2FA_REQUIRED", user_id=user.id, details="Credenciais validas; aguardando 2FA")
+        return jsonify({
+            "requires_2fa": True,
+            "user_id": user.id,
+            "challenge": challenge,
+            "message": "Autenticacao em dois fatores necessaria."
+        }), 200
 
     # Atualiza o ultimo login somente apos credenciais validas.
     user.last_login = datetime.datetime.utcnow()
@@ -50,27 +72,43 @@ def login_logic():
     token = generate_jwt_token(user.id, user.email)
     
     log_audit("LOGIN_SUCCESS", user_id=user.id, details="Login realizado com sucesso")
-    
-    return jsonify({
-        "token": token,
-        "user": user.to_dict()
-    }), 200
+
+    return auth_response(user, token)
 
 @auth_bp.route('/api/auth/verify-2fa', methods=['POST'])
 def verify_2fa():
+    limiter = getattr(current_app, 'limiter', None)
+    if limiter:
+        @limiter.limit("10 per minute")
+        def rate_limited_verify_2fa():
+            return verify_2fa_logic()
+        return rate_limited_verify_2fa()
+
+    return verify_2fa_logic()
+
+def verify_2fa_logic():
     """Verifica o codigo 2FA e conclui a emissao do JWT."""
-    data = request.json
+    data = request.json or {}
     user_id = data.get('user_id')
     code = data.get('code')
+    challenge = data.get('challenge')
 
     if not user_id or not code:
         return jsonify({"error": "user_id e código 2FA necessários"}), 400
 
+    if not challenge:
+        return jsonify({"error": "Desafio 2FA necessario"}), 400
+
+    challenge_payload = decode_2fa_challenge_token(challenge)
+    if not challenge_payload or str(challenge_payload.get('sub')) != str(user_id):
+        return jsonify({"error": "Desafio 2FA invalido ou expirado. Faca login novamente."}), 401
+
     user = User.query.get(user_id)
-    if not user or not user.totp_secret:
+    if not user or not user.totp_enabled or not user.totp_secret:
         return jsonify({"error": "Autenticação em dois fatores não está configurada para este usuário"}), 400
 
     if not verify_totp_code(user.totp_secret, code):
+        log_audit("LOGIN_2FA_FAILED", user_id=user.id, details="Codigo 2FA invalido")
         return jsonify({"error": "Código 2FA inválido ou expirado"}), 401
 
     # Codigo correto: conclui o login e emite o token definitivo.
@@ -78,11 +116,9 @@ def verify_2fa():
     db.session.commit()
 
     token = generate_jwt_token(user.id, user.email)
-    
-    return jsonify({
-        "token": token,
-        "user": user.to_dict()
-    }), 200
+    log_audit("LOGIN_SUCCESS", user_id=user.id, details="Login realizado com 2FA")
+
+    return auth_response(user, token)
 
 
 @auth_bp.route('/api/auth/me', methods=['GET'])
@@ -95,7 +131,17 @@ def get_me(payload):
     if not user or not user.is_active:
         return jsonify({"error": "Usuário não encontrado ou inativo"}), 404
         
-    return jsonify(user.to_dict()), 200
+    return jsonify({
+        "user": user.to_dict(),
+        "csrf_token": payload.get("csrf"),
+    }), 200
+
+
+@auth_bp.route('/api/auth/logout', methods=['POST'])
+@require_auth
+def logout(payload):
+    response = make_response(jsonify({"status": "success"}), 200)
+    return clear_auth_cookie(response)
 
 
 @auth_bp.route('/api/auth/setup-2fa', methods=['POST'])
