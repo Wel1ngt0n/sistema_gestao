@@ -139,11 +139,11 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
     };
 
     return (
-        <div className="flex gap-4 items-start min-w-full pb-4">
+        <div className="flex h-full min-w-max items-start gap-4 pb-4">
             {KANBAN_COLUMNS.map(col => (
                 <div
                     key={col.id}
-                    className="flex-none w-80 flex flex-col rounded-xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-sm"
+                    className="flex h-full w-80 flex-none flex-col rounded-xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-sm"
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, col.id)}
                 >
@@ -159,7 +159,7 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                     </div>
 
                     {/* Cards Container */}
-                    <div className="p-2.5 space-y-2.5 min-h-[190px] rounded-b-xl bg-slate-50/40">
+                    <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto rounded-b-xl bg-slate-50/40 p-2.5">
                         {columns[col.id]?.map(store => (
                             <div
                                 key={store.id}
@@ -231,12 +231,12 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
 
             {/* Unmapped Column (Ghost) */}
             {columns['others']?.length > 0 && (
-                <div className="flex-none w-80 flex flex-col rounded-xl border border-dashed border-slate-300 bg-white/70 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+                <div className="flex h-full w-80 flex-none flex-col rounded-xl border border-dashed border-slate-300 bg-white/70 opacity-80 shadow-sm transition-opacity hover:opacity-100">
                     <div className="p-3 border-b border-dashed border-slate-200 flex justify-between items-center bg-white/80 rounded-t-xl">
                         <h4 className="font-bold text-slate-500 text-xs uppercase tracking-wider">Outros / Não Mapeado</h4>
                         <span className="text-xs font-mono bg-white px-2 py-0.5 rounded text-slate-500 border border-slate-200">{columns['others'].length}</span>
                     </div>
-                    <div className="p-2.5 space-y-2 bg-slate-50/40 rounded-b-xl">
+                    <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-b-xl bg-slate-50/40 p-2.5">
                         {columns['others'].map(store => (
                             <div key={store.id} onClick={() => onEdit(store)} className="cursor-pointer bg-white p-3 rounded-lg border border-slate-200 hover:border-orange-200 hover:shadow-sm transition-all">
                                 <h5 className="font-medium text-sm text-slate-600">{store.name}</h5>
