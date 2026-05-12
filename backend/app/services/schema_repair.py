@@ -97,6 +97,37 @@ def repair_database_schema():
             created_at TIMESTAMP DEFAULT NOW(),
             CONSTRAINT uix_agent_period UNIQUE (agent_name, period)
         );""",
+
+        """CREATE TABLE IF NOT EXISTS support_import_batches (
+            id SERIAL PRIMARY KEY,
+            period VARCHAR(7) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'processing',
+            files_count INTEGER DEFAULT 0,
+            rows_total INTEGER DEFAULT 0,
+            rows_imported INTEGER DEFAULT 0,
+            errors_count INTEGER DEFAULT 0,
+            stats_json TEXT,
+            started_at TIMESTAMP DEFAULT NOW(),
+            finished_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT NOW()
+        );""",
+        "CREATE INDEX IF NOT EXISTS idx_support_import_batches_period ON support_import_batches(period);",
+
+        """CREATE TABLE IF NOT EXISTS support_metric_snapshots (
+            id SERIAL PRIMARY KEY,
+            period VARCHAR(7) NOT NULL,
+            source VARCHAR(120) NOT NULL,
+            metric_type VARCHAR(80) NOT NULL,
+            metric_key VARCHAR(160) NOT NULL,
+            dimension_hash VARCHAR(32) NOT NULL,
+            dimensions_json TEXT,
+            value_float FLOAT,
+            value_text TEXT,
+            captured_at TIMESTAMP DEFAULT NOW(),
+            CONSTRAINT uix_support_metric_snapshot UNIQUE (period, source, metric_type, metric_key, dimension_hash)
+        );""",
+        "CREATE INDEX IF NOT EXISTS idx_support_metric_snapshots_period ON support_metric_snapshots(period);",
+        "CREATE INDEX IF NOT EXISTS idx_support_metric_snapshots_type ON support_metric_snapshots(metric_type);",
     ]
 
     
