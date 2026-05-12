@@ -36,7 +36,8 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         'Implantação': true,
         'Integração': true,
-        'Suporte': true
+        'Suporte': true,
+        'Configurações': true
     })
 
     const toggleMenu = (label: string) => {
@@ -47,7 +48,6 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
         {
             section: 'OPERACIONAL',
             items: [
-                { to: '/jarvis', label: 'Jarvis 5.4 mini', icon: Sparkles },
                 {
                     label: 'Implantação',
                     icon: Rocket,
@@ -74,21 +74,23 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     children: [
                         { to: '/support', label: 'Zenvia Dash', icon: LayoutDashboard },
                     ]
-                }
+                },
+                { to: '/jarvis', label: 'Jarvis Copilot', icon: Sparkles },
             ]
         },
         {
-            section: 'SISTEMA',
+            section: 'ADMINISTRAÇÃO',
             items: [
-                { to: '/sync', label: 'Sincronização', icon: RefreshCw },
-            ]
-        },
-        {
-            section: 'ADMINISTRATIVO',
-            items: [
-                { to: '/admin/performance', label: 'Performance (Bônus)', icon: Trophy },
-                { to: '/admin/configs', label: 'Configurações', icon: Settings },
                 { to: '/admin/users', label: 'Usuários', icon: Users },
+                {
+                    label: 'Configurações',
+                    icon: Settings,
+                    children: [
+                        { to: '/admin/configs', label: 'Geral', icon: Settings },
+                        { to: '/sync', label: 'Sincronização', icon: RefreshCw },
+                        { to: '/admin/performance', label: 'Performance (Bônus)', icon: Trophy },
+                    ]
+                },
             ]
         }
     ]
@@ -215,6 +217,8 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
 
                                     // SINGLE ITEM
                                     const isActive = location.pathname === item.to
+                                    const isJarvis = item.label === 'Jarvis Copilot'
+
                                     return (
                                         <div key={item.to} className="relative group">
                                             <NavLink
@@ -222,14 +226,25 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                 className={({ isActive }) => `
                                                     flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
                                                     ${isActive
-                                                        ? 'bg-green-50 text-[#128131] font-bold shadow-sm ring-1 ring-green-100'
-                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                                        ? isJarvis 
+                                                            ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 font-bold shadow-sm ring-1 ring-orange-100'
+                                                            : 'bg-green-50 text-[#128131] font-bold shadow-sm ring-1 ring-green-100'
+                                                        : isJarvis
+                                                            ? 'text-slate-600 hover:text-orange-600 hover:bg-orange-50/50'
+                                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                                     }
                                                     ${collapsed ? 'justify-center' : ''}
+                                                    relative overflow-hidden
                                                 `}
                                             >
-                                                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                                                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'} ${isJarvis && isActive ? 'text-orange-500 animate-pulse' : ''}`} />
                                                 {!collapsed && <span>{item.label}</span>}
+                                                
+                                                {isJarvis && !collapsed && (
+                                                    <span className="ml-auto text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-md font-black tracking-tighter uppercase">
+                                                        AI
+                                                    </span>
+                                                )}
                                             </NavLink>
 
                                             {/* Tooltip for Collapsed Items */}
