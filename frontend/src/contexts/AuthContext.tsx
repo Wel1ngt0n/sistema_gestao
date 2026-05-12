@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api, setCsrfToken } from '../services/api';
+import { api, setAccessToken, setCsrfToken } from '../services/api';
 
 interface User {
     id: number;
@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (userData: User, csrfToken?: string | null) => void;
+    login: (userData: User, csrfToken?: string | null, accessToken?: string | null) => void;
     logout: () => Promise<void>;
     loading: boolean;
     hasPermission: (perm: string) => boolean;
@@ -32,11 +32,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const response = await api.get('/api/auth/me');
                 setUser(response.data.user);
                 setCsrfToken(response.data.csrf_token);
+                setAccessToken(null);
                 localStorage.removeItem('auth_token');
                 localStorage.setItem('auth_user', JSON.stringify(response.data.user));
             } catch {
                 setUser(null);
                 setCsrfToken(null);
+                setAccessToken(null);
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_user');
             } finally {
@@ -47,10 +49,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loadSession();
     }, []);
 
-    const login = (userData: User, csrfToken?: string | null) => {
+    const login = (userData: User, csrfToken?: string | null, accessToken?: string | null) => {
         setUser(userData);
         if (csrfToken !== undefined) {
             setCsrfToken(csrfToken);
+        }
+        if (accessToken !== undefined) {
+            setAccessToken(accessToken);
         }
         localStorage.removeItem('auth_token');
         localStorage.setItem('auth_user', JSON.stringify(userData));
@@ -64,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setUser(null);
             setCsrfToken(null);
+            setAccessToken(null);
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
         }

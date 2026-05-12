@@ -50,7 +50,7 @@ const LoginScreen = () => {
                 setUserId(response.data.user_id);
                 setTwoFAChallenge(response.data.challenge || '');
             } else {
-                login(response.data.user, response.data.csrf_token);
+                login(response.data.user, response.data.csrf_token, response.data.token);
                 navigate(from, { replace: true });
             }
         } catch (err: any) {
@@ -72,7 +72,7 @@ const LoginScreen = () => {
                 challenge: twoFAChallenge,
             });
 
-            login(response.data.user, response.data.csrf_token);
+            login(response.data.user, response.data.csrf_token, response.data.token);
             navigate(from, { replace: true });
         } catch (err: any) {
             setError(err.response?.data?.error || 'Codigo 2FA invalido.');
