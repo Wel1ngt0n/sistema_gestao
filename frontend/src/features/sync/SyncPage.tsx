@@ -12,7 +12,7 @@ import {
     ChevronRight,
     Command
 } from 'lucide-react'
-import { api } from '../../services/api'
+import { api, getAccessToken } from '../../services/api'
 import SyncHealthPanel from './SyncHealthPanel'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -37,7 +37,15 @@ export default function SyncPage() {
 
         // Parâmetros: full=true para deep, vital_only=true para vital
         const isDeep = mode === 'deep'
-        const url = `${baseUrl}/api/sync/stream?full=${isDeep}&vital_only=${!isDeep}`
+        const params = new URLSearchParams({
+            full: String(isDeep),
+            vital_only: String(!isDeep),
+        })
+        const accessToken = getAccessToken()
+        if (accessToken) {
+            params.set('token', accessToken)
+        }
+        const url = `${baseUrl}/api/sync/stream?${params.toString()}`
 
         const eventSource = new EventSource(url, { withCredentials: true })
 
