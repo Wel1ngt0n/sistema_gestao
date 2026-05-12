@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const CSRF_STORAGE_KEY = 'csrf_token';
+let inMemoryAccessToken: string | null = null;
 
 export const setCsrfToken = (token?: string | null) => {
     if (token) {
@@ -8,6 +9,10 @@ export const setCsrfToken = (token?: string | null) => {
     } else {
         sessionStorage.removeItem(CSRF_STORAGE_KEY);
     }
+};
+
+export const setAccessToken = (token?: string | null) => {
+    inMemoryAccessToken = token || null;
 };
 
 export const api = axios.create({
@@ -22,6 +27,10 @@ api.interceptors.request.use((config) => {
     const method = (config.method || 'get').toLowerCase();
     const needsCsrf = !['get', 'head', 'options'].includes(method);
     const csrfToken = sessionStorage.getItem(CSRF_STORAGE_KEY);
+
+    if (inMemoryAccessToken) {
+        config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
+    }
 
     if (needsCsrf && csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;

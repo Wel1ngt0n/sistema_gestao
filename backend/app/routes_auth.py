@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 def auth_response(user, token):
     payload = {
+        "token": token,
         "user": user.to_dict(),
         "csrf_token": decode_jwt_token_for_csrf(token),
     }
