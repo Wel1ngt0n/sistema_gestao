@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from app.models import SupportContact, db
 from app.services.event_processor_service import process_pending_zenvia_events
+from app.services.security_service import require_auth, require_permission
 from app.services.support_importer import import_support_files
 from app.services.support_metrics_service import (
     get_agent_performance,
@@ -23,32 +24,42 @@ logger = logging.getLogger(__name__)
 
 
 @support_bp.route("/api/support/kpis", methods=["GET"])
-def get_kpis():
+@require_auth
+@require_permission("support:view")
+def get_kpis(_payload):
     period = request.args.get("period")
     return jsonify(get_support_kpis(period))
 
 
 @support_bp.route("/api/support/overview", methods=["GET"])
-def support_overview():
+@require_auth
+@require_permission("support:view")
+def support_overview(_payload):
     period = request.args.get("period")
     return jsonify(get_overview(period))
 
 
 @support_bp.route("/api/support/source-health", methods=["GET"])
-def support_source_health():
+@require_auth
+@require_permission("support:view")
+def support_source_health(_payload):
     period = request.args.get("period")
     return jsonify(get_source_health(period))
 
 
 @support_bp.route("/api/support/imports", methods=["GET"])
-def support_imports():
+@require_auth
+@require_permission("support:view")
+def support_imports(_payload):
     period = request.args.get("period")
     limit = int(request.args.get("limit", 20))
     return jsonify(get_import_history(period, limit))
 
 
 @support_bp.route("/api/support/conversations", methods=["GET"])
-def support_conversations():
+@require_auth
+@require_permission("support:view")
+def support_conversations(_payload):
     period = request.args.get("period")
     status = request.args.get("status")
     agent = request.args.get("agent")
@@ -59,7 +70,9 @@ def support_conversations():
 
 
 @support_bp.route("/api/support/orphans", methods=["GET"])
-def get_orphans():
+@require_auth
+@require_permission("support:view")
+def get_orphans(_payload):
     contacts = SupportContact.query.filter(
         SupportContact.store_id.is_(None),
         SupportContact.linked_store_name.is_(None),
@@ -73,13 +86,17 @@ def get_orphans():
 
 
 @support_bp.route("/api/support/messages", methods=["GET"])
-def get_messages():
+@require_auth
+@require_permission("support:view")
+def get_messages(_payload):
     limit = min(int(request.args.get("limit", 50)), 200)
     return jsonify(get_recent_messages(limit))
 
 
 @support_bp.route("/api/support/link-store", methods=["POST"])
-def link_store():
+@require_auth
+@require_permission("support:manage_contacts")
+def link_store(_payload):
     data = request.json or {}
     contact_id = data.get("contact_id")
     store_name = (data.get("store_name") or "").strip()
@@ -96,7 +113,9 @@ def link_store():
 
 
 @support_bp.route("/api/support/sync", methods=["POST"])
-def sync_data():
+@require_auth
+@require_permission("support:sync")
+def sync_data(_payload):
     try:
         results = process_pending_zenvia_events()
         sync_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -126,7 +145,9 @@ def sync_data():
 
 
 @support_bp.route("/api/support/import-csv", methods=["POST", "OPTIONS"])
-def import_csv():
+@require_auth
+@require_permission("support:import")
+def import_csv(_payload):
     """
     Importa CSVs enviados pela tela do sistema online.
     Nao le automaticamente a pasta excel_suporte.
@@ -136,6 +157,29 @@ def import_csv():
 
     if not request.files:
         return jsonify({"status": "error", "message": "Nenhum arquivo enviado."}), 400
+
+    files = []
+    for key in request.files:
+        files.extend(request.files.getlist(key))
+    max_files = current_app.config.get("SUPPORT_MAX_IMPORT_FILES", 20)
+    max_file_bytes = current_app.config.get("SUPPORT_MAX_IMPORT_FILE_MB", 10) * 1024 * 1024
+
+    if len(files) > max_files:
+        return jsonify({"status": "error", "message": f"Importe no maximo {max_files} arquivos por vez."}), 413
+
+    for file in files:
+        filename = (file.filename or "").lower()
+        if not filename.endswith(".csv"):
+            return jsonify({"status": "error", "message": f"Arquivo invalido: {file.filename}. Envie apenas CSV."}), 400
+
+        file.stream.seek(0, 2)
+        size = file.stream.tell()
+        file.stream.seek(0)
+        if size <= 0:
+            return jsonify({"status": "error", "message": f"Arquivo vazio: {file.filename}."}), 400
+        if size > max_file_bytes:
+            limit_mb = current_app.config.get("SUPPORT_MAX_IMPORT_FILE_MB", 10)
+            return jsonify({"status": "error", "message": f"Arquivo {file.filename} excede {limit_mb}MB."}), 413
 
     period = request.form.get("period") or datetime.now().strftime("%Y-%m")
     try:
@@ -148,18 +192,24 @@ def import_csv():
 
 
 @support_bp.route("/api/support/periods", methods=["GET"])
-def support_periods():
+@require_auth
+@require_permission("support:view")
+def support_periods(_payload):
     return jsonify(get_periods())
 
 
 @support_bp.route("/api/support/agent-performance", methods=["GET"])
-def support_agent_performance():
+@require_auth
+@require_permission("support:view")
+def support_agent_performance(_payload):
     period = request.args.get("period")
     return jsonify(get_agent_performance(period))
 
 
 @support_bp.route("/api/support/nps-feedbacks", methods=["GET"])
-def support_nps_feedbacks():
+@require_auth
+@require_permission("support:view")
+def support_nps_feedbacks(_payload):
     period = request.args.get("period")
     limit = min(int(request.args.get("limit", 50)), 200)
     return jsonify(get_nps_feedbacks(period, limit))

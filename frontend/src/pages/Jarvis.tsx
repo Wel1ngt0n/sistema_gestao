@@ -14,7 +14,6 @@ import {
   Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 
 import ReactMarkdown from 'react-markdown';
 
@@ -30,7 +29,6 @@ interface ChatSession {
 }
 
 const Jarvis: React.FC = () => {
-  const { token } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
@@ -55,7 +53,6 @@ const Jarvis: React.FC = () => {
   }, [messages, loading]);
 
   const fetchSessions = async () => {
-    if (!token) return;
     try {
       const res = await api.get('/api/jarvis/sessions');
       if (Array.isArray(res.data)) {

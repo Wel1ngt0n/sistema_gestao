@@ -24,7 +24,7 @@ def create_app():
         elif not origin:
             response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Headers'] = (
-            'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+            'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Origin'
         )
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
         response.headers['Access-Control-Max-Age'] = '86400'
@@ -32,16 +32,21 @@ def create_app():
     
     # Cabecalhos de seguranca: mantem CSP explicita para o Flask-Talisman.
     csp = {
-        'default-src': [
+        'default-src': ['\'self\''],
+        'base-uri': ['\'self\''],
+        'frame-ancestors': ['\'none\''],
+        'img-src': ['\'self\'', 'data:', 'https:'],
+        'script-src': ['\'self\''],
+        'style-src': ['\'self\''],
+        'connect-src': [
             '\'self\'',
-            'localhost:5003',
-            '*.google.com',
-            '*.gstatic.com'
+            Config.FRONTEND_ORIGIN,
+            Config.BACKEND_ORIGIN,
+            'http://localhost:*',
+            'http://127.0.0.1:*',
+            'ws://localhost:*',
+            'ws://127.0.0.1:*',
         ],
-        'img-src': ['*', 'data:'],
-        'script-src': ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\''],
-        'style-src': ['\'self\'', '\'unsafe-inline\''],
-        'connect-src': ['\'self\'', '*', 'ws://localhost:*', 'http://localhost:*']
     }
     # Em desenvolvimento desabilitamos force_https porque localhost nao usa HTTPS por padrao.
     Talisman(app, content_security_policy=csp, force_https=(os.environ.get('FLASK_ENV') == 'production'))

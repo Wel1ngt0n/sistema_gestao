@@ -9,6 +9,7 @@ class Config:
     # Chave usada pelo Flask para sessoes/cookies.
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev_fallback_key_dont_use_in_prod")
     DEBUG = os.getenv("FLASK_ENV") == "development"
+    IS_PRODUCTION = os.getenv("FLASK_ENV") == "production"
     
     CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY", "").strip()
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -38,6 +39,18 @@ class Config:
         for origin in (_DEFAULT_CORS_ORIGINS + _ENV_CORS_ORIGINS + _FRONTEND_URLS)
         if origin.strip()
     })
+
+    FRONTEND_ORIGIN = os.getenv("FRONTEND_URL", "https://sistema-gestao-one.vercel.app").split(",")[0].rstrip("/")
+    BACKEND_ORIGIN = os.getenv("BACKEND_URL", "https://clickup-crm-backend.onrender.com").rstrip("/")
+
+    AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "ib_auth")
+    AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "true" if IS_PRODUCTION else "false").lower() == "true"
+    # Front e back estao em sites diferentes (vercel.app -> onrender.com), entao producao precisa SameSite=None.
+    AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "None" if IS_PRODUCTION else "Lax")
+    AUTH_COOKIE_DOMAIN = os.getenv("AUTH_COOKIE_DOMAIN") or None
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(30 * 1024 * 1024)))
+    SUPPORT_MAX_IMPORT_FILES = int(os.getenv("SUPPORT_MAX_IMPORT_FILES", "20"))
+    SUPPORT_MAX_IMPORT_FILE_MB = int(os.getenv("SUPPORT_MAX_IMPORT_FILE_MB", "10"))
 
     # IDs das listas extraidos das URLs do ClickUp.
     LIST_ID_PRINCIPAL = "211186088"

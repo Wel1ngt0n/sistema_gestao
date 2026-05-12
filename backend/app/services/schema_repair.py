@@ -129,8 +129,6 @@ def repair_database_schema():
         "CREATE INDEX IF NOT EXISTS idx_support_metric_snapshots_period ON support_metric_snapshots(period);",
         "CREATE INDEX IF NOT EXISTS idx_support_metric_snapshots_type ON support_metric_snapshots(metric_type);",
     ]
-
-    
     try:
         with db.engine.connect() as conn:
             for sql in repair_sql:
@@ -153,7 +151,7 @@ def seed_database():
     """
     Insere dados iniciais necessários para o funcionamento das métricas e relatórios.
     """
-    from app.models import SystemConfig
+    from app.models import Permission, Role, SystemConfig
     
     defaults = [
         {'key': 'annual_mrr_target', 'value': '180000.0', 'description': 'Meta anual de MRR para cálculo de performance.'},
@@ -161,6 +159,14 @@ def seed_database():
         {'key': 'sla_delivery_target_days', 'value': '90', 'description': 'SLA padrão para entregas (dias).'}
     ]
     
+    permissions = [
+        {"name": "support:view", "description": "Visualizar dashboard e dados de suporte", "module": "SUPORTE"},
+        {"name": "support:import", "description": "Importar CSVs do suporte", "module": "SUPORTE"},
+        {"name": "support:sync", "description": "Processar eventos pendentes do suporte", "module": "SUPORTE"},
+        {"name": "support:manage_contacts", "description": "Vincular contatos de suporte a lojas", "module": "SUPORTE"},
+        {"name": "webhooks:view", "description": "Visualizar diagnostico de webhooks", "module": "WEBHOOKS"},
+    ]
+
     try:
         for item in defaults:
             exists = SystemConfig.query.filter_by(key=item['key']).first()
@@ -168,6 +174,35 @@ def seed_database():
                 new_config = SystemConfig(**item)
                 db.session.add(new_config)
                 logger.info(f"[Seed] Inserindo config default: {item['key']}")
+
+        for item in permissions:
+            permission = Permission.query.filter_by(name=item["name"]).first()
+            if not permission:
+                db.session.add(Permission(**item))
+                logger.info(f"[Seed] Inserindo permissao default: {item['name']}")
+
+        db.session.flush()
+
+        permission_names = [item["name"] for item in permissions]
+        support_permissions = Permission.query.filter(Permission.name.in_(permission_names)).all()
+
+        super_admin = Role.query.filter_by(name="Super Admin").first()
+        if super_admin:
+            for permission in support_permissions:
+                if permission not in super_admin.permissions:
+                    super_admin.permissions.append(permission)
+
+        admin = Role.query.filter_by(name="Admin").first()
+        if admin:
+            for permission in support_permissions:
+                if permission not in admin.permissions:
+                    admin.permissions.append(permission)
+
+        operador = Role.query.filter_by(name="Operador").first()
+        if operador:
+            view_permission = Permission.query.filter_by(name="support:view").first()
+            if view_permission and view_permission not in operador.permissions:
+                operador.permissions.append(view_permission)
         
         db.session.commit()
     except Exception as e:

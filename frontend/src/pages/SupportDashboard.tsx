@@ -303,7 +303,7 @@ export const SupportDashboard = () => {
       const formData = new FormData();
       formData.append('period', importPeriod);
       selectedFiles.forEach((file) => formData.append('files', file));
-      await api.post('/api/support/import-csv', formData, { headers: { 'Content-Type': undefined } });
+      await api.post('/api/support/import-csv', formData);
       setSelectedFiles([]);
       await fetchPeriods();
       await fetchData();
