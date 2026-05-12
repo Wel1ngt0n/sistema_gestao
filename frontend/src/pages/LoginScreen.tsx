@@ -97,27 +97,27 @@ const LoginScreen = () => {
                             </div>
                         </div>
 
-                        <div className="mt-24 max-w-2xl">
-                            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-700 shadow-sm backdrop-blur">
+                        <div className="mt-20 max-w-xl">
+                            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-orange-700 shadow-sm backdrop-blur">
                                 <ShieldCheck size={14} />
                                 Painel operacional seguro
                             </div>
-                            <h1 className="text-6xl font-black leading-[0.95] tracking-tight text-slate-950 xl:text-7xl">
+                            <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-950 xl:text-5xl">
                                 Gestao inteligente para operacoes.
                             </h1>
-                            <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">
+                            <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
                                 Acesse monitoramento, suporte, integracoes, relatorios e indicadores criticos em uma experiencia unificada.
                             </p>
                         </div>
 
-                        <div className="mt-12 grid max-w-2xl grid-cols-3 gap-3">
+                        <div className="mt-8 grid max-w-xl grid-cols-3 gap-3">
                             {[
                                 { label: 'SLA', value: 'Tempo real', icon: BarChart3 },
                                 { label: 'Dados', value: 'Unificados', icon: CheckCircle2 },
                                 { label: 'Acesso', value: 'Protegido', icon: ShieldCheck },
                             ].map((item) => (
-                                <div key={item.label} className="rounded-xl border border-orange-100 bg-white/75 p-4 shadow-sm backdrop-blur">
-                                    <item.icon className="mb-3 h-5 w-5 text-orange-500" />
+                                <div key={item.label} className="rounded-lg border border-orange-100 bg-white/75 p-3 shadow-sm backdrop-blur">
+                                    <item.icon className="mb-2 h-4 w-4 text-orange-500" />
                                     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
                                     <p className="mt-1 text-sm font-bold text-slate-900">{item.value}</p>
                                 </div>
