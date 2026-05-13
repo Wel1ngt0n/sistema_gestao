@@ -1546,6 +1546,28 @@ def get_config(payload):
     
     return jsonify(result)
 
+@api_bp.route('/config/slack-implantadores', methods=['GET'])
+@require_auth
+def get_slack_implantadores(payload):
+    from app.models import Store
+    from app.services.notification_service import parse_slack_mentions
+
+    mentions = parse_slack_mentions()
+    names = [
+        row[0] for row in db.session.query(Store.implantador)
+        .filter(Store.status_norm == 'IN_PROGRESS')
+        .filter(Store.implantador.isnot(None))
+        .filter(Store.implantador != '')
+        .distinct()
+        .order_by(Store.implantador.asc())
+        .all()
+    ]
+
+    return jsonify([{
+        "name": name,
+        "slack_id": mentions.get(name.strip().lower(), ""),
+    } for name in names])
+
 @api_bp.route('/config', methods=['POST'])
 @require_auth
 @require_permission('manage_system')
