@@ -32,6 +32,11 @@ interface ConfigItem {
     default_value?: string
 }
 
+interface SlackImplantador {
+    name: string
+    slack_id: string
+}
+
 type ConfigData = Record<string, ConfigItem[]>
 type Toast = { text: string; type: 'success' | 'error' }
 type CategoryMeta = { label: string; desc: string; icon: ReactNode; tone: string }
@@ -107,6 +112,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false)
     const [toast, setToast] = useState<Toast | null>(null)
     const [testingNotif, setTestingNotif] = useState<string | null>(null)
+    const [slackImplantadores, setSlackImplantadores] = useState<SlackImplantador[]>([])
 
     const categories = useMemo(() => getOrderedCategories(configs), [configs])
     const pendingKeys = useMemo(
@@ -122,6 +128,12 @@ export default function SettingsPage() {
     }, [activeCategory, configs, query])
 
     useEffect(() => { fetchConfig() }, [])
+
+    useEffect(() => {
+        if (activeCategory === 'notifications') {
+            fetchSlackImplantadores()
+        }
+    }, [activeCategory])
 
     useEffect(() => {
         if (!categories.includes(activeCategory) && categories.length > 0) {
@@ -150,6 +162,26 @@ export default function SettingsPage() {
             showToast('Erro ao carregar configuracoes.', 'error')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const parseSlackMentions = (value: string) => {
+        try {
+            const parsed = JSON.parse(value || '{}')
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                ? parsed as Record<string, string>
+                : {}
+        } catch {
+            return {}
+        }
+    }
+
+    const fetchSlackImplantadores = async () => {
+        try {
+            const res = await api.get('/api/config/slack-implantadores')
+            setSlackImplantadores(res.data || [])
+        } catch {
+            setSlackImplantadores([])
         }
     }
 
@@ -199,6 +231,17 @@ export default function SettingsPage() {
         setEditValues((prev) => ({ ...prev, [key]: value }))
     }
 
+    const updateSlackMention = (name: string, slackId: string) => {
+        const current = parseSlackMentions(editValues.slack_user_mentions)
+        const next = { ...current }
+        if (slackId.trim()) {
+            next[name] = slackId.trim().replace(/^<@|>$/g, '')
+        } else {
+            delete next[name]
+        }
+        updateValue('slack_user_mentions', JSON.stringify(next, null, 2))
+    }
+
     const copyWebhookUrl = async () => {
         const url = `${import.meta.env.VITE_API_URL || window.location.origin}/api/webhooks/zenvia`
         await navigator.clipboard.writeText(url)
@@ -225,14 +268,33 @@ export default function SettingsPage() {
         const type = isSecret(item.key) ? 'password' : isUrl(item.key) ? 'url' : isEmail(item.key) ? 'email' : isNumber(item.key) ? 'number' : 'text'
 
         if (isLongText(item.key)) {
+            const mapping = parseSlackMentions(value)
             return (
-                <textarea
-                    rows={6}
-                    value={value}
-                    placeholder={'{\n  "Nome do Implantador": "U012ABCDEF"\n}'}
-                    onChange={(event) => updateValue(item.key, event.target.value)}
-                    className={`min-w-0 flex-1 resize-y rounded-lg border px-3 py-2 font-mono text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'}`}
-                />
+                <div className={`rounded-lg border ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'}`}>
+                    <div className="grid grid-cols-[minmax(0,1fr)_180px] gap-3 border-b border-slate-100 px-3 py-2 text-xs font-bold uppercase text-slate-400">
+                        <span>Implantador ativo</span>
+                        <span>Slack ID</span>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                        {slackImplantadores.map((person) => (
+                            <div key={person.name} className="grid grid-cols-[minmax(0,1fr)_180px] gap-3 border-b border-slate-100 px-3 py-2 last:border-b-0">
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-slate-700">{person.name}</p>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={mapping[person.name] || person.slack_id || ''}
+                                    placeholder="U012ABCDEF"
+                                    onChange={(event) => updateSlackMention(person.name, event.target.value)}
+                                    className="min-w-0 rounded-md border border-slate-200 px-2 py-1.5 font-mono text-xs text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                                />
+                            </div>
+                        ))}
+                        {slackImplantadores.length === 0 && (
+                            <div className="px-3 py-4 text-sm text-slate-400">Nenhum implantador ativo encontrado.</div>
+                        )}
+                    </div>
+                </div>
             )
         }
 
