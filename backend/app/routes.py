@@ -1451,6 +1451,7 @@ DEFAULT_CONFIGS = [
     {"key": "support_sla_first_response_hours", "value": "4", "description": "SLA de primeira resposta do suporte", "category": "support"},
     # Notificacoes
     {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificacoes", "category": "notifications"},
+    {"key": "slack_user_mentions", "value": "{}", "description": "Mapa implantador para Slack ID em JSON", "category": "notifications"},
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},

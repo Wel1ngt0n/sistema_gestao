@@ -89,6 +89,7 @@ const isSecret = (key: string) => SECRET_HINTS.some((hint) => key.includes(hint)
 const isUrl = (key: string) => key.includes('url') || key.includes('endpoint')
 const isEmail = (key: string) => key.includes('email')
 const isNumber = (key: string) => NUMBER_HINTS.some((hint) => key.includes(hint)) && !isSecret(key)
+const isLongText = (key: string) => key === 'slack_user_mentions'
 
 const makeToken = () => {
     const bytes = new Uint8Array(24)
@@ -221,6 +222,18 @@ export default function SettingsPage() {
         }
 
         const type = isSecret(item.key) ? 'password' : isUrl(item.key) ? 'url' : isEmail(item.key) ? 'email' : isNumber(item.key) ? 'number' : 'text'
+
+        if (isLongText(item.key)) {
+            return (
+                <textarea
+                    rows={6}
+                    value={value}
+                    placeholder={'{\n  "Nome do Implantador": "U012ABCDEF"\n}'}
+                    onChange={(event) => updateValue(item.key, event.target.value)}
+                    className={`min-w-0 flex-1 resize-y rounded-lg border px-3 py-2 font-mono text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'}`}
+                />
+            )
+        }
 
         return (
             <div className="flex gap-2">
