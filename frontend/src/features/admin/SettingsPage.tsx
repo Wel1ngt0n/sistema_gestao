@@ -97,6 +97,8 @@ const isNumber = (key: string) => NUMBER_HINTS.some((hint) => key.includes(hint)
 const isLongText = (key: string) => key === 'slack_user_mentions'
 
 const normalizePersonName = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()
+const normalizeSlackId = (value: string) => value.trim().replace(/^<@|>$/g, '')
+const isSlackUserId = (value: string) => !value || /^[UW][A-Z0-9]+$/i.test(normalizeSlackId(value))
 
 const makeToken = () => {
     const bytes = new Uint8Array(24)
@@ -248,7 +250,7 @@ export default function SettingsPage() {
             }
         })
         if (slackId.trim()) {
-            next[name] = slackId.trim().replace(/^<@|>$/g, '')
+            next[name] = normalizeSlackId(slackId)
         }
         updateValue('slack_user_mentions', JSON.stringify(next, null, 2))
     }
@@ -287,20 +289,29 @@ export default function SettingsPage() {
                         <span>Slack ID</span>
                     </div>
                     <div className="max-h-72 overflow-y-auto">
-                        {slackImplantadores.map((person) => (
-                            <div key={person.name} className="grid grid-cols-[minmax(0,1fr)_180px] gap-3 border-b border-slate-100 px-3 py-2 last:border-b-0">
-                                <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-slate-700">{person.name}</p>
+                        {slackImplantadores.map((person) => {
+                            const slackValue = getSlackMentionValue(mapping, person.name) || person.slack_id || ''
+                            const invalidUserId = !isSlackUserId(slackValue)
+                            return (
+                                <div key={person.name} className="grid grid-cols-[minmax(0,1fr)_180px] gap-3 border-b border-slate-100 px-3 py-2 last:border-b-0">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-slate-700">{person.name}</p>
+                                        {invalidUserId && (
+                                            <p className="mt-1 text-xs font-medium text-amber-700">
+                                                Use o ID de membro do Slack, iniciado por U ou W.
+                                            </p>
+                                        )}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={slackValue}
+                                        placeholder="U012ABCDEF"
+                                        onChange={(event) => updateSlackMention(person.name, event.target.value)}
+                                        className={`min-w-0 rounded-md border px-2 py-1.5 font-mono text-xs text-slate-800 outline-none focus:ring-2 ${invalidUserId ? 'border-amber-300 bg-amber-50 focus:border-amber-500 focus:ring-amber-500/20' : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20'}`}
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    value={getSlackMentionValue(mapping, person.name) || person.slack_id || ''}
-                                    placeholder="U012ABCDEF"
-                                    onChange={(event) => updateSlackMention(person.name, event.target.value)}
-                                    className="min-w-0 rounded-md border border-slate-200 px-2 py-1.5 font-mono text-xs text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                                />
-                            </div>
-                        ))}
+                            )
+                        })}
                         {slackImplantadores.length === 0 && (
                             <div className="px-3 py-4 text-sm text-slate-400">Nenhum implantador ativo encontrado.</div>
                         )}
