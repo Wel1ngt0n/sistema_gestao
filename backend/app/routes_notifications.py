@@ -8,7 +8,7 @@ from app.services.security_service import require_auth
 notifications_bp = Blueprint("notifications", __name__, url_prefix="/api/notifications")
 
 
-@notifications_bp.route("/test", methods=["POST"])
+@notifications_bp.route("/test", methods=["POST", "OPTIONS"])
 @require_auth
 def test_notification(payload):
     """Sends a simple Slack test message."""
@@ -18,7 +18,7 @@ def test_notification(payload):
     return jsonify(result)
 
 
-@notifications_bp.route("/sla-alerts", methods=["POST"])
+@notifications_bp.route("/sla-alerts", methods=["POST", "OPTIONS"])
 @require_auth
 def trigger_sla_alerts(payload):
     """Manual trigger for SLA alerts. Manual sends bypass daily de-dupe."""
@@ -28,7 +28,7 @@ def trigger_sla_alerts(payload):
     return jsonify(result)
 
 
-@notifications_bp.route("/weekly-summary", methods=["POST"])
+@notifications_bp.route("/weekly-summary", methods=["POST", "OPTIONS"])
 @require_auth
 def trigger_weekly_summary(payload):
     """Manual trigger for weekly summary. Manual sends bypass weekly de-dupe."""
@@ -38,7 +38,7 @@ def trigger_weekly_summary(payload):
     return jsonify(result)
 
 
-@notifications_bp.route("/goal-check", methods=["POST"])
+@notifications_bp.route("/goal-check", methods=["POST", "OPTIONS"])
 @require_auth
 def trigger_goal_check(payload):
     """Manual trigger for monthly goal achievement checks."""
@@ -49,7 +49,7 @@ def trigger_goal_check(payload):
     return jsonify(result)
 
 
-@notifications_bp.route("/clickup-docs-reminder", methods=["POST"])
+@notifications_bp.route("/clickup-docs-reminder", methods=["POST", "OPTIONS"])
 @require_auth
 def trigger_clickup_docs_reminder(payload):
     """Manual trigger for ClickUp parent-card documentation reminders."""
@@ -59,7 +59,27 @@ def trigger_clickup_docs_reminder(payload):
     return jsonify(result)
 
 
-@notifications_bp.route("/send-all", methods=["POST"])
+@notifications_bp.route("/test-dm", methods=["POST", "OPTIONS"])
+@require_auth
+def test_dm(payload):
+    """Sends a test DM to a specific Slack user via bot token.
+
+    Body: {"slack_user_id": "UXXXXXXXX", "text": "Mensagem de teste"}
+    """
+    from app.services.notification_service import send_dm_via_bot
+
+    data = request.get_json(silent=True) or {}
+    slack_user_id = (data.get("slack_user_id") or "").strip()
+    text = (data.get("text") or "Teste de DM - Sistema de Gestao de Implantacao").strip()
+
+    if not slack_user_id:
+        return jsonify({"ok": False, "error": "slack_user_id e obrigatorio"}), 400
+
+    result = send_dm_via_bot(slack_user_id, text)
+    return jsonify(result)
+
+
+@notifications_bp.route("/send-all", methods=["POST", "OPTIONS"])
 @require_auth
 def send_all_notifications(payload):
     """Runs all notification checks. Pass {"force": true} to bypass de-dupe."""

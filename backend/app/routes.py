@@ -1468,11 +1468,13 @@ DEFAULT_CONFIGS = [
     {"key": "support_sla_first_response_hours", "value": "4", "description": "SLA de primeira resposta do suporte", "category": "support"},
     # Notificacoes
     {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificacoes", "category": "notifications"},
+    {"key": "slack_bot_token", "value": "", "description": "Bot User OAuth Token do Slack para mensagens privadas", "category": "notifications"},
     {"key": "slack_user_mentions", "value": "{}", "description": "Mapa implantador para Slack ID em JSON", "category": "notifications"},
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
     {"key": "notify_clickup_docs_reminder", "value": "true", "description": "Lembrar implantadores de atualizar o card principal", "category": "notifications"},
+    {"key": "notify_clickup_docs_dm_enabled", "value": "true", "description": "Enviar lembrete de documentacao no privado do implantador", "category": "notifications"},
     {"key": "clickup_docs_stale_days", "value": "15", "description": "Dias sem comentario no card principal para lembrar documentacao", "category": "notifications"},
     {"key": "clickup_docs_check_limit", "value": "50", "description": "Limite de lojas verificadas por rotina de documentacao", "category": "notifications"},
     {"key": "notify_sla_last_sent_date", "value": "", "description": "Ultima data de envio de alerta SLA", "category": "notifications"},
@@ -1553,20 +1555,25 @@ def get_slack_implantadores(payload):
     from app.services.notification_service import parse_slack_mentions
 
     mentions = parse_slack_mentions()
-    names = [
-        row[0] for row in db.session.query(Store.implantador)
-        .filter(Store.status_norm == 'IN_PROGRESS')
-        .filter(Store.implantador.isnot(None))
-        .filter(Store.implantador != '')
-        .distinct()
-        .order_by(Store.implantador.asc())
-        .all()
-    ]
+    active_stores = Store.query.filter(
+        Store.status_norm == 'IN_PROGRESS',
+        Store.manual_finished_at.is_(None),
+    ).with_entities(Store.implantador, Store.implantador_atual).all()
 
-    return jsonify([{
-        "name": name,
-        "slack_id": mentions.get(name.strip().lower(), ""),
-    } for name in names])
+    names = sorted({
+        name.strip()
+        for row in active_stores
+        for name in row
+        if name and name.strip()
+    }, key=str.lower)
+
+    return jsonify([
+        {
+            "name": name,
+            "slack_id": mentions.get(name.strip().lower(), ""),
+        }
+        for name in names
+    ])
 
 @api_bp.route('/config', methods=['POST'])
 @require_auth

@@ -126,6 +126,65 @@ def send_slack_message(text, blocks=None):
         return {"ok": False, "sent": False, "error": str(exc)}
 
 
+def send_dm_via_bot(slack_user_id, text):
+    """Opens a DM channel with a Slack user and sends a message via Bot Token.
+
+    Requires slack_bot_token (xoxb-...) configured in SystemConfig.
+    Uses conversations.open to get the DM channel ID, then chat.postMessage.
+    """
+    bot_token = get_config_value("slack_bot_token", "").strip()
+    if not bot_token:
+        return {"ok": False, "sent": False, "error": "slack_bot_token nao configurado"}
+    if not bot_token.startswith("xoxb-"):
+        return {"ok": False, "sent": False, "error": "slack_bot_token invalido (deve comecar com xoxb-)"}
+
+    headers = {
+        "Authorization": f"Bearer {bot_token}",
+        "Content-Type": "application/json; charset=utf-8",
+    }
+
+    # Step 1: open DM channel
+    try:
+        open_resp = requests.post(
+            "https://slack.com/api/conversations.open",
+            headers=headers,
+            json={"users": slack_user_id},
+            timeout=10,
+        )
+        open_data = open_resp.json()
+    except requests.RequestException as exc:
+        return {"ok": False, "sent": False, "error": f"conversations.open falhou: {exc}"}
+
+    if not open_data.get("ok"):
+        return {
+            "ok": False,
+            "sent": False,
+            "error": f"conversations.open erro: {open_data.get('error', 'desconhecido')}",
+        }
+
+    channel_id = open_data["channel"]["id"]
+
+    # Step 2: send message
+    try:
+        msg_resp = requests.post(
+            "https://slack.com/api/chat.postMessage",
+            headers=headers,
+            json={"channel": channel_id, "text": text},
+            timeout=10,
+        )
+        msg_data = msg_resp.json()
+    except requests.RequestException as exc:
+        return {"ok": False, "sent": False, "error": f"chat.postMessage falhou: {exc}"}
+
+    ok = msg_data.get("ok", False)
+    return {
+        "ok": ok,
+        "sent": ok,
+        "channel": channel_id,
+        "error": None if ok else msg_data.get("error", "desconhecido"),
+    }
+
+
 def _store_line(store, sla_days):
     days = store.dias_em_progresso
     exceeded_by = max(0, days - sla_days)
@@ -319,7 +378,12 @@ def check_goal_achievement(month_str=None, force=False):
 
 
 def send_clickup_docs_reminder(force=False):
-    """Sends reminders for stores without recent parent-card documentation."""
+    """Sends reminders for stores without recent parent-card documentation.
+
+    When slack_bot_token is configured and notify_clickup_docs_dm_enabled is
+    true, sends individual DMs to each implementor with their pending stores.
+    Falls back to a single channel message otherwise.
+    """
     if not is_enabled("notify_clickup_docs_reminder", "true"):
         return {"ok": True, "sent": False, "reason": "disabled"}
 
@@ -328,12 +392,13 @@ def send_clickup_docs_reminder(force=False):
         return {"ok": True, "sent": False, "reason": "already_sent_today"}
 
     stale_days = safe_int("clickup_docs_stale_days", 7)
+    limit = safe_int("clickup_docs_check_limit", 50)
     threshold = datetime.now() - timedelta(days=stale_days)
 
     stores = Store.query.filter(
         Store.status_norm == "IN_PROGRESS",
         Store.manual_finished_at.is_(None),
-    ).all()
+    ).limit(limit).all()
 
     stale = []
     for store in stores:
@@ -364,6 +429,64 @@ def send_clickup_docs_reminder(force=False):
     for item in stale:
         grouped.setdefault(item["owner"], []).append(item)
 
+    # ── DM mode: send individual messages per implementor ──
+    use_dm = (
+        is_enabled("notify_clickup_docs_dm_enabled", "true")
+        and get_config_value("slack_bot_token", "").strip().startswith("xoxb-")
+    )
+
+    if use_dm:
+        mentions = parse_slack_mentions()
+        dm_results = {}
+        dm_ok_count = 0
+
+        for owner, items in sorted(grouped.items(), key=lambda pair: pair[0]):
+            slack_id = mentions.get(normalize_name(owner))
+            if not slack_id:
+                dm_results[owner] = {"ok": False, "error": "slack_id nao mapeado"}
+                continue
+
+            dm_lines = [
+                f":memo: *Lembrete de documentacao ClickUp*",
+                f"Ola! Voce tem *{len(items)} loja(s)* com documentacao pendente:",
+                "",
+            ]
+            for item in items[:10]:
+                store = item["store"]
+                reason = "; ".join(item["reasons"])
+                dm_lines.append(f"- *{store.store_name}* | {reason}")
+            if len(items) > 10:
+                dm_lines.append(f"- ...e mais {len(items) - 10} lojas")
+            dm_lines.extend([
+                "",
+                f"Criterio: sem comentario recente ha {stale_days}+ dias ou descricao curta no card principal.",
+                "Por favor, atualize o card no ClickUp. Obrigado! :pray:",
+            ])
+
+            res = send_dm_via_bot(slack_id, "\n".join(dm_lines))
+            dm_results[owner] = res
+            if res.get("ok"):
+                dm_ok_count += 1
+
+        result = {
+            "ok": dm_ok_count > 0 or len(dm_results) == 0,
+            "sent": dm_ok_count > 0,
+            "mode": "dm",
+            "checked": len(stores),
+            "stale_count": len(stale),
+            "owners": len(grouped),
+            "dm_sent": dm_ok_count,
+            "dm_details": dm_results,
+        }
+        if result["sent"]:
+            set_config_value(
+                "notify_clickup_docs_last_sent_date",
+                today_key,
+                "Ultima data de envio do lembrete de documentacao ClickUp",
+            )
+        return result
+
+    # ── Fallback: single channel message via webhook ──
     lines = [
         "*Lembrete de documentacao ClickUp*",
         f"Criterio: card principal sem comentario recente ha {stale_days}+ dias ou descricao curta.",
@@ -382,6 +505,7 @@ def send_clickup_docs_reminder(force=False):
 
     result = send_slack_message("\n".join(lines).strip())
     result.update({
+        "mode": "channel",
         "checked": len(stores),
         "stale_count": len(stale),
         "owners": len(grouped),
