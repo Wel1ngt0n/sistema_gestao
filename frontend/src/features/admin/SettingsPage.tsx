@@ -243,20 +243,23 @@ export default function SettingsPage() {
         }
     }
 
-    const handleTestDm = async (name: string, slackId: string) => {
+    const handleTestWebhookNotification = async (name: string) => {
         setTestingDm(name)
         try {
-            const res = await api.post('/api/notifications/test-dm', {
-                slack_user_id: slackId,
-                text: `Ola ${name.split(' ')[0]}! Este e um teste de DM do Sistema de Gestao de Implantacao. :wave:`,
+            const res = await api.post('/api/notifications/clickup-docs-reminder', {
+                target_owner: name,
             })
             if (res.data.ok) {
-                showToast(`DM enviada para ${name.split(' ')[0]}!`, 'success')
+                if (res.data.sent) {
+                    showToast(`Cobranca enviada no canal para ${name.split(' ')[0]}!`, 'success')
+                } else {
+                    showToast(`Sem docs pendentes para ${name.split(' ')[0]}.`, 'success')
+                }
             } else {
-                showToast(res.data.error || 'Erro ao enviar DM.', 'error')
+                showToast(res.data.error || 'Erro ao enviar cobranca.', 'error')
             }
         } catch {
-            showToast('Erro ao enviar DM.', 'error')
+            showToast('Erro ao enviar cobranca.', 'error')
         } finally {
             setTestingDm(null)
         }
@@ -557,15 +560,15 @@ export default function SettingsPage() {
                                                             {linked ? (
                                                                 <button
                                                                     type="button"
-                                                                    title={`Enviar DM de teste para ${person.name.split(' ')[0]}`}
+                                                                    title={`Cobrar documentacao pendente de ${person.name.split(' ')[0]} no canal`}
                                                                     disabled={testingDm !== null}
-                                                                    onClick={() => handleTestDm(person.name, currentId)}
+                                                                    onClick={() => handleTestWebhookNotification(person.name)}
                                                                     className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 >
                                                                     {testingDm === person.name
                                                                         ? <Loader2 size={11} className="animate-spin" />
                                                                         : <Send size={11} />}
-                                                                    DM
+                                                                    Cobrar
                                                                 </button>
                                                             ) : (
                                                                 <span className="text-[11px] text-slate-300">—</span>
@@ -600,11 +603,11 @@ export default function SettingsPage() {
                                         <button
                                             type="button"
                                             disabled={!editValues.admin_slack_id || !isSlackUserId(editValues.admin_slack_id) || testingDm !== null}
-                                            onClick={() => handleTestDm('Admin (Você)', editValues.admin_slack_id!)}
+                                            onClick={() => handleTestWebhookNotification('Admin (Você)')}
                                             className="inline-flex w-full sm:w-auto h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {testingDm === 'Admin (Você)' ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                            Testar DM
+                                            Cobrar (Canal)
                                         </button>
                                     </div>
                                 </section>
