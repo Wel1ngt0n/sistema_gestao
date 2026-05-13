@@ -6,6 +6,8 @@ both from authenticated manual routes and scheduler jobs without adding a new
 notification table in this iteration.
 """
 from datetime import datetime
+import json
+import re
 
 import requests
 
@@ -58,6 +60,47 @@ def format_money(value):
     return f"R$ {value:,.0f}".replace(",", ".")
 
 
+def normalize_name(value):
+    return re.sub(r"\s+", " ", str(value or "").strip()).lower()
+
+
+def parse_slack_mentions():
+    raw = get_config_value("slack_user_mentions", "{}")
+    if not raw:
+        return {}
+
+    mapping = {}
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            mapping = data
+    except json.JSONDecodeError:
+        # Fallback friendly format:
+        # Nome Sobrenome=U123ABC
+        # Outro Nome: U456DEF
+        for line in raw.splitlines():
+            if "=" in line:
+                name, slack_id = line.split("=", 1)
+            elif ":" in line:
+                name, slack_id = line.split(":", 1)
+            else:
+                continue
+            mapping[name.strip()] = slack_id.strip()
+
+    return {
+        normalize_name(name): str(slack_id).strip().strip("<@>")
+        for name, slack_id in mapping.items()
+        if str(name).strip() and str(slack_id).strip()
+    }
+
+
+def slack_mention_for(owner_name):
+    slack_id = parse_slack_mentions().get(normalize_name(owner_name))
+    if not slack_id:
+        return owner_name or "Sem responsavel"
+    return f"<@{slack_id}>"
+
+
 def send_slack_message(text, blocks=None):
     webhook_url = get_config_value("slack_webhook_url")
     if not webhook_url:
@@ -87,7 +130,7 @@ def _store_line(store, sla_days):
     days = store.dias_em_progresso
     exceeded_by = max(0, days - sla_days)
     owner = store.implantador or store.implantador_atual or "Sem responsavel"
-    return f"- *{store.store_name}* | {days}d (+{exceeded_by}d) | {owner}"
+    return f"- *{store.store_name}* | {days}d (+{exceeded_by}d) | {slack_mention_for(owner)}"
 
 
 def _wip_stores():
