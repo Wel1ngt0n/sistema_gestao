@@ -377,13 +377,11 @@ def check_goal_achievement(month_str=None, force=False):
     return result
 
 
-def send_clickup_docs_reminder(force=False):
+def send_clickup_docs_reminder(force=False, target_owner=None):
     """Sends reminders for stores without recent parent-card documentation.
-
-    When slack_bot_token is configured and notify_clickup_docs_dm_enabled is
-    true, sends individual DMs to each implementor with their pending stores.
-    Falls back to a single channel message otherwise.
+    Uses the webhook (channel message) and mentions the target_owner (or everyone if None).
     """
+    from app.services.notification_service import normalize_name
     if not is_enabled("notify_clickup_docs_reminder", "true"):
         return {"ok": True, "sent": False, "reason": "disabled"}
 
@@ -422,6 +420,10 @@ def send_clickup_docs_reminder(force=False):
                 "reasons": reasons,
             })
 
+    if target_owner:
+        normalized_target = normalize_name(target_owner)
+        stale = [item for item in stale if normalize_name(item["owner"]) == normalized_target]
+
     if not stale:
         return {"ok": True, "sent": False, "reason": "no_stale_docs", "checked": len(stores)}
 
@@ -429,64 +431,7 @@ def send_clickup_docs_reminder(force=False):
     for item in stale:
         grouped.setdefault(item["owner"], []).append(item)
 
-    # ── DM mode: send individual messages per implementor ──
-    use_dm = (
-        is_enabled("notify_clickup_docs_dm_enabled", "true")
-        and get_config_value("slack_bot_token", "").strip().startswith("xoxb-")
-    )
-
-    if use_dm:
-        mentions = parse_slack_mentions()
-        dm_results = {}
-        dm_ok_count = 0
-
-        for owner, items in sorted(grouped.items(), key=lambda pair: pair[0]):
-            slack_id = mentions.get(normalize_name(owner))
-            if not slack_id:
-                dm_results[owner] = {"ok": False, "error": "slack_id nao mapeado"}
-                continue
-
-            dm_lines = [
-                f":memo: *Lembrete de documentacao ClickUp*",
-                f"Ola! Voce tem *{len(items)} loja(s)* com documentacao pendente:",
-                "",
-            ]
-            for item in items[:10]:
-                store = item["store"]
-                reason = "; ".join(item["reasons"])
-                dm_lines.append(f"- *{store.store_name}* | {reason}")
-            if len(items) > 10:
-                dm_lines.append(f"- ...e mais {len(items) - 10} lojas")
-            dm_lines.extend([
-                "",
-                f"Criterio: sem comentario recente ha {stale_days}+ dias ou descricao curta no card principal.",
-                "Por favor, atualize o card no ClickUp. Obrigado! :pray:",
-            ])
-
-            res = send_dm_via_bot(slack_id, "\n".join(dm_lines))
-            dm_results[owner] = res
-            if res.get("ok"):
-                dm_ok_count += 1
-
-        result = {
-            "ok": dm_ok_count > 0 or len(dm_results) == 0,
-            "sent": dm_ok_count > 0,
-            "mode": "dm",
-            "checked": len(stores),
-            "stale_count": len(stale),
-            "owners": len(grouped),
-            "dm_sent": dm_ok_count,
-            "dm_details": dm_results,
-        }
-        if result["sent"]:
-            set_config_value(
-                "notify_clickup_docs_last_sent_date",
-                today_key,
-                "Ultima data de envio do lembrete de documentacao ClickUp",
-            )
-        return result
-
-    # ── Fallback: single channel message via webhook ──
+    # ── Single channel message via webhook ──
     lines = [
         "*Lembrete de documentacao ClickUp*",
         f"Criterio: card principal sem comentario recente ha {stale_days}+ dias ou descricao curta.",

@@ -55,7 +55,10 @@ def trigger_clickup_docs_reminder(payload):
     """Manual trigger for ClickUp parent-card documentation reminders."""
     from app.services.notification_service import send_clickup_docs_reminder
 
-    result = send_clickup_docs_reminder(force=True)
+    data = request.get_json(silent=True) or {}
+    target_owner = data.get("target_owner")
+
+    result = send_clickup_docs_reminder(force=True, target_owner=target_owner)
     return jsonify(result)
 
 
