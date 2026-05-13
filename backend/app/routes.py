@@ -1473,7 +1473,7 @@ DEFAULT_CONFIGS = [
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
     {"key": "notify_clickup_docs_reminder", "value": "true", "description": "Lembrar implantadores de atualizar o card principal", "category": "notifications"},
-    {"key": "clickup_docs_stale_days", "value": "7", "description": "Dias sem comentario no card principal para alerta", "category": "notifications"},
+    {"key": "clickup_docs_stale_days", "value": "15", "description": "Dias sem comentario no card principal para lembrar documentacao", "category": "notifications"},
     {"key": "clickup_docs_check_limit", "value": "50", "description": "Limite de lojas verificadas por rotina de documentacao", "category": "notifications"},
     {"key": "notify_sla_last_sent_date", "value": "", "description": "Ultima data de envio de alerta SLA", "category": "notifications"},
     {"key": "notify_weekly_summary_last_sent_week", "value": "", "description": "Ultima semana de envio do resumo", "category": "notifications"},
