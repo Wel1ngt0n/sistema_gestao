@@ -81,6 +81,8 @@ const BOOLEAN_KEYS = new Set([
 
 const NUMBER_HINTS = ['target', 'weight', 'days', 'hours', 'limit', 'max', 'attempts', 'window']
 const SECRET_HINTS = ['token', 'secret', 'password']
+// Keys that contain the user-facing token (needs to be visible + copyable, NOT masked)
+const VISIBLE_TOKEN_KEYS = new Set(['webhook_token'])
 
 const getOrderedCategories = (configs: ConfigData) => {
     const existing = Object.keys(configs)
@@ -91,7 +93,8 @@ const getOrderedCategories = (configs: ConfigData) => {
 }
 
 const isBoolean = (key: string) => BOOLEAN_KEYS.has(key) || key.startsWith('notify_') || key.endsWith('_enabled')
-const isSecret = (key: string) => SECRET_HINTS.some((hint) => key.includes(hint))
+const isSecret = (key: string) => !VISIBLE_TOKEN_KEYS.has(key) && SECRET_HINTS.some((hint) => key.includes(hint))
+const isCopyable = (key: string) => VISIBLE_TOKEN_KEYS.has(key)
 const isUrl = (key: string) => key.includes('url') || key.includes('endpoint')
 const isEmail = (key: string) => key.includes('email')
 const isNumber = (key: string) => NUMBER_HINTS.some((hint) => key.includes(hint)) && !isSecret(key)
@@ -262,6 +265,11 @@ export default function SettingsPage() {
         showToast('Endpoint do webhook copiado.', 'success')
     }
 
+    const copyValue = async (value: string) => {
+        await navigator.clipboard.writeText(value)
+        showToast('Valor copiado.', 'success')
+    }
+
     const renderField = (item: ConfigItem) => {
         const value = editValues[item.key] ?? ''
         const dirty = value !== initialValues[item.key]
@@ -287,8 +295,18 @@ export default function SettingsPage() {
                     type={type}
                     value={value}
                     onChange={(event) => updateValue(item.key, event.target.value)}
-                    className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'}`}
+                    className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'} ${isCopyable(item.key) ? 'font-mono text-xs' : ''}`}
                 />
+                {isCopyable(item.key) && (
+                    <button
+                        type="button"
+                        title="Copiar valor"
+                        onClick={() => copyValue(value)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-teal-300 hover:text-teal-700"
+                    >
+                        <Copy size={16} />
+                    </button>
+                )}
                 {isSecret(item.key) && (
                     <button
                         type="button"
