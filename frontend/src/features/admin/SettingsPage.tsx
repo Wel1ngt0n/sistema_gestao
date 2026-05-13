@@ -119,6 +119,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false)
     const [toast, setToast] = useState<Toast | null>(null)
     const [testingNotif, setTestingNotif] = useState<string | null>(null)
+    const [testingDm, setTestingDm] = useState<string | null>(null)
     const [slackImplantadores, setSlackImplantadores] = useState<SlackImplantador[]>([])
 
     const categories = useMemo(() => getOrderedCategories(configs), [configs])
@@ -238,6 +239,25 @@ export default function SettingsPage() {
             showToast('Erro ao enviar notificacao.', 'error')
         } finally {
             setTestingNotif(null)
+        }
+    }
+
+    const handleTestDm = async (name: string, slackId: string) => {
+        setTestingDm(name)
+        try {
+            const res = await api.post('/api/notifications/test-dm', {
+                slack_user_id: slackId,
+                text: `Ola ${name.split(' ')[0]}! Este e um teste de DM do Sistema de Gestao de Implantacao. :wave:`,
+            })
+            if (res.data.ok) {
+                showToast(`DM enviada para ${name.split(' ')[0]}!`, 'success')
+            } else {
+                showToast(res.data.error || 'Erro ao enviar DM.', 'error')
+            }
+        } catch {
+            showToast('Erro ao enviar DM.', 'error')
+        } finally {
+            setTestingDm(null)
         }
     }
 
@@ -491,10 +511,11 @@ export default function SettingsPage() {
                                         </div>
                                     ) : (
                                         <div className="divide-y divide-slate-100">
-                                            <div className="grid grid-cols-[1fr_200px_110px] gap-4 px-5 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                            <div className="grid grid-cols-[1fr_200px_110px_90px] gap-4 px-5 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
                                                 <span>Implantador</span>
                                                 <span>Slack User ID</span>
                                                 <span>Status</span>
+                                                <span>Testar</span>
                                             </div>
                                             {slackImplantadores.map((person) => {
                                                 const mapping = parseSlackMentions(editValues.slack_user_mentions ?? '{}')
@@ -502,7 +523,7 @@ export default function SettingsPage() {
                                                 const invalid = currentId !== '' && !isSlackUserId(currentId)
                                                 const linked = currentId !== '' && isSlackUserId(currentId)
                                                 return (
-                                                    <div key={person.name} className="grid grid-cols-[1fr_200px_110px] items-center gap-4 px-5 py-3 transition hover:bg-slate-50">
+                                                    <div key={person.name} className="grid grid-cols-[1fr_200px_110px_90px] items-center gap-4 px-5 py-3 transition hover:bg-slate-50">
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${linked ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-400'}`}>
                                                                 {person.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
@@ -529,6 +550,24 @@ export default function SettingsPage() {
                                                                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
                                                                     Sem ID
                                                                 </span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            {linked ? (
+                                                                <button
+                                                                    type="button"
+                                                                    title={`Enviar DM de teste para ${person.name.split(' ')[0]}`}
+                                                                    disabled={testingDm !== null}
+                                                                    onClick={() => handleTestDm(person.name, currentId)}
+                                                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                >
+                                                                    {testingDm === person.name
+                                                                        ? <Loader2 size={11} className="animate-spin" />
+                                                                        : <Send size={11} />}
+                                                                    DM
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-[11px] text-slate-300">—</span>
                                                             )}
                                                         </div>
                                                     </div>
