@@ -141,6 +141,30 @@ export default function SyncPage() {
         }
     }
 
+    const handleDocsSync = async () => {
+        closeStream()
+        setLoading(true)
+        setActiveJob('Docs card principal')
+        setLogs([])
+        addLog('event', 'Atualizando comentarios do card principal das lojas ativas.')
+
+        try {
+            const response = await api.post('/api/implantacao/docs-sync')
+            const data = response.data
+            addLog('success', 'Documentacao dos cards principais atualizada.')
+            addLog('info', `Lojas verificadas: ${data.checked || 0}`)
+            addLog('info', `Lojas atualizadas: ${data.updated || 0}`)
+            if (data.errors) {
+                addLog('error', `Falhas na leitura: ${data.errors}`)
+            }
+        } catch (error) {
+            addLog('error', `Falha ao atualizar docs: ${error instanceof Error ? error.message : 'erro inesperado'}`)
+        } finally {
+            setLoading(false)
+            setActiveJob(null)
+        }
+    }
+
     const actionCards = [
         {
             key: 'vital',
@@ -234,6 +258,15 @@ export default function SyncPage() {
                                 className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
                             >
                                 Implantacao
+                                <ChevronRight size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDocsSync}
+                                disabled={loading}
+                                className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700 disabled:opacity-60"
+                            >
+                                Docs card principal
                                 <ChevronRight size={16} />
                             </button>
                         </div>

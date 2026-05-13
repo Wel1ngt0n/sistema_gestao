@@ -118,6 +118,8 @@ class Store(db.Model):
     # Raio-X: Contexto Verbal
     description = db.Column(db.Text, nullable=True)
     last_comments = db.Column(db.Text, nullable=True) # JSON stringified list
+    last_parent_comment_at = db.Column(db.DateTime, nullable=True)
+    last_parent_comment_by = db.Column(db.String(255), nullable=True)
 
     manual_finished_at = db.Column(db.DateTime, nullable=True) # Sobrescrita manual
     

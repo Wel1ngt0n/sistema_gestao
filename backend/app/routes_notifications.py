@@ -49,6 +49,16 @@ def trigger_goal_check(payload):
     return jsonify(result)
 
 
+@notifications_bp.route("/clickup-docs-reminder", methods=["POST"])
+@require_auth
+def trigger_clickup_docs_reminder(payload):
+    """Manual trigger for ClickUp parent-card documentation reminders."""
+    from app.services.notification_service import send_clickup_docs_reminder
+
+    result = send_clickup_docs_reminder(force=True)
+    return jsonify(result)
+
+
 @notifications_bp.route("/send-all", methods=["POST"])
 @require_auth
 def send_all_notifications(payload):
@@ -56,6 +66,7 @@ def send_all_notifications(payload):
     from app.services.notification_service import (
         check_goal_achievement,
         check_sla_alerts,
+        send_clickup_docs_reminder,
         send_weekly_summary,
     )
 
@@ -65,4 +76,5 @@ def send_all_notifications(payload):
         "sla": check_sla_alerts(force=force),
         "summary": send_weekly_summary(force=force),
         "goals": check_goal_achievement(force=force),
+        "docs": send_clickup_docs_reminder(force=force),
     })

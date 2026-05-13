@@ -13,6 +13,8 @@ def repair_database_schema():
         # Tabela: stores
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description TEXT;",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS last_comments TEXT;",
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS last_parent_comment_at TIMESTAMP WITHOUT TIME ZONE;",
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS last_parent_comment_by VARCHAR(255);",
         
         # Tabela: tasks_steps
         "ALTER TABLE tasks_steps ADD COLUMN IF NOT EXISTS description TEXT;",

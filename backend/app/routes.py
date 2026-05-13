@@ -595,6 +595,23 @@ def sync_implantacao(payload):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@api_bp.route('/implantacao/docs-sync', methods=['POST'])
+@require_auth
+@require_permission('manage_sync')
+def sync_implantacao_docs(payload):
+    from app.models import SystemConfig
+    service = SyncService()
+    cfg = SystemConfig.query.filter_by(key='clickup_docs_check_limit').first()
+    try:
+        limit = int(cfg.value) if cfg and cfg.value else 50
+    except (TypeError, ValueError):
+        limit = 50
+    try:
+        result = service.sync_parent_card_documentation(limit=limit)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api_bp.route('/stores/bulk-link', methods=['POST'])
 @require_auth
 def bulk_link_stores(payload):
@@ -1455,9 +1472,13 @@ DEFAULT_CONFIGS = [
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
+    {"key": "notify_clickup_docs_reminder", "value": "true", "description": "Lembrar implantadores de atualizar o card principal", "category": "notifications"},
+    {"key": "clickup_docs_stale_days", "value": "7", "description": "Dias sem comentario no card principal para alerta", "category": "notifications"},
+    {"key": "clickup_docs_check_limit", "value": "50", "description": "Limite de lojas verificadas por rotina de documentacao", "category": "notifications"},
     {"key": "notify_sla_last_sent_date", "value": "", "description": "Ultima data de envio de alerta SLA", "category": "notifications"},
     {"key": "notify_weekly_summary_last_sent_week", "value": "", "description": "Ultima semana de envio do resumo", "category": "notifications"},
     {"key": "notify_goal_last_sent_month", "value": "", "description": "Ultimo mes de envio de meta batida", "category": "notifications"},
+    {"key": "notify_clickup_docs_last_sent_date", "value": "", "description": "Ultima data de envio do lembrete de documentacao", "category": "notifications"},
     # Webhooks / Integracoes
     {"key": "webhook_zenvia_enabled", "value": "true", "description": "Receber webhooks da Zenvia", "category": "webhooks"},
     {"key": "webhook_token", "value": "my-secret-token", "description": "X-Zenvia-Token para autenticar webhooks recebidos", "category": "webhooks"},

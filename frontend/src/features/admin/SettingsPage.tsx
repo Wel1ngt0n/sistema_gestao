@@ -178,7 +178,8 @@ export default function SettingsPage() {
             const endpoint = type === 'test' ? '/api/notifications/test'
                 : type === 'sla' ? '/api/notifications/sla-alerts'
                     : type === 'summary' ? '/api/notifications/weekly-summary'
-                        : '/api/notifications/goal-check'
+                        : type === 'docs' ? '/api/notifications/clickup-docs-reminder'
+                            : '/api/notifications/goal-check'
             const res = await api.post(endpoint)
             if (res.data.ok && res.data.sent !== false) {
                 showToast('Notificacao enviada com sucesso.', 'success')
@@ -405,6 +406,7 @@ export default function SettingsPage() {
                                         { key: 'sla', label: 'Alertas SLA' },
                                         { key: 'summary', label: 'Resumo semanal' },
                                         { key: 'goals', label: 'Metas' },
+                                        { key: 'docs', label: 'Docs ClickUp' },
                                     ].map((button) => (
                                         <button
                                             key={button.key}

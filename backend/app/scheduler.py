@@ -117,3 +117,25 @@ def scheduled_goal_notification():
             logger.info(f"Check de metas Slack executado: {result}")
         except Exception as e:
             logger.error(f"Erro no check de metas Slack: {e}")
+
+
+@scheduler.task('cron', id='notification_clickup_docs_job', hour=10, minute=30)
+def scheduled_clickup_docs_notification():
+    """Job para lembrar atualizacao da documentacao no card principal."""
+    with scheduler.app.app_context():
+        try:
+            from app.models import SystemConfig
+            from app.services.notification_service import send_clickup_docs_reminder
+            from app.services.sync_service import SyncService
+
+            cfg = SystemConfig.query.filter_by(key='clickup_docs_check_limit').first()
+            try:
+                limit = int(cfg.value) if cfg and cfg.value else 50
+            except (TypeError, ValueError):
+                limit = 50
+
+            sync_result = SyncService().sync_parent_card_documentation(limit=limit)
+            alert_result = send_clickup_docs_reminder(force=False)
+            logger.info(f"Docs ClickUp sync={sync_result} alert={alert_result}")
+        except Exception as e:
+            logger.error(f"Erro no lembrete de documentacao ClickUp: {e}")
