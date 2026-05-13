@@ -59,6 +59,26 @@ def trigger_clickup_docs_reminder(payload):
     return jsonify(result)
 
 
+@notifications_bp.route("/test-dm", methods=["POST"])
+@require_auth
+def test_dm(payload):
+    """Sends a test DM to a specific Slack user via bot token.
+
+    Body: {"slack_user_id": "UXXXXXXXX", "text": "Mensagem de teste"}
+    """
+    from app.services.notification_service import send_dm_via_bot
+
+    data = request.get_json(silent=True) or {}
+    slack_user_id = (data.get("slack_user_id") or "").strip()
+    text = (data.get("text") or "Teste de DM - Sistema de Gestao de Implantacao").strip()
+
+    if not slack_user_id:
+        return jsonify({"ok": False, "error": "slack_user_id e obrigatorio"}), 400
+
+    result = send_dm_via_bot(slack_user_id, text)
+    return jsonify(result)
+
+
 @notifications_bp.route("/send-all", methods=["POST"])
 @require_auth
 def send_all_notifications(payload):

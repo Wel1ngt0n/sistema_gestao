@@ -18,6 +18,7 @@ import {
     Shield,
     SlidersHorizontal,
     Target,
+    Users,
     Webhook,
     X,
 } from 'lucide-react'
@@ -94,7 +95,6 @@ const isSecret = (key: string) => SECRET_HINTS.some((hint) => key.includes(hint)
 const isUrl = (key: string) => key.includes('url') || key.includes('endpoint')
 const isEmail = (key: string) => key.includes('email')
 const isNumber = (key: string) => NUMBER_HINTS.some((hint) => key.includes(hint)) && !isSecret(key)
-const isLongText = (key: string) => key === 'slack_user_mentions'
 
 const normalizePersonName = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()
 const normalizeSlackId = (value: string) => value.trim().replace(/^<@|>$/g, '')
@@ -126,7 +126,8 @@ export default function SettingsPage() {
 
     const activeItems = useMemo(() => {
         const needle = query.trim().toLowerCase()
-        const items = configs[activeCategory] || []
+        // slack_user_mentions is rendered as a dedicated section, hide from generic list
+        const items = (configs[activeCategory] || []).filter((item) => item.key !== 'slack_user_mentions')
         if (!needle) return items
         return items.filter((item) => `${item.key} ${item.description}`.toLowerCase().includes(needle))
     }, [activeCategory, configs, query])
@@ -242,7 +243,7 @@ export default function SettingsPage() {
     }
 
     const updateSlackMention = (name: string, slackId: string) => {
-        const current = parseSlackMentions(editValues.slack_user_mentions)
+        const current = parseSlackMentions(editValues.slack_user_mentions || '{}')
         const next = { ...current }
         Object.keys(next).forEach((key) => {
             if (normalizePersonName(key) === normalizePersonName(name)) {
@@ -279,46 +280,6 @@ export default function SettingsPage() {
         }
 
         const type = isSecret(item.key) ? 'password' : isUrl(item.key) ? 'url' : isEmail(item.key) ? 'email' : isNumber(item.key) ? 'number' : 'text'
-
-        if (isLongText(item.key)) {
-            const mapping = parseSlackMentions(value)
-            return (
-                <div className={`rounded-lg border ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'}`}>
-                    <div className="grid grid-cols-[minmax(0,1fr)_180px] gap-3 border-b border-slate-100 px-3 py-2 text-xs font-bold uppercase text-slate-400">
-                        <span>Implantador ativo</span>
-                        <span>Slack ID</span>
-                    </div>
-                    <div className="max-h-72 overflow-y-auto">
-                        {slackImplantadores.map((person) => {
-                            const slackValue = getSlackMentionValue(mapping, person.name) || person.slack_id || ''
-                            const invalidUserId = !isSlackUserId(slackValue)
-                            return (
-                                <div key={person.name} className="grid grid-cols-[minmax(0,1fr)_180px] gap-3 border-b border-slate-100 px-3 py-2 last:border-b-0">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-slate-700">{person.name}</p>
-                                        {invalidUserId && (
-                                            <p className="mt-1 text-xs font-medium text-amber-700">
-                                                Use o ID de membro do Slack, iniciado por U ou W.
-                                            </p>
-                                        )}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={slackValue}
-                                        placeholder="U012ABCDEF"
-                                        onChange={(event) => updateSlackMention(person.name, event.target.value)}
-                                        className={`min-w-0 rounded-md border px-2 py-1.5 font-mono text-xs text-slate-800 outline-none focus:ring-2 ${invalidUserId ? 'border-amber-300 bg-amber-50 focus:border-amber-500 focus:ring-amber-500/20' : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20'}`}
-                                    />
-                                </div>
-                            )
-                        })}
-                        {slackImplantadores.length === 0 && (
-                            <div className="px-3 py-4 text-sm text-slate-400">Nenhum implantador ativo encontrado.</div>
-                        )}
-                    </div>
-                </div>
-            )
-        }
 
         return (
             <div className="flex gap-2">
@@ -479,32 +440,114 @@ export default function SettingsPage() {
                         </section>
 
                         {activeCategory === 'notifications' && (
-                            <section className="rounded-lg border border-slate-200 bg-white p-5">
-                                <div className="mb-4 flex items-center gap-2">
-                                    <Send size={18} className="text-slate-400" />
-                                    <h3 className="text-sm font-bold text-slate-800">Testes de notificacao</h3>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {[
-                                        { key: 'test', label: 'Teste' },
-                                        { key: 'sla', label: 'Alertas SLA' },
-                                        { key: 'summary', label: 'Resumo semanal' },
-                                        { key: 'goals', label: 'Metas' },
-                                        { key: 'docs', label: 'Docs ClickUp' },
-                                    ].map((button) => (
-                                        <button
-                                            key={button.key}
-                                            type="button"
-                                            onClick={() => handleTestNotification(button.key)}
-                                            disabled={testingNotif !== null}
-                                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-teal-300 hover:text-teal-700 disabled:opacity-50"
-                                        >
-                                            {testingNotif === button.key ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                                            {button.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </section>
+                            <>
+                                {/* ── Slack IDs dos Implantadores ── */}
+                                <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                    <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
+                                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-pink-200 bg-pink-50 text-pink-700">
+                                            <Users size={18} />
+                                        </span>
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-bold text-slate-800">Slack ID dos implantadores</h3>
+                                            <p className="text-xs text-slate-500">
+                                                Vincule cada implantador ativo ao seu ID do Slack para envio de DMs.
+                                                Encontre o ID no perfil do membro &rarr; <span className="font-mono">Copiar ID do membro</span>.
+                                            </p>
+                                        </div>
+                                        {(() => {
+                                            const mapping = parseSlackMentions(editValues.slack_user_mentions ?? '{}')
+                                            const linked = slackImplantadores.filter((p) => getSlackMentionValue(mapping, p.name)).length
+                                            const total = slackImplantadores.length
+                                            return total > 0 ? (
+                                                <span className={`rounded-full px-3 py-1 text-xs font-bold ${linked === total ? 'bg-emerald-100 text-emerald-700' : linked > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                    {linked}/{total} vinculados
+                                                </span>
+                                            ) : null
+                                        })()}
+                                    </div>
+
+                                    {slackImplantadores.length === 0 ? (
+                                        <div className="flex items-center gap-2 px-5 py-8 text-sm text-slate-400">
+                                            <Users size={16} />
+                                            Nenhum implantador ativo encontrado no sistema.
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-slate-100">
+                                            <div className="grid grid-cols-[1fr_200px_110px] gap-4 px-5 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                                <span>Implantador</span>
+                                                <span>Slack User ID</span>
+                                                <span>Status</span>
+                                            </div>
+                                            {slackImplantadores.map((person) => {
+                                                const mapping = parseSlackMentions(editValues.slack_user_mentions ?? '{}')
+                                                const currentId = getSlackMentionValue(mapping, person.name) || person.slack_id || ''
+                                                const invalid = currentId !== '' && !isSlackUserId(currentId)
+                                                const linked = currentId !== '' && isSlackUserId(currentId)
+                                                return (
+                                                    <div key={person.name} className="grid grid-cols-[1fr_200px_110px] items-center gap-4 px-5 py-3 transition hover:bg-slate-50">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${linked ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-400'}`}>
+                                                                {person.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                                                            </div>
+                                                            <p className="truncate text-sm font-semibold text-slate-800">{person.name}</p>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={currentId}
+                                                            placeholder="U012ABCDEF"
+                                                            onChange={(e) => updateSlackMention(person.name, e.target.value)}
+                                                            className={`w-full rounded-lg border px-3 py-1.5 font-mono text-xs text-slate-800 outline-none transition focus:ring-2 ${invalid ? 'border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-400/20' : linked ? 'border-teal-200 bg-teal-50/60 focus:border-teal-500 focus:ring-teal-500/20' : 'border-slate-200 bg-white focus:border-teal-500 focus:ring-teal-500/20'}`}
+                                                        />
+                                                        <div>
+                                                            {invalid ? (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-700">
+                                                                    <AlertCircle size={10} /> Inválido
+                                                                </span>
+                                                            ) : linked ? (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                                                                    <CheckCircle size={10} /> Vinculado
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
+                                                                    Sem ID
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </section>
+
+                                {/* ── Testes de notificação ── */}
+                                <section className="rounded-lg border border-slate-200 bg-white p-5">
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <Send size={18} className="text-slate-400" />
+                                        <h3 className="text-sm font-bold text-slate-800">Testes de notificacao</h3>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { key: 'test', label: 'Teste (canal)' },
+                                            { key: 'sla', label: 'Alertas SLA' },
+                                            { key: 'summary', label: 'Resumo semanal' },
+                                            { key: 'goals', label: 'Metas' },
+                                            { key: 'docs', label: 'Docs ClickUp (DM)' },
+                                        ].map((button) => (
+                                            <button
+                                                key={button.key}
+                                                type="button"
+                                                onClick={() => handleTestNotification(button.key)}
+                                                disabled={testingNotif !== null}
+                                                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-teal-300 hover:text-teal-700 disabled:opacity-50"
+                                            >
+                                                {testingNotif === button.key ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                                {button.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+                            </>
                         )}
                     </main>
                 </div>
@@ -512,3 +555,4 @@ export default function SettingsPage() {
         </div>
     )
 }
+
