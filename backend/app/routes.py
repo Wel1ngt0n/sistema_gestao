@@ -1553,20 +1553,25 @@ def get_slack_implantadores(payload):
     from app.services.notification_service import parse_slack_mentions
 
     mentions = parse_slack_mentions()
-    names = [
-        row[0] for row in db.session.query(Store.implantador)
-        .filter(Store.status_norm == 'IN_PROGRESS')
-        .filter(Store.implantador.isnot(None))
-        .filter(Store.implantador != '')
-        .distinct()
-        .order_by(Store.implantador.asc())
-        .all()
-    ]
+    active_stores = Store.query.filter(
+        Store.status_norm == 'IN_PROGRESS',
+        Store.manual_finished_at.is_(None),
+    ).with_entities(Store.implantador, Store.implantador_atual).all()
 
-    return jsonify([{
-        "name": name,
-        "slack_id": mentions.get(name.strip().lower(), ""),
-    } for name in names])
+    names = sorted({
+        name.strip()
+        for row in active_stores
+        for name in row
+        if name and name.strip()
+    }, key=str.lower)
+
+    return jsonify([
+        {
+            "name": name,
+            "slack_id": mentions.get(name.strip().lower(), ""),
+        }
+        for name in names
+    ])
 
 @api_bp.route('/config', methods=['POST'])
 @require_auth

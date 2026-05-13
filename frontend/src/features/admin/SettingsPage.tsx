@@ -96,6 +96,8 @@ const isEmail = (key: string) => key.includes('email')
 const isNumber = (key: string) => NUMBER_HINTS.some((hint) => key.includes(hint)) && !isSecret(key)
 const isLongText = (key: string) => key === 'slack_user_mentions'
 
+const normalizePersonName = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()
+
 const makeToken = () => {
     const bytes = new Uint8Array(24)
     crypto.getRandomValues(bytes)
@@ -176,6 +178,12 @@ export default function SettingsPage() {
         }
     }
 
+    const getSlackMentionValue = (mapping: Record<string, string>, name: string) => {
+        const normalizedName = normalizePersonName(name)
+        const matchedKey = Object.keys(mapping).find((key) => normalizePersonName(key) === normalizedName)
+        return matchedKey ? mapping[matchedKey] : ''
+    }
+
     const fetchSlackImplantadores = async () => {
         try {
             const res = await api.get('/api/config/slack-implantadores')
@@ -234,10 +242,13 @@ export default function SettingsPage() {
     const updateSlackMention = (name: string, slackId: string) => {
         const current = parseSlackMentions(editValues.slack_user_mentions)
         const next = { ...current }
+        Object.keys(next).forEach((key) => {
+            if (normalizePersonName(key) === normalizePersonName(name)) {
+                delete next[key]
+            }
+        })
         if (slackId.trim()) {
             next[name] = slackId.trim().replace(/^<@|>$/g, '')
-        } else {
-            delete next[name]
         }
         updateValue('slack_user_mentions', JSON.stringify(next, null, 2))
     }
@@ -283,7 +294,7 @@ export default function SettingsPage() {
                                 </div>
                                 <input
                                     type="text"
-                                    value={mapping[person.name] || person.slack_id || ''}
+                                    value={getSlackMentionValue(mapping, person.name) || person.slack_id || ''}
                                     placeholder="U012ABCDEF"
                                     onChange={(event) => updateSlackMention(person.name, event.target.value)}
                                     className="min-w-0 rounded-md border border-slate-200 px-2 py-1.5 font-mono text-xs text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
