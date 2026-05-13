@@ -1469,6 +1469,7 @@ DEFAULT_CONFIGS = [
     # Notificacoes
     {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificacoes", "category": "notifications"},
     {"key": "slack_bot_token", "value": "", "description": "Bot User OAuth Token do Slack para mensagens privadas", "category": "notifications"},
+    {"key": "admin_slack_id", "value": "", "description": "Slack User ID do Administrador (Welington) para testes avulsos", "category": "notifications"},
     {"key": "slack_user_mentions", "value": "{}", "description": "Mapa implantador para Slack ID em JSON", "category": "notifications"},
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},

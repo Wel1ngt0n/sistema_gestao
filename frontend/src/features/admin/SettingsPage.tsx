@@ -18,6 +18,7 @@ import {
     Shield,
     SlidersHorizontal,
     Target,
+    User,
     Users,
     Webhook,
     X,
@@ -130,8 +131,8 @@ export default function SettingsPage() {
 
     const activeItems = useMemo(() => {
         const needle = query.trim().toLowerCase()
-        // slack_user_mentions is rendered as a dedicated section, hide from generic list
-        const items = (configs[activeCategory] || []).filter((item) => item.key !== 'slack_user_mentions')
+        // slack_user_mentions e admin_slack_id sao renderizados como secoes dedicadas
+        const items = (configs[activeCategory] || []).filter((item) => item.key !== 'slack_user_mentions' && item.key !== 'admin_slack_id')
         if (!needle) return items
         return items.filter((item) => `${item.key} ${item.description}`.toLowerCase().includes(needle))
     }, [activeCategory, configs, query])
@@ -575,6 +576,37 @@ export default function SettingsPage() {
                                             })}
                                         </div>
                                     )}
+                                </section>
+
+                                {/* ── Teste Avulso / Admin ── */}
+                                <section className="overflow-hidden rounded-lg border border-slate-200 bg-white p-5">
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700">
+                                            <User size={16} />
+                                        </span>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800">Meu ID do Slack (Admin)</h3>
+                                            <p className="text-xs text-slate-500">Configure o seu Slack ID para receber testes rapidos e alertas globais.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                                        <input
+                                            type="text"
+                                            value={editValues.admin_slack_id ?? ''}
+                                            placeholder="Ex: U012ABCDEF"
+                                            onChange={(e) => updateValue('admin_slack_id', e.target.value)}
+                                            className="w-full sm:flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={!editValues.admin_slack_id || !isSlackUserId(editValues.admin_slack_id) || testingDm !== null}
+                                            onClick={() => handleTestDm('Admin (Você)', editValues.admin_slack_id!)}
+                                            className="inline-flex w-full sm:w-auto h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {testingDm === 'Admin (Você)' ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                            Testar DM
+                                        </button>
+                                    </div>
                                 </section>
 
                                 {/* ── Testes de notificação ── */}
