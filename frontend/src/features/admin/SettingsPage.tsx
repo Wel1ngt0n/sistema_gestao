@@ -179,7 +179,13 @@ export default function SettingsPage() {
                     : type === 'summary' ? '/api/notifications/weekly-summary'
                         : '/api/notifications/goal-check'
             const res = await api.post(endpoint)
-            showToast(res.data.ok ? 'Notificacao enviada com sucesso.' : (res.data.error || res.data.reason || 'Sem alertas para enviar.'), res.data.ok ? 'success' : 'error')
+            if (res.data.ok && res.data.sent !== false) {
+                showToast('Notificacao enviada com sucesso.', 'success')
+            } else if (res.data.ok) {
+                showToast(res.data.reason || 'Nenhum alerta para enviar agora.', 'success')
+            } else {
+                showToast(res.data.error || res.data.reason || 'Erro ao enviar notificacao.', 'error')
+            }
         } catch {
             showToast('Erro ao enviar notificacao.', 'error')
         } finally {
