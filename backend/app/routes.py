@@ -1468,11 +1468,13 @@ DEFAULT_CONFIGS = [
     {"key": "support_sla_first_response_hours", "value": "4", "description": "SLA de primeira resposta do suporte", "category": "support"},
     # Notificacoes
     {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificacoes", "category": "notifications"},
+    {"key": "slack_bot_token", "value": "", "description": "Bot User OAuth Token do Slack para mensagens privadas", "category": "notifications"},
     {"key": "slack_user_mentions", "value": "{}", "description": "Mapa implantador para Slack ID em JSON", "category": "notifications"},
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
     {"key": "notify_clickup_docs_reminder", "value": "true", "description": "Lembrar implantadores de atualizar o card principal", "category": "notifications"},
+    {"key": "notify_clickup_docs_dm_enabled", "value": "true", "description": "Enviar lembrete de documentacao no privado do implantador", "category": "notifications"},
     {"key": "clickup_docs_stale_days", "value": "15", "description": "Dias sem comentario no card principal para lembrar documentacao", "category": "notifications"},
     {"key": "clickup_docs_check_limit", "value": "50", "description": "Limite de lojas verificadas por rotina de documentacao", "category": "notifications"},
     {"key": "notify_sla_last_sent_date", "value": "", "description": "Ultima data de envio de alerta SLA", "category": "notifications"},

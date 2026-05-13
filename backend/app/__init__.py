@@ -131,6 +131,7 @@ def create_app():
     
     from app.routes_webhooks import webhook_bp
     app.register_blueprint(webhook_bp)
+    limiter.exempt(webhook_bp)
     
     from app.routes_support import support_bp
     app.register_blueprint(support_bp)
