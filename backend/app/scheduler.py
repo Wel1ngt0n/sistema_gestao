@@ -78,3 +78,42 @@ def scheduled_deep_sync():
             logger.info("✅ SYNC DEEP agendado finalizado.")
         except Exception as e:
             logger.error(f"Erro no SYNC DEEP agendado: {e}")
+
+
+@scheduler.task('cron', id='notification_sla_alerts_job', hour='9,15', minute=15)
+def scheduled_sla_notifications():
+    """Job para alertas Slack de lojas em risco ou acima do SLA."""
+    with scheduler.app.app_context():
+        try:
+            from app.services.notification_service import check_sla_alerts
+
+            result = check_sla_alerts(force=False)
+            logger.info(f"Notificacoes SLA executadas: {result}")
+        except Exception as e:
+            logger.error(f"Erro nas notificacoes SLA: {e}")
+
+
+@scheduler.task('cron', id='notification_weekly_summary_job', day_of_week='mon', hour=9, minute=30)
+def scheduled_weekly_summary_notification():
+    """Job para resumo semanal Slack."""
+    with scheduler.app.app_context():
+        try:
+            from app.services.notification_service import send_weekly_summary
+
+            result = send_weekly_summary(force=False)
+            logger.info(f"Resumo semanal Slack executado: {result}")
+        except Exception as e:
+            logger.error(f"Erro no resumo semanal Slack: {e}")
+
+
+@scheduler.task('cron', id='notification_goal_check_job', hour=18, minute=30)
+def scheduled_goal_notification():
+    """Job para avisar quando metas mensais forem batidas."""
+    with scheduler.app.app_context():
+        try:
+            from app.services.notification_service import check_goal_achievement
+
+            result = check_goal_achievement(force=False)
+            logger.info(f"Check de metas Slack executado: {result}")
+        except Exception as e:
+            logger.error(f"Erro no check de metas Slack: {e}")

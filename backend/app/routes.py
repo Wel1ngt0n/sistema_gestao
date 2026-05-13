@@ -1454,6 +1454,9 @@ DEFAULT_CONFIGS = [
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
     {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
+    {"key": "notify_sla_last_sent_date", "value": "", "description": "Ultima data de envio de alerta SLA", "category": "notifications"},
+    {"key": "notify_weekly_summary_last_sent_week", "value": "", "description": "Ultima semana de envio do resumo", "category": "notifications"},
+    {"key": "notify_goal_last_sent_month", "value": "", "description": "Ultimo mes de envio de meta batida", "category": "notifications"},
     # Webhooks / Integracoes
     {"key": "webhook_zenvia_enabled", "value": "true", "description": "Receber webhooks da Zenvia", "category": "webhooks"},
     {"key": "webhook_token", "value": "my-secret-token", "description": "X-Zenvia-Token para autenticar webhooks recebidos", "category": "webhooks"},
