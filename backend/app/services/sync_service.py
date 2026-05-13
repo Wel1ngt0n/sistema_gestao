@@ -46,6 +46,72 @@ class SyncService:
         except Exception as e:
             self.logger.warning(f"Erro ao buscar comentários para task {task_id}: {e}")
 
+    def _extract_latest_human_comment(self, comments):
+        for comment in comments or []:
+            user = comment.get('user', {}) or {}
+            username = user.get('username') or user.get('email') or 'N/A'
+            if 'clickup' in username.lower():
+                continue
+
+            text = (comment.get('comment_text') or '').strip()
+            if not text:
+                continue
+
+            comment_at = None
+            date_ms = comment.get('date')
+            if date_ms:
+                try:
+                    comment_at = datetime.fromtimestamp(int(date_ms) / 1000)
+                except (TypeError, ValueError):
+                    comment_at = None
+
+            return {
+                "text": text,
+                "user": username,
+                "at": comment_at,
+            }
+        return None
+
+    def sync_parent_card_documentation(self, limit=None):
+        """
+        Atualiza apenas comentarios do card principal das lojas ativas.
+        """
+        from app.models import Store
+
+        query = Store.query.filter(
+            Store.status_norm == 'IN_PROGRESS',
+            Store.clickup_task_id.isnot(None),
+        ).order_by(Store.idle_days.desc(), Store.id.asc())
+        if limit:
+            query = query.limit(limit)
+
+        stores = query.all()
+        checked = 0
+        updated = 0
+        errors = 0
+
+        for store in stores:
+            checked += 1
+            try:
+                comments = self.clickup.get_task_comments(store.clickup_task_id)
+                latest = self._extract_latest_human_comment(comments)
+                if latest:
+                    store.last_parent_comment_at = latest["at"]
+                    store.last_parent_comment_by = latest["user"]
+
+                task_data = {"id": store.clickup_task_id}
+                self._sync_verbal_context(task_data)
+                if task_data.get("comments_text"):
+                    store.last_comments = task_data["comments_text"]
+
+                updated += 1
+            except Exception as e:
+                errors += 1
+                self.logger.warning(f"Erro ao atualizar documentacao da loja {store.id}: {e}")
+
+        db.session.commit()
+        return {"checked": checked, "updated": updated, "errors": errors}
+
     def get_last_sync_ts(self):
         state = SyncState.query.get(1)
         if state and state.last_shallow_sync_at:

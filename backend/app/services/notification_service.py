@@ -5,7 +5,7 @@ The service is intentionally database-backed through SystemConfig so it can run
 both from authenticated manual routes and scheduler jobs without adding a new
 notification table in this iteration.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import re
 
@@ -314,5 +314,82 @@ def check_goal_achievement(month_str=None, force=False):
             "notify_goal_last_sent_month",
             month_str,
             "Ultimo mes em que alerta de meta foi enviado",
+        )
+    return result
+
+
+def send_clickup_docs_reminder(force=False):
+    """Sends reminders for stores without recent parent-card documentation."""
+    if not is_enabled("notify_clickup_docs_reminder", "true"):
+        return {"ok": True, "sent": False, "reason": "disabled"}
+
+    today_key = datetime.now().strftime("%Y-%m-%d")
+    if not force and get_config_value("notify_clickup_docs_last_sent_date") == today_key:
+        return {"ok": True, "sent": False, "reason": "already_sent_today"}
+
+    stale_days = safe_int("clickup_docs_stale_days", 7)
+    threshold = datetime.now() - timedelta(days=stale_days)
+
+    stores = Store.query.filter(
+        Store.status_norm == "IN_PROGRESS",
+        Store.manual_finished_at.is_(None),
+    ).all()
+
+    stale = []
+    for store in stores:
+        last_comment_at = store.last_parent_comment_at
+        doc_text = (store.description or "").strip()
+        reasons = []
+
+        if not last_comment_at:
+            reasons.append("sem comentario no card principal sincronizado")
+        elif last_comment_at < threshold:
+            days = (datetime.now() - last_comment_at).days
+            reasons.append(f"{days}d sem comentario no card principal")
+
+        if len(doc_text) < 80:
+            reasons.append("descricao curta/vazia")
+
+        if reasons:
+            stale.append({
+                "store": store,
+                "owner": store.implantador or store.implantador_atual or "Sem responsavel",
+                "reasons": reasons,
+            })
+
+    if not stale:
+        return {"ok": True, "sent": False, "reason": "no_stale_docs", "checked": len(stores)}
+
+    grouped = {}
+    for item in stale:
+        grouped.setdefault(item["owner"], []).append(item)
+
+    lines = [
+        "*Lembrete de documentacao ClickUp*",
+        f"Criterio: card principal sem comentario recente ha {stale_days}+ dias ou descricao curta.",
+        "",
+    ]
+
+    for owner, items in sorted(grouped.items(), key=lambda pair: pair[0]):
+        lines.append(f"{slack_mention_for(owner)} - {len(items)} loja(s)")
+        for item in items[:8]:
+            store = item["store"]
+            reason = "; ".join(item["reasons"])
+            lines.append(f"- *{store.store_name}* | {reason}")
+        if len(items) > 8:
+            lines.append(f"- ...e mais {len(items) - 8} lojas")
+        lines.append("")
+
+    result = send_slack_message("\n".join(lines).strip())
+    result.update({
+        "checked": len(stores),
+        "stale_count": len(stale),
+        "owners": len(grouped),
+    })
+    if result.get("ok"):
+        set_config_value(
+            "notify_clickup_docs_last_sent_date",
+            today_key,
+            "Ultima data de envio do lembrete de documentacao ClickUp",
         )
     return result
