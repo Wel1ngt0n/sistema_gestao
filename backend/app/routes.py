@@ -5,6 +5,7 @@ from app.services.sync_service import SyncService
 from app.services.security_service import require_auth, require_permission, log_audit
 from datetime import datetime
 from sqlalchemy import func
+import json
 
 # Blueprint principal mantido para health checks e estrutura futura
 main_bp = Blueprint('main', __name__)
@@ -1417,23 +1418,50 @@ def health():
 # --- Rotas de Configuração (Super Admin) ---
 
 DEFAULT_CONFIGS = [
+    # Geral
+    {"key": "system_name", "value": "CRM Implantacao", "description": "Nome exibido do sistema", "category": "general"},
+    {"key": "system_environment_label", "value": "Producao", "description": "Rotulo do ambiente atual", "category": "general"},
+    {"key": "support_contact_email", "value": "", "description": "Email principal de suporte interno", "category": "general"},
+    {"key": "default_timezone", "value": "America/Sao_Paulo", "description": "Timezone padrao do sistema", "category": "general"},
     # Metas Anuais
     {"key": "annual_mrr_target", "value": "180000", "description": "Meta anual de MRR (R$)", "category": "goals"},
     {"key": "annual_stores_target", "value": "180", "description": "Meta anual de lojas entregues", "category": "goals"},
     # Pesos
-    {"key": "weight_matriz", "value": "1.0", "description": "Peso de pontuação para Matriz", "category": "weights"},
-    {"key": "weight_filial", "value": "0.7", "description": "Peso de pontuação para Filial", "category": "weights"},
+    {"key": "weight_matriz", "value": "1.0", "description": "Peso de pontuacao para Matriz", "category": "weights"},
+    {"key": "weight_filial", "value": "0.7", "description": "Peso de pontuacao para Filial", "category": "weights"},
     # SLA
-    {"key": "sla_implantation_days", "value": "90", "description": "SLA de implantação (dias)", "category": "sla"},
-    {"key": "sla_integration_days", "value": "60", "description": "SLA de integração (dias)", "category": "sla"},
-    # Notificações
-    {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificações", "category": "notifications"},
+    {"key": "sla_implantation_days", "value": "90", "description": "SLA de implantacao (dias)", "category": "sla"},
+    {"key": "sla_integration_days", "value": "60", "description": "SLA de integracao (dias)", "category": "sla"},
+    {"key": "sla_warning_days", "value": "7", "description": "Dias para alerta antes do SLA", "category": "sla"},
+    # Seguranca
+    {"key": "auth_require_2fa", "value": "false", "description": "Exigir 2FA para usuarios administrativos", "category": "security"},
+    {"key": "auth_session_hours", "value": "12", "description": "Duracao da sessao autenticada (horas)", "category": "security"},
+    {"key": "auth_login_rate_limit", "value": "5", "description": "Tentativas de login por janela", "category": "security"},
+    # Importacao CSV
+    {"key": "csv_max_file_mb", "value": "10", "description": "Tamanho maximo por arquivo CSV (MB)", "category": "csv"},
+    {"key": "csv_max_files_per_import", "value": "5", "description": "Arquivos por importacao CSV", "category": "csv"},
+    {"key": "csv_allow_update_existing", "value": "true", "description": "Permitir atualizar registros existentes via CSV", "category": "csv"},
+    # Sync
+    {"key": "sync_vital_schedule", "value": "10:00,12:00,14:00,16:00,18:00", "description": "Agenda do Vital Sync", "category": "sync"},
+    {"key": "sync_deep_schedule", "value": "03:00", "description": "Agenda do Deep Sync", "category": "sync"},
+    {"key": "sync_stale_after_hours", "value": "6", "description": "Horas ate considerar o Sync desatualizado", "category": "sync"},
+    {"key": "sync_auto_retry", "value": "true", "description": "Tentar novamente em falhas transientes", "category": "sync"},
+    # Suporte
+    {"key": "support_webhook_auto_process", "value": "true", "description": "Processar tickets recebidos por webhook", "category": "support"},
+    {"key": "support_sla_first_response_hours", "value": "4", "description": "SLA de primeira resposta do suporte", "category": "support"},
+    # Notificacoes
+    {"key": "slack_webhook_url", "value": "", "description": "Webhook URL do Slack para notificacoes", "category": "notifications"},
     {"key": "notify_sla_exceeded", "value": "true", "description": "Alertar quando SLA for ultrapassado", "category": "notifications"},
-    {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automático", "category": "notifications"},
+    {"key": "notify_weekly_summary", "value": "true", "description": "Enviar resumo semanal automatico", "category": "notifications"},
     {"key": "notify_goal_achieved", "value": "true", "description": "Alertar quando meta mensal for batida", "category": "notifications"},
-    # Webhooks / Integrações
-    {"key": "webhook_token", "value": "my-secret-token", "description": "X-Zenvia-Token (Senha) para autenticar os webhooks recebidos", "category": "webhooks"},
+    # Webhooks / Integracoes
+    {"key": "webhook_zenvia_enabled", "value": "true", "description": "Receber webhooks da Zenvia", "category": "webhooks"},
+    {"key": "webhook_token", "value": "my-secret-token", "description": "X-Zenvia-Token para autenticar webhooks recebidos", "category": "webhooks"},
+    {"key": "webhook_dedupe_window_hours", "value": "24", "description": "Janela para evitar eventos duplicados", "category": "webhooks"},
+    {"key": "webhook_retry_attempts", "value": "3", "description": "Tentativas para eventos com falha", "category": "webhooks"},
 ]
+
+DEFAULT_CONFIG_MAP = {cfg["key"]: cfg for cfg in DEFAULT_CONFIGS}
 
 def seed_default_configs():
     """Insere configs padrão se não existirem."""
@@ -1487,6 +1515,8 @@ def get_config(payload):
             "key": c.key,
             "value": c.value,
             "description": c.description or "",
+            "category": cat,
+            "default_value": DEFAULT_CONFIG_MAP.get(c.key, {}).get("value"),
         })
     
     return jsonify(result)
@@ -1496,16 +1526,54 @@ def get_config(payload):
 @require_permission('manage_system')
 def update_config(payload):
     from app.models import SystemConfig
-    data = request.json
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Payload de configuracoes deve ser um objeto."}), 400
+    
+    changed_keys = []
     
     for key, val in data.items():
+        if not isinstance(key, str) or not key.strip():
+            return jsonify({"error": "Chave de configuracao invalida."}), 400
+        key = key.strip()
+        default_meta = DEFAULT_CONFIG_MAP.get(key, {})
         cfg = SystemConfig.query.filter_by(key=key).first()
         if not cfg:
-            cfg = SystemConfig(key=key)
+            cfg = SystemConfig(
+                key=key,
+                description=default_meta.get("description", key),
+                category=default_meta.get("category", "general")
+            )
             db.session.add(cfg)
-        cfg.value = str(val)
+        elif default_meta:
+            if not cfg.description:
+                cfg.description = default_meta.get("description", cfg.description)
+            try:
+                if not cfg.category:
+                    cfg.category = default_meta.get("category", "general")
+            except Exception:
+                pass
+
+        if val is None:
+            normalized_value = ""
+        elif isinstance(val, (dict, list)):
+            normalized_value = json.dumps(val, ensure_ascii=False)
+        else:
+            normalized_value = str(val)
+
+        if cfg.value != normalized_value:
+            changed_keys.append(key)
+        cfg.value = normalized_value
         
     db.session.commit()
+    if changed_keys:
+        log_audit(
+            action="UPDATE_SYSTEM_CONFIG",
+            resource_type="SystemConfig",
+            resource_id=",".join(changed_keys[:10]),
+            details=f"Atualizou {len(changed_keys)} configuracao(oes): {', '.join(changed_keys[:10])}",
+            user_id=payload.get('sub')
+        )
     return jsonify({"status": "updated"})
 
 # --- Rotas de Pausas (V4) ---

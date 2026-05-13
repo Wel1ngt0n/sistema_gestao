@@ -1,258 +1,409 @@
-import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
-import { Settings, Target, Scale, Clock, Bell, Send, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react'
+import {
+    AlertCircle,
+    Bell,
+    CheckCircle,
+    Clock,
+    Copy,
+    Database,
+    KeyRound,
+    Loader2,
+    Mail,
+    RefreshCw,
+    RotateCcw,
+    Save,
+    Search,
+    Send,
+    Settings,
+    Shield,
+    SlidersHorizontal,
+    Target,
+    Webhook,
+    X,
+} from 'lucide-react'
+import type { ReactNode } from 'react'
+import { api } from '../../services/api'
 
 interface ConfigItem {
-    key: string;
-    value: string;
-    description: string;
+    key: string
+    value: string
+    description: string
+    category?: string
+    default_value?: string
 }
 
-type ConfigData = Record<string, ConfigItem[]>;
+type ConfigData = Record<string, ConfigItem[]>
+type Toast = { text: string; type: 'success' | 'error' }
+type CategoryMeta = { label: string; desc: string; icon: ReactNode; tone: string }
 
-const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string; desc: string }> = {
-    goals: { label: 'Metas Anuais', icon: <Target size={18} />, color: 'text-teal-500', desc: 'Defina as metas de MRR e lojas para o ano' },
-    weights: { label: 'Pesos de Pontuação', icon: <Scale size={18} />, color: 'text-blue-500', desc: 'Configuração de pesos para cálculo de pontos' },
-    sla: { label: 'Prazos (SLA)', icon: <Clock size={18} />, color: 'text-amber-500', desc: 'Prazos máximos para implantação e integração' },
-    notifications: { label: 'Notificações', icon: <Bell size={18} />, color: 'text-rose-500', desc: 'Configuração de alertas automáticos via Slack' },
-    webhooks: { label: 'Segurança e Integrações', icon: <Send size={18} />, color: 'text-emerald-500', desc: 'Tokens e configuração de webhooks de entrada' },
-};
+const CATEGORY_ORDER = [
+    'general',
+    'goals',
+    'weights',
+    'sla',
+    'security',
+    'csv',
+    'sync',
+    'support',
+    'notifications',
+    'webhooks',
+]
+
+const CATEGORY_META: Record<string, CategoryMeta> = {
+    general: { label: 'Geral', desc: 'Identidade, ambiente e defaults operacionais.', icon: <Settings size={18} />, tone: 'text-slate-700 bg-slate-100 border-slate-200' },
+    goals: { label: 'Metas', desc: 'Alvos anuais usados nos paineis executivos.', icon: <Target size={18} />, tone: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    weights: { label: 'Pesos e performance', desc: 'Fatores para pontuacao e leitura de capacidade.', icon: <SlidersHorizontal size={18} />, tone: 'text-blue-700 bg-blue-50 border-blue-200' },
+    sla: { label: 'SLA e prazos', desc: 'Prazos de implantacao, integracao e alertas.', icon: <Clock size={18} />, tone: 'text-amber-700 bg-amber-50 border-amber-200' },
+    security: { label: 'Seguranca', desc: 'Sessao, 2FA e limites de login.', icon: <Shield size={18} />, tone: 'text-rose-700 bg-rose-50 border-rose-200' },
+    csv: { label: 'Import CSV', desc: 'Limites para importacoes e atualizacoes em massa.', icon: <Database size={18} />, tone: 'text-cyan-700 bg-cyan-50 border-cyan-200' },
+    sync: { label: 'Sync', desc: 'Agenda, stale threshold e retentativas.', icon: <RefreshCw size={18} />, tone: 'text-orange-700 bg-orange-50 border-orange-200' },
+    support: { label: 'Suporte', desc: 'Regras de atendimento e processamento automatico.', icon: <Mail size={18} />, tone: 'text-violet-700 bg-violet-50 border-violet-200' },
+    notifications: { label: 'Notificacoes', desc: 'Slack, alertas de SLA e resumo semanal.', icon: <Bell size={18} />, tone: 'text-pink-700 bg-pink-50 border-pink-200' },
+    webhooks: { label: 'Webhooks e integracoes', desc: 'Zenvia, tokens e deduplicacao de eventos.', icon: <Webhook size={18} />, tone: 'text-teal-700 bg-teal-50 border-teal-200' },
+}
+
+const BOOLEAN_KEYS = new Set([
+    'auth_require_2fa',
+    'csv_allow_update_existing',
+    'sync_auto_retry',
+    'support_webhook_auto_process',
+    'notify_sla_exceeded',
+    'notify_weekly_summary',
+    'notify_goal_achieved',
+    'webhook_zenvia_enabled',
+])
+
+const NUMBER_HINTS = ['target', 'weight', 'days', 'hours', 'limit', 'max', 'attempts', 'window']
+const SECRET_HINTS = ['token', 'secret', 'password']
+
+const getOrderedCategories = (configs: ConfigData) => {
+    const existing = Object.keys(configs)
+    return [
+        ...CATEGORY_ORDER.filter((cat) => existing.includes(cat)),
+        ...existing.filter((cat) => !CATEGORY_ORDER.includes(cat)).sort(),
+    ]
+}
+
+const isBoolean = (key: string) => BOOLEAN_KEYS.has(key) || key.startsWith('notify_') || key.endsWith('_enabled')
+const isSecret = (key: string) => SECRET_HINTS.some((hint) => key.includes(hint))
+const isUrl = (key: string) => key.includes('url') || key.includes('endpoint')
+const isEmail = (key: string) => key.includes('email')
+const isNumber = (key: string) => NUMBER_HINTS.some((hint) => key.includes(hint)) && !isSecret(key)
+
+const makeToken = () => {
+    const bytes = new Uint8Array(24)
+    crypto.getRandomValues(bytes)
+    return `wh_${Array.from(bytes, (byte) => byte.toString(36).padStart(2, '0')).join('').slice(0, 32)}`
+}
 
 export default function SettingsPage() {
-    const [configs, setConfigs] = useState<ConfigData>({});
-    const [editValues, setEditValues] = useState<Record<string, string>>({});
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-    const [testingNotif, setTestingNotif] = useState<string | null>(null);
+    const [configs, setConfigs] = useState<ConfigData>({})
+    const [initialValues, setInitialValues] = useState<Record<string, string>>({})
+    const [editValues, setEditValues] = useState<Record<string, string>>({})
+    const [activeCategory, setActiveCategory] = useState('general')
+    const [query, setQuery] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [toast, setToast] = useState<Toast | null>(null)
+    const [testingNotif, setTestingNotif] = useState<string | null>(null)
 
-    useEffect(() => { fetchConfig(); }, []);
+    const categories = useMemo(() => getOrderedCategories(configs), [configs])
+    const pendingKeys = useMemo(
+        () => Object.keys(editValues).filter((key) => editValues[key] !== initialValues[key]),
+        [editValues, initialValues]
+    )
+
+    const activeItems = useMemo(() => {
+        const needle = query.trim().toLowerCase()
+        const items = configs[activeCategory] || []
+        if (!needle) return items
+        return items.filter((item) => `${item.key} ${item.description}`.toLowerCase().includes(needle))
+    }, [activeCategory, configs, query])
+
+    useEffect(() => { fetchConfig() }, [])
+
+    useEffect(() => {
+        if (!categories.includes(activeCategory) && categories.length > 0) {
+            setActiveCategory(categories[0])
+        }
+    }, [activeCategory, categories])
+
+    const showToast = (text: string, type: Toast['type']) => {
+        setToast({ text, type })
+        window.setTimeout(() => setToast(null), 4000)
+    }
 
     const fetchConfig = async () => {
-        setLoading(true);
+        setLoading(true)
         try {
-            const res = await api.get('/api/config');
-            setConfigs(res.data);
-            const flat: Record<string, string> = {};
-            Object.values(res.data).forEach((items: any) => {
-                items.forEach((item: ConfigItem) => { flat[item.key] = item.value; });
-            });
-            setEditValues(flat);
-        } catch { showMsg('Erro ao carregar configurações', 'error'); }
-        finally { setLoading(false); }
-    };
-
-    const showMsg = (text: string, type: 'success' | 'error') => {
-        setMsg({ text, type });
-        setTimeout(() => setMsg(null), 4000);
-    };
+            const res = await api.get('/api/config')
+            const data = res.data as ConfigData
+            const flat: Record<string, string> = {}
+            Object.values(data).forEach((items) => {
+                items.forEach((item) => { flat[item.key] = item.value ?? '' })
+            })
+            setConfigs(data)
+            setInitialValues(flat)
+            setEditValues(flat)
+        } catch {
+            showToast('Erro ao carregar configuracoes.', 'error')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleSave = async () => {
-        setSaving(true);
+        setSaving(true)
         try {
-            await api.post('/api/config', editValues);
-            showMsg('Configurações salvas com sucesso!', 'success');
-            fetchConfig();
-        } catch { showMsg('Erro ao salvar', 'error'); }
-        finally { setSaving(false); }
-    };
+            await api.post('/api/config', editValues)
+            setInitialValues(editValues)
+            showToast('Configuracoes salvas com sucesso.', 'success')
+            await fetchConfig()
+        } catch {
+            showToast('Erro ao salvar configuracoes.', 'error')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleDiscard = () => {
+        setEditValues(initialValues)
+        showToast('Alteracoes descartadas.', 'success')
+    }
 
     const handleTestNotification = async (type: string) => {
-        setTestingNotif(type);
+        setTestingNotif(type)
         try {
             const endpoint = type === 'test' ? '/api/notifications/test'
                 : type === 'sla' ? '/api/notifications/sla-alerts'
                     : type === 'summary' ? '/api/notifications/weekly-summary'
-                        : '/api/notifications/goal-check';
-            const res = await api.post(endpoint);
-            if (res.data.ok) {
-                showMsg('Notificação enviada com sucesso!', 'success');
-            } else {
-                showMsg(`${res.data.error || res.data.reason || 'Sem alertas para enviar'}`, 'error');
-            }
-        } catch { showMsg('Erro ao enviar notificação', 'error'); }
-        finally { setTestingNotif(null); }
-    };
+                        : '/api/notifications/goal-check'
+            const res = await api.post(endpoint)
+            showToast(res.data.ok ? 'Notificacao enviada com sucesso.' : (res.data.error || res.data.reason || 'Sem alertas para enviar.'), res.data.ok ? 'success' : 'error')
+        } catch {
+            showToast('Erro ao enviar notificacao.', 'error')
+        } finally {
+            setTestingNotif(null)
+        }
+    }
 
     const updateValue = (key: string, value: string) => {
-        setEditValues(prev => ({ ...prev, [key]: value }));
-    };
+        setEditValues((prev) => ({ ...prev, [key]: value }))
+    }
 
-    const isToggle = (key: string) => key.startsWith('notify_');
-    const isUrl = (key: string) => key.includes('url');
+    const copyWebhookUrl = async () => {
+        const url = `${import.meta.env.VITE_API_URL || window.location.origin}/api/webhooks/zenvia`
+        await navigator.clipboard.writeText(url)
+        showToast('Endpoint do webhook copiado.', 'success')
+    }
+
+    const renderField = (item: ConfigItem) => {
+        const value = editValues[item.key] ?? ''
+        const dirty = value !== initialValues[item.key]
+
+        if (isBoolean(item.key)) {
+            return (
+                <button
+                    type="button"
+                    aria-pressed={value === 'true'}
+                    onClick={() => updateValue(item.key, value === 'true' ? 'false' : 'true')}
+                    className={`relative h-7 w-12 rounded-full transition-colors ${value === 'true' ? 'bg-teal-600' : 'bg-slate-300'}`}
+                >
+                    <span className={`absolute left-0 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${value === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+            )
+        }
+
+        const type = isSecret(item.key) ? 'password' : isUrl(item.key) ? 'url' : isEmail(item.key) ? 'email' : isNumber(item.key) ? 'number' : 'text'
+
+        return (
+            <div className="flex gap-2">
+                <input
+                    type={type}
+                    value={value}
+                    onChange={(event) => updateValue(item.key, event.target.value)}
+                    className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 ${dirty ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200 bg-white'}`}
+                />
+                {isSecret(item.key) && (
+                    <button
+                        type="button"
+                        title="Gerar token"
+                        onClick={() => updateValue(item.key, makeToken())}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-teal-300 hover:text-teal-700"
+                    >
+                        <KeyRound size={16} />
+                    </button>
+                )}
+            </div>
+        )
+    }
+
+    const activeMeta = CATEGORY_META[activeCategory] || CATEGORY_META.general
 
     return (
-        <div className="p-6 md:p-10 space-y-8 min-h-screen bg-zinc-50 text-zinc-900">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-500 to-cyan-600 flex items-center gap-3">
-                        <Settings className="text-teal-500" size={28} />
-                        Configurações do Sistema
-                    </h1>
-                    <p className="text-zinc-500 mt-2">
-                        Gerencie metas, pesos, prazos e notificações do sistema.
-                    </p>
-                </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-semibold shadow-lg shadow-teal-500/20 transition-all active:scale-95 disabled:opacity-50 self-start"
-                >
-                    {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                    {saving ? 'Salvando...' : 'Salvar Configurações'}
-                </button>
-            </div>
-
-            {/* Toast */}
-            {msg && (
-                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border ${msg.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-red-50 text-red-700 border-red-200'
-                    }`}>
-                    {msg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-                    {msg.text}
-                    <button onClick={() => setMsg(null)} className="ml-auto"><X size={14} /></button>
-                </div>
-            )}
-
-            {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="animate-spin text-teal-500" size={32} />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Webhook Info Card */}
-                    <div className="bg-white rounded-2xl border border-teal-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
-                        <div className="px-6 pt-5 pb-3 border-b border-teal-100 bg-teal-50">
-                            <h3 className="text-base font-bold flex items-center gap-2 text-teal-700">
-                                <Send size={18} /> URL de Recebimento de Webhook (Suporte)
-                            </h3>
-                            <p className="text-xs text-teal-600 mt-1">Utilize esta URL para configurar o envio de eventos externos (como o Zenvia) para o sistema.</p>
+        <div className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-8">
+            <div className="mx-auto max-w-7xl space-y-5">
+                <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <div className="flex items-center gap-2 text-sm font-semibold text-teal-700">
+                            <Settings size={18} />
+                            Configuracoes
                         </div>
-                        <div className="p-6">
-                            <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Endpoint (Método POST)</label>
-                            <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    readOnly
-                                    value={`${import.meta.env.VITE_API_URL || window.location.origin}/api/webhooks/zenvia`}
-                                    className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-600 outline-none select-all"
-                                />
-                                <button 
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(`${import.meta.env.VITE_API_URL || window.location.origin}/api/webhooks/zenvia`);
-                                        showMsg('URL do Webhook copiada com sucesso!', 'success');
-                                    }}
-                                    className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
-                                >
-                                    Copiar
-                                </button>
-                            </div>
-                        </div>
+                        <h1 className="mt-2 text-3xl font-bold tracking-tight">Hub administrativo</h1>
+                        <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                            Parametros globais de operacao, seguranca, Sync, suporte e integracoes.
+                        </p>
                     </div>
 
-                    {Object.entries(CATEGORY_META).map(([cat, meta]) => {
-                        const items = configs[cat] || [];
-                        if (items.length === 0) return null;
-                        return (
-                            <div key={cat} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                {/* Category Header */}
-                                <div className="px-6 pt-5 pb-3 border-b border-zinc-100">
-                                    <h3 className={`text-base font-bold flex items-center gap-2 ${meta.color}`}>
-                                        {meta.icon} {meta.label}
-                                    </h3>
-                                    <p className="text-xs text-zinc-500 mt-1">{meta.desc}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+                            {pendingKeys.length} alteracao{pendingKeys.length === 1 ? '' : 'es'}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={handleDiscard}
+                            disabled={pendingKeys.length === 0 || saving}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <RotateCcw size={16} />
+                            Descartar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={saving || pendingKeys.length === 0}
+                            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            Salvar
+                        </button>
+                    </div>
+                </div>
+
+                {toast && (
+                    <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium ${toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+                        {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                        {toast.text}
+                        <button type="button" onClick={() => setToast(null)} className="ml-auto"><X size={14} /></button>
+                    </div>
+                )}
+
+                <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+                    <aside className="space-y-3">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input
+                                type="search"
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                                placeholder="Buscar configuracao"
+                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                            />
+                        </div>
+
+                        <nav className="rounded-lg border border-slate-200 bg-white p-2">
+                            {categories.map((category) => {
+                                const meta = CATEGORY_META[category] || { label: category, desc: '', icon: <Settings size={18} />, tone: 'text-slate-700 bg-slate-100 border-slate-200' }
+                                const count = configs[category]?.length || 0
+                                return (
+                                    <button
+                                        key={category}
+                                        type="button"
+                                        onClick={() => setActiveCategory(category)}
+                                        className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition ${activeCategory === category ? 'bg-slate-100 text-slate-950' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        <span className={`inline-flex h-8 w-8 items-center justify-center rounded-md border ${meta.tone}`}>{meta.icon}</span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-sm font-semibold">{meta.label}</span>
+                                            <span className="block text-xs text-slate-400">{count} itens</span>
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </nav>
+                    </aside>
+
+                    <main className="space-y-5">
+                        <section className="rounded-lg border border-slate-200 bg-white">
+                            <div className="flex flex-col gap-3 border-b border-slate-200 p-5 md:flex-row md:items-start md:justify-between">
+                                <div className="flex gap-3">
+                                    <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border ${activeMeta.tone}`}>{activeMeta.icon}</span>
+                                    <div>
+                                        <h2 className="text-lg font-bold">{activeMeta.label}</h2>
+                                        <p className="text-sm text-slate-500">{activeMeta.desc}</p>
+                                    </div>
                                 </div>
 
-                                {/* Config Items */}
-                                <div className="p-6 space-y-4">
-                                    {items.map(item => (
-                                        <div key={item.key}>
-                                            <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
-                                                {item.description || item.key}
-                                            </label>
-                                            {isToggle(item.key) ? (
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={() => updateValue(item.key, editValues[item.key] === 'true' ? 'false' : 'true')}
-                                                        className={`relative w-12 h-6 rounded-full transition-colors ${editValues[item.key] === 'true' ? 'bg-teal-500' : 'bg-zinc-300'}`}
-                                                    >
-                                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${editValues[item.key] === 'true' ? 'left-[26px]' : 'left-0.5'}`} />
-                                                    </button>
-                                                    <span className="text-xs text-zinc-500">
-                                                        {editValues[item.key] === 'true' ? 'Ativo' : 'Desativado'}
-                                                    </span>
-                                                </div>
-                                            ) : isUrl(item.key) ? (
-                                                <input
-                                                    type="url"
-                                                    placeholder="https://hooks.slack.com/services/..."
-                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 transition-all"
-                                                    value={editValues[item.key] || ''}
-                                                    onChange={e => updateValue(item.key, e.target.value)}
-                                                />
-                                            ) : item.key === 'webhook_token' ? (
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 transition-all"
-                                                        value={editValues[item.key] || ''}
-                                                        onChange={e => updateValue(item.key, e.target.value)}
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                                                            let t = 'wh_';
-                                                            for(let i=0; i<24; i++) t += chars.charAt(Math.floor(Math.random() * chars.length));
-                                                            updateValue(item.key, t);
-                                                        }}
-                                                        className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl text-sm font-semibold transition-colors"
-                                                    >
-                                                        Gerar
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 font-mono text-zinc-800 transition-all"
-                                                    value={editValues[item.key] || ''}
-                                                    onChange={e => updateValue(item.key, e.target.value)}
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
+                                {activeCategory === 'webhooks' && (
+                                    <button
+                                        type="button"
+                                        onClick={copyWebhookUrl}
+                                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-teal-300 hover:text-teal-700"
+                                    >
+                                        <Copy size={16} />
+                                        Copiar endpoint Zenvia
+                                    </button>
+                                )}
+                            </div>
 
-                                    {/* Notification Test Buttons */}
-                                    {cat === 'notifications' && (
-                                        <div className="pt-3 mt-3 border-t border-zinc-100">
-                                            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Testar Notificações</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {[
-                                                    { key: 'test', label: 'Enviar Teste', icon: <Send size={13} /> },
-                                                    { key: 'sla', label: 'Alertas SLA', icon: <AlertCircle size={13} /> },
-                                                    { key: 'summary', label: 'Resumo Semanal', icon: <Bell size={13} /> },
-                                                    { key: 'goals', label: 'Check Metas', icon: <Target size={13} /> },
-                                                ].map(btn => (
-                                                    <button
-                                                        key={btn.key}
-                                                        onClick={() => handleTestNotification(btn.key)}
-                                                        disabled={testingNotif !== null}
-                                                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-700 hover:border-teal-400 hover:text-teal-600 transition-all disabled:opacity-50"
-                                                    >
-                                                        {testingNotif === btn.key ? <Loader2 size={13} className="animate-spin" /> : btn.icon}
-                                                        {btn.label}
-                                                    </button>
-                                                ))}
+                            {loading ? (
+                                <div className="flex h-64 items-center justify-center text-slate-400">
+                                    <Loader2 className="animate-spin" size={28} />
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-100">
+                                    {activeItems.map((item) => {
+                                        const dirty = (editValues[item.key] ?? '') !== initialValues[item.key]
+                                        return (
+                                            <div key={item.key} className="grid gap-3 p-5 md:grid-cols-[minmax(220px,340px)_1fr] md:items-center">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-semibold text-slate-800">{item.description || item.key}</p>
+                                                        {dirty && <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase text-teal-700">editado</span>}
+                                                    </div>
+                                                    <p className="mt-1 break-all font-mono text-xs text-slate-400">{item.key}</p>
+                                                </div>
+                                                {renderField(item)}
                                             </div>
-                                        </div>
+                                        )
+                                    })}
+                                    {activeItems.length === 0 && (
+                                        <div className="p-10 text-center text-sm text-slate-400">Nenhuma configuracao encontrada.</div>
                                     )}
                                 </div>
-                            </div>
-                        );
-                    })}
+                            )}
+                        </section>
+
+                        {activeCategory === 'notifications' && (
+                            <section className="rounded-lg border border-slate-200 bg-white p-5">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <Send size={18} className="text-slate-400" />
+                                    <h3 className="text-sm font-bold text-slate-800">Testes de notificacao</h3>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { key: 'test', label: 'Teste' },
+                                        { key: 'sla', label: 'Alertas SLA' },
+                                        { key: 'summary', label: 'Resumo semanal' },
+                                        { key: 'goals', label: 'Metas' },
+                                    ].map((button) => (
+                                        <button
+                                            key={button.key}
+                                            type="button"
+                                            onClick={() => handleTestNotification(button.key)}
+                                            disabled={testingNotif !== null}
+                                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-teal-300 hover:text-teal-700 disabled:opacity-50"
+                                        >
+                                            {testingNotif === button.key ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                            {button.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </main>
                 </div>
-            )}
+            </div>
         </div>
-    );
+    )
 }
