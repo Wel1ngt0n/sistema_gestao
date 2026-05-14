@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     ChevronRight,
     HelpCircle,
+    X,
     Target,
     Trophy,
     Rocket,
@@ -31,6 +32,8 @@ interface CRMLayoutProps {
 export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
     const [collapsed, setCollapsed] = useState(false)
     const location = useLocation()
+    const [superAdminOpen, setSuperAdminOpen] = useState(false)
+    const [presentationMode, setPresentationMode] = useState(() => localStorage.getItem('presentation_mode') === 'true')
     const { user, logout } = useAuth()
 
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
@@ -323,6 +326,82 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     </div>
                 </div>
             </main>
+
+            {/* Super Admin Tab */}
+            <div 
+                onClick={() => setSuperAdminOpen(true)}
+                className="fixed right-0 top-32 bg-slate-900 text-white px-1 py-6 rounded-l-md cursor-pointer hover:bg-slate-800 transition-colors z-40 shadow-lg flex items-center justify-center print:hidden"
+                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+                <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Super admin</span>
+            </div>
+
+            {/* Super Admin Drawer */}
+            <div className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${superAdminOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col border-l border-slate-200 print:hidden`}>
+                <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Super admin</h2>
+                    <button onClick={() => setSuperAdminOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                        <X size={18} />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    {/* Informações */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-800">Informações:</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-slate-500">Nome</span>
+                                <span className="text-slate-900 font-medium">Sistema Gestão</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-slate-500">CNPJ</span>
+                                <span className="text-slate-900 font-medium">00.000.000/0001-00</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-slate-500">Subdomínio</span>
+                                <span className="text-slate-900 font-medium">gestao</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-slate-500">Id</span>
+                                <span className="text-slate-900 font-medium font-mono text-xs">gestao-1</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Opções */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-800">Opções:</h3>
+                        <div className="space-y-3 bg-white border border-slate-200 rounded-xl p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-slate-700">Modo de apresentação</span>
+                                <button 
+                                    onClick={() => {
+                                        const newMode = !presentationMode;
+                                        setPresentationMode(newMode);
+                                        localStorage.setItem('presentation_mode', newMode.toString());
+                                        window.location.reload();
+                                    }}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${presentationMode ? 'bg-green-500' : 'bg-slate-200'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${presentationMode ? 'translate-x-4' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                        </div>
+                        <button className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium rounded-xl transition-colors border border-slate-200 flex items-center justify-center gap-2">
+                            <RefreshCw size={16} />
+                            Trocar loja
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Overlay */}
+            {superAdminOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity print:hidden"
+                    onClick={() => setSuperAdminOpen(false)}
+                />
+            )}
         </div>
     )
 }
