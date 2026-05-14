@@ -48,6 +48,47 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use((response) => {
+    const isPresentationMode = localStorage.getItem('presentation_mode') === 'true';
+    if (isPresentationMode && response.data) {
+        const isFinancialKey = (key: string) => {
+            const k = key.toLowerCase();
+            const exactMatches = ['id', 'status', 'code', 'month', 'year', 'day', 'page', 'size', 'index', 'order'];
+            if (exactMatches.includes(k)) return false;
+            
+            const avoid = ['id', 'date', 'time', 'status', 'code', 'version', 'count', 'cpf', 'cnpj', 'phone', 'zip', 'cep', 'lat', 'lng', 'percent', 'tax', 'rate'];
+            if (avoid.some(word => k.includes(word))) return false;
+        
+            return true;
+        };
+        
+        const halveData = (data: any, keyName?: string): any => {
+            if (data === null || data === undefined) return data;
+            
+            if (typeof data === 'number') {
+                if (!keyName || isFinancialKey(keyName)) {
+                    // Halve it and keep it visually cleaner if it was an integer
+                    return Number.isInteger(data) ? Math.floor(data / 2) : data / 2;
+                }
+                return data;
+            }
+            
+            if (Array.isArray(data)) {
+                return data.map(item => halveData(item, keyName));
+            }
+            
+            if (typeof data === 'object') {
+                const newData: any = {};
+                for (const [key, value] of Object.entries(data)) {
+                    newData[key] = halveData(value, key);
+                }
+                return newData;
+            }
+            
+            return data;
+        };
+
+        response.data = halveData(response.data);
+    }
     return response;
 }, (error) => {
     if (error.response && error.response.status === 401) {
