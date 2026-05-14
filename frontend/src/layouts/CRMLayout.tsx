@@ -345,29 +345,6 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                    {/* Informações */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-800">Informações:</h3>
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">Nome</span>
-                                <span className="text-slate-900 font-medium">Sistema Gestão</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">CNPJ</span>
-                                <span className="text-slate-900 font-medium">00.000.000/0001-00</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">Subdomínio</span>
-                                <span className="text-slate-900 font-medium">gestao</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">Id</span>
-                                <span className="text-slate-900 font-medium font-mono text-xs">gestao-1</span>
-                            </div>
-                        </div>
-                    </div>
-                    
                     {/* Opções */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-800">Opções:</h3>
@@ -387,10 +364,6 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                 </button>
                             </div>
                         </div>
-                        <button className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium rounded-xl transition-colors border border-slate-200 flex items-center justify-center gap-2">
-                            <RefreshCw size={16} />
-                            Trocar loja
-                        </button>
                     </div>
                 </div>
             </div>
