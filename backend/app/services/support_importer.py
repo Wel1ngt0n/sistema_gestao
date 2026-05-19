@@ -28,6 +28,7 @@ from app.models import (
 logger = logging.getLogger(__name__)
 
 WINDOW_KEY_SIZE = 7
+CONVERSATION_MATCH_GRACE_HOURS = 12
 
 
 def slugify(text: Any) -> str:
@@ -359,6 +360,80 @@ def _extract_nps(extra_raw: Any) -> Tuple[Optional[int], Optional[str]]:
     return None, nps_text if len(nps_text) > 1 else None
 
 
+def _name_tokens(value: Any) -> List[str]:
+    text = normalize_empty(value)
+    if not text:
+        return []
+    normalized = re.sub(r"[^a-z0-9\s]+", " ", text.lower())
+    return [token for token in normalized.split() if len(token) >= 3]
+
+
+def _names_match(left: Any, right: Any) -> bool:
+    left_tokens = set(_name_tokens(left))
+    right_tokens = set(_name_tokens(right))
+    if not left_tokens or not right_tokens:
+        return False
+    if left_tokens == right_tokens:
+        return True
+    overlap = left_tokens.intersection(right_tokens)
+    return bool(overlap) and (len(overlap) >= min(len(left_tokens), len(right_tokens), 2) or overlap == left_tokens or overlap == right_tokens)
+
+
+def _find_contact_by_activity_name(contact_name: str) -> Optional[SupportContact]:
+    exact = SupportContact.query.filter_by(zenvia_contact_id=f"CSV_CONTACT_{slugify(contact_name)}"[:100]).first()
+    if exact:
+        return exact
+
+    candidates = SupportContact.query.filter(SupportContact.name.isnot(None)).all()
+    for candidate in candidates:
+        if _names_match(candidate.name, contact_name):
+            return candidate
+    return None
+
+
+def _load_contact_conversations(contact_id: int) -> List[SupportConversation]:
+    return SupportConversation.query.filter_by(contact_id=contact_id).order_by(
+        SupportConversation.created_at_zenvia.asc(),
+        SupportConversation.id.asc(),
+    ).all()
+
+
+def _find_conversation_for_timestamp(conversations: List[SupportConversation], ts: datetime) -> Optional[SupportConversation]:
+    eligible = [conv for conv in conversations if conv.created_at_zenvia and conv.created_at_zenvia <= ts]
+    if not eligible:
+        return None
+
+    active = [
+        conv for conv in eligible
+        if conv.closed_at is None or conv.closed_at >= ts - timedelta(hours=CONVERSATION_MATCH_GRACE_HOURS)
+    ]
+    pool = active or eligible
+    pool.sort(key=lambda conv: conv.created_at_zenvia or datetime.min, reverse=True)
+    return pool[0] if pool else None
+
+
+def _ensure_fallback_conversation(
+    contact: SupportContact,
+    ts: datetime,
+    agent_name: Optional[str],
+    group_name: Optional[str],
+) -> SupportConversation:
+    slug = slugify(contact.phone or contact.name or str(contact.id))
+    conv = SupportConversation(
+        zenvia_conversation_id=f"CSV_ACTIVITY_{slug}_{ts.strftime('%Y%m%d%H%M%S')}"[:100],
+        contact_id=contact.id,
+        channel="whatsapp",
+        status="OPEN",
+        group_id=group_name,
+        created_at_zenvia=ts,
+        last_message_at=ts,
+        agent_name=agent_name,
+    )
+    db.session.add(conv)
+    db.session.flush()
+    return conv
+
+
 def enrich_contacts_from_conversations_csv(data: Any, period: Optional[str] = None) -> Dict[str, Any]:
     df = read_input_data(data, "phone")
     if df is None:
@@ -376,12 +451,12 @@ def enrich_contacts_from_conversations_csv(data: Any, period: Optional[str] = No
 
     for _, row in df.iterrows():
         try:
+            row_id = normalize_empty(row.get("id"))
             name = normalize_empty(row.get("name")) or normalize_empty(row.get("phone")) or "Desconhecido"
             phone = normalize_empty(row.get("phone"))
             email = normalize_empty(row.get("email"))
             created_at = parse_datetime(row.get("created_at"))
             row_period = period_from_datetime(created_at, period)
-            suffix = row_period.replace("-", "")
             nps_score, nps_comment = _extract_nps(row.get("extra"))
 
             contact_slug = slugify(phone or name)
@@ -411,7 +486,7 @@ def enrich_contacts_from_conversations_csv(data: Any, period: Optional[str] = No
                 db.session.flush()
                 stats["contacts_created"] += 1
 
-            conv_key = f"{slugify(phone or name)[:58]}_{suffix}"
+            conv_key = row_id or f"{slugify(phone or name)[:58]}_{created_at.strftime('%Y%m%d%H%M%S') if created_at else row_period.replace('-', '')}"
             conv_id = f"CSV_CONV_{conv_key}"[:100]
             conv = SupportConversation.query.filter_by(zenvia_conversation_id=conv_id).first()
             if not conv:
@@ -419,12 +494,15 @@ def enrich_contacts_from_conversations_csv(data: Any, period: Optional[str] = No
                     zenvia_conversation_id=conv_id,
                     contact_id=contact.id,
                     channel=normalize_empty(row.get("channel")) or "whatsapp",
-                    status="CLOSED",
+                    status="OPEN",
                     created_at_zenvia=created_at,
+                    last_message_at=created_at,
                 )
                 db.session.add(conv)
                 db.session.flush()
                 stats["conversations_created"] += 1
+            elif created_at and (not conv.last_message_at or created_at > conv.last_message_at):
+                conv.last_message_at = created_at
             if nps_score is not None:
                 conv.nps_score = nps_score
                 stats["nps_extracted"] += 1
@@ -452,11 +530,13 @@ def import_zenvia_activities_csv(data: Any, period: Optional[str] = None) -> Dic
         "messages_imported": 0,
         "contacts_created": 0,
         "conversations_created": 0,
+        "conversations_closed": 0,
+        "agent_links": 0,
         "errors": 0,
         "months_breakdown": {},
     }
-    contact_cache: Dict[str, int] = {}
-    conv_cache: Dict[str, int] = {}
+    contact_cache: Dict[str, SupportContact] = {}
+    conv_cache: Dict[int, List[SupportConversation]] = {}
 
     for _, row in df.iterrows():
         try:
@@ -479,13 +559,11 @@ def import_zenvia_activities_csv(data: Any, period: Optional[str] = None) -> Dic
                 parts = msg_text.split(":", 1)
                 if len(parts) > 1 and len(parts[0]) < 35:
                     msg_text = parts[1].strip()
-            if not direction:
-                continue
 
             contact_slug = slugify(contact_name)
-            contact_id = contact_cache.get(contact_slug)
-            if not contact_id:
-                contact = SupportContact.query.filter_by(zenvia_contact_id=f"CSV_CONTACT_{contact_slug}"[:100]).first()
+            contact = contact_cache.get(contact_slug)
+            if not contact:
+                contact = _find_contact_by_activity_name(contact_name)
                 if not contact:
                     contact = SupportContact(
                         zenvia_contact_id=f"CSV_CONTACT_{contact_slug}"[:100],
@@ -494,51 +572,66 @@ def import_zenvia_activities_csv(data: Any, period: Optional[str] = None) -> Dic
                     db.session.add(contact)
                     db.session.flush()
                     stats["contacts_created"] += 1
-                contact_id = contact.id
-                contact_cache[contact_slug] = contact_id
+                contact.updated_at = datetime.utcnow()
+                contact_cache[contact_slug] = contact
+
+            conversations = conv_cache.get(contact.id)
+            if conversations is None:
+                conversations = _load_contact_conversations(contact.id)
+                conv_cache[contact.id] = conversations
+
+            conv = _find_conversation_for_timestamp(conversations, ts)
+            if not conv:
+                conv = _ensure_fallback_conversation(contact, ts, agent_name, group_name)
+                conversations.append(conv)
+                conversations.sort(key=lambda item: (item.created_at_zenvia or datetime.min, item.id))
+                stats["conversations_created"] += 1
+
+            if group_name and not conv.group_id:
+                conv.group_id = group_name
+
+            if direction:
+                if agent_name and direction == "OUT":
+                    conv.agent_name = agent_name
+                if ts and (not conv.last_message_at or ts > conv.last_message_at):
+                    conv.last_message_at = ts
+                if direction == "OUT" and conv.first_response_at is None:
+                    conv.first_response_at = ts
+                    if conv.created_at_zenvia:
+                        conv.response_time_seconds = max(int((ts - conv.created_at_zenvia).total_seconds()), 0)
+                msg_hash = get_hash(f"{contact_slug}_{ts.isoformat()}_{direction}_{msg_text}")
+                zenvia_message_id = f"CSV_MSG_{msg_hash}"[:100]
+                if not SupportMessage.query.filter_by(zenvia_message_id=zenvia_message_id).first():
+                    db.session.add(SupportMessage(
+                        zenvia_message_id=zenvia_message_id,
+                        conversation_id=conv.id,
+                        direction=direction,
+                        channel="whatsapp",
+                        text=msg_text,
+                        timestamp=ts,
+                        status="SENT" if direction == "OUT" else "READ",
+                    ))
+                    stats["messages_imported"] += 1
+            elif "Contato transferido para" in details or "Contato atribuído a agente" in details:
+                if agent_name:
+                    conv.agent_name = agent_name
+                    stats["agent_links"] += 1
+            elif details == "Arquivou o cliente":
+                conv.status = "CLOSED"
+                conv.closed_at = ts
+                conv.last_message_at = ts if not conv.last_message_at or ts > conv.last_message_at else conv.last_message_at
+                if agent_name:
+                    conv.agent_name = agent_name
+                if conv.created_at_zenvia:
+                    conv.resolution_time_seconds = max(int((ts - conv.created_at_zenvia).total_seconds()), 0)
+                stats["conversations_closed"] += 1
+            elif details == "Desarquivou o cliente":
+                conv.status = "OPEN"
+                conv.closed_at = None
+                if agent_name:
+                    conv.agent_name = agent_name
 
             row_period = period_from_datetime(ts, period)
-            suffix = row_period.replace("-", "")
-            conv_key = f"{contact_slug[:58]}_{suffix}"
-            conv_id = conv_cache.get(conv_key)
-            if not conv_id:
-                zenvia_conv_id = f"CSV_CONV_{conv_key}"[:100]
-                conv = SupportConversation.query.filter_by(zenvia_conversation_id=zenvia_conv_id).first()
-                if not conv:
-                    conv = SupportConversation(
-                        zenvia_conversation_id=zenvia_conv_id,
-                        contact_id=contact_id,
-                        status="CLOSED",
-                        channel="whatsapp",
-                        group_id=group_name,
-                        created_at_zenvia=ts,
-                        agent_name=agent_name,
-                    )
-                    db.session.add(conv)
-                    db.session.flush()
-                    stats["conversations_created"] += 1
-                else:
-                    if agent_name and not conv.agent_name:
-                        conv.agent_name = agent_name
-                    if ts and (not conv.last_message_at or ts > conv.last_message_at):
-                        conv.last_message_at = ts
-                conv_id = conv.id
-                conv_cache[conv_key] = conv_id
-
-            msg_hash = get_hash(f"{contact_slug}_{ts.isoformat()}_{direction}_{msg_text}")
-            zenvia_message_id = f"CSV_MSG_{msg_hash}"[:100]
-            if not SupportMessage.query.filter_by(zenvia_message_id=zenvia_message_id).first():
-                db.session.add(SupportMessage(
-                    zenvia_message_id=zenvia_message_id,
-                    conversation_id=conv_id,
-                    direction=direction,
-                    channel="whatsapp",
-                    text=msg_text,
-                    timestamp=ts,
-                    status="SENT" if direction == "OUT" else "READ",
-                ))
-                stats["messages_imported"] += 1
-
             stats["months_breakdown"][row_period] = stats["months_breakdown"].get(row_period, 0) + 1
             if stats["messages_imported"] and stats["messages_imported"] % 1000 == 0:
                 db.session.commit()
@@ -791,10 +884,23 @@ def calculate_agent_nps(
 
 
 def _all_uploaded_files(files_map: Any, form: Any) -> Iterable[Tuple[Any, Optional[str]]]:
+    priority = {
+        "conversas": 0,
+        "activities": 1,
+        "performance": 2,
+        "agents": 3,
+    }
+    items: List[Tuple[int, int, Any, Optional[str]]] = []
+    order = 0
     for key in files_map:
         for file_obj in files_map.getlist(key):
             explicit = form.get(f"type_{file_obj.filename}") or form.get(f"{key}_type") or key
-            yield file_obj, explicit
+            detected_priority = priority.get(str(explicit), 10)
+            items.append((detected_priority, order, file_obj, explicit))
+            order += 1
+    items.sort(key=lambda item: (item[0], item[1]))
+    for _, _, file_obj, explicit in items:
+        yield file_obj, explicit
 
 
 def import_support_files(files_map: Any, form: Any, period: Optional[str] = None) -> Dict[str, Any]:
@@ -816,6 +922,14 @@ def import_support_files(files_map: Any, form: Any, period: Optional[str] = None
     totals = {"rows_total": 0, "rows_imported": 0, "errors_count": 0}
 
     try:
+        prepared_files = []
+        type_priority = {
+            "conversas": 0,
+            "activities": 1,
+            "performance": 2,
+            "agents": 3,
+        }
+
         for file_obj, explicit_type in _all_uploaded_files(files_map, form):
             df = read_input_data(file_obj)
             filename = getattr(file_obj, "filename", "arquivo.csv")
@@ -829,6 +943,11 @@ def import_support_files(files_map: Any, form: Any, period: Optional[str] = None
             if csv_type == "ignore":
                 continue
 
+            prepared_files.append((type_priority.get(csv_type, 10), file_obj, filename, csv_type, df))
+
+        prepared_files.sort(key=lambda item: item[0])
+
+        for _, file_obj, filename, csv_type, df in prepared_files:
             if hasattr(file_obj, "seek"):
                 file_obj.seek(0)
 
