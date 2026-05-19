@@ -777,6 +777,11 @@ class SupportAgentPerformance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     agent_name = db.Column(db.String(255), nullable=False, index=True)
     period = db.Column(db.String(7), nullable=False) # YYYY-MM
+    import_batch_id = db.Column(db.Integer, db.ForeignKey('support_import_batches.id'), nullable=True, index=True)
+    range_start = db.Column(db.DateTime, nullable=True, index=True)
+    range_end = db.Column(db.DateTime, nullable=True, index=True)
+    granularity = db.Column(db.String(20), nullable=True, index=True)
+    window_label = db.Column(db.String(120), nullable=True)
     group_name = db.Column(db.String(100), nullable=True) # Ex: Suporte N1
 
     # Volume
@@ -818,6 +823,10 @@ class SupportImportBatch(db.Model):
     __tablename__ = 'support_import_batches'
     id = db.Column(db.Integer, primary_key=True)
     period = db.Column(db.String(7), nullable=False, index=True)
+    range_start = db.Column(db.DateTime, nullable=True, index=True)
+    range_end = db.Column(db.DateTime, nullable=True, index=True)
+    granularity = db.Column(db.String(20), nullable=True, index=True)
+    window_label = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(30), nullable=False, default='processing')
     files_count = db.Column(db.Integer, default=0)
     rows_total = db.Column(db.Integer, default=0)
@@ -837,6 +846,11 @@ class SupportMetricSnapshot(db.Model):
     __tablename__ = 'support_metric_snapshots'
     id = db.Column(db.Integer, primary_key=True)
     period = db.Column(db.String(7), nullable=False, index=True)
+    import_batch_id = db.Column(db.Integer, db.ForeignKey('support_import_batches.id'), nullable=True, index=True)
+    range_start = db.Column(db.DateTime, nullable=True, index=True)
+    range_end = db.Column(db.DateTime, nullable=True, index=True)
+    granularity = db.Column(db.String(20), nullable=True, index=True)
+    window_label = db.Column(db.String(120), nullable=True)
     source = db.Column(db.String(120), nullable=False, index=True)
     metric_type = db.Column(db.String(80), nullable=False, index=True)
     metric_key = db.Column(db.String(160), nullable=False, index=True)

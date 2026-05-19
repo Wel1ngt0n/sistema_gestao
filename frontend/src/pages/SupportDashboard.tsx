@@ -3,24 +3,24 @@ import {
   Activity,
   AlertCircle,
   BarChart3,
-  CheckCircle2,
+  CalendarRange,
   Clock3,
   Database,
   FileUp,
   Link2,
   MessageSquare,
-  RefreshCw,
   Search,
   ShieldCheck,
   Star,
   UploadCloud,
   Users,
-  Webhook,
   X,
 } from 'lucide-react';
 import { api } from '../services/api';
 
 type TabKey = 'operacao' | 'equipe' | 'qualidade' | 'conversas' | 'fontes';
+type GroupBy = 'day' | 'week' | 'month';
+type ImportGranularity = 'daily' | 'weekly' | 'monthly' | 'custom';
 
 interface SupportKpis {
   open_conversations: number;
@@ -41,6 +41,7 @@ interface AgentPerf {
   group_name?: string;
   total_contacts: number;
   total_conversations: number;
+  new_conversations: number;
   closed_conversations: number;
   total_messages_sent: number;
   avg_response_time_seconds: number;
@@ -75,6 +76,11 @@ interface NpsFeedback {
 
 interface ImportBatch {
   id: number;
+  period: string;
+  window_label?: string | null;
+  granularity?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   status: string;
   files_count: number;
   rows_total: number;
@@ -85,31 +91,30 @@ interface ImportBatch {
   stats?: Array<{ file: string; type: string; stats: Record<string, unknown> }>;
 }
 
-interface SourceHealth {
-  webhooks?: {
-    total_events: number;
-    pending_events: number;
-    last_received_at?: string | null;
-    last_processed_at?: string | null;
-    last_event_type?: string | null;
-  };
-  imports?: {
-    last_status: string;
-    last_finished_at?: string | null;
-    last_batches: ImportBatch[];
-  };
+interface OverviewTimelineRow {
+  label: string;
+  bucket_date: string;
+  new_conversations: number;
+  new_contacts: number;
+  closed_conversations: number;
+  interactions: number;
+  avg_nps: number | null;
 }
 
 interface OverviewData {
   period: string;
+  start_date: string;
+  end_date: string;
+  group_by: GroupBy;
+  window_label: string;
   kpis: SupportKpis;
   agents: AgentPerf[];
   messages: MessageItem[];
   nps_feedbacks: NpsFeedback[];
-  hourly_response: Array<{ hour: string; day: string; seconds: number }>;
+  hourly_response: Array<{ hour: string; day: string; seconds: number; window_label?: string }>;
   close_reasons: Array<{ reason: string; conversations?: number; contacts?: number; close_time_seconds?: number }>;
   daily_series: Record<string, Array<{ label: string; value: number }>>;
-  source_health: SourceHealth;
+  timeline: OverviewTimelineRow[];
   imports: ImportBatch[];
 }
 
@@ -132,6 +137,16 @@ interface ConversationItem {
   source?: string;
 }
 
+interface WindowItem {
+  id: number;
+  period: string;
+  granularity: string;
+  window_label: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: string;
+}
+
 const emptyKpis: SupportKpis = {
   open_conversations: 0,
   closed_conversations: 0,
@@ -144,6 +159,13 @@ const emptyKpis: SupportKpis = {
   open_tickets: 0,
   last_sync: 'Nunca',
   last_import: 'Nunca',
+};
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+const firstDayOfMonthIso = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 };
 
 const formatTime = (seconds?: number | null) => {
@@ -225,18 +247,33 @@ const SourceBadge = ({ source }: { source?: string }) => (
   </span>
 );
 
+const GranularityPill = ({ value }: { value?: string | null }) => {
+  const tone = value === 'weekly'
+    ? 'bg-sky-50 text-sky-700'
+    : value === 'daily'
+      ? 'bg-emerald-50 text-emerald-700'
+      : value === 'monthly'
+        ? 'bg-orange-50 text-orange-700'
+        : 'bg-zinc-100 text-zinc-600';
+
+  return <span className={cn('rounded-md px-2 py-1 text-[11px] font-semibold uppercase', tone)}>{value || 'custom'}</span>;
+};
+
 export const SupportDashboard = () => {
-  const currentMonth = new Date().toISOString().substring(0, 7);
-  const [selectedPeriod, setSelectedPeriod] = useState(currentMonth);
-  const [importPeriod, setImportPeriod] = useState(currentMonth);
-  const [periods, setPeriods] = useState<string[]>([currentMonth]);
+  const [selectedStartDate, setSelectedStartDate] = useState(firstDayOfMonthIso());
+  const [selectedEndDate, setSelectedEndDate] = useState(todayIso());
+  const [groupBy, setGroupBy] = useState<GroupBy>('day');
+
+  const [importStartDate, setImportStartDate] = useState(firstDayOfMonthIso());
+  const [importEndDate, setImportEndDate] = useState(todayIso());
+  const [importGranularity, setImportGranularity] = useState<ImportGranularity>('weekly');
+
+  const [windows, setWindows] = useState<WindowItem[]>([]);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [orphans, setOrphans] = useState<OrphanContact[]>([]);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [webhookEvents, setWebhookEvents] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>('operacao');
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [search, setSearch] = useState('');
@@ -248,25 +285,26 @@ export const SupportDashboard = () => {
     return Math.max(...(overview?.close_reasons || []).map((item) => item.conversations || 0), 1);
   }, [overview]);
 
-  const fetchPeriods = async () => {
-    const response = await api.get('/api/support/periods').catch(() => ({ data: [currentMonth] }));
-    const data = Array.isArray(response.data) && response.data.length ? response.data : [currentMonth];
-    setPeriods(data);
-    if (!data.includes(selectedPeriod)) setSelectedPeriod(data[0]);
+  const maxTimeline = useMemo(() => {
+    return Math.max(...(overview?.timeline || []).map((item) => item.new_conversations), 1);
+  }, [overview]);
+
+  const fetchWindows = async () => {
+    const response = await api.get('/api/support/windows').catch(() => ({ data: [] }));
+    setWindows(Array.isArray(response.data) ? response.data : []);
   };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [overviewRes, orphanRes, eventsRes, convRes] = await Promise.all([
-        api.get(`/api/support/overview?period=${selectedPeriod}`),
+      const query = `start_date=${selectedStartDate}&end_date=${selectedEndDate}&group_by=${groupBy}`;
+      const [overviewRes, orphanRes, convRes] = await Promise.all([
+        api.get(`/api/support/overview?${query}`),
         api.get('/api/support/orphans').catch(() => ({ data: [] })),
-        api.get('/api/webhooks/events').catch(() => ({ data: [] })),
-        api.get(`/api/support/conversations?period=${selectedPeriod}&q=${encodeURIComponent(search)}&page_size=30`).catch(() => ({ data: { items: [] } })),
+        api.get(`/api/support/conversations?start_date=${selectedStartDate}&end_date=${selectedEndDate}&q=${encodeURIComponent(search)}&page_size=30`).catch(() => ({ data: { items: [] } })),
       ]);
       setOverview(overviewRes.data);
       setOrphans(Array.isArray(orphanRes.data) ? orphanRes.data : []);
-      setWebhookEvents(Array.isArray(eventsRes.data) ? eventsRes.data : []);
       setConversations(Array.isArray(convRes.data?.items) ? convRes.data.items : []);
     } finally {
       setLoading(false);
@@ -274,14 +312,14 @@ export const SupportDashboard = () => {
   };
 
   useEffect(() => {
-    fetchPeriods();
+    fetchWindows();
   }, []);
 
   useEffect(() => {
     fetchData();
     const interval = window.setInterval(fetchData, 600000);
     return () => window.clearInterval(interval);
-  }, [selectedPeriod]);
+  }, [selectedStartDate, selectedEndDate, groupBy]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -301,24 +339,19 @@ export const SupportDashboard = () => {
     setImporting(true);
     try {
       const formData = new FormData();
-      formData.append('period', importPeriod);
+      formData.append('start_date', importStartDate);
+      formData.append('end_date', importEndDate);
+      formData.append('granularity', importGranularity);
       selectedFiles.forEach((file) => formData.append('files', file));
       await api.post('/api/support/import-csv', formData);
       setSelectedFiles([]);
-      await fetchPeriods();
+      await fetchWindows();
+      setSelectedStartDate(importStartDate);
+      setSelectedEndDate(importEndDate);
+      setGroupBy(importGranularity === 'monthly' ? 'month' : importGranularity === 'weekly' ? 'week' : 'day');
       await fetchData();
     } finally {
       setImporting(false);
-    }
-  };
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await api.post('/api/support/sync');
-      await fetchData();
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -349,59 +382,77 @@ export const SupportDashboard = () => {
   return (
     <div className="w-full">
       <div className="mx-auto w-full max-w-[1920px] space-y-6 p-6 lg:p-10">
-        <header className="flex flex-col gap-5 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-orange-600">
-              <ShieldCheck size={14} />
-              Suporte Zenvia
+        <header className="flex flex-col gap-5 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-orange-600">
+                <ShieldCheck size={14} />
+                Suporte por planilhas
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Central operacional de suporte</h1>
+              <p className="mt-1 max-w-4xl text-sm text-zinc-500">
+                Importe cada lote com a janela correta e acompanhe os resultados por dia, semana ou mes. Ideal para fechamentos semanais e apresentacoes mensais do time.
+              </p>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Central operacional de suporte</h1>
-            <p className="mt-1 max-w-3xl text-sm text-zinc-500">
-              Dados historicos entram por upload de CSV no sistema. Webhooks alimentam eventos recentes em tempo quase real.
-            </p>
-          </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
-              <Clock3 size={16} className="text-zinc-500" />
-              <input
-                type="month"
-                value={selectedPeriod}
-                onChange={(event) => setSelectedPeriod(event.target.value)}
-                className="bg-transparent text-sm font-semibold text-zinc-800 outline-none"
-              />
-            </div>
-            {periods.length > 1 && (
-              <div className="hidden items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1 lg:flex">
-                {periods.slice(0, 4).map((period) => (
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+                <CalendarRange size={16} className="text-zinc-500" />
+                <input type="date" value={selectedStartDate} onChange={(event) => setSelectedStartDate(event.target.value)} className="bg-transparent text-sm font-semibold text-zinc-800 outline-none" />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+                <CalendarRange size={16} className="text-zinc-500" />
+                <input type="date" value={selectedEndDate} onChange={(event) => setSelectedEndDate(event.target.value)} className="bg-transparent text-sm font-semibold text-zinc-800 outline-none" />
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1">
+                {[
+                  { key: 'day' as const, label: 'Dia' },
+                  { key: 'week' as const, label: 'Semana' },
+                  { key: 'month' as const, label: 'Mes' },
+                ].map((item) => (
                   <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
+                    key={item.key}
+                    onClick={() => setGroupBy(item.key)}
                     className={cn(
                       'rounded-md px-3 py-1.5 text-xs font-semibold transition',
-                      selectedPeriod === period ? 'bg-orange-50 text-orange-700' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
+                      groupBy === item.key ? 'bg-orange-50 text-orange-700' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
                     )}
                   >
-                    {period}
+                    {item.label}
                   </button>
                 ))}
               </div>
-            )}
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#128131] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f6b29] disabled:cursor-not-allowed disabled:bg-zinc-300"
-            >
-              <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
-              {syncing ? 'Processando webhooks' : 'Sincronizar webhooks'}
-            </button>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Janela ativa</p>
+                <p className="mt-1 text-sm font-semibold text-emerald-900">{overview?.window_label || `${selectedStartDate} a ${selectedEndDate}`}</p>
+              </div>
+            </div>
           </div>
+
+          {windows.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {windows.slice(0, 8).map((window) => (
+                <button
+                  key={window.id}
+                  onClick={() => {
+                    if (window.start_date) setSelectedStartDate(window.start_date);
+                    if (window.end_date) setSelectedEndDate(window.end_date);
+                    setGroupBy(window.granularity === 'monthly' ? 'month' : window.granularity === 'weekly' ? 'week' : 'day');
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+                >
+                  <GranularityPill value={window.granularity} />
+                  {window.window_label}
+                </button>
+              ))}
+            </div>
+          )}
         </header>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Conversas abertas" value={kpis.open_conversations} helper={`${kpis.closed_conversations} fechadas no periodo`} icon={MessageSquare} color="green" />
+          <MetricCard label="Chamados no periodo" value={kpis.open_conversations + kpis.closed_conversations} helper={`${kpis.closed_conversations} encerrados dentro da janela`} icon={MessageSquare} color="green" />
           <MetricCard label="Mensagens recebidas" value={kpis.messages_in} helper={`${kpis.messages_out} respostas enviadas`} icon={BarChart3} color="orange" />
-          <MetricCard label="Tempo medio resposta" value={kpis.avg_response_time} helper="Baseado na performance importada" icon={Clock3} color="blue" />
+          <MetricCard label="Tempo medio resposta" value={kpis.avg_response_time} helper="Leitura agregada da performance importada" icon={Clock3} color="blue" />
           <MetricCard label="Pendencias da equipe" value={kpis.pending_tickets + kpis.open_tickets} helper={`${kpis.pending_tickets} pendentes, ${kpis.open_tickets} abertas`} icon={AlertCircle} color={kpis.pending_tickets > 0 ? 'red' : 'slate'} />
         </div>
 
@@ -409,15 +460,17 @@ export const SupportDashboard = () => {
           <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-sm font-semibold text-zinc-950">Importar dados historicos da Zenvia</h2>
-              <p className="mt-1 text-sm text-zinc-500">Envie os CSVs exportados do painel online da Zenvia. O sistema detecta o tipo pelo cabecalho.</p>
+              <p className="mt-1 text-sm text-zinc-500">Informe a janela real do lote para manter seus fechamentos diários, semanais e mensais consistentes.</p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <input
-                type="month"
-                value={importPeriod}
-                onChange={(event) => setImportPeriod(event.target.value)}
-                className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-800 outline-none focus:border-orange-300"
-              />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <input type="date" value={importStartDate} onChange={(event) => setImportStartDate(event.target.value)} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-800 outline-none focus:border-orange-300" />
+              <input type="date" value={importEndDate} onChange={(event) => setImportEndDate(event.target.value)} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-800 outline-none focus:border-orange-300" />
+              <select value={importGranularity} onChange={(event) => setImportGranularity(event.target.value as ImportGranularity)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 outline-none focus:border-orange-300">
+                <option value="daily">Diario</option>
+                <option value="weekly">Semanal</option>
+                <option value="monthly">Mensal</option>
+                <option value="custom">Personalizado</option>
+              </select>
               <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:border-orange-300 hover:text-orange-600">
                 <UploadCloud size={16} />
                 Selecionar CSVs
@@ -476,7 +529,30 @@ export const SupportDashboard = () => {
 
         {activeTab === 'operacao' && (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <Section title="Motivos de fechamento" subtitle="Ranking importado dos relatorios da Zenvia">
+            <Section title="Serie do periodo" subtitle="Separacao por dia, semana ou mes conforme o agrupamento ativo">
+              <div className="space-y-3">
+                {(overview?.timeline || []).map((item) => (
+                  <div key={item.bucket_date} className="rounded-lg border border-zinc-100 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                      <span className="font-semibold text-zinc-800">{item.label}</span>
+                      <span className="text-xs font-semibold text-zinc-500">{item.interactions} interacoes</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-zinc-100">
+                      <div className="h-2 rounded-full bg-orange-500" style={{ width: `${Math.max((item.new_conversations / maxTimeline) * 100, 4)}%` }} />
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-600">
+                      <span>{item.new_conversations} chamados</span>
+                      <span>{item.new_contacts} novos contatos</span>
+                      <span>{item.closed_conversations} encerrados</span>
+                      <span>NPS {item.avg_nps === null ? '-' : item.avg_nps.toFixed(1)}</span>
+                    </div>
+                  </div>
+                ))}
+                {!overview?.timeline?.length && <p className="text-sm text-zinc-500">Importe planilhas com datas para visualizar a serie do periodo.</p>}
+              </div>
+            </Section>
+
+            <Section title="Motivos de chamado" subtitle="Ranking agregado das janelas importadas">
               <div className="space-y-3">
                 {(overview?.close_reasons || []).slice(0, 8).map((item) => (
                   <div key={item.reason}>
@@ -490,22 +566,6 @@ export const SupportDashboard = () => {
                   </div>
                 ))}
                 {!overview?.close_reasons?.length && <p className="text-sm text-zinc-500">Importe o CSV de motivos para visualizar este bloco.</p>}
-              </div>
-            </Section>
-
-            <Section title="Resposta por hora" subtitle="Piores janelas do atendimento">
-              <div className="space-y-2">
-                {(overview?.hourly_response || [])
-                  .filter((item) => item.seconds > 0)
-                  .sort((a, b) => b.seconds - a.seconds)
-                  .slice(0, 10)
-                  .map((item) => (
-                    <div key={`${item.day}-${item.hour}`} className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2">
-                      <span className="text-sm font-medium text-zinc-700">{item.day} as {item.hour}</span>
-                      <span className="text-sm font-semibold text-zinc-950">{formatTime(item.seconds)}</span>
-                    </div>
-                  ))}
-                {!overview?.hourly_response?.length && <p className="text-sm text-zinc-500">Importe o CSV de tempo de resposta por hora.</p>}
               </div>
             </Section>
 
@@ -533,17 +593,18 @@ export const SupportDashboard = () => {
         )}
 
         {activeTab === 'equipe' && (
-          <Section title="Performance da equipe" subtitle="Volume, tempo, NPS e pendencias por atendente">
+          <Section title="Performance da equipe" subtitle="Totais do intervalo e notas por pessoa">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-left">
+              <table className="w-full min-w-[1080px] text-left">
                 <thead>
                   <tr className="border-b border-zinc-100 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     <th className="px-3 py-3">Atendente</th>
                     <th className="px-3 py-3 text-right">Contatos</th>
-                    <th className="px-3 py-3 text-right">Conversas</th>
-                    <th className="px-3 py-3 text-right">Fechadas</th>
+                    <th className="px-3 py-3 text-right">Chamados</th>
+                    <th className="px-3 py-3 text-right">Novos</th>
+                    <th className="px-3 py-3 text-right">Fechados</th>
                     <th className="px-3 py-3 text-right">Mensagens</th>
-                    <th className="px-3 py-3 text-right">Resposta</th>
+                    <th className="px-3 py-3 text-right">1a resposta</th>
                     <th className="px-3 py-3 text-right">Fechamento</th>
                     <th className="px-3 py-3 text-right">NPS</th>
                     <th className="px-3 py-3 text-right">Pendencias</th>
@@ -558,12 +619,13 @@ export const SupportDashboard = () => {
                       </td>
                       <td className="px-3 py-3 text-right text-sm font-medium">{agent.total_contacts}</td>
                       <td className="px-3 py-3 text-right text-sm">{agent.total_conversations}</td>
+                      <td className="px-3 py-3 text-right text-sm">{agent.new_conversations}</td>
                       <td className="px-3 py-3 text-right text-sm">{agent.closed_conversations}</td>
                       <td className="px-3 py-3 text-right text-sm font-medium text-sky-700">{agent.total_messages_sent}</td>
                       <td className="px-3 py-3 text-right text-sm">{formatTime(agent.avg_response_time_seconds)}</td>
                       <td className="px-3 py-3 text-right text-sm">{formatTime(agent.avg_close_time_seconds)}</td>
                       <td className="px-3 py-3 text-right text-sm font-semibold">{agent.avg_nps === null ? '-' : `${agent.avg_nps.toFixed(1)} (${agent.nps_count})`}</td>
-                      <td className="px-3 py-3 text-right text-sm">{agent.pending_tickets}</td>
+                      <td className="px-3 py-3 text-right text-sm">{agent.pending_tickets + agent.open_tickets}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -574,7 +636,7 @@ export const SupportDashboard = () => {
 
         {activeTab === 'qualidade' && (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <Section title="NPS recente" subtitle="Feedbacks vinculados as conversas">
+            <Section title="NPS recente" subtitle="Feedbacks vinculados as conversas do intervalo">
               <div className="space-y-3">
                 {(overview?.nps_feedbacks || []).map((feedback) => (
                   <div key={feedback.id} className="flex items-start gap-3 rounded-lg border border-zinc-100 p-3">
@@ -591,28 +653,26 @@ export const SupportDashboard = () => {
                     </div>
                   </div>
                 ))}
-                {!overview?.nps_feedbacks?.length && <p className="text-sm text-zinc-500">Sem NPS para o periodo selecionado.</p>}
+                {!overview?.nps_feedbacks?.length && <p className="text-sm text-zinc-500">Sem NPS para a janela selecionada.</p>}
               </div>
             </Section>
 
-            <Section title="Sinais de qualidade" subtitle="Resumo das fontes importadas">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <p className="text-xs font-semibold uppercase text-zinc-500">NPS medio</p>
-                  <p className="mt-2 text-3xl font-semibold text-zinc-950">{kpis.avg_nps === null ? '-' : kpis.avg_nps.toFixed(1)}</p>
-                </div>
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <p className="text-xs font-semibold uppercase text-zinc-500">Tempo medio</p>
-                  <p className="mt-2 text-3xl font-semibold text-zinc-950">{kpis.avg_response_time}</p>
-                </div>
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <p className="text-xs font-semibold uppercase text-zinc-500">Ultimo import</p>
-                  <p className="mt-2 text-sm font-semibold text-zinc-950">{kpis.last_import}</p>
-                </div>
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <p className="text-xs font-semibold uppercase text-zinc-500">Ultimo webhook</p>
-                  <p className="mt-2 text-sm font-semibold text-zinc-950">{formatDate(overview?.source_health?.webhooks?.last_received_at)}</p>
-                </div>
+            <Section title="Piores janelas de resposta" subtitle="Recorte por dia e hora dos arquivos importados">
+              <div className="space-y-2">
+                {(overview?.hourly_response || [])
+                  .filter((item) => item.seconds > 0)
+                  .sort((a, b) => b.seconds - a.seconds)
+                  .slice(0, 10)
+                  .map((item) => (
+                    <div key={`${item.window_label || 'janela'}-${item.day}-${item.hour}`} className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-700">{item.day} as {item.hour}</p>
+                        {item.window_label && <p className="text-xs text-zinc-500">{item.window_label}</p>}
+                      </div>
+                      <span className="text-sm font-semibold text-zinc-950">{formatTime(item.seconds)}</span>
+                    </div>
+                  ))}
+                {!overview?.hourly_response?.length && <p className="text-sm text-zinc-500">Importe o CSV de tempo de resposta por hora.</p>}
               </div>
             </Section>
           </div>
@@ -629,7 +689,7 @@ export const SupportDashboard = () => {
                 className="w-full bg-transparent text-sm outline-none"
               />
             </div>
-            <Section title="Conversas do periodo" subtitle="Dados unificados de CSV e webhooks">
+            <Section title="Conversas do intervalo" subtitle="Dados detalhados das mensagens importadas">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[860px] text-left">
                   <thead>
@@ -668,51 +728,44 @@ export const SupportDashboard = () => {
 
         {activeTab === 'fontes' && (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <Section title="Saude dos webhooks" subtitle="Eventos recebidos da Zenvia em tempo quase real">
-              <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <Webhook className="mb-3 text-sky-600" size={18} />
-                  <p className="text-xs font-semibold uppercase text-zinc-500">Recebidos</p>
-                  <p className="mt-1 text-2xl font-semibold text-zinc-950">{overview?.source_health?.webhooks?.total_events || 0}</p>
-                </div>
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <Activity className="mb-3 text-orange-600" size={18} />
-                  <p className="text-xs font-semibold uppercase text-zinc-500">Pendentes</p>
-                  <p className="mt-1 text-2xl font-semibold text-zinc-950">{overview?.source_health?.webhooks?.pending_events || 0}</p>
-                </div>
-                <div className="rounded-lg border border-zinc-100 p-4">
-                  <CheckCircle2 className="mb-3 text-emerald-600" size={18} />
-                  <p className="text-xs font-semibold uppercase text-zinc-500">Ultimo tipo</p>
-                  <p className="mt-1 truncate text-sm font-semibold text-zinc-950">{overview?.source_health?.webhooks?.last_event_type || '-'}</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {webhookEvents.map((event) => (
-                  <div key={event.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-100 px-3 py-2">
+            <Section title="Janelas importadas" subtitle="Lotes recentes para reaplicar rapidamente seus fechamentos">
+              <div className="space-y-3">
+                {windows.map((window) => (
+                  <button
+                    key={window.id}
+                    onClick={() => {
+                      if (window.start_date) setSelectedStartDate(window.start_date);
+                      if (window.end_date) setSelectedEndDate(window.end_date);
+                      setGroupBy(window.granularity === 'monthly' ? 'month' : window.granularity === 'weekly' ? 'week' : 'day');
+                    }}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-100 p-3 text-left transition hover:border-orange-200 hover:bg-orange-50/40"
+                  >
                     <div>
-                      <p className="text-sm font-semibold text-zinc-800">#{event.id} {event.payload_type}</p>
-                      <p className="text-xs text-zinc-500">{event.received_at}</p>
+                      <p className="text-sm font-semibold text-zinc-900">{window.window_label}</p>
+                      <p className="text-xs text-zinc-500">{window.start_date || '-'} ate {window.end_date || '-'}</p>
                     </div>
-                    <span className={cn('rounded-md px-2 py-1 text-xs font-semibold', event.status === 'Processado' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}>
-                      {event.status}
-                    </span>
-                  </div>
+                    <GranularityPill value={window.granularity} />
+                  </button>
                 ))}
+                {!windows.length && <p className="text-sm text-zinc-500">Nenhum lote importado ainda.</p>}
               </div>
             </Section>
 
-            <Section title="Historico de imports" subtitle="Arquivos enviados pelo sistema online">
+            <Section title="Historico de imports" subtitle="Arquivos enviados e consolidacao por lote">
               <div className="space-y-3">
                 {(overview?.imports || []).map((batch) => (
                   <div key={batch.id} className="rounded-lg border border-zinc-100 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-zinc-900">Lote #{batch.id}</p>
+                        <p className="text-sm font-semibold text-zinc-900">{batch.window_label || `Lote #${batch.id}`}</p>
                         <p className="text-xs text-zinc-500">{formatDate(batch.finished_at || batch.started_at)}</p>
                       </div>
-                      <span className={cn('rounded-md px-2 py-1 text-xs font-semibold', batch.status === 'success' ? 'bg-emerald-50 text-emerald-700' : batch.status === 'partial' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700')}>
-                        {batch.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <GranularityPill value={batch.granularity} />
+                        <span className={cn('rounded-md px-2 py-1 text-xs font-semibold', batch.status === 'success' ? 'bg-emerald-50 text-emerald-700' : batch.status === 'partial' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700')}>
+                          {batch.status}
+                        </span>
+                      </div>
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-zinc-600">
                       <span>{batch.files_count} arquivos</span>
@@ -721,7 +774,7 @@ export const SupportDashboard = () => {
                     </div>
                   </div>
                 ))}
-                {!overview?.imports?.length && <p className="text-sm text-zinc-500">Nenhum import registrado para o periodo.</p>}
+                {!overview?.imports?.length && <p className="text-sm text-zinc-500">Nenhum import registrado para esta janela.</p>}
               </div>
             </Section>
           </div>

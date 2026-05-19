@@ -1,8 +1,9 @@
 import json
-from datetime import datetime
+from collections import defaultdict
+from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 
 from app.models import (
     SupportAgentPerformance,
@@ -13,18 +14,7 @@ from app.models import (
     SupportMetricSnapshot,
     SystemConfig,
     ZenviaWebhookEvent,
-    db,
 )
-
-
-def month_range(period: Optional[str]) -> Tuple[datetime, datetime, str]:
-    selected = period or datetime.now().strftime("%Y-%m")
-    start = datetime.strptime(f"{selected}-01", "%Y-%m-%d")
-    if start.month == 12:
-        end = datetime(start.year + 1, 1, 1)
-    else:
-        end = datetime(start.year, start.month + 1, 1)
-    return start, end, selected
 
 
 def format_seconds(seconds: Optional[float]) -> str:
@@ -43,11 +33,78 @@ def format_seconds(seconds: Optional[float]) -> str:
     return f"{secs}s"
 
 
-def _metric_rows(period: str, metric_type: str) -> List[SupportMetricSnapshot]:
-    return SupportMetricSnapshot.query.filter_by(period=period, metric_type=metric_type).all()
+def parse_date_value(value: Optional[str]) -> Optional[date]:
+    if not value:
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y/%m"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    if len(raw) == 7:
+        try:
+            return datetime.strptime(f"{raw}-01", "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None
 
 
-def _dimensions(row: SupportMetricSnapshot) -> Dict[str, Any]:
+def start_of_day(value: date) -> datetime:
+    return datetime.combine(value, time.min)
+
+
+def end_of_day(value: date) -> datetime:
+    return datetime.combine(value, time.max)
+
+
+def current_month_window() -> Tuple[datetime, datetime]:
+    today = datetime.now().date()
+    start = today.replace(day=1)
+    if start.month == 12:
+        end = date(start.year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end = date(start.year, start.month + 1, 1) - timedelta(days=1)
+    return start_of_day(start), end_of_day(end)
+
+
+def resolve_window(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    period: Optional[str] = None,
+) -> Tuple[datetime, datetime, str]:
+    start = parse_date_value(start_date)
+    end = parse_date_value(end_date)
+
+    if period and (not start or not end):
+        period_start = parse_date_value(period)
+        if period_start:
+            start = start or period_start.replace(day=1)
+            if period_start.month == 12:
+                period_end = date(period_start.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                period_end = date(period_start.year, period_start.month + 1, 1) - timedelta(days=1)
+            end = end or period_end
+
+    if not start and not end:
+        start_at, end_at = current_month_window()
+        return start_at, end_at, f"{start_at.date().isoformat()}:{end_at.date().isoformat()}"
+
+    if start and not end:
+        end = start
+    if end and not start:
+        start = end
+
+    assert start is not None and end is not None
+    if end < start:
+        start, end = end, start
+
+    return start_of_day(start), end_of_day(end), f"{start.isoformat()}:{end.isoformat()}"
+
+
+def _load_dimensions(row: SupportMetricSnapshot) -> Dict[str, Any]:
     if not row.dimensions_json:
         return {}
     try:
@@ -56,57 +113,203 @@ def _dimensions(row: SupportMetricSnapshot) -> Dict[str, Any]:
         return {}
 
 
+def _rows_for_window(query, start_at: datetime, end_at: datetime):
+    return query.filter(
+        or_(
+            and_(
+                query.column_descriptions[0]["entity"].range_start.isnot(None),
+                query.column_descriptions[0]["entity"].range_end.isnot(None),
+                query.column_descriptions[0]["entity"].range_start <= end_at,
+                query.column_descriptions[0]["entity"].range_end >= start_at,
+            ),
+            and_(
+                query.column_descriptions[0]["entity"].range_start.is_(None),
+                query.column_descriptions[0]["entity"].range_end.is_(None),
+            ),
+        )
+    )
+
+
+def _support_batches(start_at: datetime, end_at: datetime) -> List[SupportImportBatch]:
+    query = SupportImportBatch.query
+    rows = query.filter(
+        or_(
+            and_(
+                SupportImportBatch.range_start.isnot(None),
+                SupportImportBatch.range_end.isnot(None),
+                SupportImportBatch.range_start <= end_at,
+                SupportImportBatch.range_end >= start_at,
+            ),
+            and_(
+                SupportImportBatch.range_start.is_(None),
+                SupportImportBatch.range_end.is_(None),
+            ),
+        )
+    ).order_by(SupportImportBatch.range_end.desc().nullslast(), SupportImportBatch.id.desc()).all()
+    return rows
+
+
+def get_windows() -> List[Dict[str, Any]]:
+    batches = SupportImportBatch.query.order_by(
+        SupportImportBatch.range_end.desc().nullslast(),
+        SupportImportBatch.id.desc(),
+    ).limit(50).all()
+    return [{
+        "id": batch.id,
+        "period": batch.period,
+        "granularity": batch.granularity or "monthly",
+        "window_label": batch.window_label or batch.period,
+        "start_date": batch.range_start.date().isoformat() if batch.range_start else None,
+        "end_date": batch.range_end.date().isoformat() if batch.range_end else None,
+        "status": batch.status,
+    } for batch in batches]
+
+
 def get_periods() -> List[str]:
-    periods = set()
-    for row in db.session.query(SupportAgentPerformance.period).distinct().all():
-        if row.period:
-            periods.add(row.period)
-    for row in db.session.query(SupportMetricSnapshot.period).distinct().all():
-        if row.period:
-            periods.add(row.period)
-    for row in db.session.query(SupportImportBatch.period).distinct().all():
-        if row.period:
-            periods.add(row.period)
-    for row in db.session.query(func.substr(db.cast(SupportConversation.created_at_zenvia, db.String), 1, 7)).distinct().all():
-        if row[0]:
-            periods.add(row[0])
-    if not periods:
-        periods.add(datetime.now().strftime("%Y-%m"))
-    return sorted(periods, reverse=True)
+    windows = get_windows()
+    if windows:
+        return [item["window_label"] for item in windows]
+    start_at, _, _ = resolve_window()
+    return [start_at.strftime("%Y-%m")]
 
 
-def get_support_kpis(period: Optional[str] = None) -> Dict[str, Any]:
-    start, end, selected = month_range(period)
+def _agent_rows_for_window(start_at: datetime, end_at: datetime) -> List[SupportAgentPerformance]:
+    return SupportAgentPerformance.query.filter(
+        SupportAgentPerformance.range_start.isnot(None),
+        SupportAgentPerformance.range_end.isnot(None),
+        SupportAgentPerformance.range_start <= end_at,
+        SupportAgentPerformance.range_end >= start_at,
+    ).all()
 
-    open_convs = SupportConversation.query.filter_by(status="OPEN").count()
+
+def _weighted_average(total_value: float, total_weight: float) -> float:
+    return round(total_value / total_weight, 0) if total_weight else 0
+
+
+def _aggregate_agent_rows(rows: List[SupportAgentPerformance]) -> List[Dict[str, Any]]:
+    grouped: Dict[str, Dict[str, Any]] = {}
+
+    for row in rows:
+        item = grouped.setdefault(row.agent_name, {
+            "agent_name": row.agent_name,
+            "group_name": row.group_name,
+            "total_contacts": 0,
+            "total_conversations": 0,
+            "new_conversations": 0,
+            "closed_conversations": 0,
+            "total_messages_sent": 0,
+            "avg_response_numerator": 0.0,
+            "avg_response_weight": 0.0,
+            "avg_close_numerator": 0.0,
+            "avg_close_weight": 0.0,
+            "avg_nps_numerator": 0.0,
+            "avg_nps_weight": 0.0,
+            "nps_count": 0,
+            "last_activity_at": None,
+            "activities_today": 0,
+            "pending_tickets": 0,
+            "open_tickets": 0,
+        })
+
+        item["group_name"] = item["group_name"] or row.group_name or "Suporte"
+        item["total_contacts"] += row.total_contacts or 0
+        item["total_conversations"] += row.total_conversations or 0
+        item["new_conversations"] += row.new_conversations or 0
+        item["closed_conversations"] += row.closed_conversations or 0
+        item["total_messages_sent"] += row.total_messages_sent or 0
+
+        response_weight = row.total_conversations or 0
+        close_weight = row.closed_conversations or 0
+        nps_weight = row.nps_count or 0
+
+        item["avg_response_numerator"] += (row.avg_response_time_seconds or 0) * response_weight
+        item["avg_response_weight"] += response_weight
+        item["avg_close_numerator"] += (row.avg_close_time_seconds or 0) * close_weight
+        item["avg_close_weight"] += close_weight
+        if row.avg_nps is not None:
+            item["avg_nps_numerator"] += row.avg_nps * nps_weight
+            item["avg_nps_weight"] += nps_weight
+        item["nps_count"] += nps_weight
+
+        if row.last_activity_at and (item["last_activity_at"] is None or row.last_activity_at > item["last_activity_at"]):
+            item["last_activity_at"] = row.last_activity_at
+            item["activities_today"] = row.activities_today or 0
+            item["pending_tickets"] = row.pending_tickets or 0
+            item["open_tickets"] = row.open_tickets or 0
+
+    result = []
+    for item in grouped.values():
+        result.append({
+            "agent_name": item["agent_name"],
+            "group_name": item["group_name"],
+            "total_contacts": item["total_contacts"],
+            "total_conversations": item["total_conversations"],
+            "new_conversations": item["new_conversations"],
+            "closed_conversations": item["closed_conversations"],
+            "total_messages_sent": item["total_messages_sent"],
+            "avg_response_time_seconds": _weighted_average(item["avg_response_numerator"], item["avg_response_weight"]),
+            "avg_close_time_seconds": _weighted_average(item["avg_close_numerator"], item["avg_close_weight"]),
+            "avg_nps": round(item["avg_nps_numerator"] / item["avg_nps_weight"], 2) if item["avg_nps_weight"] else None,
+            "nps_count": item["nps_count"],
+            "last_activity_at": item["last_activity_at"].isoformat() if item["last_activity_at"] else None,
+            "activities_today": item["activities_today"],
+            "pending_tickets": item["pending_tickets"],
+            "open_tickets": item["open_tickets"],
+        })
+
+    return sorted(result, key=lambda row: (row["total_conversations"], row["total_messages_sent"]), reverse=True)
+
+
+def get_support_kpis(
+    period: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    start_at, end_at, selected = resolve_window(start_date, end_date, period)
+
+    open_convs = SupportConversation.query.filter(
+        SupportConversation.status == "OPEN",
+        SupportConversation.created_at_zenvia >= start_at,
+        SupportConversation.created_at_zenvia <= end_at,
+    ).count()
     closed_convs = SupportConversation.query.filter(
         SupportConversation.status == "CLOSED",
-        SupportConversation.created_at_zenvia >= start,
-        SupportConversation.created_at_zenvia < end,
+        SupportConversation.created_at_zenvia >= start_at,
+        SupportConversation.created_at_zenvia <= end_at,
     ).count()
     messages_in = SupportMessage.query.filter(
         SupportMessage.direction == "IN",
-        SupportMessage.timestamp >= start,
-        SupportMessage.timestamp < end,
+        SupportMessage.timestamp >= start_at,
+        SupportMessage.timestamp <= end_at,
     ).count()
     messages_out = SupportMessage.query.filter(
         SupportMessage.direction == "OUT",
-        SupportMessage.timestamp >= start,
-        SupportMessage.timestamp < end,
+        SupportMessage.timestamp >= start_at,
+        SupportMessage.timestamp <= end_at,
     ).count()
-    agent_rows = SupportAgentPerformance.query.filter_by(period=selected).all()
-    response_values = [a.avg_response_time_seconds for a in agent_rows if a.avg_response_time_seconds]
+
+    agent_rows = _aggregate_agent_rows(_agent_rows_for_window(start_at, end_at))
+    response_values = [row["avg_response_time_seconds"] for row in agent_rows if row["avg_response_time_seconds"]]
     avg_response_seconds = round(sum(response_values) / len(response_values), 0) if response_values else 0
-    avg_nps_values = [a.avg_nps for a in agent_rows if a.avg_nps is not None]
-    avg_nps = round(sum(avg_nps_values) / len(avg_nps_values), 2) if avg_nps_values else None
-    pending_tickets = sum(a.pending_tickets or 0 for a in agent_rows)
-    open_tickets = sum(a.open_tickets or 0 for a in agent_rows)
+
+    nps_rows = SupportConversation.query.filter(
+        SupportConversation.nps_score.isnot(None),
+        SupportConversation.created_at_zenvia >= start_at,
+        SupportConversation.created_at_zenvia <= end_at,
+    ).all()
+    nps_scores = [row.nps_score for row in nps_rows if row.nps_score is not None]
+    avg_nps = round(sum(nps_scores) / len(nps_scores), 2) if nps_scores else None
+
+    pending_tickets = sum(row["pending_tickets"] for row in agent_rows)
+    open_tickets = sum(row["open_tickets"] for row in agent_rows)
 
     last_sync = SystemConfig.query.filter_by(key="last_support_sync").first()
     last_import = SystemConfig.query.filter_by(key="last_support_import").first()
 
     return {
         "period": selected,
+        "start_date": start_at.date().isoformat(),
+        "end_date": end_at.date().isoformat(),
         "open_conversations": open_convs,
         "closed_conversations": closed_convs,
         "messages_in": messages_in,
@@ -121,35 +324,23 @@ def get_support_kpis(period: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
-def get_agent_performance(period: Optional[str] = None) -> List[Dict[str, Any]]:
-    _, _, selected = month_range(period)
-    agents = SupportAgentPerformance.query.filter_by(period=selected).order_by(
-        SupportAgentPerformance.total_conversations.desc(),
-        SupportAgentPerformance.total_messages_sent.desc(),
-    ).all()
-    return [{
-        "id": a.id,
-        "agent_name": a.agent_name,
-        "period": a.period,
-        "group_name": a.group_name,
-        "total_contacts": a.total_contacts or 0,
-        "total_conversations": a.total_conversations or 0,
-        "new_conversations": a.new_conversations or 0,
-        "closed_conversations": a.closed_conversations or 0,
-        "total_messages_sent": a.total_messages_sent or 0,
-        "avg_response_time_seconds": a.avg_response_time_seconds or 0,
-        "avg_close_time_seconds": a.avg_close_time_seconds or 0,
-        "avg_nps": a.avg_nps,
-        "nps_count": a.nps_count or 0,
-        "last_activity_at": a.last_activity_at.isoformat() if a.last_activity_at else None,
-        "activities_today": a.activities_today or 0,
-        "pending_tickets": a.pending_tickets or 0,
-        "open_tickets": a.open_tickets or 0,
-    } for a in agents]
+def get_agent_performance(
+    period: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    start_at, end_at, _ = resolve_window(start_date, end_date, period)
+    return _aggregate_agent_rows(_agent_rows_for_window(start_at, end_at))
 
 
-def get_recent_messages(limit: int = 50) -> List[Dict[str, Any]]:
-    messages = SupportMessage.query.order_by(SupportMessage.timestamp.desc()).limit(limit).all()
+def get_recent_messages(limit: int = 50, start_at: Optional[datetime] = None, end_at: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    query = SupportMessage.query
+    if start_at and end_at:
+        query = query.filter(
+            SupportMessage.timestamp >= start_at,
+            SupportMessage.timestamp <= end_at,
+        )
+    messages = query.order_by(SupportMessage.timestamp.desc()).limit(limit).all()
     result = []
     for msg in messages:
         contact_name = "Desconhecido"
@@ -167,12 +358,17 @@ def get_recent_messages(limit: int = 50) -> List[Dict[str, Any]]:
     return result
 
 
-def get_nps_feedbacks(period: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
-    start, end, _ = month_range(period)
+def get_nps_feedbacks(
+    period: Optional[str] = None,
+    limit: int = 50,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    start_at, end_at, _ = resolve_window(start_date, end_date, period)
     convs = SupportConversation.query.filter(
         SupportConversation.nps_score.isnot(None),
-        SupportConversation.created_at_zenvia >= start,
-        SupportConversation.created_at_zenvia < end,
+        SupportConversation.created_at_zenvia >= start_at,
+        SupportConversation.created_at_zenvia <= end_at,
     ).order_by(SupportConversation.created_at_zenvia.desc()).limit(limit).all()
     return [{
         "id": c.id,
@@ -185,11 +381,14 @@ def get_nps_feedbacks(period: Optional[str] = None, limit: int = 50) -> List[Dic
     } for c in convs]
 
 
-def get_import_history(period: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
-    _, _, selected = month_range(period)
-    batches = SupportImportBatch.query.filter_by(period=selected).order_by(
-        SupportImportBatch.started_at.desc()
-    ).limit(limit).all()
+def get_import_history(
+    period: Optional[str] = None,
+    limit: int = 20,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    start_at, end_at, _ = resolve_window(start_date, end_date, period)
+    batches = _support_batches(start_at, end_at)[:limit]
     result = []
     for batch in batches:
         stats = []
@@ -201,6 +400,10 @@ def get_import_history(period: Optional[str] = None, limit: int = 20) -> List[Di
         result.append({
             "id": batch.id,
             "period": batch.period,
+            "window_label": batch.window_label,
+            "granularity": batch.granularity,
+            "start_date": batch.range_start.date().isoformat() if batch.range_start else None,
+            "end_date": batch.range_end.date().isoformat() if batch.range_end else None,
             "status": batch.status,
             "files_count": batch.files_count or 0,
             "rows_total": batch.rows_total or 0,
@@ -213,15 +416,19 @@ def get_import_history(period: Optional[str] = None, limit: int = 20) -> List[Di
     return result
 
 
-def get_source_health(period: Optional[str] = None) -> Dict[str, Any]:
-    _, _, selected = month_range(period)
+def get_source_health(
+    period: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    start_at, end_at, selected = resolve_window(start_date, end_date, period)
     last_event = ZenviaWebhookEvent.query.order_by(ZenviaWebhookEvent.created_at.desc()).first()
     last_processed = ZenviaWebhookEvent.query.filter(
         ZenviaWebhookEvent.processed_at.isnot(None)
     ).order_by(ZenviaWebhookEvent.processed_at.desc()).first()
     pending = ZenviaWebhookEvent.query.filter_by(processed_at=None).count()
     total_events = ZenviaWebhookEvent.query.count()
-    imports = get_import_history(selected, limit=5)
+    imports = get_import_history(start_date=start_at.date().isoformat(), end_date=end_at.date().isoformat(), limit=5)
 
     return {
         "period": selected,
@@ -247,11 +454,13 @@ def get_conversations(
     q: Optional[str] = None,
     page: int = 1,
     page_size: int = 50,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
 ) -> Dict[str, Any]:
-    start, end, selected = month_range(period)
+    start_at, end_at, selected = resolve_window(start_date, end_date, period)
     query = SupportConversation.query.outerjoin(SupportContact).filter(
-        SupportConversation.created_at_zenvia >= start,
-        SupportConversation.created_at_zenvia < end,
+        SupportConversation.created_at_zenvia >= start_at,
+        SupportConversation.created_at_zenvia <= end_at,
     )
     if status:
         query = query.filter(SupportConversation.status == status)
@@ -272,6 +481,8 @@ def get_conversations(
 
     return {
         "period": selected,
+        "start_date": start_at.date().isoformat(),
+        "end_date": end_at.date().isoformat(),
         "page": page,
         "page_size": page_size,
         "total": total,
@@ -292,40 +503,174 @@ def get_conversations(
     }
 
 
-def get_overview(period: Optional[str] = None) -> Dict[str, Any]:
-    _, _, selected = month_range(period)
+def _group_label(value: datetime, group_by: str) -> str:
+    if group_by == "week":
+        week_start = value.date() - timedelta(days=value.weekday())
+        week_end = week_start + timedelta(days=6)
+        return f"{week_start.strftime('%d/%m')} a {week_end.strftime('%d/%m')}"
+    if group_by == "month":
+        return value.strftime("%m/%Y")
+    return value.strftime("%d/%m")
+
+
+def _group_datetime(value: datetime, group_by: str) -> datetime:
+    if group_by == "week":
+        week_start = value.date() - timedelta(days=value.weekday())
+        return start_of_day(week_start)
+    if group_by == "month":
+        return start_of_day(value.date().replace(day=1))
+    return start_of_day(value.date())
+
+
+def _timeline_for_window(start_at: datetime, end_at: datetime, group_by: str) -> List[Dict[str, Any]]:
+    buckets: Dict[datetime, Dict[str, Any]] = defaultdict(lambda: {
+        "bucket_date": None,
+        "label": "",
+        "new_conversations": 0,
+        "new_contacts": 0,
+        "closed_conversations": 0,
+        "interactions": 0,
+        "nps_sum": 0,
+        "nps_count": 0,
+    })
+
+    conversations = SupportConversation.query.filter(
+        SupportConversation.created_at_zenvia >= start_at,
+        SupportConversation.created_at_zenvia <= end_at,
+    ).all()
+    for conversation in conversations:
+        if not conversation.created_at_zenvia:
+            continue
+        bucket = _group_datetime(conversation.created_at_zenvia, group_by)
+        row = buckets[bucket]
+        row["bucket_date"] = bucket
+        row["label"] = _group_label(conversation.created_at_zenvia, group_by)
+        row["new_conversations"] += 1
+        if conversation.status == "CLOSED":
+            row["closed_conversations"] += 1
+        if conversation.nps_score is not None:
+            row["nps_sum"] += conversation.nps_score
+            row["nps_count"] += 1
+
+    contacts = SupportContact.query.filter(
+        SupportContact.created_at_zenvia >= start_at,
+        SupportContact.created_at_zenvia <= end_at,
+    ).all()
+    for contact in contacts:
+        if not contact.created_at_zenvia:
+            continue
+        bucket = _group_datetime(contact.created_at_zenvia, group_by)
+        row = buckets[bucket]
+        row["bucket_date"] = bucket
+        row["label"] = _group_label(contact.created_at_zenvia, group_by)
+        row["new_contacts"] += 1
+
+    messages = SupportMessage.query.filter(
+        SupportMessage.timestamp >= start_at,
+        SupportMessage.timestamp <= end_at,
+    ).all()
+    for message in messages:
+        if not message.timestamp:
+            continue
+        bucket = _group_datetime(message.timestamp, group_by)
+        row = buckets[bucket]
+        row["bucket_date"] = bucket
+        row["label"] = _group_label(message.timestamp, group_by)
+        row["interactions"] += 1
+
+    timeline = []
+    for bucket in sorted(buckets.keys()):
+        row = buckets[bucket]
+        timeline.append({
+            "label": row["label"],
+            "bucket_date": bucket.date().isoformat(),
+            "new_conversations": row["new_conversations"],
+            "new_contacts": row["new_contacts"],
+            "closed_conversations": row["closed_conversations"],
+            "interactions": row["interactions"],
+            "avg_nps": round(row["nps_sum"] / row["nps_count"], 2) if row["nps_count"] else None,
+        })
+    return timeline
+
+
+def _snapshot_rows(start_at: datetime, end_at: datetime, metric_type: str) -> List[SupportMetricSnapshot]:
+    return SupportMetricSnapshot.query.filter(
+        SupportMetricSnapshot.metric_type == metric_type,
+        SupportMetricSnapshot.range_start.isnot(None),
+        SupportMetricSnapshot.range_end.isnot(None),
+        SupportMetricSnapshot.range_start <= end_at,
+        SupportMetricSnapshot.range_end >= start_at,
+    ).all()
+
+
+def get_overview(
+    period: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    group_by: str = "day",
+) -> Dict[str, Any]:
+    start_at, end_at, selected = resolve_window(start_date, end_date, period)
+    group_by = group_by if group_by in {"day", "week", "month"} else "day"
+
     hourly = []
-    for row in _metric_rows(selected, "hourly_response"):
-        dims = _dimensions(row)
+    for row in _snapshot_rows(start_at, end_at, "hourly_response"):
+        dims = _load_dimensions(row)
         hourly.append({
             "hour": row.metric_key,
             "day": dims.get("day"),
             "seconds": row.value_float or 0,
+            "window_label": row.window_label,
         })
 
     close_reasons_map: Dict[str, Dict[str, Any]] = {}
-    for row in _metric_rows(selected, "close_reason"):
-        dims = _dimensions(row)
-        item = close_reasons_map.setdefault(row.metric_key, {"reason": row.metric_key})
-        item[dims.get("field", "value")] = row.value_float
+    for row in _snapshot_rows(start_at, end_at, "close_reason"):
+        dims = _load_dimensions(row)
+        item = close_reasons_map.setdefault(row.metric_key, {
+            "reason": row.metric_key,
+            "contacts": 0,
+            "conversations": 0,
+            "close_time_weighted": 0.0,
+            "close_time_weight": 0.0,
+        })
+        field_name = dims.get("field", "value")
+        if field_name == "close_time_seconds":
+            weight = item["conversations"] or 1
+            item["close_time_weighted"] += (row.value_float or 0) * weight
+            item["close_time_weight"] += weight
+        else:
+            item[field_name] = (item.get(field_name) or 0) + (row.value_float or 0)
 
-    daily_series = {}
-    for metric_type in ["new_conversations", "new_contacts", "closed_conversations", "interactions"]:
-        rows = _metric_rows(selected, metric_type)
-        daily_series[metric_type] = [{
-            "label": row.metric_key,
-            "value": row.value_float or 0,
-        } for row in rows]
+    close_reasons = []
+    for item in close_reasons_map.values():
+        close_reasons.append({
+            "reason": item["reason"],
+            "contacts": item["contacts"],
+            "conversations": item["conversations"],
+            "close_time_seconds": round(item["close_time_weighted"] / item["close_time_weight"], 0) if item["close_time_weight"] else 0,
+        })
+
+    timeline = _timeline_for_window(start_at, end_at, group_by)
+    daily_series = {
+        "new_conversations": [{"label": row["label"], "value": row["new_conversations"]} for row in timeline],
+        "new_contacts": [{"label": row["label"], "value": row["new_contacts"]} for row in timeline],
+        "closed_conversations": [{"label": row["label"], "value": row["closed_conversations"]} for row in timeline],
+        "interactions": [{"label": row["label"], "value": row["interactions"]} for row in timeline],
+    }
 
     return {
         "period": selected,
-        "kpis": get_support_kpis(selected),
-        "agents": get_agent_performance(selected),
-        "messages": get_recent_messages(20),
-        "nps_feedbacks": get_nps_feedbacks(selected, 20),
+        "start_date": start_at.date().isoformat(),
+        "end_date": end_at.date().isoformat(),
+        "group_by": group_by,
+        "window_label": f"{start_at.strftime('%d/%m/%Y')} a {end_at.strftime('%d/%m/%Y')}",
+        "kpis": get_support_kpis(start_date=start_at.date().isoformat(), end_date=end_at.date().isoformat()),
+        "agents": get_agent_performance(start_date=start_at.date().isoformat(), end_date=end_at.date().isoformat()),
+        "messages": get_recent_messages(20, start_at=start_at, end_at=end_at),
+        "nps_feedbacks": get_nps_feedbacks(start_date=start_at.date().isoformat(), end_date=end_at.date().isoformat(), limit=20),
         "hourly_response": hourly,
-        "close_reasons": sorted(close_reasons_map.values(), key=lambda item: item.get("conversations") or 0, reverse=True),
+        "close_reasons": sorted(close_reasons, key=lambda item: item.get("conversations") or 0, reverse=True),
         "daily_series": daily_series,
-        "source_health": get_source_health(selected),
-        "imports": get_import_history(selected, 5),
+        "timeline": timeline,
+        "source_health": get_source_health(start_date=start_at.date().isoformat(), end_date=end_at.date().isoformat()),
+        "imports": get_import_history(start_date=start_at.date().isoformat(), end_date=end_at.date().isoformat(), limit=5),
     }

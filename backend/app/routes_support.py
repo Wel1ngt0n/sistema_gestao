@@ -17,6 +17,7 @@ from app.services.support_metrics_service import (
     get_recent_messages,
     get_source_health,
     get_support_kpis,
+    get_windows,
 )
 
 support_bp = Blueprint("support_bp", __name__)
@@ -28,7 +29,9 @@ logger = logging.getLogger(__name__)
 @require_permission("support:view")
 def get_kpis(_payload):
     period = request.args.get("period")
-    return jsonify(get_support_kpis(period))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    return jsonify(get_support_kpis(period=period, start_date=start_date, end_date=end_date))
 
 
 @support_bp.route("/api/support/overview", methods=["GET"])
@@ -36,7 +39,10 @@ def get_kpis(_payload):
 @require_permission("support:view")
 def support_overview(_payload):
     period = request.args.get("period")
-    return jsonify(get_overview(period))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    group_by = request.args.get("group_by", "day")
+    return jsonify(get_overview(period=period, start_date=start_date, end_date=end_date, group_by=group_by))
 
 
 @support_bp.route("/api/support/source-health", methods=["GET"])
@@ -44,7 +50,9 @@ def support_overview(_payload):
 @require_permission("support:view")
 def support_source_health(_payload):
     period = request.args.get("period")
-    return jsonify(get_source_health(period))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    return jsonify(get_source_health(period=period, start_date=start_date, end_date=end_date))
 
 
 @support_bp.route("/api/support/imports", methods=["GET"])
@@ -53,7 +61,9 @@ def support_source_health(_payload):
 def support_imports(_payload):
     period = request.args.get("period")
     limit = int(request.args.get("limit", 20))
-    return jsonify(get_import_history(period, limit))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    return jsonify(get_import_history(period=period, limit=limit, start_date=start_date, end_date=end_date))
 
 
 @support_bp.route("/api/support/conversations", methods=["GET"])
@@ -64,9 +74,11 @@ def support_conversations(_payload):
     status = request.args.get("status")
     agent = request.args.get("agent")
     q = request.args.get("q")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
     page = int(request.args.get("page", 1))
     page_size = min(int(request.args.get("page_size", 50)), 200)
-    return jsonify(get_conversations(period, status, agent, q, page, page_size))
+    return jsonify(get_conversations(period, status, agent, q, page, page_size, start_date, end_date))
 
 
 @support_bp.route("/api/support/orphans", methods=["GET"])
@@ -198,12 +210,21 @@ def support_periods(_payload):
     return jsonify(get_periods())
 
 
+@support_bp.route("/api/support/windows", methods=["GET"])
+@require_auth
+@require_permission("support:view")
+def support_windows(_payload):
+    return jsonify(get_windows())
+
+
 @support_bp.route("/api/support/agent-performance", methods=["GET"])
 @require_auth
 @require_permission("support:view")
 def support_agent_performance(_payload):
     period = request.args.get("period")
-    return jsonify(get_agent_performance(period))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    return jsonify(get_agent_performance(period=period, start_date=start_date, end_date=end_date))
 
 
 @support_bp.route("/api/support/nps-feedbacks", methods=["GET"])
@@ -212,4 +233,6 @@ def support_agent_performance(_payload):
 def support_nps_feedbacks(_payload):
     period = request.args.get("period")
     limit = min(int(request.args.get("limit", 50)), 200)
-    return jsonify(get_nps_feedbacks(period, limit))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    return jsonify(get_nps_feedbacks(period=period, limit=limit, start_date=start_date, end_date=end_date))
