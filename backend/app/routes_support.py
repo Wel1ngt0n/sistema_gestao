@@ -3,7 +3,7 @@ from datetime import datetime
 
 from flask import Blueprint, current_app, jsonify, request
 
-from app.models import SupportContact, db
+from app.models import SupportContact, SupportConversation, db
 from app.services.event_processor_service import process_pending_zenvia_events
 from app.services.security_service import require_auth, require_permission
 from app.services.support_importer import import_support_files
@@ -236,3 +236,27 @@ def support_nps_feedbacks(_payload):
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
     return jsonify(get_nps_feedbacks(period=period, limit=limit, start_date=start_date, end_date=end_date))
+
+
+@support_bp.route("/api/support/conversations/<int:conversation_id>/agent", methods=["PATCH"])
+@require_auth
+@require_permission("support:manage_contacts")
+def update_support_conversation_agent(_payload, conversation_id: int):
+    data = request.json or {}
+    agent_name = (data.get("agent_name") or "").strip()
+
+    conversation = SupportConversation.query.get(conversation_id)
+    if not conversation:
+        return jsonify({"status": "error", "message": "Conversa nao encontrada."}), 404
+
+    conversation.agent_name = agent_name or None
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "message": "Atendente do NPS atualizado com sucesso.",
+        "conversation": {
+            "id": conversation.id,
+            "agent_name": conversation.agent_name,
+        },
+    })

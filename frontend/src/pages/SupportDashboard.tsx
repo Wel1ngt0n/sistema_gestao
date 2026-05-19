@@ -9,6 +9,8 @@ import {
   FileUp,
   Link2,
   MessageSquare,
+  Pencil,
+  Save,
   Search,
   ShieldCheck,
   Star,
@@ -279,6 +281,9 @@ export const SupportDashboard = () => {
   const [search, setSearch] = useState('');
   const [linkingContact, setLinkingContact] = useState<OrphanContact | null>(null);
   const [storeName, setStoreName] = useState('');
+  const [editingNpsId, setEditingNpsId] = useState<number | null>(null);
+  const [npsAgentDrafts, setNpsAgentDrafts] = useState<Record<number, string>>({});
+  const [savingNpsId, setSavingNpsId] = useState<number | null>(null);
 
   const kpis = overview?.kpis || emptyKpis;
   const maxCloseReason = useMemo(() => {
@@ -287,6 +292,17 @@ export const SupportDashboard = () => {
 
   const maxTimeline = useMemo(() => {
     return Math.max(...(overview?.timeline || []).map((item) => item.new_conversations), 1);
+  }, [overview]);
+
+  const availableAgents = useMemo(() => {
+    const set = new Set<string>();
+    (overview?.agents || []).forEach((agent) => {
+      if (agent.agent_name?.trim()) set.add(agent.agent_name.trim());
+    });
+    (overview?.nps_feedbacks || []).forEach((feedback) => {
+      if (feedback.agent_name?.trim()) set.add(feedback.agent_name.trim());
+    });
+    return Array.from(set).sort((left, right) => left.localeCompare(right, 'pt-BR'));
   }, [overview]);
 
   const fetchWindows = async () => {
@@ -361,6 +377,27 @@ export const SupportDashboard = () => {
     setLinkingContact(null);
     setStoreName('');
     await fetchData();
+  };
+
+  const startEditingNpsAgent = (feedback: NpsFeedback) => {
+    setEditingNpsId(feedback.id);
+    setNpsAgentDrafts((prev) => ({
+      ...prev,
+      [feedback.id]: feedback.agent_name || '',
+    }));
+  };
+
+  const saveNpsAgent = async (feedbackId: number) => {
+    setSavingNpsId(feedbackId);
+    try {
+      await api.patch(`/api/support/conversations/${feedbackId}/agent`, {
+        agent_name: (npsAgentDrafts[feedbackId] || '').trim(),
+      });
+      setEditingNpsId(null);
+      await fetchData();
+    } finally {
+      setSavingNpsId(null);
+    }
   };
 
   if (loading && !overview) {
@@ -648,7 +685,47 @@ export const SupportDashboard = () => {
                         <p className="text-sm font-semibold text-zinc-900">{feedback.contact_name}</p>
                         <SourceBadge source={feedback.source} />
                       </div>
-                      <p className="mt-1 text-xs text-zinc-500">{feedback.agent_name || 'Sem atendente'} - {formatDate(feedback.date)}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        {editingNpsId === feedback.id ? (
+                          <>
+                            <select
+                              value={npsAgentDrafts[feedback.id] ?? feedback.agent_name ?? ''}
+                              onChange={(event) => setNpsAgentDrafts((prev) => ({ ...prev, [feedback.id]: event.target.value }))}
+                              className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-800 outline-none focus:border-orange-300"
+                            >
+                              <option value="">Sem atendente</option>
+                              {availableAgents.map((agentName) => (
+                                <option key={agentName} value={agentName}>{agentName}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => saveNpsAgent(feedback.id)}
+                              disabled={savingNpsId === feedback.id}
+                              className="inline-flex items-center gap-1 rounded-md bg-[#ff7900] px-2 py-1 text-xs font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-300"
+                            >
+                              <Save size={12} />
+                              {savingNpsId === feedback.id ? 'Salvando' : 'Salvar'}
+                            </button>
+                            <button
+                              onClick={() => setEditingNpsId(null)}
+                              className="rounded-md border border-zinc-200 px-2 py-1 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50"
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs text-zinc-500">{feedback.agent_name || 'Sem atendente'} - {formatDate(feedback.date)}</p>
+                            <button
+                              onClick={() => startEditingNpsAgent(feedback)}
+                              className="inline-flex items-center gap-1 rounded-md border border-orange-200 px-2 py-1 text-[11px] font-semibold text-orange-600 transition hover:bg-orange-50"
+                            >
+                              <Pencil size={12} />
+                              Editar atendente
+                            </button>
+                          </>
+                        )}
+                      </div>
                       {feedback.nps_comment && <p className="mt-2 line-clamp-2 text-sm text-zinc-600">{feedback.nps_comment}</p>}
                     </div>
                   </div>
