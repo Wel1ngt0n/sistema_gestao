@@ -418,9 +418,16 @@ def _ensure_fallback_conversation(
     agent_name: Optional[str],
     group_name: Optional[str],
 ) -> SupportConversation:
-    slug = slugify(contact.phone or contact.name or str(contact.id))
+    identity_seed = get_hash(
+        f"{contact.id}|{contact.phone or ''}|{contact.name or ''}|{agent_name or ''}|{group_name or ''}|{ts.isoformat()}"
+    )[:16]
+    conv_id = f"CSV_ACTIVITY_{ts.strftime('%Y%m%d%H%M%S')}_{identity_seed}"[:100]
+    existing = SupportConversation.query.filter_by(zenvia_conversation_id=conv_id).first()
+    if existing:
+        return existing
+
     conv = SupportConversation(
-        zenvia_conversation_id=f"CSV_ACTIVITY_{slug}_{ts.strftime('%Y%m%d%H%M%S')}"[:100],
+        zenvia_conversation_id=conv_id,
         contact_id=contact.id,
         channel="whatsapp",
         status="OPEN",
@@ -513,6 +520,7 @@ def enrich_contacts_from_conversations_csv(data: Any, period: Optional[str] = No
             if (stats["contacts_created"] + stats["contacts_updated"]) % 500 == 0:
                 db.session.commit()
         except Exception as exc:
+            db.session.rollback()
             stats["errors"] += 1
             logger.debug("Erro ao enriquecer contato de suporte: %s", exc)
 
@@ -636,6 +644,9 @@ def import_zenvia_activities_csv(data: Any, period: Optional[str] = None) -> Dic
             if stats["messages_imported"] and stats["messages_imported"] % 1000 == 0:
                 db.session.commit()
         except Exception as exc:
+            db.session.rollback()
+            contact_cache.pop(contact_slug, None)
+            conv_cache.clear()
             stats["errors"] += 1
             logger.debug("Erro ao importar atividade Zenvia: %s", exc)
 
