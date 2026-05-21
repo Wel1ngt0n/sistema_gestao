@@ -11,6 +11,14 @@ import json
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
+@main_bp.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({
+        "status": "online",
+        "message": "pong",
+        "timestamp": datetime.now().isoformat()
+    })
+
 # Rotas principais consumidas pelo frontend React.
 
 @api_bp.route('/dashboard', methods=['GET'])

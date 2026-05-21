@@ -300,6 +300,20 @@ class AnalystsReportService:
             programadas = [s for s in stores if s.status_norm != 'DONE' and s.is_scheduled]
 
             concluidas = [s for s in stores if s.status_norm == 'DONE']
+
+            # Cálculo de lojas e tipos de lojas históricas (sem filtro de cutoff)
+            all_historical_stores = Store.query.filter(
+                or_(
+                    Store.implantador == imp,
+                    Store.implantador_atual == imp
+                ),
+                Store.status_norm != 'CANCELED'
+            ).all()
+
+            total_lojas_historico = len(all_historical_stores)
+            matrizes_historico = sum(1 for s in all_historical_stores if s.tipo_loja and s.tipo_loja.lower() == 'matriz')
+            filiais_historico = total_lojas_historico - matrizes_historico
+            ativos_momento = len(ativas)
             
             # Carga Ponderada (Somente Ativas)
             carga_ponderada = 0.0
@@ -398,7 +412,11 @@ class AnalystsReportService:
                 "pct_retrabalho": pct_retrabalho,
                 "idle_medio": round(idle_medio, 1),
                 "idle_critico_count": idle_critico_count,
-                "score": score
+                "score": score,
+                "total_lojas_historico": total_lojas_historico,
+                "matrizes_historico": matrizes_historico,
+                "filiais_historico": filiais_historico,
+                "ativos_momento": ativos_momento
             })
             
         # Sort by Carga Ponderada Descending by default

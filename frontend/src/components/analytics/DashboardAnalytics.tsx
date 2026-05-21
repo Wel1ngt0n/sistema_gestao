@@ -624,6 +624,8 @@ export default function DashboardAnalytics() {
                                                     <th className="px-3 py-3 text-center">Risco</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('carga_ponderada')}>Carga</th>
                                                     <th className="px-3 py-3 text-right">WIP</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('total_lojas_historico')}>Lojas Totais</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('matrizes_historico')}>Matriz/Filial (Hist.)</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('entregas_mes')}>Entregas</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('pct_retrabalho')}>Retr.</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleCockpitSort('idle_medio')}>Idle</th>
@@ -659,10 +661,10 @@ export default function DashboardAnalytics() {
                                                                 <PerformanceScoreBadge score={item.score?.score_final || 0} size="sm" />
                                                             </td>
                                                             <td className="px-3 py-2.5 text-center">
-                                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${risk === 'CRITICAL' ? 'bg-red-50 text-red-600' : risk === 'HIGH' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                                                                    {risk}
-                                                                </span>
-                                                            </td>
+                                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${risk === 'CRITICAL' ? 'bg-red-50 text-red-600' : risk === 'HIGH' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                                     {risk}
+                                                                 </span>
+                                                             </td>
                                                             <td className="px-3 py-2.5 text-right font-mono text-xs font-bold text-zinc-600">
                                                                 {item.carga_ponderada?.toFixed(1)}
                                                             </td>
@@ -671,6 +673,12 @@ export default function DashboardAnalytics() {
                                                                     <span className="text-xs font-bold text-zinc-700">{wipCount}</span>
                                                                     <span className="text-[9px] font-medium text-zinc-400">{wipPts?.toFixed(0)} pts</span>
                                                                 </div>
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-right font-mono text-xs font-bold text-zinc-600">
+                                                                {item.total_lojas_historico ?? 0}
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-right font-mono text-xs font-bold text-zinc-600">
+                                                                {item.matrizes_historico ?? 0} / {item.filiais_historico ?? 0}
                                                             </td>
                                                             <td className="px-4 py-4 text-right font-mono text-xs font-bold text-zinc-600">
                                                                 {item.entregas_mes}
