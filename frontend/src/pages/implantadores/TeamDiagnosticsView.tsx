@@ -29,6 +29,10 @@ interface AnalystResume {
     jarvis_status?: string
     recommendation?: string
     action_priority?: string
+    total_lojas_historico?: number
+    matrizes_historico?: number
+    filiais_historico?: number
+    ativos_momento?: number
 }
 
 const MetricCard = ({
@@ -63,7 +67,7 @@ export const TeamDiagnosticsView: React.FC = () => {
     const navigate = useNavigate()
     const [period, setPeriod] = useState<DateRange>({ start: null, end: null, label: 'Todo o Período' })
     const [loading, setLoading] = useState(true)
-    
+
     // Data states
     const [data, setData] = useState<AnalystResume[]>([])
     const [summary, setSummary] = useState<any>(null)
@@ -84,12 +88,12 @@ export const TeamDiagnosticsView: React.FC = () => {
         setLoading(true)
         try {
             // Mapping DateRange to backend period param or using dates
-            const periodParam = period.label === 'Mês Vigente' ? 'month' : 
-                               period.label === 'Semestre Atual' ? 'semester' : 
-                               period.label === 'YTD (Ano atual)' ? 'year' : 'all'
-            
+            const periodParam = period.label === 'Mês Vigente' ? 'month' :
+                period.label === 'Semestre Atual' ? 'semester' :
+                    period.label === 'YTD (Ano atual)' ? 'year' : 'all'
+
             const params = `?period=${periodParam}`
-            
+
             // Cockpit data (The enriched endpoint)
             const cockpitRes = await api.get(`/api/reports/implantadores/cockpit${params}`)
             setData(cockpitRes.data.analysts || [])
@@ -128,6 +132,8 @@ export const TeamDiagnosticsView: React.FC = () => {
             valA = a.score?.score_final || 0
             valB = b.score?.score_final || 0
         }
+        if (valA === undefined || valA === null) valA = 0
+        if (valB === undefined || valB === null) valB = 0
         if (valA < valB) return sortAsc ? -1 : 1
         if (valA > valB) return sortAsc ? 1 : -1
         return 0
@@ -277,8 +283,11 @@ export const TeamDiagnosticsView: React.FC = () => {
                                 <thead className="border-b border-zinc-100 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                                     <tr>
                                         <th className="cursor-pointer px-6 py-4 transition-colors hover:text-[#ff7900]" onClick={() => handleSort('implantador')}>Analista</th>
-                                        <th className="cursor-pointer px-6 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleSort('score')}>Score</th>
+                                        <th className="cursor-pointer px-6 py-4 text-center transition-colors hover:text-[#ff7900]" onClick={() => handleSort('score')}>Pontuação</th>
                                         <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('carga_ponderada')}>Carga</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('ativos_momento')}>Ativas</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('total_lojas_historico')}>Lojas Totais</th>
+                                        <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('matrizes_historico')}>Matriz/Filial (Hist.)</th>
                                         <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('entregas_mes')}>Entregas</th>
                                         <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('pct_retrabalho' as any)}>Retrabalho</th>
                                         <th className="cursor-pointer px-6 py-4 text-right transition-colors hover:text-[#ff7900]" onClick={() => handleSort('idle_medio')}>Idle</th>
@@ -287,8 +296,8 @@ export const TeamDiagnosticsView: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100">
                                     {sortedData.map((item, idx) => (
-                                        <tr 
-                                            key={idx} 
+                                        <tr
+                                            key={idx}
                                             onClick={() => navigate(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
                                             className="group cursor-pointer transition-colors hover:bg-zinc-50"
                                         >
@@ -305,6 +314,15 @@ export const TeamDiagnosticsView: React.FC = () => {
                                             </td>
                                             <td className={`px-6 py-4 text-right font-semibold ${item.carga_ponderada === extremes?.maxCarga ? 'bg-orange-50/40 text-orange-700' : 'text-zinc-600'}`}>
                                                 {item.carga_ponderada.toFixed(1)}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-semibold text-zinc-600">
+                                                {item.ativos_momento ?? item.ativos}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-semibold text-zinc-600">
+                                                {item.total_lojas_historico ?? 0}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-semibold text-zinc-600">
+                                                {item.matrizes_historico ?? 0} / {item.filiais_historico ?? 0}
                                             </td>
                                             <td className={`px-6 py-4 text-right font-semibold ${item.entregas_mes === extremes?.maxEntregas ? 'bg-emerald-50/40 text-emerald-700' : 'text-zinc-600'}`}>
                                                 {item.entregas_mes}

@@ -1,24 +1,26 @@
-﻿"Motivos de fechamento ao longo do tempo","02/05/2026","03/05/2026","04/05/2026","05/05/2026","06/05/2026","07/05/2026","08/05/2026"
-"Atribuições",7,0,44,23,42,32,14
-"Encerramento do chamado (Quando sem resposta, propaganda de lojas e etc)",1,0,0,2,8,18,6
-"Inativo",6,20,28,0,16,0,6
-"Integração - Erro carga de pedidos",0,0,1,0,0,1,1
-"Clientes do Lojista",0,0,1,0,1,0,0
-"Dúvidas do Sistema - Pedidos",0,0,4,1,0,0,2
-"Dúvidas do Sistema - Admin",0,0,4,1,12,4,9
-"Contato CS",0,0,1,0,1,1,0
-"Contato Proativo/Retorno de Solução",0,0,5,2,0,0,1
-"Solicitação de ajuda - admin",0,0,1,0,0,0,0
-"Dúvidas do Sistema - Pagamentos",0,0,0,3,2,2,3
-"Erros plataforma - Site",0,0,0,1,5,0,0
-"Solicitação de ajuda - Pagamentos",0,0,0,1,0,0,0
-"Dúvidas do Sistema - Relatórios",0,0,0,1,0,0,0
-"Feedbacks/Sugestões",0,0,0,1,0,0,0
-"Erro Pagamento - Crédito Online",0,0,0,0,1,0,0
-"Dúvidas do Sistema - Produtos",0,0,0,0,2,0,2
-"Erros plataforma - Admin",0,0,0,0,2,6,0
-"Solicitação de ajuda - Site",0,0,0,0,1,0,0
-"Contato Financeiro",0,0,0,0,1,0,0
-"Retorno de chamado do Lojista",0,0,0,0,2,1,4
-"Dúvidas do Sistema - Integrações",0,0,0,0,0,0,6
-"Erros plataforma - App separador",0,0,0,0,0,0,1
+﻿"Motivos de fechamento ao longo do tempo","04/05/2026","11/05/2026","18/05/2026"
+"Inativo",13,42,0
+"Dúvidas do Sistema - Pedidos",0,11,0
+"Atribuições",0,131,0
+"Encerramento do chamado (Quando sem resposta, propaganda de lojas e etc)",0,65,0
+"Dúvidas do Sistema - Admin",0,47,0
+"Retorno de chamado do Lojista",0,8,0
+"Dúvidas do Sistema - Integrações",0,6,0
+"Erros plataforma - Site",0,5,0
+"Solicitação de ajuda - Integrações",0,2,0
+"Contato Financeiro",0,6,0
+"Erros plataforma - Admin",0,10,0
+"Erros plataforma - App separador",0,16,0
+"Integração - Erro carga de pedidos",0,3,0
+"Dúvidas do Sistema - Pagamentos",0,6,0
+"Solicitação de ajuda - Pedidos",0,2,0
+"Clientes do Lojista",0,4,0
+"Contato Proativo/Retorno de Solução",0,3,0
+"Dúvidas do Sistema - Relatórios",0,1,0
+"Dúvidas do Sistema - Site",0,1,0
+"Contato CS",0,1,0
+"Solicitação de ajuda - Site",0,1,0
+"Dúvidas do Sistema - Produtos",0,3,0
+"Solicitação de ajuda - admin",0,1,0
+"Integração - Erro carga de produtos",0,2,0
+"Dúvidas do Sistema - Marketing",0,1,0

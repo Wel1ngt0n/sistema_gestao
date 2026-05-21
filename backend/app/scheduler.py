@@ -16,7 +16,7 @@ def init_scheduler(app):
         scheduler.start()
         logger.info("⏰ Scheduler iniciado com sucesso.")
     
-    # Rodar sync de warm-up (apenas se for o primeiro do dia)
+    # Rodar sync de warm-up (apenas se for o primeiro do dia ou perdeu horario)
     with app.app_context():
         try:
             from app.models import SyncState, db
@@ -26,10 +26,24 @@ def init_scheduler(app):
                 db.session.add(state)
                 db.session.commit()
             
-            # Se não sincronizou hoje ainda, rodar um Vital Sync agora
-            if not state.last_successful_sync_at or state.last_successful_sync_at.date() < datetime.now().date():
-                logger.info("🌅 Primeiro início do dia detectado. Rodando Warm-up Sync...")
-                # Agendar para rodar em 5 segundos para não travar o boot
+            now = datetime.now()
+            last_sync = state.last_successful_sync_at
+            
+            needs_sync = False
+            if not last_sync or last_sync.date() < now.date():
+                needs_sync = True
+            else:
+                # Verificar se perdeu algum dos agendamentos vitais (10,12,14,16,18)
+                vital_hours = [10, 12, 14, 16, 18]
+                passed_hours = [h for h in vital_hours if now.hour >= h]
+                if passed_hours:
+                    last_expected = now.replace(hour=max(passed_hours), minute=0, second=0, microsecond=0)
+                    if last_sync < last_expected:
+                        needs_sync = True
+
+            if needs_sync:
+                logger.info(f"🌅 Atraso ou inicio detectado. Ultimo sync: {last_sync}. Rodando Warm-up Sync...")
+                # Agendar para rodar em 5 segundos
                 scheduler.add_job(id='warmup_sync', func=scheduled_vital_sync, trigger='date', run_date=datetime.now())
         except Exception as e:
             logger.error(f"Erro ao verificar warm-up sync: {e}")
