@@ -231,6 +231,11 @@ export default function MonitorV2() {
             return;
         }
 
+        const formatarCnpjParaExcel = (valor: string | null | undefined) => {
+            const cnpj = (valor || '').replace(/\D/g, '').padStart(14, '0');
+            return cnpj ? `="${cnpj}"` : '';
+        };
+
         const headers = [
             "ID", "Nome da Loja", "ID Personalizado", "Status", "Status Normalizado",
             "Implantador", "Dias em Trânsito", "Dias Ociosos (Parado)", "Score de Risco",
@@ -257,7 +262,7 @@ export default function MonitorV2() {
             s.valor_implantacao || 0,
             s.financeiro_status || '',
             s.erp || '',
-            (s.cnpj || '').replace(/\D/g, ''),
+            formatarCnpjParaExcel(s.cnpj),
             s.teve_retrabalho ? 'Sim' : 'Não',
             s.delivered_with_quality ? 'Sim' : 'Não',
             s.tempo_contrato || 0,

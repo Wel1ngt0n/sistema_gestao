@@ -1,6 +1,7 @@
 import io
 import re
 import unicodedata
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
@@ -68,7 +69,42 @@ def normalizar_texto(valor: Any) -> str:
 
 
 def normalizar_cnpj(valor: Any) -> str:
-    return re.sub(r"\D", "", str(valor or ""))
+    texto = str(valor or "").strip()
+    if not texto:
+        return ""
+
+    if texto.startswith('="') and texto.endswith('"'):
+        texto = texto[2:-1]
+
+    texto = texto.lstrip("'").strip()
+
+    if re.fullmatch(r"\d+[.,]0+", texto):
+        texto = re.split(r"[.,]", texto, maxsplit=1)[0]
+
+    candidato_decimal = texto.replace(" ", "")
+    if "," in candidato_decimal and "." not in candidato_decimal:
+        candidato_decimal = candidato_decimal.replace(",", ".")
+
+    if re.fullmatch(r"\d+(\.\d+)?([eE][+-]?\d+)?", candidato_decimal):
+        try:
+            numero = Decimal(candidato_decimal)
+            if numero == numero.to_integral_value():
+                texto = str(numero.to_integral_value())
+        except InvalidOperation:
+            pass
+
+    digitos = re.sub(r"\D", "", texto)
+    if not digitos:
+        return ""
+
+    if len(digitos) > 14 and digitos.endswith("00"):
+        while len(digitos) > 14 and digitos.endswith("00"):
+            digitos = digitos[:-2]
+
+    if len(digitos) < 14:
+        digitos = digitos.zfill(14)
+
+    return digitos
 
 
 def valor_vazio(valor: Any) -> bool:
