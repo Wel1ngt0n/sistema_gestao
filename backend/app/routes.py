@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, Response, stream_with_context, current_app
 from app.models import db, Store, StoreSyncLog, SystemConfig
+from app.services.monitor_import_service import importar_planilha_monitor
 from app.services.metrics import MetricsService
 from app.services.sync_service import SyncService
 from app.services.security_service import require_auth, require_permission, log_audit
@@ -748,6 +749,67 @@ def bulk_update_stores(payload):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/stores/import-spreadsheet', methods=['POST', 'OPTIONS'])
+@require_auth
+def importar_planilha_lojas(payload):
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
+    arquivo = request.files.get("arquivo")
+    if not arquivo or not arquivo.filename:
+        return jsonify({"status": "error", "message": "Nenhum arquivo foi enviado."}), 400
+
+    nome_arquivo = (arquivo.filename or "").lower()
+    if not nome_arquivo.endswith((".csv", ".xlsx", ".xls")):
+        return jsonify({"status": "error", "message": "Envie um arquivo CSV ou Excel (.xlsx/.xls)."}), 400
+
+    arquivo.stream.seek(0, 2)
+    tamanho = arquivo.stream.tell()
+    arquivo.stream.seek(0)
+    if tamanho <= 0:
+        return jsonify({"status": "error", "message": "O arquivo enviado esta vazio."}), 400
+
+    limite_mb = 15
+    if tamanho > limite_mb * 1024 * 1024:
+        return jsonify({"status": "error", "message": f"O arquivo excede o limite de {limite_mb}MB."}), 413
+
+    modo = (request.form.get("modo") or "atualizacao_campos").strip()
+    atualizar_nao_listadas = (request.form.get("atualizar_nao_listadas") or "").strip().lower() == "true"
+    status_financeiro_padrao = (request.form.get("status_financeiro_padrao") or "Pago").strip() or "Pago"
+
+    try:
+        resultado = importar_planilha_monitor(
+            arquivo=arquivo,
+            modo=modo,
+            atualizar_nao_listadas=atualizar_nao_listadas,
+            status_financeiro_padrao=status_financeiro_padrao,
+        )
+        db.session.commit()
+
+        detalhes_auditoria = {
+            "arquivo": resultado.get("arquivo"),
+            "modo": resultado.get("modo"),
+            "linhas_total": resultado.get("linhas_total"),
+            "lojas_atualizadas": resultado.get("lojas_atualizadas"),
+            "nao_encontradas_total": resultado.get("nao_encontradas_total"),
+            "lojas_desmarcadas_nao_pagantes": resultado.get("lojas_desmarcadas_nao_pagantes"),
+        }
+        log_audit(
+            "MONITOR_IMPORT_SPREADSHEET",
+            resource_type="store",
+            details=detalhes_auditoria,
+            user_id=payload.get("sub"),
+        )
+        return jsonify({"status": "success", "result": resultado}), 200
+    except ValueError as exc:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Erro ao importar planilha do monitor")
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 @api_bp.route('/stores/<int:id>/observations', methods=['GET'])
 @require_auth

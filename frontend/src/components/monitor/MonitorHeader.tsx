@@ -1,6 +1,6 @@
 import { FilterState } from './MonitorFilterPanel';
 import { useMemo, useState } from 'react';
-import { ChevronDown, Download, Eye, Filter, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronDown, Download, Eye, Filter, RefreshCw, Search, SlidersHorizontal, Upload, X } from 'lucide-react';
 import { KanbanFieldKey, KANBAN_FIELD_OPTIONS } from './MonitorKanbanView';
 
 interface MonitorHeaderProps {
@@ -19,6 +19,7 @@ interface MonitorHeaderProps {
     kanbanFields: KanbanFieldKey[];
     setKanbanFields: (fields: KanbanFieldKey[]) => void;
     handleExportCSV: () => void;
+    handleOpenImportModal: () => void;
 }
 
 export default function MonitorHeader({
@@ -36,7 +37,8 @@ export default function MonitorHeader({
     setViewMode,
     kanbanFields,
     setKanbanFields,
-    handleExportCSV
+    handleExportCSV,
+    handleOpenImportModal
 }: MonitorHeaderProps) {
     const hasActiveFilters = Object.values(advancedFilters).some(v => Array.isArray(v) ? v.length > 0 : !!v);
     const [filtersOpen, setFiltersOpen] = useState(false);
@@ -109,6 +111,13 @@ export default function MonitorHeader({
                     </div>
 
                     <div className="flex items-center gap-2 self-start xl:self-center">
+                        <button
+                            onClick={handleOpenImportModal}
+                            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                            title="Importar planilha"
+                        >
+                            <Upload size={17} />
+                        </button>
                         <button
                             onClick={handleExportCSV}
                             className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"

@@ -11,6 +11,7 @@ numpy
 gunicorn
 google-genai
 openai
+openpyxl
 # Segurança / Auth
 PyJWT
 pyotp
