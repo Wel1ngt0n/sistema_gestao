@@ -11,6 +11,7 @@ import { FilterState } from './monitor/MonitorFilterPanel';
 import MonitorHeader from './monitor/MonitorHeader';
 import BulkActionBar from './monitor/BulkActionBar';
 import BulkUpdateModal from './monitor/BulkUpdateModal';
+import MonitorImportModal from './monitor/MonitorImportModal';
 
 export default function MonitorV2() {
     const [data, setData] = useState<Store[]>([]);
@@ -54,6 +55,8 @@ export default function MonitorV2() {
     const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [bulkLoading, setBulkLoading] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importLoading, setImportLoading] = useState(false);
 
     // Recommendation State
 
@@ -254,7 +257,7 @@ export default function MonitorV2() {
             s.valor_implantacao || 0,
             s.financeiro_status || '',
             s.erp || '',
-            s.cnpj || '',
+            (s.cnpj || '').replace(/\D/g, ''),
             s.teve_retrabalho ? 'Sim' : 'Não',
             s.delivered_with_quality ? 'Sim' : 'Não',
             s.tempo_contrato || 0,
@@ -277,6 +280,48 @@ export default function MonitorV2() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const handleImportSpreadsheet = async (dados: {
+        arquivo: File;
+        modo: 'atualizacao_campos' | 'financeiro_pagantes';
+        atualizarNaoListadas: boolean;
+        statusFinanceiroPadrao: string;
+    }) => {
+        const formData = new FormData();
+        formData.append('arquivo', dados.arquivo);
+        formData.append('modo', dados.modo);
+        formData.append('atualizar_nao_listadas', String(dados.atualizarNaoListadas));
+        formData.append('status_financeiro_padrao', dados.statusFinanceiroPadrao);
+
+        setImportLoading(true);
+        try {
+            const resposta = await api.post('/api/stores/import-spreadsheet', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            const resultado = resposta.data?.result;
+            fetchStores(true);
+
+            const resumo = [
+                `Lojas atualizadas: ${resultado?.lojas_atualizadas ?? 0}`,
+                `Linhas ignoradas: ${resultado?.linhas_ignoradas ?? 0}`,
+                `CNPJs nao encontrados: ${resultado?.nao_encontradas_total ?? 0}`,
+            ];
+
+            if ((resultado?.lojas_desmarcadas_nao_pagantes ?? 0) > 0) {
+                resumo.push(`Lojas marcadas como nao pagantes: ${resultado.lojas_desmarcadas_nao_pagantes}`);
+            }
+
+            alert(`Importacao concluida com sucesso.\n\n${resumo.join('\n')}`);
+        } catch (erro: any) {
+            console.error("Erro ao importar planilha do monitor", erro);
+            const mensagem = erro?.response?.data?.message || "Ocorreu um erro ao importar a planilha.";
+            alert(mensagem);
+            throw erro;
+        } finally {
+            setImportLoading(false);
+        }
     };
 
     // Estatísticas memoizadas para o cabeçalho.
@@ -315,6 +360,7 @@ export default function MonitorV2() {
                 kanbanFields={kanbanFields}
                 setKanbanFields={setKanbanFields}
                 handleExportCSV={handleExportCSV}
+                handleOpenImportModal={() => setIsImportModalOpen(true)}
             />
 
             {/* Área de Conteúdo */}
@@ -361,6 +407,13 @@ export default function MonitorV2() {
                 selectedCount={Object.keys(rowSelection).length}
                 onConfirm={handleBulkUpdate}
                 isLoading={bulkLoading}
+            />
+
+            <MonitorImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onConfirm={handleImportSpreadsheet}
+                isLoading={importLoading}
             />
 
             <MonitorStoreModal
