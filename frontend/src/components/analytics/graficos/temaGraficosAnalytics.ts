@@ -24,57 +24,61 @@ export const formatarNumero = (valor?: number | null) => {
     return new Intl.NumberFormat('pt-BR').format(valor || 0);
 };
 
-export const opcoesGraficoExecutivo = <TipoGrafico extends 'bar' | 'line' = 'bar'>(): ChartOptions<TipoGrafico> => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-        intersect: false,
-        mode: 'index',
-    },
-    layout: {
-        padding: { top: 8, right: 8, bottom: 0, left: 0 },
-    },
-    plugins: {
-        legend: {
-            position: 'bottom',
-            align: 'start',
-            labels: {
-                boxHeight: 8,
-                boxWidth: 18,
-                color: coresAnalytics.textoSuave,
-                padding: 18,
-                usePointStyle: true,
-                font: { size: 11, weight: 500 },
+export const opcoesGraficoExecutivo = <TipoGrafico extends 'bar' | 'line' = 'bar'>(): ChartOptions<TipoGrafico> => {
+    const opcoes = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index' as const,
+        },
+        layout: {
+            padding: { top: 8, right: 8, bottom: 0, left: 0 },
+        },
+        plugins: {
+            legend: {
+                position: 'bottom' as const,
+                align: 'start' as const,
+                labels: {
+                    boxHeight: 8,
+                    boxWidth: 18,
+                    color: coresAnalytics.textoSuave,
+                    padding: 18,
+                    usePointStyle: true,
+                    font: { size: 11, weight: '500' },
+                },
+            },
+            tooltip: {
+                backgroundColor: coresAnalytics.texto,
+                titleColor: coresAnalytics.fundo,
+                bodyColor: '#e4e4e7',
+                borderColor: '#27272a',
+                borderWidth: 1,
+                cornerRadius: 8,
+                displayColors: true,
+                padding: 12,
+                boxPadding: 6,
+                titleFont: { size: 13, weight: 'bold' },
+                bodyFont: { size: 12 },
             },
         },
-        tooltip: {
-            backgroundColor: coresAnalytics.texto,
-            titleColor: coresAnalytics.fundo,
-            bodyColor: '#e4e4e7',
-            borderColor: '#27272a',
-            borderWidth: 1,
-            cornerRadius: 8,
-            displayColors: true,
-            padding: 12,
-            boxPadding: 6,
-            titleFont: { size: 13, weight: 'bold' },
-            bodyFont: { size: 12 },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { color: coresAnalytics.textoSuave, font: { size: 11 } },
+                border: { display: false },
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
+                ticks: { color: coresAnalytics.textoSuave, font: { size: 11 } },
+                border: { display: false },
+            },
         },
-    },
-    scales: {
-        x: {
-            grid: { display: false },
-            ticks: { color: coresAnalytics.textoSuave, font: { size: 11 } },
-            border: { display: false },
-        },
-        y: {
-            beginAtZero: true,
-            grid: { color: 'rgba(100, 116, 139, 0.12)', drawTicks: false },
-            ticks: { color: coresAnalytics.textoSuave, font: { size: 11 } },
-            border: { display: false },
-        },
-    },
-});
+    };
+
+    return opcoes as unknown as ChartOptions<TipoGrafico>;
+};
 
 export const estiloBarraLaranja = {
     backgroundColor: 'rgba(255, 121, 0, 0.28)',
