@@ -1,0 +1,891 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime, timedelta
+
+db = SQLAlchemy()
+
+class SyncState(db.Model):
+    """
+    Controla o estado global da sincronização (Shallow Sync).
+    Padrão Singleton (apenas 1 registro com id=1).
+    """
+    __tablename__ = 'sync_state'
+    id = db.Column(db.Integer, primary_key=True)
+    last_shallow_sync_at = db.Column(db.DateTime, nullable=True)
+    last_successful_sync_at = db.Column(db.DateTime, nullable=True)
+    in_progress = db.Column(db.Boolean, default=False)
+    
+    def __repr__(self):
+        return f'<SyncState Last: {self.last_shallow_sync_at}>'
+
+class SystemConfig(db.Model):
+    """
+    Configurações globais do sistema (pesos, metas, etc).
+    """
+    __tablename__ = 'system_config'
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.String(200))
+    category = db.Column(db.String(50), default='general')
+
+class StorePause(db.Model):
+    """
+    Registra períodos de pausa/congelamento da implantação.
+    Estes períodos são descontaos do cálculo de dias em progresso.
+    """
+    __tablename__ = 'store_pauses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=True) # None = Pausa em aberto
+    reason = db.Column(db.String(255), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    def __repr__(self):
+        return f'<Pause {self.start_date} - {self.end_date}>'
+
+
+class StoreObservation(db.Model):
+    __tablename__ = 'store_observations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    texto = db.Column(db.Text, nullable=False)
+    autor = db.Column(db.String(255), nullable=True)
+    tipo = db.Column(db.String(50), nullable=True, default='observacao') # observacao, alerta, bloqueio, follow-up
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    def __repr__(self):
+        return f'<StoreObservation {self.id} Store {self.store_id}>'
+
+
+class Store(db.Model):
+    __tablename__ = 'stores'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_name = db.Column(db.String(255), nullable=False)
+    custom_store_id = db.Column(db.String(50), unique=True, nullable=True) # Ex: F0H-533
+    clickup_task_id = db.Column(db.String(50), unique=True, nullable=False)
+    clickup_url = db.Column(db.String(255))
+    
+    # Status
+    status = db.Column(db.String(255)) # Status de Exibição Atual/Legado
+    status_raw = db.Column(db.String(255)) # Status Original do ClickUp
+    status_norm = db.Column(db.String(100), default="IN_PROGRESS") # Normalizado: IN_PROGRESS, DONE, BLOCKED, NOT_STARTED
+    
+    # Datas
+    created_at = db.Column(db.DateTime)
+    finished_at = db.Column(db.DateTime, nullable=True) # Data de Conclusão do ClickUp
+    
+    start_real_at = db.Column(db.DateTime, nullable=True) # Snapshot: data de início ou criação
+    end_real_at = db.Column(db.DateTime, nullable=True) # Último evento de conclusão OU Fim Manual
+    
+    # Métricas
+    total_time_days = db.Column(db.Float, default=0.0) # Calculado
+    idle_days = db.Column(db.Integer, default=0) # Dias desde o último evento
+    
+    # Pessoas
+    implantador = db.Column(db.String(255), nullable=True) # Responsável Atual
+    implantador_original = db.Column(db.String(255), nullable=True) # Primeiro responsável
+    implantador_atual = db.Column(db.String(255), nullable=True) # Atual explícito
+    integrador = db.Column(db.String(255), nullable=True) # Responsável Integração (V3)
+    
+    # Campos de Negócio / Comerciais (Sync ou Manual)
+    valor_mensalidade = db.Column(db.Float, default=0.0)
+    valor_implantacao = db.Column(db.Float, default=0.0)
+    financeiro_status = db.Column(db.String(100), default="Não paga mensalidade")
+    erp = db.Column(db.Text)
+    cnpj = db.Column(db.Text)
+    crm = db.Column(db.Text)
+    
+    # Novos Campos (Solicitação V3)
+    rede = db.Column(db.String(255)) # Nome da Rede (ex: Grupo Pão de Açúcar)
+    tipo_loja = db.Column(db.String(100), default='Filial') # Matriz ou Filial
+    
+    # Relacionamento Matriz-Filial
+    parent_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=True)
+    filiais = db.relationship('Store', backref=db.backref('matriz', remote_side=[id]), lazy=True)
+
+    # Controle Manual
+    observacoes = db.Column(db.Text, nullable=True)
+    tempo_contrato = db.Column(db.Integer, default=90)
+
+    # Raio-X: Contexto Verbal
+    description = db.Column(db.Text, nullable=True)
+    last_comments = db.Column(db.Text, nullable=True) # JSON stringified list
+    last_parent_comment_at = db.Column(db.DateTime, nullable=True)
+    last_parent_comment_by = db.Column(db.String(255), nullable=True)
+
+    manual_finished_at = db.Column(db.DateTime, nullable=True) # Sobrescrita manual
+    
+    considerar_tempo_implantacao = db.Column(db.Boolean, default=True)
+    justificativa_tempo_implantacao = db.Column(db.String(255), nullable=True)
+    
+    # Retrabalho & Qualidade
+    teve_retrabalho = db.Column(db.Boolean, default=False)
+    retrabalho_tipo = db.Column(db.String(100), nullable=True)
+    delivered_with_quality = db.Column(db.Boolean, default=True)
+    
+    # Controle de Datas Manual (V4)
+    manual_start_date = db.Column(db.DateTime, nullable=True)
+    is_manual_start_date = db.Column(db.Boolean, default=False)
+
+    # AI Cache
+    ai_summary = db.Column(db.Text, nullable=True)
+    ai_analyzed_at = db.Column(db.DateTime, nullable=True)
+
+    # Campos de Previsão & CS (V5)
+    address = db.Column(db.Text, nullable=True)
+    state_uf = db.Column(db.String(2), nullable=True)
+    had_ecommerce = db.Column(db.Boolean, default=False)
+    previous_platform = db.Column(db.String(100), nullable=True)
+    deployment_type = db.Column(db.String(50), default='MIGRAÇÃO') # NOVA or MIGRAÇÃO
+    projected_orders = db.Column(db.Integer, default=0)
+    order_rate = db.Column(db.Float, default=0.0) # Taxa %
+    manual_go_live_date = db.Column(db.DateTime, nullable=True)
+    forecast_obs = db.Column(db.Text, nullable=True)
+    include_in_forecast = db.Column(db.Boolean, default=True)
+
+    # Inteligência de Tarefa (V6)
+    assignees_json = db.Column(db.Text, nullable=True) # JSON de membros/avatares
+    total_time_tracked = db.Column(db.Integer, default=0) # Total em segundos
+
+    
+    # Relacionamentos
+    steps = db.relationship('TaskStep', backref='store', lazy=True, cascade="all, delete-orphan")
+    pauses = db.relationship('StorePause', backref='store', lazy=True, cascade="all, delete-orphan")
+    observations = db.relationship('StoreObservation', backref='store', lazy=True, cascade="all, delete-orphan")
+    deep_sync_state = db.relationship('StoreDeepSyncState', uselist=False, backref='store', cascade="all, delete-orphan")
+
+    status_history = db.relationship('TimeInStatusCache', backref='store', lazy=True, cascade="all, delete-orphan")
+    logs = db.relationship('StoreSyncLog', backref='store', lazy=True, cascade="all, delete-orphan")
+
+    @property
+    def is_scheduled(self):
+        """
+        Define se a loja está em estado programado (futuro).
+        Lojas programadas não contam para métricas de WIP/SLA.
+        """
+        start = self.effective_started_at
+        if not start:
+            return False
+        return start > datetime.now()
+
+    @property
+    def effective_finished_at(self):
+        # Prioridade: Manual > Real (Fim Etapa) > ClickUp Closed
+        # Se estiver DONE mas sem data explícita, buscar a data da última subtarefa concluída
+        main_date = self.manual_finished_at or self.end_real_at or self.finished_at
+        if main_date:
+            return main_date
+            
+        if self.status_norm == 'DONE' and self.steps:
+             # Fallback 2: Data da última etapa concluída
+             concluded_steps = [s.end_real_at for s in self.steps if s.end_real_at]
+             if concluded_steps:
+                 return max(concluded_steps)
+                 
+        return None
+
+    @property
+    def effective_started_at(self):
+        # Se existir manual_start_date, ela define a effective_start_date. 
+        # Se não existir, usar clickup_created_at.
+        return self.manual_start_date or self.created_at
+
+    @property
+    def dias_em_progresso(self):
+        if self.is_scheduled:
+            return 0
+            
+        end_date = self.effective_finished_at
+        start_date = self.effective_started_at
+        
+        if not start_date:
+            return 0
+            
+        # Data de referência final (Data de Fim ou Hoje)
+        if self.status_norm == 'DONE':
+            # Se já está concluído, o fim DEVE ser a data de conclusão.
+            # Se não tiver data de conclusão gravada, retornamos a diferença até a criação (ou 0) 
+            # para evitar que conte até 'hoje' e fique falso-atrasado.
+            ref_end = end_date or self.created_at
+        else:
+            ref_end = end_date or datetime.now()
+        
+        # Delta Total Bruto
+        delta = ref_end - start_date
+        total_days = max(0, delta.days)
+        
+        # Calcular dias pausados
+        paused_days = 0
+        for pause in self.pauses:
+            # Pausa deve estar dentro do intervalo [start_date, ref_end]
+            # Se a pausa começou depois de ref_end, ignora
+            p_start = pause.start_date
+            if p_start > ref_end:
+                continue
+                
+            # Se a pausa terminou antes do start_date, ignora (teoricamente nao deve existir)
+            p_end = pause.end_date or datetime.now()
+            if p_end < start_date:
+                continue
+                
+            # Interseção
+            eff_start = max(p_start, start_date)
+            eff_end = min(p_end, ref_end)
+            
+            if eff_end > eff_start:
+                p_delta = eff_end - eff_start
+                paused_days += p_delta.days
+                
+        # Descontar pausas
+        return max(0, total_days - paused_days)
+
+    @property
+    def dias_totais_implantacao(self):
+        return self.dias_em_progresso
+
+    @property
+    def data_previsao_implantacao(self):
+        start_date = self.effective_started_at
+        if start_date:
+            days = self.tempo_contrato or 90
+            return start_date + timedelta(days=days)
+        return None
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.store_name,
+            "custom_id": self.custom_store_id,
+            "status_name": self.status,
+            "status_norm": self.status_norm,
+            "tipo_loja": self.tipo_loja,
+            "dias_em_progresso": self.dias_em_progresso,
+            "idle_days": self.idle_days or 0,
+            "tempo_contrato": self.tempo_contrato or 90,
+            "valor_mensalidade": self.valor_mensalidade,
+            "finished_at": self.effective_finished_at.isoformat() if self.effective_finished_at else None,
+            "started_at": self.effective_started_at.isoformat() if self.effective_started_at else None,
+            "is_scheduled": self.is_scheduled,
+            "clickup_created_at": self.created_at.isoformat() if self.created_at else None,
+            "manual_start_date": self.manual_start_date.isoformat() if self.manual_start_date else None
+        }
+
+    def __repr__(self):
+        return f'<Store {self.custom_store_id or self.store_name}>'
+
+class StoreSyncLog(db.Model):
+    """
+    Registra histórico de mudanças em campos específicos da loja.
+    """
+    __tablename__ = 'store_sync_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    field_name = db.Column(db.String(50), nullable=False)
+    old_value = db.Column(db.Text, nullable=True)
+    new_value = db.Column(db.Text, nullable=True)
+    
+    changed_at = db.Column(db.DateTime, default=datetime.now)
+    source = db.Column(db.String(20), default='sync') # 'sync' or 'manual'
+    
+    def __repr__(self):
+        return f'<SyncLog {self.store_id} {self.field_name}: {self.old_value}->{self.new_value}>'
+
+class StoreDeepSyncState(db.Model):
+    """
+    Controla o estado do Deep Sync (histórico) por loja.
+    """
+    __tablename__ = 'store_deep_sync_state'
+    
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), primary_key=True)
+    last_deep_sync_at = db.Column(db.DateTime, nullable=True)
+    sync_status = db.Column(db.String(20), default="NEVER") # NEVER, PARTIAL, COMPLETE, FAILED
+    last_error = db.Column(db.Text, nullable=True)
+    
+    # Para evitar chamadas desnecessárias API:
+    # Se clickup_updated_at da loja não mudou, não precisamos rodar deep sync de novo
+    last_synced_clickup_updated_at = db.Column(db.String(50), nullable=True) 
+
+class TimeInStatusCache(db.Model):
+    """
+    Cache do histórico de tempo em cada status (Deep Sync).
+    Pode vir do endpoint /task/{id}/time_in_status
+    """
+    __tablename__ = 'time_in_status_cache'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    status_name = db.Column(db.String(50), nullable=False)
+    total_seconds = db.Column(db.Integer, default=0)
+    total_days = db.Column(db.Float, default=0.0)
+    
+    # Se quisermos detalhe de intervalos depois, criar outra tabela
+    # Por enquanto, agregado por status é muito útil para gargalos
+    
+    updated_at = db.Column(db.DateTime, default=datetime.now)
+
+class TaskStep(db.Model):
+    __tablename__ = 'tasks_steps'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    clickup_task_id = db.Column(db.String(50), unique=True, nullable=False)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    
+    step_list_name = db.Column(db.String(100)) # e.g. "TREINAMENTO"
+    step_name = db.Column(db.String(150)) # Nome da Tarefa
+    assignee = db.Column(db.String(100), nullable=True)
+    status = db.Column(db.String(50))
+    
+    created_at = db.Column(db.DateTime)
+    closed_at = db.Column(db.DateTime, nullable=True)
+    
+    start_real_at = db.Column(db.DateTime, nullable=True)
+    end_real_at = db.Column(db.DateTime, nullable=True)
+    total_time_days = db.Column(db.Float, default=0.0)
+    idle_days = db.Column(db.Integer, default=0)
+    
+    reopen_count = db.Column(db.Integer, default=0)
+
+    # Raio-X: Contexto Verbal
+    description = db.Column(db.Text, nullable=True)
+    last_comments = db.Column(db.Text, nullable=True) # JSON stringified
+
+
+    def __repr__(self):
+        return f'<TaskStep {self.step_name} [{self.status}]>'
+
+class StatusEvent(db.Model):
+    """
+    Histórico Bruto/Legado se necessário.
+    """
+    __tablename__ = 'status_events'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    clickup_task_id = db.Column(db.String(50), nullable=False, index=True)
+    
+    old_status = db.Column(db.String(50))
+    new_status = db.Column(db.String(50))
+    changed_at = db.Column(db.DateTime, nullable=False)
+    changed_by = db.Column(db.String(100), nullable=True)
+    
+    entity_type = db.Column(db.String(20)) # 'store' ou 'step'
+
+    def __repr__(self):
+        return f'<Event {self.clickup_task_id}: {self.old_status}->{self.new_status}>'
+
+class MetricsSnapshot(db.Model):
+    __tablename__ = 'metrics_snapshot'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    reference_date = db.Column(db.DateTime, default=datetime.now)
+    
+    total_lojas_em_progresso = db.Column(db.Integer)
+    total_lojas_concluidas = db.Column(db.Integer)
+    mrr_em_implantacao = db.Column(db.Float)
+    pct_no_prazo = db.Column(db.Float)
+
+    def __repr__(self):
+        return f'<Snapshot {self.reference_date}>'
+
+class MetricsSnapshotDaily(db.Model):
+    """
+    Snapshot diário granular por loja.
+    Permite reconstruir histórico e alimentar gráficos de tendência com precisão.
+    """
+    __tablename__ = 'metrics_snapshot_daily'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    snapshot_date = db.Column(db.Date, nullable=False, index=True)
+    
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False, index=True)
+    
+    # Dimensões para Filtro Rápido
+    implantador = db.Column(db.String(100), index=True)
+    rede = db.Column(db.String(100))
+    status_norm = db.Column(db.String(50)) # DONE, IN_PROGRESS, etc
+    
+    # Métricas Calculadas no Dia
+    days_in_stage = db.Column(db.Integer) # Dias na etapa atual
+    idle_days = db.Column(db.Integer)      # Dias sem mexer
+    wip_points = db.Column(db.Float)       # Pontos de esforço se WIP
+    mrr = db.Column(db.Float)              # Valor financeiro
+    risk_score = db.Column(db.Float)       # 0-100
+    
+    # Relacionamento Loja
+    store = db.relationship('Store', backref=db.backref('daily_snapshots', cascade='all, delete-orphan'))
+    
+    # Campos de Análise IA
+    ai_risk_level = db.Column(db.String(20)) # CRITICAL, HIGH, MEDIUM, LOW
+    ai_summary = db.Column(db.Text)
+    ai_network_summary = db.Column(db.Text)
+    ai_action_plan = db.Column(db.Text) # JSON string
+    ai_last_analysis = db.Column(db.DateTime)
+
+    __table_args__ = (
+        db.UniqueConstraint('snapshot_date', 'store_id', name='uix_snapshot_date_store'),
+    )
+
+    def __repr__(self):
+        return f'<SnapshotDaily {self.snapshot_date} Store={self.store_id}>'
+
+# --- V2.5 Models (Governance & Audit) ---
+
+class SyncRun(db.Model):
+    __tablename__ = 'sync_runs'
+    id = db.Column(db.Integer, primary_key=True)
+    started_at = db.Column(db.DateTime, default=datetime.now)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default="RUNNING") # Estados externos preservados.
+    items_processed = db.Column(db.Integer, default=0)
+    items_updated = db.Column(db.Integer, default=0)
+    error_summary = db.Column(db.Text, nullable=True)
+
+class SyncError(db.Model):
+    __tablename__ = 'sync_errors'
+    id = db.Column(db.Integer, primary_key=True)
+    sync_run_id = db.Column(db.Integer, db.ForeignKey('sync_runs.id'), nullable=False)
+    store_id = db.Column(db.Integer, nullable=True)
+    task_id = db.Column(db.String(50), nullable=True)
+    error_msg = db.Column(db.Text)
+    traceback = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class ForecastAuditLog(db.Model):
+    __tablename__ = 'forecast_audit_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    field_name = db.Column(db.String(50), nullable=False)
+    old_value = db.Column(db.Text, nullable=True)
+    new_value = db.Column(db.Text, nullable=True)
+    changed_at = db.Column(db.DateTime, default=datetime.now)
+    actor = db.Column(db.String(50), default='local_user')
+    
+    store = db.relationship('Store', backref=db.backref('forecast_audits', cascade='all, delete-orphan'))
+
+# --- V3.0 Models (CRM Evolution) ---
+class IntegrationMetric(db.Model):
+    """
+    Métricas específicas do Módulo de Integração (V3).
+    Armazena estado atual e KPIs de cada loja em relação à integração.
+    """
+    __tablename__ = 'integration_metrics'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    snapshot_date = db.Column(db.Date, nullable=False, default=datetime.now) # Data do snapshot
+    
+    # SLA & Prazos
+    start_date = db.Column(db.DateTime, nullable=True) # Início real da integração
+    end_date = db.Column(db.DateTime, nullable=True) # Fim real da integração
+    sla_days = db.Column(db.Integer, default=0) # Dias corridos (end - start)
+    
+    # Qualidade (Pós-Go-Live)
+    post_go_live_bugs = db.Column(db.Integer, default=0) # Qtd falhas críticas nos primeiros 30 dias
+    churn_risk = db.Column(db.Boolean, default=False) # Se gerou risco de churn
+    
+    # Documentação
+    documentation_status = db.Column(db.String(20), default='PENDING') # PENDING, PARTIAL, DONE
+    
+    # Pontuação (Volume)
+    points = db.Column(db.Float, default=0.0) # 1.0 (Matriz) ou 0.7 (Filial)
+    
+    # Legado/Compatibilidade
+    lead_time_days = db.Column(db.Integer, default=0) 
+    ticket_count = db.Column(db.Integer, default=0)
+    has_blocking_issue = db.Column(db.Boolean, default=False)
+    last_blocker_reason = db.Column(db.String(255), nullable=True)
+    
+    updated_at = db.Column(db.DateTime, default=datetime.now)
+
+    store = db.relationship('Store', backref=db.backref('integration_metrics', cascade='all, delete-orphan'))
+
+    # Removendo Constraint de Data única para permitir Múltiplas entradas se necessário,
+    # mas por enquanto vamos manter 1 para 1 por loja como "Estado Atual"
+    # Se precisarmos de histórico, usaremos snapshots diários.
+    
+    def __repr__(self):
+        return f'<IntegrationMetric {self.store_id} Pts={self.points}>'
+
+class PerformanceReview(db.Model):
+    """
+    Avaliação de Desempenho Mensal/Semestral (V3).
+    Suporta regras 40/40/20.
+    """
+    __tablename__ = 'performance_reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    cycle = db.Column(db.String(20), nullable=False) # e.g. '2024-02' or '2024-Q1'
+    
+    # Soft Skills (20%) - Input Manual do Gestor
+    soft_communication = db.Column(db.Float, default=0.0) # 0-100
+    soft_process = db.Column(db.Float, default=0.0) # 0-100
+    soft_responsibility = db.Column(db.Float, default=0.0) # 0-100
+    
+    # Hard Skills / Metas (80%) - Calculado ou Manual (se standby)
+    # Coletivo (40%)
+    score_collective = db.Column(db.Float, default=0.0) 
+    # Individual (40%)
+    score_individual = db.Column(db.Float, default=0.0)
+    
+    # Penalidades
+    churn_count = db.Column(db.Integer, default=0) # Bloqueia 50% do comportamental
+    
+    # Resultado Final
+    final_score = db.Column(db.Float, default=0.0)
+    bonus_eligible = db.Column(db.Boolean, default=False)
+    
+    updated_at = db.Column(db.DateTime, default=datetime.now)
+    reviewer_comment = db.Column(db.Text, nullable=True)
+
+    user = db.relationship('User', backref='reviews')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'cycle', name='uix_user_cycle_review'),
+    )
+    
+    def __repr__(self):
+        return f'<Review {self.user_id} {self.cycle}>'
+
+# --- AUTH MODELS ---
+
+# Tabela de Associação: Usuários <-> Papéis (Many-to-Many)
+user_roles = db.Table('user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    extend_existing=True
+)
+
+# Tabela de Associação: Papéis <-> Permissões (Many-to-Many)
+role_permissions = db.Table('role_permissions',
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id'), primary_key=True),
+    extend_existing=True
+)
+
+class Permission(db.Model):
+    __tablename__ = 'permissions'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False) # Ex: 'view_dashboard', 'manage_users'
+    description = db.Column(db.String(255), nullable=True)
+    module = db.Column(db.String(50), nullable=True) # Para agrupar no painel de admin (ex: 'INTEGRACAO', 'DASHBOARD')
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False) # Ex: 'Admin', 'Operador'
+    description = db.Column(db.String(255), nullable=True)
+    
+    # lazy='subquery' garante que ao carregar a role, ele traga as permissões numa tacada só
+    permissions = db.relationship('Permission', secondary=role_permissions, lazy='subquery',
+                                  backref=db.backref('roles', lazy=True))
+
+class User(db.Model):
+    __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    profile_picture = db.Column(db.Text, nullable=True) # Pode ser base64 ou URL
+    
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Campos MFA / 2FA (TOTP)
+    totp_secret = db.Column(db.String(32), nullable=True)
+    totp_enabled = db.Column(db.Boolean, default=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+
+    roles = db.relationship('Role', secondary=user_roles, lazy='subquery',
+                            backref=db.backref('users', lazy=True))
+
+    def has_permission(self, perm_name):
+        """Checa se o usuário tem uma permissão específica transitando pelas suas roles."""
+        for role in self.roles:
+            for perm in role.permissions:
+                if perm.name == perm_name:
+                    return True
+        return False
+        
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "profile_picture": self.profile_picture,
+            "is_active": self.is_active,
+            "totp_enabled": self.totp_enabled,
+            "roles": [r.name for r in self.roles]
+        }
+
+class AuditLog(db.Model):
+    """
+    Registra ações administrativas e mudanças críticas no sistema.
+    """
+    __tablename__ = 'audit_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # None para ações do sistema
+    action = db.Column(db.String(100), nullable=False) # Ex: 'DELETE_STORE', 'UPDATE_CONFIG'
+    resource_type = db.Column(db.String(50)) # Ex: 'Store', 'SystemConfig'
+    resource_id = db.Column(db.String(50))
+    
+    details = db.Column(db.Text) # JSON ou descrição textual da mudança
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.String(255))
+    
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='audit_logs')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "user_name": self.user.name if self.user else "System",
+            "action": self.action,
+            "resource_type": self.resource_type,
+            "resource_id": self.resource_id,
+            "details": self.details,
+            "ip_address": self.ip_address,
+            "timestamp": self.timestamp.isoformat()
+        }
+
+class AILongTermMemory(db.Model):
+    """
+    Guarda o histórico de análises da IA para permitir comparação de evolução.
+    Pode ser atrelado a uma loja específica ou ser uma análise sistêmica (geral).
+    """
+    __tablename__ = 'ai_long_term_memory'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=True) # Se for análise geral, fica None
+    analysis_type = db.Column(db.String(50), nullable=False) # 'specific_store', 'general_operations', etc.
+    
+    query_prompt = db.Column(db.Text, nullable=True) # O que o usuário perguntou na época
+    context_snapshot = db.Column(db.Text, nullable=True) # JSON com dados que a IA leu (bottlenecks, etc.) para referência de estado
+    ai_response = db.Column(db.Text, nullable=False) # O parecer/resposta gerada
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # Relação com Store
+    store = db.relationship('Store', backref=db.backref('ai_memories', cascade='all, delete-orphan', lazy=True))
+
+    def __repr__(self):
+        return f'<AIMemory {self.id} - {self.analysis_type} ({self.created_at.strftime("%d/%m")})>'
+
+# --- ZENVIA SUPPORT MODELS ---
+
+class ZenviaWebhookEvent(db.Model):
+    __tablename__ = 'zenvia_webhook_events'
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    event_type = db.Column(db.String(50), nullable=False)
+    subscription_id = db.Column(db.String(100), nullable=True)
+    channel = db.Column(db.String(50), nullable=True)
+    timestamp = db.Column(db.String(50), nullable=True)
+    raw_payload = db.Column(db.Text, nullable=False) # JSON text
+    processed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SupportContact(db.Model):
+    __tablename__ = 'support_contacts'
+    id = db.Column(db.Integer, primary_key=True)
+    zenvia_contact_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=True)
+    phone = db.Column(db.String(50), nullable=True, index=True)
+    email = db.Column(db.String(150), nullable=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=True) # Para contatos órfãos
+    created_at_zenvia = db.Column(db.DateTime, nullable=True)
+    linked_store_name = db.Column(db.String(255), nullable=True) # Nome da loja livre (legado/externo)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    store = db.relationship('Store', backref='support_contacts')
+
+class SupportConversation(db.Model):
+    __tablename__ = 'support_conversations'
+    id = db.Column(db.Integer, primary_key=True)
+    zenvia_conversation_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    contact_id = db.Column(db.Integer, db.ForeignKey('support_contacts.id'), nullable=True)
+    channel = db.Column(db.String(50), nullable=True)
+    from_number = db.Column(db.String(50), nullable=True)
+    to_number = db.Column(db.String(50), nullable=True)
+    status = db.Column(db.String(50), nullable=True) # OPEN, CLOSED
+    group_id = db.Column(db.String(100), nullable=True)
+    user_id = db.Column(db.String(100), nullable=True) # ID do atendente na zenvia
+    created_at_zenvia = db.Column(db.DateTime, nullable=True)
+    closed_at = db.Column(db.DateTime, nullable=True)
+    last_message_at = db.Column(db.DateTime, nullable=True)
+    first_response_at = db.Column(db.DateTime, nullable=True)
+    
+    # Novos campos para Performance (NPS)
+    agent_name = db.Column(db.String(255), nullable=True) # Nome do atendente humano
+    nps_score = db.Column(db.Integer, nullable=True)     # Nota de 0-10
+    nps_comment = db.Column(db.Text, nullable=True)      # Comentário do NPS
+    response_time_seconds = db.Column(db.Integer, nullable=True) # Tempo até primeira resposta
+    resolution_time_seconds = db.Column(db.Integer, nullable=True) # Tempo total de resolução
+    close_reason = db.Column(db.String(255), nullable=True) # Motivo do fechamento
+    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    contact = db.relationship('SupportContact', backref='conversations')
+
+class SupportMessage(db.Model):
+    __tablename__ = 'support_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    zenvia_message_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('support_conversations.id'), nullable=True)
+    direction = db.Column(db.String(20), nullable=False) # IN, OUT
+    channel = db.Column(db.String(50), nullable=True)
+    from_number = db.Column(db.String(50), nullable=True)
+    to_number = db.Column(db.String(50), nullable=True)
+    content_type = db.Column(db.String(50), nullable=True)
+    text = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(50), nullable=True) # SENT, DELIVERED, READ, FAILED
+    
+    conversation = db.relationship('SupportConversation', backref='messages')
+
+class SupportAgentEvent(db.Model):
+    __tablename__ = 'support_agent_events'
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.String(100), nullable=True)
+    expert_agent_id = db.Column(db.String(100), nullable=True)
+    external_id = db.Column(db.String(100), nullable=True)
+    timestamp = db.Column(db.DateTime, nullable=True)
+
+class SupportAgentPerformance(db.Model):
+    """
+    Performance histórica dos atendentes de suporte.
+    Um registro por agente por período (mês).
+    """
+    __tablename__ = 'support_agent_performance'
+    id = db.Column(db.Integer, primary_key=True)
+    agent_name = db.Column(db.String(255), nullable=False, index=True)
+    period = db.Column(db.String(7), nullable=False) # YYYY-MM
+    import_batch_id = db.Column(db.Integer, db.ForeignKey('support_import_batches.id'), nullable=True, index=True)
+    range_start = db.Column(db.DateTime, nullable=True, index=True)
+    range_end = db.Column(db.DateTime, nullable=True, index=True)
+    granularity = db.Column(db.String(20), nullable=True, index=True)
+    window_label = db.Column(db.String(120), nullable=True)
+    group_name = db.Column(db.String(100), nullable=True) # Ex: Suporte N1
+
+    # Volume
+    total_contacts = db.Column(db.Integer, default=0)
+    total_conversations = db.Column(db.Integer, default=0)
+    new_conversations = db.Column(db.Integer, default=0)
+    closed_conversations = db.Column(db.Integer, default=0)
+    total_messages_sent = db.Column(db.Integer, default=0)
+
+    # Tempos (em segundos)
+    avg_response_time_seconds = db.Column(db.Integer, default=0)
+    avg_close_time_seconds = db.Column(db.Integer, default=0)
+
+    # NPS
+    avg_nps = db.Column(db.Float, nullable=True)
+    nps_count = db.Column(db.Integer, default=0)
+
+    # Atividade
+    last_activity_at = db.Column(db.DateTime, nullable=True)
+    activities_today = db.Column(db.Integer, default=0)
+    pending_tickets = db.Column(db.Integer, default=0)
+    open_tickets = db.Column(db.Integer, default=0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('agent_name', 'period', name='uix_agent_period'),
+    )
+
+    def __repr__(self):
+        return f'<AgentPerf {self.agent_name} {self.period}>'
+
+class SupportImportBatch(db.Model):
+    """
+    Historico de importacoes feitas pela tela de suporte.
+    Os arquivos sao enviados pelo usuario no sistema online; a pasta excel_suporte
+    e usada apenas como amostra de formatos durante o desenvolvimento.
+    """
+    __tablename__ = 'support_import_batches'
+    id = db.Column(db.Integer, primary_key=True)
+    period = db.Column(db.String(7), nullable=False, index=True)
+    range_start = db.Column(db.DateTime, nullable=True, index=True)
+    range_end = db.Column(db.DateTime, nullable=True, index=True)
+    granularity = db.Column(db.String(20), nullable=True, index=True)
+    window_label = db.Column(db.String(120), nullable=True)
+    status = db.Column(db.String(30), nullable=False, default='processing')
+    files_count = db.Column(db.Integer, default=0)
+    rows_total = db.Column(db.Integer, default=0)
+    rows_imported = db.Column(db.Integer, default=0)
+    errors_count = db.Column(db.Integer, default=0)
+    stats_json = db.Column(db.Text, nullable=True)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SupportMetricSnapshot(db.Model):
+    """
+    Metricas agregadas extraidas dos relatórios CSV da Zenvia.
+    Permite armazenar paineis, series diarias, motivos, qualidade e horarios
+    sem criar uma tabela especifica para cada exportacao.
+    """
+    __tablename__ = 'support_metric_snapshots'
+    id = db.Column(db.Integer, primary_key=True)
+    period = db.Column(db.String(7), nullable=False, index=True)
+    import_batch_id = db.Column(db.Integer, db.ForeignKey('support_import_batches.id'), nullable=True, index=True)
+    range_start = db.Column(db.DateTime, nullable=True, index=True)
+    range_end = db.Column(db.DateTime, nullable=True, index=True)
+    granularity = db.Column(db.String(20), nullable=True, index=True)
+    window_label = db.Column(db.String(120), nullable=True)
+    source = db.Column(db.String(120), nullable=False, index=True)
+    metric_type = db.Column(db.String(80), nullable=False, index=True)
+    metric_key = db.Column(db.String(160), nullable=False, index=True)
+    dimension_hash = db.Column(db.String(32), nullable=False)
+    dimensions_json = db.Column(db.Text, nullable=True)
+    value_float = db.Column(db.Float, nullable=True)
+    value_text = db.Column(db.Text, nullable=True)
+    captured_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'period',
+            'source',
+            'metric_type',
+            'metric_key',
+            'dimension_hash',
+            name='uix_support_metric_snapshot'
+        ),
+    )
+
+class JarvisChatSession(db.Model):
+    __tablename__ = 'jarvis_chat_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = db.relationship('User', backref='jarvis_sessions')
+    messages = db.relationship('JarvisChatMessage', backref='session', cascade="all, delete-orphan", order_by="JarvisChatMessage.created_at")
+
+class JarvisChatMessage(db.Model):
+    __tablename__ = 'jarvis_chat_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('jarvis_chat_sessions.id'), nullable=False)
+    role = db.Column(db.String(50), nullable=False) # user, assistant, system
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

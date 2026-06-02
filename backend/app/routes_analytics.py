@@ -210,3 +210,133 @@ def get_distribution(payload):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@analytics_bp.route('/api/analytics/financeiro-implantacao', methods=['GET'])
+@require_auth
+def get_financeiro_implantacao(payload):
+    """
+    Endpoint financeiro para a aba Financeiro do painel de analytics.
+    Classifica lojas por estado de cobrança e retorna resumo + lista operacional.
+    """
+    try:
+        from app.models import Store
+
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+        implantador = request.args.get('implantador')
+
+        start_date = None
+        end_date = None
+
+        if start_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            except ValueError:
+                pass
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            except ValueError:
+                pass
+
+        # Query base: all stores
+        query = Store.query
+
+        if implantador:
+            query = query.filter(Store.implantador == implantador)
+
+        all_stores = query.all()
+
+        # Classify stores
+        lojas_concluidas_pagantes = 0
+        lojas_concluidas_nao_pagantes = 0
+        lojas_em_implantacao = 0
+        lojas_prontas_para_cobranca = 0
+        mrr_ativado = 0.0
+        mrr_pendente_cobranca = 0.0
+        mensalidade_pendente_entrada = 0.0
+        lojas_detalhe = []
+
+        for store in all_stores:
+            mensalidade = store.valor_mensalidade or 0.0
+            finished = store.effective_finished_at
+            is_done = store.status_norm == 'DONE'
+            financeiro = (store.financeiro_status or '').strip().lower()
+
+            # Date filter for concluded stores
+            if is_done and finished:
+                if start_date and finished < start_date:
+                    continue
+                if end_date and finished > end_date:
+                    continue
+
+            # Classification logic
+            if is_done:
+                if 'paga' in financeiro and 'não' not in financeiro and 'nao' not in financeiro:
+                    status_cobranca = 'pagante'
+                    lojas_concluidas_pagantes += 1
+                    mrr_ativado += mensalidade
+                elif 'pronta' in financeiro or 'cobrança' in financeiro or 'cobranca' in financeiro:
+                    status_cobranca = 'pendente_cobranca'
+                    lojas_prontas_para_cobranca += 1
+                    mrr_pendente_cobranca += mensalidade
+                else:
+                    status_cobranca = 'nao_pagante'
+                    lojas_concluidas_nao_pagantes += 1
+                    mensalidade_pendente_entrada += mensalidade
+            else:
+                if store.is_scheduled:
+                    continue
+                status_cobranca = 'em_implantacao'
+                lojas_em_implantacao += 1
+
+            # Calculate days since conclusion
+            dias_desde_conclusao = None
+            if finished:
+                delta = datetime.now() - finished
+                dias_desde_conclusao = max(0, delta.days)
+
+            # Active step name
+            etapa = 'Concluída' if is_done else 'Não iniciado'
+            if not is_done and store.steps:
+                sorted_steps = sorted(store.steps, key=lambda x: x.id)
+                for step in sorted_steps:
+                    if step.start_real_at and not step.end_real_at:
+                        etapa = step.step_name.strip()
+                        break
+
+            lojas_detalhe.append({
+                'id': store.id,
+                'nome': store.store_name,
+                'implantador': store.implantador,
+                'etapa': etapa,
+                'status_cobranca': status_cobranca,
+                'mensalidade': mensalidade,
+                'data_conclusao': finished.isoformat() if finished else None,
+                'data_prevista_cobranca': None,
+                'dias_desde_conclusao': dias_desde_conclusao,
+            })
+
+        # Sort: non-paying concluded first, then by days_since_conclusion descending
+        lojas_detalhe.sort(
+            key=lambda x: (
+                0 if x['status_cobranca'] == 'nao_pagante' else 1 if x['status_cobranca'] == 'pendente_cobranca' else 2,
+                -(x['dias_desde_conclusao'] or 0),
+            )
+        )
+
+        return jsonify({
+            'resumo': {
+                'lojas_concluidas_pagantes': lojas_concluidas_pagantes,
+                'lojas_concluidas_nao_pagantes': lojas_concluidas_nao_pagantes,
+                'mensalidade_pendente_entrada': mensalidade_pendente_entrada,
+                'mrr_ativado': mrr_ativado,
+                'mrr_pendente_cobranca': mrr_pendente_cobranca,
+                'lojas_em_implantacao': lojas_em_implantacao,
+                'lojas_prontas_para_cobranca': lojas_prontas_para_cobranca,
+            },
+            'lojas': lojas_detalhe,
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

@@ -1,0 +1,25 @@
+flask
+flask-sqlalchemy
+flask-cors
+flask-migrate
+sqlalchemy
+psycopg2-binary
+requests
+python-dotenv
+pandas
+numpy
+gunicorn
+google-genai
+openai
+openpyxl
+# Segurança / Auth
+PyJWT
+pyotp
+flask-talisman
+flask-limiter
+
+# Add other dependencies as needed
+xlsxwriter==3.2.9
+fpdf2==2.8.1
+python-dateutil
+Flask-APScheduler

@@ -1,0 +1,225 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../services/api';
+import { AnalyticsFiltersState } from '../../hooks/useDashboardUrlParams';
+
+// Reuse existing interfaces
+export interface KPIData {
+    wip_stores: number;
+    throughput_period: number;
+    mrr_backlog: number;
+    mrr_done_period: number;
+    cycle_time_avg: number;
+    otd_percentage: number;
+    idle_stores_count: number;
+    avg_risk_score: number;
+    matrix_count: number;
+    filial_count: number;
+    total_points_done: number;
+    total_points_wip: number;
+}
+
+export interface TrendData {
+    month: string;
+    throughput: number;
+    total_points: number;
+    total_mrr: number;
+    cycle_time_avg: number;
+    otd_percentage: number;
+}
+
+export interface PerformanceData {
+    implantador: string;
+    wip: number;
+    done: number;
+    otd_percentage: number;
+    avg_cycle_time: number;
+    score: number;
+    points: number;
+    volume_weighted: number;
+    quality_score: number;
+    data_quality_flags?: {
+        missing_financial: number;
+        missing_rework: number;
+    };
+}
+
+export interface BottleneckData {
+    step_name: string;
+    total_days: number;
+    avg_days: number;
+    reopens: number;
+}
+
+export interface CapacityData {
+    implantador: string;
+    current_points: number;
+    finished_points_semester: number;
+    total_semester_points: number;
+    max_points: number;
+    store_count: number;
+    finished_count_semester: number;
+    utilization_pct: number;
+    risk_level: 'NORMAL' | 'HIGH' | 'CRITICAL' | 'LOW';
+    active_networks: string[];
+}
+
+export interface ForecastData {
+    month: string;
+    realized: number;
+    projected: number;
+    is_future: boolean;
+    total_accumulated: number;
+}
+
+export interface DistributionData {
+    steps: Record<string, number>;
+    erps: Record<string, number>;
+}
+
+export interface AnnualTrendData {
+    year: number;
+    annual_goals: {
+        mrr: number;
+        stores: number;
+    };
+    trends: {
+        month: string;
+        stores_monthly: number;
+        mrr_monthly: number;
+        cumulative_stores: number | null;
+        cumulative_mrr: number | null;
+        cycle_time_avg: number;
+        target_cumulative_stores: number;
+        target_cumulative_mrr: number;
+    }[];
+}
+
+// API_BASE_URL removido pois já está no serviço api.ts
+
+const buildParams = (filters: AnalyticsFiltersState) => {
+    const params = new URLSearchParams();
+    if (filters.startDate) params.append('start_date', filters.startDate.toISOString().split('T')[0]);
+    if (filters.endDate) params.append('end_date', filters.endDate.toISOString().split('T')[0]);
+    if (filters.implantador) params.append('implantador', filters.implantador);
+    if (filters.baseTemporal) params.append('base_temporal', filters.baseTemporal);
+    return params;
+};
+
+export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
+    // Generate valid query keys from filters
+    const queryKey = [
+        'analytics',
+        filters.startDate?.toISOString(),
+        filters.endDate?.toISOString(),
+        filters.implantador,
+        filters.baseTemporal
+    ];
+
+    const kpiQuery = useQuery({
+        queryKey: [...queryKey, 'kpi'],
+        queryFn: async () => {
+            const res = await api.get<KPIData>('/api/analytics/kpi-cards', { params: buildParams(filters) });
+            return res.data;
+        }
+    });
+
+    const trendQuery = useQuery({
+        queryKey: [...queryKey, 'trends'],
+        queryFn: async () => {
+            const params = buildParams(filters);
+            params.append('months', '6');
+            const res = await api.get<TrendData[]>('/api/analytics/trends', { params });
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
+
+    const perfQuery = useQuery({
+        queryKey: [...queryKey, 'performance'],
+        queryFn: async () => {
+            const res = await api.get<PerformanceData[]>('/api/scoring/performance', { params: buildParams(filters) });
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
+
+    const bottleQuery = useQuery({
+        queryKey: [...queryKey, 'bottlenecks'],
+        queryFn: async () => {
+            const res = await api.get<BottleneckData[]>('/api/analytics/bottlenecks', { params: buildParams(filters) });
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
+
+    const capacityQuery = useQuery({
+        queryKey: ['capacity', filters.implantador],
+        queryFn: async () => {
+            // Updated to use the new standardized scoring endpoint for capacity
+            const res = await api.get<CapacityData[]>('/api/scoring/capacity');
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
+
+    const forecastQuery = useQuery({
+        queryKey: ['forecast', 6],
+        queryFn: async () => {
+            const res = await api.get<ForecastData[]>('/api/analytics/forecast', { params: { months: 6 } });
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
+
+    const riskQuery = useQuery({
+        queryKey: ['risk-scatter', filters.implantador],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            if (filters.implantador) params.append('implantador', filters.implantador);
+            const res = await api.get<any[][]>('/api/analytics/risk-scatter', { params });
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
+
+    const distQuery = useQuery({
+        queryKey: ['distribution'],
+        queryFn: async () => {
+            const res = await api.get<DistributionData>('/api/analytics/distribution');
+            return res.data;
+        }
+    });
+
+    const annualTrendQuery = useQuery({
+        queryKey: ['annual-trends'],
+        queryFn: async () => {
+            const res = await api.get<AnnualTrendData>('/api/analytics/annual-trends');
+            return res.data;
+        }
+    });
+
+    const isLoading = kpiQuery.isLoading || trendQuery.isLoading || perfQuery.isLoading || bottleQuery.isLoading || capacityQuery.isLoading || forecastQuery.isLoading || riskQuery.isLoading || distQuery.isLoading || annualTrendQuery.isLoading;
+    const isError = kpiQuery.isError || trendQuery.isError || perfQuery.isError || bottleQuery.isError || riskQuery.isError || distQuery.isError || annualTrendQuery.isError;
+
+    const refetchAll = async () => {
+        await Promise.all([
+            kpiQuery.refetch(),
+            trendQuery.refetch(),
+            perfQuery.refetch(),
+            bottleQuery.refetch(),
+            capacityQuery.refetch(),
+            forecastQuery.refetch(),
+            riskQuery.refetch(),
+            distQuery.refetch()
+        ]);
+    };
+
+    return {
+        kpiData: kpiQuery.data || null,
+        trendData: trendQuery.data || [],
+        annualTrendData: annualTrendQuery.data || null,
+        performanceData: perfQuery.data || [],
+        bottleneckData: bottleQuery.data || [],
+        capacityData: capacityQuery.data || [],
+        forecastData: forecastQuery.data || [],
+        riskData: riskQuery.data || [],
+        distributionData: distQuery.data || null,
+        loading: isLoading,
+        error: isError ? 'Erro ao carregar dados' : null,
+        refetch: refetchAll
+    };
+};
