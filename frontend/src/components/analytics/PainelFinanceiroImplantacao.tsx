@@ -240,7 +240,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                                         </p>
                                     </div>
                                     <span className="rounded-full border border-zinc-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-zinc-600">
-                                        {loja.status_cobranca.replaceAll('_', ' ')}
+                                        {loja.status_cobranca.replace(/_/g, ' ')}
                                     </span>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between text-xs">
