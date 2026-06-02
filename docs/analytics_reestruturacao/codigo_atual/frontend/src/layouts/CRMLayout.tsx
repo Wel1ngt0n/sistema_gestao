@@ -1,0 +1,380 @@
+import { useState } from 'react'
+import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import {
+    LayoutDashboard,
+    LayoutList,
+    BarChart,
+    FileText,
+    RefreshCw,
+    Settings,
+    Users,
+    ChevronLeft,
+    ChevronRight,
+    HelpCircle,
+    X,
+    Target,
+    Trophy,
+    Rocket,
+    Network,
+    User,
+    LogOut,
+    MessageSquare,
+    Sparkles
+} from 'lucide-react'
+import logo from '../assets/logo.png'
+
+
+interface CRMLayoutProps {
+    setShowDictionary: (show: boolean) => void
+}
+
+export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
+    const [collapsed, setCollapsed] = useState(false)
+    const location = useLocation()
+    const [superAdminOpen, setSuperAdminOpen] = useState(false)
+    const [presentationMode, setPresentationMode] = useState(() => localStorage.getItem('presentation_mode') === 'true')
+    const { user, logout } = useAuth()
+
+    const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+        'Implantação': true,
+        'Integração': true,
+        'Suporte': true,
+        'Configurações': true
+    })
+
+    const toggleMenu = (label: string) => {
+        setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }))
+    }
+
+    const navItems = [
+        {
+            section: 'OPERACIONAL',
+            items: [
+                {
+                    label: 'Implantação',
+                    icon: Rocket,
+                    children: [
+                        { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+                        { to: '/monitor', label: 'Monitor', icon: LayoutList },
+                        { to: '/analytics', label: 'Analytics', icon: BarChart },
+                        { to: '/reports', label: 'Relatórios', icon: FileText },
+                    ]
+                },
+                {
+                    label: 'Integração',
+                    icon: Network,
+                    children: [
+                        { to: '/integration/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                        { to: '/integration/monitor', label: 'Monitor', icon: Target },
+                        { to: '/integration/analytics', label: 'Analytics', icon: BarChart },
+                        { to: '/integration/reports', label: 'Relatórios', icon: FileText },
+                    ]
+                },
+                {
+                    label: 'Suporte',
+                    icon: MessageSquare,
+                    children: [
+                        { to: '/support', label: 'Zenvia Dash', icon: LayoutDashboard },
+                    ]
+                },
+                { to: '/jarvis', label: 'Jarvis Copilot', icon: Sparkles },
+            ]
+        },
+        {
+            section: 'ADMINISTRAÇÃO',
+            items: [
+                { to: '/admin/users', label: 'Usuários', icon: Users },
+                {
+                    label: 'Configurações',
+                    icon: Settings,
+                    children: [
+                        { to: '/admin/configs', label: 'Geral', icon: Settings },
+                        { to: '/sync', label: 'Sincronização', icon: RefreshCw },
+                        { to: '/admin/performance', label: 'Performance (Bônus)', icon: Trophy },
+                    ]
+                },
+            ]
+        }
+    ]
+
+    return (
+        <div className="flex h-screen overflow-hidden bg-[#EEF0F8] text-slate-900">
+            {/* SEO Metadata */}
+            <div className="hidden" aria-hidden="true">
+                <meta name="description" content="CRM Instabuy - Gestão Operacional de E-commerce" />
+                <meta property="og:title" content="Instabuy CRM" />
+            </div>
+
+            {/* Sidebar */}
+            <aside
+                className={`${collapsed ? 'w-20' : 'w-72'}
+                bg-white border-r border-slate-200
+                flex flex-col transition-all duration-300 fixed h-full z-50 shadow-sm print:hidden`}
+            >
+                {/* Logo Area */}
+                <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-100">
+                    <div className="relative group shrink-0">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
+                        <img src={logo} alt="Instabuy" className="relative h-8 w-auto object-contain" />
+                    </div>
+
+                    {!collapsed && (
+                        <div className="flex flex-col overflow-hidden whitespace-nowrap">
+                            <h2 className="text-sm font-black tracking-tighter text-slate-900 leading-none">
+                                SISTEMA <span className="text-[#ff7900]">GESTÃO</span>
+                            </h2>
+                            <span className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
+                                Operações
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Navigation */}
+                <nav className={`flex-1 py-6 px-3 space-y-6 ${collapsed ? 'overflow-visible' : 'overflow-y-auto no-scrollbar'}`}>
+                    {navItems.map((group, idx) => (
+                        <div key={idx}>
+                            {!collapsed && (
+                                <h3 className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                    {group.section}
+                                </h3>
+                            )}
+                            <div className="space-y-1">
+                                {group.items.map((item: any) => {
+                                    // HAS CHILDREN (FOLDER)
+                                    if (item.children) {
+                                        const isOpen = openMenus[item.label] || false
+                                        return (
+                                            <div key={item.label} className="space-y-1 relative group">
+                                                <button
+                                                    onClick={() => toggleMenu(item.label)}
+                                                    className={`
+                                                        w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                                                        ${isOpen && !collapsed
+                                                            ? 'bg-slate-100 text-slate-900'
+                                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
+                                                    `}
+                                                    title={collapsed ? item.label : undefined}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <item.icon className="w-5 h-5 shrink-0 stroke-2" />
+                                                        {!collapsed && <span>{item.label}</span>}
+                                                    </div>
+                                                    {!collapsed && (
+                                                        <ChevronRight size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                                                    )}
+                                                </button>
+
+                                                {/* Submenu - Expanded */}
+                                                {!collapsed && isOpen && (
+                                                    <div className="pl-4 space-y-1 relative before:absolute before:left-7 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 animate-in slide-in-from-top-2 duration-200">
+                                                        {item.children.map((child: any) => (
+                                                            <NavLink
+                                                                key={child.to}
+                                                                to={child.to}
+                                                                className={({ isActive }) => `
+                                                                    flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ml-2
+                                                                    ${isActive
+                                                                        ? 'bg-green-50 text-[#128131] font-bold'
+                                                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                                                    }
+                                                                `}
+                                                            >
+                                                                <child.icon className="w-4 h-4 shrink-0 stroke-2" />
+                                                                <span>{child.label}</span>
+                                                            </NavLink>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Submenu - Collapsed (Floating) */}
+                                                {collapsed && (
+                                                    <div className="absolute left-14 top-0 w-56 bg-white rounded-xl shadow-lg border border-slate-200 p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0 z-50">
+                                                        <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                                                            <span className="text-xs font-bold uppercase text-slate-400">{item.label}</span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {item.children.map((child: any) => (
+                                                                <NavLink
+                                                                    key={child.to}
+                                                                    to={child.to}
+                                                                    className={({ isActive }) => `
+                                                                        flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                                                                        ${isActive
+                                                                            ? 'bg-green-50 text-[#128131] font-bold'
+                                                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                                                        }
+                                                                    `}
+                                                                >
+                                                                    <child.icon className="w-4 h-4 shrink-0" />
+                                                                    <span>{child.label}</span>
+                                                                </NavLink>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    }
+
+                                    // SINGLE ITEM
+                                    const isActive = location.pathname === item.to
+                                    const isJarvis = item.label === 'Jarvis Copilot'
+
+                                    return (
+                                        <div key={item.to} className="relative group">
+                                            <NavLink
+                                                to={item.to}
+                                                className={({ isActive }) => `
+                                                    flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                                                    ${isActive
+                                                        ? isJarvis 
+                                                            ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 font-bold shadow-sm ring-1 ring-orange-100'
+                                                            : 'bg-green-50 text-[#128131] font-bold shadow-sm ring-1 ring-green-100'
+                                                        : isJarvis
+                                                            ? 'text-slate-600 hover:text-orange-600 hover:bg-orange-50/50'
+                                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                                    }
+                                                    ${collapsed ? 'justify-center' : ''}
+                                                    relative overflow-hidden
+                                                `}
+                                            >
+                                                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'} ${isJarvis && isActive ? 'text-orange-500 animate-pulse' : ''}`} />
+                                                {!collapsed && <span>{item.label}</span>}
+                                                
+                                                {isJarvis && !collapsed && (
+                                                    <span className="ml-auto text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-md font-black tracking-tighter uppercase">
+                                                        AI
+                                                    </span>
+                                                )}
+                                            </NavLink>
+
+                                            {/* Tooltip for Collapsed Items */}
+                                            {collapsed && (
+                                                <div className="absolute left-14 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg shadow-lg invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0 whitespace-nowrap z-50 pointer-events-none">
+                                                    {item.label}
+                                                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </nav>
+
+                {/* Footer */}
+                <div className="p-3 border-t border-slate-200 bg-slate-50 flex flex-col gap-2">
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="flex items-center justify-center p-2 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                        title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+                    >
+                        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                    </button>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main
+                className={`flex-1 flex min-w-0 flex-col h-screen overflow-hidden transition-all duration-300
+                ${collapsed ? 'ml-20' : 'ml-72'} print:ml-0 print:w-full print:bg-white
+                `}
+            >
+                {/* Topbar */}
+                <header className="sticky top-0 z-30 flex h-16 w-full shrink-0 items-center justify-end gap-4 border-b border-slate-200 bg-white/90 px-8 backdrop-blur-xl print:hidden">
+                    <button
+                        onClick={() => setShowDictionary(true)}
+                        className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                        title="Dicionário de Métricas"
+                    >
+                        <HelpCircle size={20} />
+                    </button>
+
+                    <div className="h-6 w-px bg-slate-200"></div>
+
+                    <Link
+                        to="/profile"
+                        className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-slate-200"
+                    >
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-green-50 flex items-center justify-center text-[#128131] font-bold ring-2 ring-green-500/20">
+                            {user?.profile_picture ? (
+                                <img src={user.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-4 h-4" />
+                            )}
+                        </div>
+                        <span className="text-sm font-bold text-slate-700 hidden md:block">
+                            {user?.name?.split(' ')[0]}
+                        </span>
+                    </Link>
+
+                    <button
+                        onClick={logout}
+                        className="p-2 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                        title="Sair do Sistema"
+                    >
+                        <LogOut size={20} />
+                    </button>
+                </header>
+
+                <div className={location.pathname.includes('/monitor') ? 'min-h-0 flex-1 overflow-hidden p-0 print:p-0' : 'min-h-0 flex-1 overflow-y-auto p-8 print:p-0'}>
+                    <div className={`${location.pathname.includes('/monitor') ? 'h-full min-w-0 max-w-full overflow-hidden' : 'max-w-7xl'} mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+                        <Outlet />
+                    </div>
+                </div>
+            </main>
+
+            {/* Super Admin Tab */}
+            <div 
+                onClick={() => setSuperAdminOpen(true)}
+                className="fixed right-0 top-32 bg-slate-900 text-white px-1 py-6 rounded-l-md cursor-pointer hover:bg-slate-800 transition-colors z-40 shadow-lg flex items-center justify-center print:hidden"
+                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+                <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Super admin</span>
+            </div>
+
+            {/* Super Admin Drawer */}
+            <div className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${superAdminOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col border-l border-slate-200 print:hidden`}>
+                <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Super admin</h2>
+                    <button onClick={() => setSuperAdminOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                        <X size={18} />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    {/* Opções */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-800">Opções:</h3>
+                        <div className="space-y-3 bg-white border border-slate-200 rounded-xl p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-slate-700">Modo de apresentação</span>
+                                <button 
+                                    onClick={() => {
+                                        const newMode = !presentationMode;
+                                        setPresentationMode(newMode);
+                                        localStorage.setItem('presentation_mode', newMode.toString());
+                                        window.location.reload();
+                                    }}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${presentationMode ? 'bg-green-500' : 'bg-slate-200'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${presentationMode ? 'translate-x-4' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Overlay */}
+            {superAdminOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity print:hidden"
+                    onClick={() => setSuperAdminOpen(false)}
+                />
+            )}
+        </div>
+    )
+}

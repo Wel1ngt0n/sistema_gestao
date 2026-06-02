@@ -14,7 +14,7 @@ import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
 import { SupportDashboard } from './pages/SupportDashboard'
 
-import DashboardAnalytics from './components/analytics/DashboardAnalytics'
+import PainelAnalyticsFinal from './components/analytics/PainelAnalyticsFinal'
 import ForecastPage from './features/forecast/ForecastPage'
 import MonthlyReport from './components/reports/MonthlyReport'
 import SyncPage from './features/sync/SyncPage'
@@ -57,7 +57,7 @@ function App() {
                     {/* Suporte Zenvia */}
                     <Route path="/support" element={<SupportDashboard />} />
 
-                    <Route path="/analytics" element={<DashboardAnalytics />} />
+                    <Route path="/analytics" element={<PainelAnalyticsFinal />} />
                     <Route path="/forecast" element={<ForecastPage />} />
                     <Route path="/reports" element={<MonthlyReport />} />
                     <Route path="/sync" element={
