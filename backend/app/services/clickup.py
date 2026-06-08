@@ -45,6 +45,44 @@ class ClickUpService:
                 time.sleep(2)
         return None
 
+    def _post(self, endpoint, payload=None):
+        url = f"{self.BASE_URL}/{endpoint}"
+        retries = 3
+        for i in range(retries):
+            try:
+                response = requests.post(url, headers=self.HEADERS, json=payload, timeout=60)
+                if response.status_code == 429:
+                    self.logger.warning(f"ClickUp Rate Limit (429) POST. Tentativa {i+1}/{retries}. Aguardando 10s...")
+                    time.sleep(10)
+                    continue
+                if response.status_code not in (200, 201):
+                    self.logger.error(f"Erro ClickUp {response.status_code} POST {endpoint}: {response.text}")
+                    return None
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"Exceção ClickUp POST {endpoint}: {str(e)}")
+                time.sleep(2)
+        return None
+
+    def _put(self, endpoint, payload=None):
+        url = f"{self.BASE_URL}/{endpoint}"
+        retries = 3
+        for i in range(retries):
+            try:
+                response = requests.put(url, headers=self.HEADERS, json=payload, timeout=60)
+                if response.status_code == 429:
+                    self.logger.warning(f"ClickUp Rate Limit (429) PUT. Tentativa {i+1}/{retries}. Aguardando 10s...")
+                    time.sleep(10)
+                    continue
+                if response.status_code not in (200, 201):
+                    self.logger.error(f"Erro ClickUp {response.status_code} PUT {endpoint}: {response.text}")
+                    return None
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"Exceção ClickUp PUT {endpoint}: {str(e)}")
+                time.sleep(2)
+        return None
+
     def fetch_parent_tasks(self, date_updated_gt=None, include_closed=True):
         """Busca tarefas da Lista Principal (Lojas). Pagina por todas."""
         status_msg = "INCLUINDO CONCLUÍDAS" if include_closed else "APENAS EM ABERTO"
