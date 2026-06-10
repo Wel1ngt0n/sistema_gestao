@@ -117,7 +117,11 @@ api.interceptors.response.use((response) => {
 }, (error) => {
     if (error.response && error.response.status === 401) {
         const url = error.config?.url || '';
-        if (!url.includes('/api/auth/login') && !url.includes('/api/auth/me')) {
+        if (
+            !url.includes('/api/auth/login') &&
+            !url.includes('/api/auth/me') &&
+            !url.includes('/api/auth/verify-2fa')
+        ) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
             setCsrfToken(null);

@@ -19,7 +19,14 @@ elif not JWT_SECRET_KEY:
 
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
-TWO_FACTOR_CHALLENGE_MINUTES = 5
+
+def get_two_factor_challenge_minutes() -> int:
+    """Retorna a duracao do desafio 2FA em minutos."""
+    return int(current_app.config.get("TWO_FACTOR_CHALLENGE_MINUTES", 5))
+
+def get_totp_valid_window() -> int:
+    """Retorna a janela de tolerancia do TOTP em passos de 30 segundos."""
+    return int(current_app.config.get("TOTP_VALID_WINDOW", 2))
 
 def hash_password(password: str) -> str:
     """Gera hash seguro da senha com o algoritmo padrao do Werkzeug."""
@@ -49,7 +56,7 @@ def generate_2fa_challenge_token(user_id: int, user_email: str) -> str:
         'email': user_email,
         'type': '2fa_challenge',
         'iat': datetime.datetime.utcnow(),
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=TWO_FACTOR_CHALLENGE_MINUTES)
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=get_two_factor_challenge_minutes())
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
@@ -128,9 +135,13 @@ def generate_totp_uri(secret: str, user_email: str, issuer_name: str = "ClickUp 
 
 def verify_totp_code(secret: str, code: str) -> bool:
     """Verifica se o codigo de 6 digitos informado e valido para o secret do usuario."""
-    # valid_window=1 permite 30s de tolerancia para pequenas diferencas de relogio.
+    codigo_normalizado = ''.join(ch for ch in str(code or '') if ch.isdigit())
+    if len(codigo_normalizado) != 6:
+        return False
+
+    # A janela padrao tolera pequenas diferencas de relogio entre servidor e autenticador.
     totp = pyotp.TOTP(secret)
-    return totp.verify(code, valid_window=1) 
+    return totp.verify(codigo_normalizado, valid_window=get_totp_valid_window())
 
 def require_auth(f):
     """
