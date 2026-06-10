@@ -268,6 +268,7 @@ const LoginScreen = () => {
                                             type="button"
                                             onClick={() => {
                                                 setRequires2FA(false);
+                                                setUserId(null);
                                                 setTotpCode('');
                                                 setTwoFAChallenge('');
                                                 setError(null);

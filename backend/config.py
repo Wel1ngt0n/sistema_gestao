@@ -48,6 +48,8 @@ class Config:
     # Front e back estao em sites diferentes (vercel.app -> onrender.com), entao producao precisa SameSite=None.
     AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "None" if IS_PRODUCTION else "Lax")
     AUTH_COOKIE_DOMAIN = os.getenv("AUTH_COOKIE_DOMAIN") or None
+    TOTP_VALID_WINDOW = int(os.getenv("TOTP_VALID_WINDOW", "2"))
+    TWO_FACTOR_CHALLENGE_MINUTES = int(os.getenv("TWO_FACTOR_CHALLENGE_MINUTES", "5"))
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(30 * 1024 * 1024)))
     SUPPORT_MAX_IMPORT_FILES = int(os.getenv("SUPPORT_MAX_IMPORT_FILES", "20"))
     SUPPORT_MAX_IMPORT_FILE_MB = int(os.getenv("SUPPORT_MAX_IMPORT_FILE_MB", "10"))

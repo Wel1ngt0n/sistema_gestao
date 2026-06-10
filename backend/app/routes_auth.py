@@ -91,7 +91,7 @@ def verify_2fa_logic():
     """Verifica o codigo 2FA e conclui a emissao do JWT."""
     data = request.json or {}
     user_id = data.get('user_id')
-    code = data.get('code')
+    code = ''.join(ch for ch in str(data.get('code') or '') if ch.isdigit())
     challenge = data.get('challenge')
 
     if not user_id or not code:
@@ -102,6 +102,7 @@ def verify_2fa_logic():
 
     challenge_payload = decode_2fa_challenge_token(challenge)
     if not challenge_payload or str(challenge_payload.get('sub')) != str(user_id):
+        logger.warning("Falha no desafio 2FA para o usuario %s.", user_id)
         return jsonify({"error": "Desafio 2FA invalido ou expirado. Faca login novamente."}), 401
 
     user = User.query.get(user_id)
