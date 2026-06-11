@@ -8,6 +8,7 @@ export interface ResumoFinanceiroImplantacao {
     mensalidade_pendente_entrada: number;
     mrr_ativado: number;
     mrr_pendente_cobranca: number;
+    mrr_em_implantacao: number;
     lojas_em_implantacao: number;
     lojas_prontas_para_cobranca: number;
 }
