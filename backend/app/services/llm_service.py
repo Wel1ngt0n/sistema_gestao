@@ -35,10 +35,15 @@ class LLMService:
                     {"role": "system", "content": system_role},
                     {"role": "user", "content": prompt}
                 ],
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
+                max_tokens=1000,
+                user="system_user"
             )
             
-            content = response.choices[0].message.content
+            message = response.choices[0].message
+            if getattr(message, 'refusal', None):
+                raise ValueError(f"IA recusou responder a requisição: {message.refusal}")
+            content = message.content
             return json.loads(content)
             
         except Exception as e:
@@ -65,7 +70,11 @@ class LLMService:
                 params["tools"] = tools
                 params["tool_choice"] = "auto"
 
-            response = self.openai_client.chat.completions.create(**params)
+            response = self.openai_client.chat.completions.create(
+                max_tokens=1000,
+                user="system_user",
+                **params
+            )
             return response.choices[0].message
             
         except Exception as e:
@@ -184,7 +193,7 @@ Formato: • Nome da Loja/Rede — R$ [MRR]
 * Formatar para leitura rápida no Slack usando negritos e emojis
 * Usar separadores "---" entre seções"""
             else:
-                system_instruction = "Você é um gestor de operações sênior geran do um relatório mensal executivo de implantação SaaS."
+                system_instruction = "Você é um gestor de operações sênior gerando um relatório mensal executivo de implantação SaaS."
 
             prompt = f"Aqui estão os dados do mês fechado:\n{json.dumps(context_data, indent=2)}\n\nPor favor, gere o resumo conforme o formato solicitado."
             
@@ -193,9 +202,14 @@ Formato: • Nome da Loja/Rede — R$ [MRR]
                 messages=[
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
-                ]
+                ],
+                max_tokens=3000,
+                user="system_user"
             )
-            return res.choices[0].message.content
+            message = res.choices[0].message
+            if getattr(message, 'refusal', None):
+                raise ValueError(f"IA recusou responder a requisição: {message.refusal}")
+            return message.content
         except Exception as e:
             self.logger.error(f"Erro ao gerar relatório mensal OpenAI: {e}")
             return f"Erro ao gerar relatório: {str(e)}"

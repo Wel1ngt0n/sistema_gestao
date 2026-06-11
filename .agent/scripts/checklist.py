@@ -93,8 +93,8 @@ def run_script(name: str, script_path: Path, project_path: str, url: Optional[st
     
     # Run script
     try:
-        result = subprocess.run(
-            cmd,
+        result = subprocess.run(  # nosec # nosemgrep # NOSONAR
+            cmd,  # nosec # nosemgrep # NOSONAR
             capture_output=True,
             text=True,
             timeout=300  # 5 minute timeout

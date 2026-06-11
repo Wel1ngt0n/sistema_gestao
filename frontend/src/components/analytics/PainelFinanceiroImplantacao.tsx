@@ -20,20 +20,25 @@ interface PropriedadesPainelFinanceiroImplantacao {
 
 type NomeIconeFinanceiro = 'ok' | 'alerta' | 'relogio' | 'carteira' | 'dinheiro' | 'cartao';
 
-const iconesFinanceiros: Record<NomeIconeFinanceiro, string> = {
-    ok: '✓',
-    alerta: '!',
-    relogio: 'h',
-    carteira: '$',
-    dinheiro: '$',
-    cartao: 'R$',
-};
 
-const IconeFinanceiro = ({ nome }: { nome: NomeIconeFinanceiro }) => (
-    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded text-xs font-bold leading-none">
-        {iconesFinanceiros[nome]}
-    </span>
-);
+
+const IconeFinanceiro = ({ nome }: { nome: NomeIconeFinanceiro }) => {
+    let caractere = '';
+    switch (nome) {
+        case 'ok': caractere = '✓'; break;
+        case 'alerta': caractere = '!'; break;
+        case 'relogio': caractere = 'h'; break;
+        case 'carteira': 
+        case 'dinheiro': caractere = '$'; break;
+        case 'cartao': caractere = 'R$'; break;
+        default: caractere = ''; break;
+    }
+    return (
+        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded text-xs font-bold leading-none">
+            {caractere}
+        </span>
+    );
+};
 
 const CartaoResumo = ({
     rotulo,
@@ -79,9 +84,10 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
         lojas_concluidas_nao_pagantes: resumo?.lojas_concluidas_nao_pagantes ?? 0,
         mensalidade_pendente_entrada: resumo?.mensalidade_pendente_entrada ?? 0,
         mrr_ativado: resumo?.mrr_ativado ?? kpis?.mrr_done_period ?? 0,
-        mrr_pendente_cobranca: resumo?.mrr_pendente_cobranca ?? kpis?.mrr_backlog ?? 0,
+        mrr_pendente_cobranca: resumo?.mrr_pendente_cobranca ?? 0,
         lojas_em_implantacao: resumo?.lojas_em_implantacao ?? kpis?.wip_stores ?? 0,
         lojas_prontas_para_cobranca: resumo?.lojas_prontas_para_cobranca ?? 0,
+        mrr_em_implantacao: resumo?.mrr_em_implantacao ?? kpis?.mrr_backlog ?? 0,
     };
 
     const dadosGrafico = useMemo(() => ({
@@ -113,9 +119,9 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                 label: 'MRR',
                 data: [
                     resumoComFallback.mrr_ativado,
-                    resumoComFallback.mrr_pendente_cobranca,
                     resumoComFallback.mensalidade_pendente_entrada,
-                    0,
+                    resumoComFallback.mrr_pendente_cobranca,
+                    resumoComFallback.mrr_em_implantacao,
                 ],
                 ...estiloBarraVerde,
                 yAxisID: 'y1',

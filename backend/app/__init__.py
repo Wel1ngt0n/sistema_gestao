@@ -68,11 +68,18 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
     
-    # Inicializa o agendador de sincronismo.
-    from app.scheduler import init_scheduler
-    # No Render, evita multiplas instancias do scheduler quando houver varios workers.
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or os.environ.get('FLASK_ENV') == 'production':
-        init_scheduler(app)
+    # Inicializa o agendador apenas quando a dependencia estiver disponivel.
+    try:
+        from app.scheduler import init_scheduler
+    except ModuleNotFoundError as erro_scheduler:
+        app.logger.warning(
+            "Scheduler indisponivel no ambiente atual; inicializacao ignorada. Detalhe: %s",
+            erro_scheduler,
+        )
+    else:
+        # No Render, evita multiplas instancias do scheduler quando houver varios workers.
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or os.environ.get('FLASK_ENV') == 'production':
+            init_scheduler(app)
     
     # Garante tabelas em execucao local/CLI e aplica reparos leves de schema.
     with app.app_context():

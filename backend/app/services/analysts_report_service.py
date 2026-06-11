@@ -327,22 +327,17 @@ class AnalystsReportService:
                 else:
                     carga_ponderada += 0.5
                     filiais_ativas += 1
-            
             # MRR Ativo
             mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
             
             # Entregas Periodo (De acordo com filtro)
-            if start_date and end_date:
-                concluidas_mes = [s for s in concluidas if s.effective_finished_at and start_date <= s.effective_finished_at <= end_date]
-            else:
-                first_day_of_month = datetime(now.year, now.month, 1)
-                concluidas_mes = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= first_day_of_month]
+            effective_end = end_date or now
+            concluidas_mes = [s for s in concluidas if s.effective_finished_at and start_date <= s.effective_finished_at <= effective_end]
                 
             throughput_mes = len(concluidas_mes)
             
             # Se for buscar as SLA concluídas, queremos olhar apenas paras lojas concluídas NO PERÍODO.
-            if start_date and end_date:
-                concluidas = concluidas_mes
+            concluidas = concluidas_mes
             
             # 1. SLA Concluídas
             sla_ok_concluidas = 0
@@ -520,38 +515,50 @@ class AnalystsReportService:
             
         last_ai_analysis = None
 
-        # Obter todas as lojas do analista
-        stores = Store.query.filter(
-            or_(
-                Store.implantador == implantador_name,
-                Store.implantador_atual == implantador_name
-            ),
-            Store.status_norm != 'CANCELED'
-        ).filter(
-            or_(
-                Store.status_norm != 'DONE',
-                Store.manual_finished_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.end_real_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.finished_at >= AnalystsReportService.CUTOFF_DATE,
-                Store.created_at >= AnalystsReportService.CUTOFF_DATE
+        # Filtrar as lojas para o período operacional de 2026 em diante (para manter compatibilidade com cálculos operacionais)
+        stores = [
+            s for s in all_stores
+            if s.status_norm != 'CANCELED' and (
+                s.status_norm != 'DONE' or
+                (s.manual_finished_at and s.manual_finished_at >= AnalystsReportService.CUTOFF_DATE) or
+                (s.end_real_at and s.end_real_at >= AnalystsReportService.CUTOFF_DATE) or
+                (s.finished_at and s.finished_at >= AnalystsReportService.CUTOFF_DATE) or
+                (s.created_at and s.created_at >= AnalystsReportService.CUTOFF_DATE)
             )
-        ).all()
+        ]
 
-
+        # Cálculos de todo o histórico do implantador
+        concluidas_historico = [s for s in all_stores if s.status_norm == 'DONE' or s.manual_finished_at is not None]
+        mrr_entregue_historico = sum(s.valor_mensalidade or 0.0 for s in concluidas_historico)
         
+        canceladas_historico = [s for s in all_stores if s.status_norm == 'CANCELED']
+        mrr_churn_historico = sum(s.valor_mensalidade or 0.0 for s in canceladas_historico)
+        
+        ativas_historico = [s for s in all_stores if s.status_norm == 'IN_PROGRESS' and not s.is_scheduled]
+        mrr_progresso_historico = sum(s.valor_mensalidade or 0.0 for s in ativas_historico)
+        
+        total_dias_concluidas = 0
+        for s in concluidas_historico:
+            total_dias_concluidas += (s.dias_totais_implantacao or 0)
+        tempo_medio_historico = (total_dias_concluidas / len(concluidas_historico)) if len(concluidas_historico) > 0 else 0
+
+        matrizes_historico = sum(1 for s in all_stores if s.tipo_loja and s.tipo_loja.lower() == 'matriz')
+        filiais_historico = len(all_stores) - matrizes_historico
+
         ativas = [s for s in stores if s.status_norm != 'DONE' and not s.is_scheduled]
         programadas = [s for s in stores if s.status_norm != 'DONE' and s.is_scheduled]
         concluidas = [s for s in stores if s.status_norm == 'DONE']
         
         now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
+        effective_end = end_date or now
         
-        if start_date and end_date:
-            concluidas_30d = [s for s in concluidas if s.effective_finished_at and start_date <= s.effective_finished_at <= end_date]
-            # Override concluidas to only analyze stores delivered in this period
-            concluidas = concluidas_30d
+        if start_date:
+            concluidas_30d = [s for s in concluidas if s.effective_finished_at and start_date <= s.effective_finished_at <= effective_end]
         else:
+            thirty_days_ago = now - timedelta(days=30)
             concluidas_30d = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= thirty_days_ago]
+            
+        concluidas = concluidas_30d
         
         carga_ponderada = sum(1.0 if (s.tipo_loja and s.tipo_loja.lower() == 'matriz') else 0.5 for s in ativas)
         mrr_ativo = sum((s.valor_mensalidade or 0.0) for s in ativas)
@@ -761,7 +768,19 @@ class AnalystsReportService:
                 "diagnostico_causas": causas_imp,
                 "score": score,
                 "meta_info": goal_metrics,
-                "personal_actions": personal_actions
+                "personal_actions": personal_actions,
+                "historico": {
+                    "total_lojas": len(all_stores),
+                    "lojas_concluidas": len(concluidas_historico),
+                    "mrr_concluido": mrr_entregue_historico,
+                    "lojas_churn": len(canceladas_historico),
+                    "mrr_churn": mrr_churn_historico,
+                    "lojas_em_progresso": len(ativas_historico),
+                    "mrr_em_progresso": mrr_progresso_historico,
+                    "tempo_medio": round(tempo_medio_historico, 1),
+                    "matrizes": matrizes_historico,
+                    "filiais": filiais_historico
+                }
             },
             "carteira_atual": carteira_atual,
             "programadas": programadas_list,

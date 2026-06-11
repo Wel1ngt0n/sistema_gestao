@@ -220,6 +220,7 @@ def get_financeiro_implantacao(payload):
     """
     try:
         from app.models import Store
+        from app.services.analytics_service import DATA_CUTOFF
 
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
@@ -255,6 +256,7 @@ def get_financeiro_implantacao(payload):
         mrr_ativado = 0.0
         mrr_pendente_cobranca = 0.0
         mensalidade_pendente_entrada = 0.0
+        mrr_em_implantacao = 0.0
         lojas_detalhe = []
 
         for store in all_stores:
@@ -265,7 +267,8 @@ def get_financeiro_implantacao(payload):
 
             # Date filter for concluded stores
             if is_done and finished:
-                if start_date and finished < start_date:
+                effective_start = start_date or DATA_CUTOFF
+                if finished < effective_start:
                     continue
                 if end_date and finished > end_date:
                     continue
@@ -289,6 +292,7 @@ def get_financeiro_implantacao(payload):
                     continue
                 status_cobranca = 'em_implantacao'
                 lojas_em_implantacao += 1
+                mrr_em_implantacao += mensalidade
 
             # Calculate days since conclusion
             dias_desde_conclusao = None
@@ -334,6 +338,7 @@ def get_financeiro_implantacao(payload):
                 'mrr_pendente_cobranca': mrr_pendente_cobranca,
                 'lojas_em_implantacao': lojas_em_implantacao,
                 'lojas_prontas_para_cobranca': lojas_prontas_para_cobranca,
+                'mrr_em_implantacao': mrr_em_implantacao,
             },
             'lojas': lojas_detalhe,
         }), 200

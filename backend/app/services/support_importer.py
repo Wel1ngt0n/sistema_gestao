@@ -39,7 +39,8 @@ def slugify(text: Any) -> str:
 
 
 def get_hash(text: Any) -> str:
-    return hashlib.md5(str(text).encode("utf-8")).hexdigest()
+    # Usamos MD5 aqui apenas para manter a retrocompatibilidade com hashes salvos no banco.
+    return hashlib.md5(str(text).encode("utf-8")).hexdigest()  # nosec
 
 
 def normalize_empty(value: Any) -> Optional[str]:
@@ -155,7 +156,8 @@ def normalize_granularity(value: Any) -> str:
 
 def window_key(granularity: str, start_date: date, end_date: date) -> str:
     raw = f"{granularity}:{start_date.isoformat()}:{end_date.isoformat()}"
-    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:WINDOW_KEY_SIZE]
+    # Usamos MD5 aqui para retrocompatibilidade com chaves de janelas de banco de dados.
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:WINDOW_KEY_SIZE]  # nosec
 
 
 def window_label(granularity: str, start_date: date, end_date: date) -> str:
