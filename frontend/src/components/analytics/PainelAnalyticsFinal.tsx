@@ -48,7 +48,6 @@ const IconeSucesso = criarIconeLocal('✓');
 const IconeRelogio = criarIconeLocal('h');
 const IconePainel = criarIconeLocal('▦');
 const IconeMeta = criarIconeLocal('◎');
-const IconeTrofeu = criarIconeLocal('★');
 const IconeUsuarios = criarIconeLocal('U');
 const IconeCarteira = criarIconeLocal('$');
 
@@ -57,18 +56,22 @@ const abasAnalytics = [
     { nome: 'Financeiro', icone: IconeCarteira },
     { nome: 'Eficiência e risco', icone: IconeAlerta },
     { nome: 'Time e performance', icone: IconeUsuarios },
-    { nome: 'Perfil dos analistas', icone: IconeTrofeu },
 ];
 
 const formatarDias = (valor?: number | null) => `${valor || 0} dias`;
 
 type SnapshotMetaVariavel = {
     meta_geral_valor?: number;
+    meta_geral_lojas?: number;
     ticket_medio?: number;
     lojas_meta_total?: number;
     lojas_entregues_ano?: number;
+    lojas_restantes?: number;
+    mrr_entregue_ano?: number;
+    mrr_restante?: number;
     meses_restantes?: number;
     meta_mensal_recalculada?: number;
+    meta_mrr_mensal_recalculada?: number;
     data_snapshot?: string;
 };
 
@@ -116,12 +119,12 @@ export default function PainelAnalyticsFinal() {
     } = useDadosAnalytics(filtros);
 
     const [dadosCockpit, setDadosCockpit] = useState<any[]>([]);
-    const [resumoCockpit, setResumoCockpit] = useState<any>(null);
     const [metricasMedias, setMetricasMedias] = useState<any>(null);
     const [acoesTime, setAcoesTime] = useState<any[]>([]);
     const [carregandoCockpit, setCarregandoCockpit] = useState(false);
     const [campoOrdenacao, setCampoOrdenacao] = useState('score');
     const [ordenacaoAscendente, setOrdenacaoAscendente] = useState(false);
+    const [visaoGraficoEntregas, setVisaoGraficoEntregas] = useState<'lojas' | 'mrr'>('lojas');
 
     useEffect(() => {
         const carregarCockpit = async () => {
@@ -129,7 +132,6 @@ export default function PainelAnalyticsFinal() {
             try {
                 const resposta = await api.get('/api/reports/implantadores/cockpit?period=all');
                 setDadosCockpit(resposta.data.analysts || []);
-                setResumoCockpit(resposta.data.summary);
                 setMetricasMedias(resposta.data.avg_metrics);
                 setAcoesTime(resposta.data.team_actions || []);
             } catch (erro) {
@@ -153,20 +155,26 @@ export default function PainelAnalyticsFinal() {
         [kpis, tendenciasSeguras],
     );
     const metaMensalVariavel = Number(snapshotMetaVariavel.meta_mensal_recalculada || 0);
+    const metaMrrMensalVariavel = Number(snapshotMetaVariavel.meta_mrr_mensal_recalculada || 0);
+    const graficoEntregasEmMrr = visaoGraficoEntregas === 'mrr';
 
     const dadosGraficoEntregas = {
         labels: rotulosTendencia,
         datasets: [
             {
                 type: 'line' as const,
-                label: 'Lojas entregues',
-                data: tendenciasSeguras.map((item) => item.throughput),
+                label: graficoEntregasEmMrr ? 'MRR entregue' : 'Lojas entregues',
+                data: tendenciasSeguras.map((item) => graficoEntregasEmMrr ? Number(item.total_mrr || 0) : item.throughput),
                 ...estiloLinhaLaranja,
             },
             {
                 type: 'line' as const,
-                label: 'Meta variável salva',
-                data: tendenciasSeguras.map((item) => Number((item as any)?.meta_mensal_variavel || metaMensalVariavel)),
+                label: graficoEntregasEmMrr ? 'Meta variável de MRR' : 'Meta variável de lojas',
+                data: tendenciasSeguras.map((item) => (
+                    graficoEntregasEmMrr
+                        ? Number(item.meta_mrr_mensal_variavel || metaMrrMensalVariavel)
+                        : Number(item.meta_mensal_variavel || metaMensalVariavel)
+                )),
                 ...estiloLinhaMetaVariavel,
             },
         ],
@@ -184,7 +192,13 @@ export default function PainelAnalyticsFinal() {
                 callbacks: {
                     label: (contexto: any) => {
                         const valor = Number(contexto.parsed.y || 0);
-                        return contexto.dataset.label === 'Meta variável salva'
+                        const ehMeta = String(contexto.dataset.label || '').includes('Meta');
+                        if (graficoEntregasEmMrr) {
+                            return ehMeta
+                                ? `Meta variável: ${formatarMoeda(valor)}`
+                                : `MRR entregue: ${formatarMoeda(valor)}`;
+                        }
+                        return ehMeta
                             ? `Meta variável: ${valor.toFixed(1)} lojas`
                             : `Lojas entregues: ${valor}`;
                     },
@@ -274,6 +288,21 @@ export default function PainelAnalyticsFinal() {
         });
     }, [dadosCockpit, campoOrdenacao, ordenacaoAscendente]);
 
+    const resumoTime2026 = useMemo(() => {
+        const analistas = Array.isArray(dadosCockpit) ? dadosCockpit : [];
+        const entregas2026 = analistas.reduce((total, item) => total + Number(item.entregas_2026 ?? item.total_lojas_historico ?? 0), 0);
+        const retrabalhos2026 = analistas.reduce((total, item) => total + Number(item.retrabalhos_2026 ?? 0), 0);
+        const mrrAtivo = analistas.reduce((total, item) => total + Number(item.mrr_ativo ?? 0), 0);
+        const wip = analistas.reduce((total, item) => total + Number(item.ativos ?? 0), 0);
+        return {
+            entregas2026,
+            retrabalhos2026,
+            pctRetrabalho2026: entregas2026 > 0 ? (retrabalhos2026 / entregas2026) * 100 : 0,
+            mrrAtivo,
+            wip,
+        };
+    }, [dadosCockpit]);
+
     if (carregando && !kpis) {
         return (
             <div className="flex min-h-[70vh] items-center justify-center bg-zinc-50">
@@ -344,28 +373,60 @@ export default function PainelAnalyticsFinal() {
                                     <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
                                         <IconeGrafico size={16} className="text-[#ff7900]" />
                                         Vazão de entregas
-                                        <InfoTooltip text="Mantém a leitura atual de throughput em linha e compara com a meta variável salva no snapshot." />
+                                        <InfoTooltip text="Compara lojas ou MRR entregues no mês contra a meta variável recalculada a partir das metas configuradas." />
                                     </h3>
-                                    <p className="mt-1 text-sm text-zinc-500">Volume entregue por mês, preservando o recorte de período, implantador e snapshot da meta recalculada.</p>
+                                    <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                        <p className="text-sm text-zinc-500">Volume e MRR entregues por mês, com meta recalculada pelo saldo anual restante.</p>
+                                        <div className="inline-flex w-fit rounded-lg border border-zinc-200 bg-zinc-50 p-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setVisaoGraficoEntregas('lojas')}
+                                                className={juntarClasses(
+                                                    'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                                                    !graficoEntregasEmMrr ? 'bg-white text-[#ff7900] shadow-sm' : 'text-zinc-500 hover:text-zinc-900',
+                                                )}
+                                            >
+                                                Lojas
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVisaoGraficoEntregas('mrr')}
+                                                className={juntarClasses(
+                                                    'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                                                    graficoEntregasEmMrr ? 'bg-white text-[#ff7900] shadow-sm' : 'text-zinc-500 hover:text-zinc-900',
+                                                )}
+                                            >
+                                                MRR
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="mt-5 h-[360px]">
                                         <GraficoReact type="line" data={dadosGraficoEntregas} options={opcoesEntregas} />
                                     </div>
-                                    <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-orange-100 bg-orange-50/50 p-3 text-xs text-zinc-700 md:grid-cols-4">
+                                    <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-orange-100 bg-orange-50/50 p-3 text-xs text-zinc-700 md:grid-cols-6">
                                         <div>
-                                            <p className="font-semibold text-zinc-500">Meta geral</p>
+                                            <p className="font-semibold text-zinc-500">Meta MRR</p>
                                             <p className="mt-1 font-semibold text-zinc-950">{formatarMoeda(snapshotMetaVariavel.meta_geral_valor)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-zinc-500">Meta lojas</p>
+                                            <p className="mt-1 font-semibold text-zinc-950">{Number(snapshotMetaVariavel.meta_geral_lojas || snapshotMetaVariavel.lojas_meta_total || 0).toFixed(0)}</p>
                                         </div>
                                         <div>
                                             <p className="font-semibold text-zinc-500">Ticket médio</p>
                                             <p className="mt-1 font-semibold text-zinc-950">{formatarMoeda(snapshotMetaVariavel.ticket_medio)}</p>
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-zinc-500">Restante</p>
-                                            <p className="mt-1 font-semibold text-zinc-950">{Math.max(0, Number(snapshotMetaVariavel.lojas_meta_total || 0) - Number(snapshotMetaVariavel.lojas_entregues_ano || 0)).toFixed(1)} lojas</p>
+                                            <p className="font-semibold text-zinc-500">Restam lojas</p>
+                                            <p className="mt-1 font-semibold text-zinc-950">{Number(snapshotMetaVariavel.lojas_restantes ?? Math.max(0, Number(snapshotMetaVariavel.lojas_meta_total || 0) - Number(snapshotMetaVariavel.lojas_entregues_ano || 0))).toFixed(1)}</p>
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-zinc-500">Meta mensal</p>
+                                            <p className="font-semibold text-zinc-500">Meta lojas/mês</p>
                                             <p className="mt-1 font-semibold text-zinc-950">{metaMensalVariavel.toFixed(1)} lojas/mês</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-zinc-500">Meta MRR/mês</p>
+                                            <p className="mt-1 font-semibold text-zinc-950">{formatarMoeda(metaMrrMensalVariavel)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -458,30 +519,36 @@ export default function PainelAnalyticsFinal() {
                         {/* === ABA 4: TIME E PERFORMANCE === */}
                         <Tab.Panel className="space-y-6 focus:outline-none">
                             <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                <CartaoKpi label="SLA médio" value={`${resumoCockpit?.avg_sla || 0}%`} color={(resumoCockpit?.avg_sla || 0) >= 85 ? 'green' : 'orange'} icon={IconeMeta} subtext="Meta operacional: 85%" />
-                                <CartaoKpi label="Vazão mensal" value={resumoCockpit?.total_entregues_mes || 0} color="green" icon={IconeSucesso} subtext="Lojas entregues no mês" />
-                                <CartaoKpi label="Retrabalho médio" value={`${resumoCockpit?.avg_retrabalho || 0}%`} color={(resumoCockpit?.avg_retrabalho || 0) > 10 ? 'red' : 'slate'} icon={IconeAlerta} subtext="Indicador de qualidade" />
-                                <CartaoKpi label="Analistas ativos" value={resumoCockpit?.total_ativos || dadosCockpit.length} color="slate" icon={IconeUsuarios} subtext="Equipe com carteira ativa" />
+                                <CartaoKpi label="Entregas 2026" value={resumoTime2026.entregas2026} color="green" icon={IconeSucesso} subtext="Lojas implantadas no ano" />
+                                <CartaoKpi label="WIP atual" value={resumoTime2026.wip} color="slate" icon={IconeUsuarios} subtext="Carteira ativa do time" />
+                                <CartaoKpi label="MRR em gestão" value={formatarMoeda(resumoTime2026.mrrAtivo)} color="orange" icon={IconeCarteira} subtext="Mensalidade em implantação" />
+                                <CartaoKpi label="Retrabalho 2026" value={`${resumoTime2026.retrabalhos2026} (${resumoTime2026.pctRetrabalho2026.toFixed(0)}%)`} color={resumoTime2026.pctRetrabalho2026 > 10 ? 'red' : 'slate'} icon={IconeAlerta} subtext="Histórico de qualidade no ano" />
                             </section>
 
                             <section className="grid grid-cols-1 gap-6 xl:grid-cols-12">
                                 <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm xl:col-span-9">
-                                    <div className="border-b border-zinc-100 bg-zinc-50 px-5 py-4">
-                                        <h3 className="text-sm font-semibold text-zinc-950">Mesa comparativa de performance</h3>
-                                        <p className="mt-1 text-xs text-zinc-500">Score, risco, carga, WIP, histórico, retrabalho, idle e SLA preservados.</p>
+                                    <div className="flex flex-col gap-2 border-b border-zinc-100 bg-zinc-50 px-5 py-4 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-zinc-950">Mesa comparativa por implantador</h3>
+                                            <p className="mt-1 text-xs text-zinc-500">Historico de entregas e retrabalho limitado a 2026. Clique em um implantador para abrir o perfil.</p>
+                                        </div>
+                                        <span className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-500">
+                                            {cockpitOrdenado.length} implantadores
+                                        </span>
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-sm">
                                             <thead className="border-b border-zinc-100 bg-zinc-50 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
                                                 <tr>
-                                                    <th className="px-3 py-3">Analista</th>
+                                                    <th className="min-w-[210px] px-3 py-3">Implantador</th>
                                                     <th className="cursor-pointer px-3 py-3 text-center hover:text-[#ff7900]" onClick={() => ordenarCockpit('score')}>Score</th>
                                                     <th className="px-3 py-3 text-center">Risco</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('total_lojas_historico')}>Entregas 2026</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('entregas_mes')}>Mes</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('retrabalhos_2026')}>Retr. 2026</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('ativos')}>WIP</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('carga_ponderada')}>Carga</th>
-                                                    <th className="px-3 py-3 text-right">WIP</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('total_lojas_historico')}>Histórico</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('entregas_mes')}>Entregas</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('pct_retrabalho')}>Retr.</th>
+                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('mrr_ativo')}>MRR</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('idle_medio')}>Idle</th>
                                                     <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('pct_sla_concluidas')}>SLA</th>
                                                 </tr>
@@ -497,18 +564,22 @@ export default function PainelAnalyticsFinal() {
                                                             className="cursor-pointer transition-colors hover:bg-orange-50/30"
                                                             onClick={() => navegar(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
                                                         >
-                                                            <td className="px-3 py-3 font-semibold text-zinc-800">{item.implantador}</td>
+                                                            <td className="px-3 py-3">
+                                                                <div className="font-semibold text-zinc-900">{item.implantador}</div>
+                                                                <div className="mt-0.5 text-[11px] text-zinc-500">{item.recommendation || 'Abrir perfil individual'}</div>
+                                                            </td>
                                                             <td className="px-3 py-3 text-center"><SeloScorePerformance score={item.score?.score_final || 0} size="sm" /></td>
                                                             <td className="px-3 py-3 text-center">
                                                                 <span className={juntarClasses('rounded-full px-2 py-1 text-[10px] font-bold uppercase', risco === 'CRITICAL' ? 'bg-rose-50 text-rose-600' : risco === 'HIGH' ? 'bg-orange-50 text-orange-700' : 'bg-emerald-50 text-emerald-700')}>
                                                                     {risco}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.carga_ponderada?.toFixed(1) || 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{capacidadeAnalista?.store_count || 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.total_lojas_historico || 0}</td>
+                                                            <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.entregas_2026 ?? item.total_lojas_historico ?? 0}</td>
                                                             <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.entregas_mes || 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.pct_retrabalho?.toFixed?.(0) || 0}%</td>
+                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.retrabalhos_2026 || 0}</td>
+                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.ativos ?? capacidadeAnalista?.store_count ?? 0}</td>
+                                                            <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.carga_ponderada?.toFixed(1) || 0}</td>
+                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{formatarMoeda(item.mrr_ativo || 0)}</td>
                                                             <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.idle_medio || 0}d</td>
                                                             <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.pct_sla_concluidas || 0}%</td>
                                                         </tr>
@@ -530,37 +601,6 @@ export default function PainelAnalyticsFinal() {
                             </section>
                         </Tab.Panel>
 
-                        {/* === ABA 5: PERFIL DOS ANALISTAS === */}
-                        <Tab.Panel className="space-y-6 focus:outline-none">
-                            <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-                                <h3 className="text-sm font-semibold text-zinc-950">Perfil dos analistas</h3>
-                                <p className="mt-1 text-sm text-zinc-500">
-                                    Entrada rápida para o drill-down individual, mantendo plano de ação, Jarvis, radar, gargalos, carteira ativa e entregas recentes na rota atual.
-                                </p>
-                                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                    {cockpitOrdenado.map((analista) => (
-                                        <button
-                                            key={analista.implantador}
-                                            onClick={() => navegar(`/team-diagnostics/${encodeURIComponent(analista.implantador)}`)}
-                                            className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-left transition-all hover:border-orange-200 hover:bg-orange-50/30"
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="font-semibold text-zinc-900">{analista.implantador}</p>
-                                                    <p className="mt-1 text-xs text-zinc-500">{analista.recommendation || 'Abrir perfil operacional'}</p>
-                                                </div>
-                                                <SeloScorePerformance score={analista.score?.score_final || 0} size="sm" />
-                                            </div>
-                                            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                                                <span className="rounded-md bg-white px-2 py-1 text-zinc-600">{analista.entregas_mes || 0} entregas</span>
-                                                <span className="rounded-md bg-white px-2 py-1 text-zinc-600">{analista.idle_medio || 0}d idle</span>
-                                                <span className="rounded-md bg-white px-2 py-1 text-zinc-600">{analista.pct_sla_concluidas || 0}% SLA</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </section>
-                        </Tab.Panel>
                     </Tab.Panels>
                 </Tab.Group>
             </div>

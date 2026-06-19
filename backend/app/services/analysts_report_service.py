@@ -303,16 +303,22 @@ class AnalystsReportService:
 
             # Cálculo de lojas e tipos de lojas históricas (sem filtro de cutoff)
             all_historical_stores = Store.query.filter(
-                or_(
-                    Store.implantador == imp,
-                    Store.implantador_atual == imp
-                ),
-                Store.status_norm != 'CANCELED'
+                Store.implantador == imp,
+                Store.status_norm == 'DONE'
             ).all()
+
+            all_historical_stores = [
+                s for s in all_historical_stores
+                if s.effective_finished_at
+                and s.effective_finished_at >= AnalystsReportService.CUTOFF_DATE
+                and (not end_date or s.effective_finished_at <= end_date)
+            ]
 
             total_lojas_historico = len(all_historical_stores)
             matrizes_historico = sum(1 for s in all_historical_stores if s.tipo_loja and s.tipo_loja.lower() == 'matriz')
             filiais_historico = total_lojas_historico - matrizes_historico
+            retrabalho_historico = sum(1 for s in all_historical_stores if s.teve_retrabalho)
+            pct_retrabalho_historico = (retrabalho_historico / total_lojas_historico * 100) if total_lojas_historico > 0 else 0
             ativos_momento = len(ativas)
             
             # Carga Ponderada (Somente Ativas)
@@ -414,8 +420,11 @@ class AnalystsReportService:
                 "idle_critico_count": idle_critico_count,
                 "score": score,
                 "total_lojas_historico": total_lojas_historico,
+                "entregas_2026": total_lojas_historico,
                 "matrizes_historico": matrizes_historico,
                 "filiais_historico": filiais_historico,
+                "retrabalhos_2026": retrabalho_historico,
+                "pct_retrabalho_2026": round(pct_retrabalho_historico, 1),
                 "ativos_momento": ativos_momento
             })
             

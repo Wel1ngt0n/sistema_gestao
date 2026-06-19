@@ -5,8 +5,13 @@ import type { AnalyticsFiltersState } from './useDashboardUrlParams';
 export interface ResumoFinanceiroImplantacao {
     lojas_concluidas_pagantes: number;
     lojas_concluidas_nao_pagantes: number;
+    lojas_concluidas_nao_pagantes_explicitas?: number;
+    lojas_concluidas_sem_status?: number;
     mensalidade_pendente_entrada: number;
     mrr_ativado: number;
+    mrr_concluido_nao_pagante?: number;
+    mrr_concluido_sem_status?: number;
+    mrr_em_implantacao?: number;
     mrr_pendente_cobranca: number;
     lojas_em_implantacao: number;
     lojas_prontas_para_cobranca: number;
@@ -17,7 +22,7 @@ export interface LojaFinanceiroImplantacao {
     nome: string;
     implantador?: string;
     etapa: string;
-    status_cobranca: 'pagante' | 'nao_pagante' | 'pendente_cobranca' | 'em_implantacao';
+    status_cobranca: 'pagante' | 'nao_pagante' | 'sem_status_financeiro' | 'pendente_cobranca' | 'em_implantacao';
     mensalidade: number;
     data_conclusao?: string | null;
     data_prevista_cobranca?: string | null;

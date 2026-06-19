@@ -239,6 +239,10 @@ def get_financeiro_implantacao(payload):
             except ValueError:
                 pass
 
+        data_corte_financeiro = datetime(2026, 1, 1)
+        if start_date is None or start_date < data_corte_financeiro:
+            start_date = data_corte_financeiro
+
         # Query base: all stores
         query = Store.query
 
@@ -247,12 +251,39 @@ def get_financeiro_implantacao(payload):
 
         all_stores = query.all()
 
+        def normalizar_status_financeiro(valor):
+            import unicodedata
+            texto = (valor or '').strip().lower()
+            return ''.join(
+                char for char in unicodedata.normalize('NFKD', texto)
+                if not unicodedata.combining(char)
+            )
+
+        def status_sem_informacao(status):
+            return status in {'', '0', '0.0', 'none', 'null', 'nan', '-'}
+
+        def status_pagante(status):
+            if status_sem_informacao(status):
+                return False
+            if 'nao' in status or 'devendo' in status or 'pendente' in status:
+                return False
+            return status in {'pago', 'em dia', 'paga mensalidade', 'pagante'} or 'pago' in status or 'em dia' in status
+
+        def status_pronto_cobranca(status):
+            if status_sem_informacao(status):
+                return False
+            return 'pronta' in status or 'cobranca' in status
+
         # Classify stores
         lojas_concluidas_pagantes = 0
         lojas_concluidas_nao_pagantes = 0
+        lojas_concluidas_sem_status = 0
         lojas_em_implantacao = 0
         lojas_prontas_para_cobranca = 0
         mrr_ativado = 0.0
+        mrr_concluido_nao_pagante = 0.0
+        mrr_concluido_sem_status = 0.0
+        mrr_em_implantacao = 0.0
         mrr_pendente_cobranca = 0.0
         mensalidade_pendente_entrada = 0.0
         lojas_detalhe = []
@@ -261,34 +292,44 @@ def get_financeiro_implantacao(payload):
             mensalidade = store.valor_mensalidade or 0.0
             finished = store.effective_finished_at
             is_done = store.status_norm == 'DONE'
-            financeiro = (store.financeiro_status or '').strip().lower()
+            financeiro = normalizar_status_financeiro(store.financeiro_status)
 
-            # Date filter for concluded stores
-            if is_done and finished:
-                if start_date and finished < start_date:
+            # Date filter for concluded stores: financial analytics follows the 2026 implementation cut.
+            if is_done:
+                if not finished:
+                    continue
+                if finished < start_date:
                     continue
                 if end_date and finished > end_date:
                     continue
 
             # Classification logic
             if is_done:
-                if 'paga' in financeiro and 'não' not in financeiro and 'nao' not in financeiro:
+                if status_pagante(financeiro):
                     status_cobranca = 'pagante'
                     lojas_concluidas_pagantes += 1
                     mrr_ativado += mensalidade
-                elif 'pronta' in financeiro or 'cobrança' in financeiro or 'cobranca' in financeiro:
+                elif status_pronto_cobranca(financeiro):
                     status_cobranca = 'pendente_cobranca'
                     lojas_prontas_para_cobranca += 1
                     mrr_pendente_cobranca += mensalidade
+                    mensalidade_pendente_entrada += mensalidade
+                elif status_sem_informacao(financeiro):
+                    status_cobranca = 'sem_status_financeiro'
+                    lojas_concluidas_sem_status += 1
+                    mrr_concluido_sem_status += mensalidade
+                    mensalidade_pendente_entrada += mensalidade
                 else:
                     status_cobranca = 'nao_pagante'
                     lojas_concluidas_nao_pagantes += 1
+                    mrr_concluido_nao_pagante += mensalidade
                     mensalidade_pendente_entrada += mensalidade
             else:
                 if store.is_scheduled:
                     continue
                 status_cobranca = 'em_implantacao'
                 lojas_em_implantacao += 1
+                mrr_em_implantacao += mensalidade
 
             # Calculate days since conclusion
             dias_desde_conclusao = None
@@ -320,7 +361,7 @@ def get_financeiro_implantacao(payload):
         # Sort: non-paying concluded first, then by days_since_conclusion descending
         lojas_detalhe.sort(
             key=lambda x: (
-                0 if x['status_cobranca'] == 'nao_pagante' else 1 if x['status_cobranca'] == 'pendente_cobranca' else 2,
+                0 if x['status_cobranca'] in {'nao_pagante', 'sem_status_financeiro'} else 1 if x['status_cobranca'] == 'pendente_cobranca' else 2,
                 -(x['dias_desde_conclusao'] or 0),
             )
         )
@@ -328,9 +369,14 @@ def get_financeiro_implantacao(payload):
         return jsonify({
             'resumo': {
                 'lojas_concluidas_pagantes': lojas_concluidas_pagantes,
-                'lojas_concluidas_nao_pagantes': lojas_concluidas_nao_pagantes,
+                'lojas_concluidas_nao_pagantes': lojas_concluidas_nao_pagantes + lojas_concluidas_sem_status,
+                'lojas_concluidas_nao_pagantes_explicitas': lojas_concluidas_nao_pagantes,
+                'lojas_concluidas_sem_status': lojas_concluidas_sem_status,
                 'mensalidade_pendente_entrada': mensalidade_pendente_entrada,
                 'mrr_ativado': mrr_ativado,
+                'mrr_concluido_nao_pagante': mrr_concluido_nao_pagante,
+                'mrr_concluido_sem_status': mrr_concluido_sem_status,
+                'mrr_em_implantacao': mrr_em_implantacao,
                 'mrr_pendente_cobranca': mrr_pendente_cobranca,
                 'lojas_em_implantacao': lojas_em_implantacao,
                 'lojas_prontas_para_cobranca': lojas_prontas_para_cobranca,
