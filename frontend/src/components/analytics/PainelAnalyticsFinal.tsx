@@ -540,17 +540,17 @@ export default function PainelAnalyticsFinal() {
                                         <table className="w-full text-left text-sm">
                                             <thead className="border-b border-zinc-100 bg-zinc-50 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
                                                 <tr>
-                                                    <th className="min-w-[210px] px-3 py-3">Implantador</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-center hover:text-[#ff7900]" onClick={() => ordenarCockpit('score')}>Score</th>
-                                                    <th className="px-3 py-3 text-center">Risco</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('total_lojas_historico')}>Entregas 2026</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('entregas_mes')}>Mes</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('retrabalhos_2026')}>Retr. 2026</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('ativos')}>WIP</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('carga_ponderada')}>Carga</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('mrr_ativo')}>MRR</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('idle_medio')}>Idle</th>
-                                                    <th className="cursor-pointer px-3 py-3 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('pct_sla_concluidas')}>SLA</th>
+                                                    <th className="min-w-[260px] px-4 py-4">Implantador</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-center hover:text-[#ff7900]" onClick={() => ordenarCockpit('score')}>Score</th>
+                                                    <th className="px-4 py-4 text-center">Risco</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('total_lojas_historico')}>Entregas 2026</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('entregas_mes')}>Mes</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('retrabalhos_2026')}>Retr. 2026</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('ativos')}>WIP</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('carga_ponderada')}>Carga</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('mrr_ativo')}>MRR</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('idle_medio')}>Idle</th>
+                                                    <th className="cursor-pointer px-4 py-4 text-right hover:text-[#ff7900]" onClick={() => ordenarCockpit('pct_sla_concluidas')}>SLA</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-zinc-100">
@@ -564,24 +564,27 @@ export default function PainelAnalyticsFinal() {
                                                             className="cursor-pointer transition-colors hover:bg-orange-50/30"
                                                             onClick={() => navegar(`/team-diagnostics/${encodeURIComponent(item.implantador)}`)}
                                                         >
-                                                            <td className="px-3 py-3">
+                                                            <td className="px-4 py-4">
                                                                 <div className="font-semibold text-zinc-900">{item.implantador}</div>
                                                                 <div className="mt-0.5 text-[11px] text-zinc-500">{item.recommendation || 'Abrir perfil individual'}</div>
                                                             </td>
-                                                            <td className="px-3 py-3 text-center"><SeloScorePerformance score={item.score?.score_final || 0} size="sm" /></td>
-                                                            <td className="px-3 py-3 text-center">
+                                                            <td className="px-4 py-4 text-center"><SeloScorePerformance score={item.score?.score_final || 0} size="sm" /></td>
+                                                            <td className="px-4 py-4 text-center">
                                                                 <span className={juntarClasses('rounded-full px-2 py-1 text-[10px] font-bold uppercase', risco === 'CRITICAL' ? 'bg-rose-50 text-rose-600' : risco === 'HIGH' ? 'bg-orange-50 text-orange-700' : 'bg-emerald-50 text-emerald-700')}>
                                                                     {risco}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.entregas_2026 ?? item.total_lojas_historico ?? 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.entregas_mes || 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.retrabalhos_2026 || 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.ativos ?? capacidadeAnalista?.store_count ?? 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.carga_ponderada?.toFixed(1) || 0}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{formatarMoeda(item.mrr_ativo || 0)}</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs text-zinc-600">{item.idle_medio || 0}d</td>
-                                                            <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-zinc-700">{item.pct_sla_concluidas || 0}%</td>
+                                                            <td className="px-4 py-4 text-right">
+                                                                <div className="font-mono text-xs font-semibold text-zinc-700">{item.entregas_2026 ?? item.total_lojas_historico ?? 0}</div>
+                                                                <div className="mt-0.5 text-[10px] text-zinc-500">{item.matrizes_historico || 0}M / {item.filiais_historico || 0}F</div>
+                                                            </td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs text-zinc-600">{item.entregas_mes || 0}</td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs text-zinc-600">{item.retrabalhos_2026 || 0}</td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs text-zinc-600">{item.ativos ?? capacidadeAnalista?.store_count ?? 0}</td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs font-semibold text-zinc-700">{item.carga_ponderada?.toFixed(1) || 0}</td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs text-zinc-600">{formatarMoeda(item.mrr_historico || 0)}</td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs text-zinc-600">{item.idle_medio || 0}d</td>
+                                                            <td className="px-4 py-4 text-right font-mono text-xs font-semibold text-zinc-700">{item.pct_sla_concluidas || 0}%</td>
                                                         </tr>
                                                     );
                                                 })}
