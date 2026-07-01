@@ -163,6 +163,34 @@ class AnalyticsService:
         for s in wip_types:
             total_points_wip += w_matriz if s.tipo_loja == 'Matriz' else w_filial
 
+        meta_mrr_anual = 180000.0
+        meta_lojas_anual = 180
+        try:
+            cfg_meta_mrr = SystemConfig.query.filter_by(key="annual_mrr_target").first()
+            cfg_meta_lojas = SystemConfig.query.filter_by(key="annual_stores_target").first()
+            if cfg_meta_mrr:
+                meta_mrr_anual = float(cfg_meta_mrr.value)
+            if cfg_meta_lojas:
+                meta_lojas_anual = int(float(cfg_meta_lojas.value))
+        except (TypeError, ValueError):
+            pass
+
+        ano_atual = datetime.now().year
+        inicio_ano = datetime(ano_atual, 1, 1)
+        concluidas_ano = db.session.query(Store).filter(
+            or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
+            or_(
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= inicio_ano),
+                and_(Store.manual_finished_at.is_(None), Store.status_norm == 'DONE', Store.finished_at >= inicio_ano)
+            )
+        ).with_entities(Store.valor_mensalidade).all()
+        lojas_entregues_ano = len(concluidas_ano)
+        mrr_entregue_ano = sum(float(s.valor_mensalidade or 0) for s in concluidas_ano)
+        meses_restantes = max(1, 12 - datetime.now().month + 1)
+        lojas_restantes_meta = max(0, meta_lojas_anual - lojas_entregues_ano)
+        mrr_restante_meta = max(0.0, meta_mrr_anual - mrr_entregue_ano)
+        ticket_medio_meta = meta_mrr_anual / meta_lojas_anual if meta_lojas_anual else 0
+
         return {
             "wip_stores": wip_count,
             "throughput_period": throughput_count,
@@ -175,7 +203,21 @@ class AnalyticsService:
             "matrix_count": matrix_count,
             "filial_count": filial_count,
             "total_points_done": round(total_points_done, 1),
-            "total_points_wip": round(total_points_wip, 1)
+            "total_points_wip": round(total_points_wip, 1),
+            "meta_variavel_snapshot": {
+                "meta_geral_valor": round(meta_mrr_anual, 2),
+                "meta_geral_lojas": meta_lojas_anual,
+                "ticket_medio": round(ticket_medio_meta, 2),
+                "lojas_meta_total": meta_lojas_anual,
+                "lojas_entregues_ano": lojas_entregues_ano,
+                "lojas_restantes": round(lojas_restantes_meta, 1),
+                "mrr_entregue_ano": round(mrr_entregue_ano, 2),
+                "mrr_restante": round(mrr_restante_meta, 2),
+                "meses_restantes": meses_restantes,
+                "meta_mensal_recalculada": round(lojas_restantes_meta / meses_restantes, 2),
+                "meta_mrr_mensal_recalculada": round(mrr_restante_meta / meses_restantes, 2),
+                "data_snapshot": datetime.now().date().isoformat()
+            }
         }
 
     @staticmethod
@@ -213,6 +255,8 @@ class AnalyticsService:
 
         # Data de corte para query (pode ser um pouco antes do primeiro dia do mês inicial para margem)
         query_start_date = start_date_ref.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        inicio_ano_atual = datetime(datetime.now().year, 1, 1)
+        query_start_date_meta = min(query_start_date, inicio_ano_atual)
         
         # 2. Buscar lojas concluídas desde a data de corte
         finished_stores = db.session.query(Store).filter(
@@ -224,8 +268,8 @@ class AnalyticsService:
         
         finished_stores = finished_stores.filter(
             or_(
-                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= query_start_date),
-                and_(Store.manual_finished_at.is_(None), Store.status_norm == 'DONE', Store.finished_at >= query_start_date)
+                and_(Store.manual_finished_at.isnot(None), Store.manual_finished_at >= query_start_date_meta),
+                and_(Store.manual_finished_at.is_(None), Store.status_norm == 'DONE', Store.finished_at >= query_start_date_meta)
             )
         ).with_entities(
             Store.finished_at,
@@ -241,19 +285,34 @@ class AnalyticsService:
         # 3. Buscar Pesos
         w_matriz = 1.0
         w_filial = 0.7
+        meta_mrr_anual = 180000.0
+        meta_lojas_anual = 180
         try:
             cfg_m = SystemConfig.query.filter_by(key='weight_matriz').first()
             cfg_f = SystemConfig.query.filter_by(key='weight_filial').first()
+            cfg_meta_mrr = SystemConfig.query.filter_by(key="annual_mrr_target").first()
+            cfg_meta_lojas = SystemConfig.query.filter_by(key="annual_stores_target").first()
             if cfg_m: w_matriz = float(cfg_m.value)
             if cfg_f: w_filial = float(cfg_f.value)
-        except: pass
+            if cfg_meta_mrr: meta_mrr_anual = float(cfg_meta_mrr.value)
+            if cfg_meta_lojas: meta_lojas_anual = int(float(cfg_meta_lojas.value))
+        except (TypeError, ValueError):
+            pass
 
         # 4. Popular dados
+        entregas_antes_da_janela = 0
+        mrr_antes_da_janela = 0.0
         for s in finished_stores:
             end = s.manual_finished_at or s.end_real_at or s.finished_at
             if not end: continue
             
             month_key = end.strftime('%Y-%m')
+
+            if end < query_start_date:
+                if end.year == datetime.now().year:
+                    entregas_antes_da_janela += 1
+                    mrr_antes_da_janela += float(s.valor_mensalidade or 0)
+                continue
             
             # Se a loja caiu num mês que está no nosso range, contabiliza
             if month_key in trends:
@@ -277,16 +336,29 @@ class AnalyticsService:
 
         # 5. Formatar para lista final
         result = []
+        acumulado_lojas_ano = entregas_antes_da_janela
+        acumulado_mrr_ano = mrr_antes_da_janela
         for key, data in trends.items():
+            year, month = [int(part) for part in key.split('-')]
+            meses_restantes_no_ano = max(1, 12 - month + 1)
+            meta_lojas_variavel = max(0, meta_lojas_anual - acumulado_lojas_ano) / meses_restantes_no_ano
+            meta_mrr_variavel = max(0.0, meta_mrr_anual - acumulado_mrr_ano) / meses_restantes_no_ano
             count = data['count']
             result.append({
                 "month": key,
                 "throughput": count,
                 "total_points": round(data['total_points'], 1),
                 "total_mrr": round(data['total_mrr'], 1),
+                "meta_mensal_variavel": round(meta_lojas_variavel, 2),
+                "meta_mrr_mensal_variavel": round(meta_mrr_variavel, 2),
+                "cumulative_throughput": acumulado_lojas_ano + count,
+                "cumulative_mrr": round(acumulado_mrr_ano + data['total_mrr'], 2),
                 "cycle_time_avg": round(data['total_days'] / count, 1) if count > 0 else 0,
                 "otd_percentage": round((data['on_time'] / count) * 100, 1) if count > 0 else 0
             })
+            if year == datetime.now().year:
+                acumulado_lojas_ano += count
+                acumulado_mrr_ano += data['total_mrr']
             
         return result
 

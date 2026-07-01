@@ -51,20 +51,28 @@ const CartaoResumo = ({
     const cor = tom === 'verde' ? coresAnalytics.verde : tom === 'alerta' ? coresAnalytics.alerta : tom === 'neutro' ? coresAnalytics.textoSuave : coresAnalytics.laranja;
 
     return (
-        <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
+        <div className="relative rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
             <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-lg" style={{ backgroundColor: cor }} />
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{rotulo}</p>
-                    <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">{valor}</p>
+                    <p className="mt-2 text-[1.35rem] font-semibold leading-tight tracking-tight text-zinc-950">{valor}</p>
                 </div>
                 <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2" style={{ color: cor }}>
                     <IconeFinanceiro nome={icone} />
                 </div>
             </div>
-            <p className="mt-3 text-sm text-zinc-500">{apoio}</p>
+            <p className="mt-2 text-xs leading-relaxed text-zinc-500">{apoio}</p>
         </div>
     );
+};
+
+const rotulosStatusCobranca: Record<string, string> = {
+    pagante: 'Pagante',
+    nao_pagante: 'Nao pagante',
+    sem_status_financeiro: 'Sem status',
+    pendente_cobranca: 'Pronta cobranca',
+    em_implantacao: 'Em implantacao',
 };
 
 export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroImplantacao> = ({ filtros, kpis }) => {
@@ -77,45 +85,54 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
     const resumoComFallback = {
         lojas_concluidas_pagantes: resumo?.lojas_concluidas_pagantes ?? 0,
         lojas_concluidas_nao_pagantes: resumo?.lojas_concluidas_nao_pagantes ?? 0,
+        lojas_concluidas_nao_pagantes_explicitas: resumo?.lojas_concluidas_nao_pagantes_explicitas ?? resumo?.lojas_concluidas_nao_pagantes ?? 0,
+        lojas_concluidas_sem_status: resumo?.lojas_concluidas_sem_status ?? 0,
         mensalidade_pendente_entrada: resumo?.mensalidade_pendente_entrada ?? 0,
         mrr_ativado: resumo?.mrr_ativado ?? kpis?.mrr_done_period ?? 0,
+        mrr_concluido_nao_pagante: resumo?.mrr_concluido_nao_pagante ?? resumo?.mensalidade_pendente_entrada ?? 0,
+        mrr_concluido_sem_status: resumo?.mrr_concluido_sem_status ?? 0,
+        mrr_em_implantacao: resumo?.mrr_em_implantacao ?? kpis?.mrr_backlog ?? 0,
         mrr_pendente_cobranca: resumo?.mrr_pendente_cobranca ?? kpis?.mrr_backlog ?? 0,
         lojas_em_implantacao: resumo?.lojas_em_implantacao ?? kpis?.wip_stores ?? 0,
         lojas_prontas_para_cobranca: resumo?.lojas_prontas_para_cobranca ?? 0,
     };
 
     const dadosGrafico = useMemo(() => ({
-        labels: ['Pagantes', 'Não pagantes', 'Prontas cobrança', 'Em implantação'],
+        labels: ['Pagantes', 'Sem status', 'Nao pagantes', 'Prontas', 'Em implantacao'],
         datasets: [
             {
                 label: 'Lojas',
                 data: [
                     resumoComFallback.lojas_concluidas_pagantes,
-                    resumoComFallback.lojas_concluidas_nao_pagantes,
+                    resumoComFallback.lojas_concluidas_sem_status,
+                    resumoComFallback.lojas_concluidas_nao_pagantes_explicitas,
                     resumoComFallback.lojas_prontas_para_cobranca,
                     resumoComFallback.lojas_em_implantacao,
                 ],
                 ...estiloBarraLaranja,
                 backgroundColor: [
                     'rgba(18, 129, 49, 0.26)',
+                    'rgba(113, 113, 122, 0.18)',
                     'rgba(255, 121, 0, 0.28)',
                     'rgba(234, 179, 8, 0.28)',
-                    'rgba(113, 113, 122, 0.18)',
+                    'rgba(59, 130, 246, 0.16)',
                 ],
                 borderColor: [
                     'rgba(18, 129, 49, 0.72)',
+                    'rgba(113, 113, 122, 0.48)',
                     'rgba(255, 121, 0, 0.72)',
                     'rgba(234, 179, 8, 0.72)',
-                    'rgba(113, 113, 122, 0.48)',
+                    'rgba(59, 130, 246, 0.5)',
                 ],
             },
             {
                 label: 'MRR',
                 data: [
                     resumoComFallback.mrr_ativado,
+                    resumoComFallback.mrr_concluido_sem_status,
+                    resumoComFallback.mrr_concluido_nao_pagante,
                     resumoComFallback.mrr_pendente_cobranca,
-                    resumoComFallback.mensalidade_pendente_entrada,
-                    0,
+                    resumoComFallback.mrr_em_implantacao,
                 ],
                 ...estiloBarraVerde,
                 yAxisID: 'y1',
@@ -166,40 +183,40 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <CartaoResumo
-                    rotulo="Concluídas pagantes"
-                    valor={formatarNumero(resumoComFallback.lojas_concluidas_pagantes)}
-                    apoio="Lojas implantadas que já entraram em cobrança."
+                    rotulo="MRR ativado"
+                    valor={formatarMoeda(resumoComFallback.mrr_ativado)}
+                    apoio={`${formatarNumero(resumoComFallback.lojas_concluidas_pagantes)} lojas ja liberadas para cobranca.`}
                     icone="ok"
                     tom="verde"
                 />
                 <CartaoResumo
-                    rotulo="Concluídas não pagantes"
-                    valor={formatarNumero(resumoComFallback.lojas_concluidas_nao_pagantes)}
-                    apoio="Implantadas, mas ainda sem início de pagamento."
+                    rotulo="MRR pendente concluido"
+                    valor={formatarMoeda(resumoComFallback.mensalidade_pendente_entrada)}
+                    apoio={`${formatarNumero(resumoComFallback.lojas_concluidas_nao_pagantes)} lojas concluidas sem receita ativada.`}
                     icone="alerta"
                     tom="laranja"
                 />
                 <CartaoResumo
-                    rotulo="Mensalidade pendente"
-                    valor={formatarMoeda(resumoComFallback.mensalidade_pendente_entrada)}
-                    apoio="Valor que falta entrar após lojas já concluídas."
+                    rotulo="Sem status financeiro"
+                    valor={formatarNumero(resumoComFallback.lojas_concluidas_sem_status)}
+                    apoio={`${formatarMoeda(resumoComFallback.mrr_concluido_sem_status)} parado por cadastro financeiro vazio.`}
                     icone="relogio"
                     tom="alerta"
                 />
                 <CartaoResumo
-                    rotulo="MRR ativado"
-                    valor={formatarMoeda(resumoComFallback.mrr_ativado)}
-                    apoio="Receita recorrente já liberada para cobrança."
+                    rotulo="MRR em implantacao"
+                    valor={formatarMoeda(resumoComFallback.mrr_em_implantacao)}
+                    apoio={`${formatarNumero(resumoComFallback.lojas_em_implantacao)} lojas ainda em andamento.`}
                     icone="carteira"
-                    tom="verde"
+                    tom="neutro"
                 />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-                <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-7">
-                    <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-8">
+                    <div className="mb-4 flex items-start justify-between gap-4">
                         <div>
                             <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
                                 <span className="text-[#ff7900]"><IconeFinanceiro nome="dinheiro" /></span>
@@ -215,12 +232,23 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                             </span>
                         )}
                     </div>
-                    <div className="h-[360px]">
+                    <div className="h-[300px]">
                         <GraficoReact type="bar" data={dadosGrafico} options={opcoesGrafico} />
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 gap-2 border-t border-zinc-100 pt-4 text-xs text-zinc-600 md:grid-cols-3">
+                        <div>
+                            <span className="font-semibold text-zinc-900">{formatarNumero(resumoComFallback.lojas_concluidas_sem_status)}</span> concluidas sem status
+                        </div>
+                        <div>
+                            <span className="font-semibold text-zinc-900">{formatarNumero(resumoComFallback.lojas_concluidas_nao_pagantes_explicitas)}</span> marcadas como nao pagantes
+                        </div>
+                        <div>
+                            <span className="font-semibold text-zinc-900">{formatarNumero(resumoComFallback.lojas_prontas_para_cobranca)}</span> prontas para cobranca
+                        </div>
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-5">
+                <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-4">
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
                         <span className="text-[#128131]"><IconeFinanceiro nome="cartao" /></span>
                         Ação financeira por loja
@@ -229,7 +257,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                         Lista operacional para cobrar, ativar ou confirmar início de mensalidade.
                     </p>
 
-                    <div className="mt-5 space-y-3">
+                    <div className="mt-4 max-h-[410px] space-y-2 overflow-y-auto pr-1">
                         {listaLojas.length > 0 ? listaLojas.map((loja) => (
                             <div key={loja.id} className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-3">
                                 <div className="flex items-start justify-between gap-3">
@@ -240,7 +268,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                                         </p>
                                     </div>
                                     <span className="rounded-full border border-zinc-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-zinc-600">
-                                        {loja.status_cobranca.replace(/_/g, ' ')}
+                                        {rotulosStatusCobranca[loja.status_cobranca] || loja.status_cobranca.replace(/_/g, ' ')}
                                     </span>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between text-xs">

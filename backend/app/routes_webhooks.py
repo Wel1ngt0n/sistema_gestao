@@ -7,8 +7,30 @@ from sqlalchemy.exc import IntegrityError
 from app.models import db, ZenviaWebhookEvent, SystemConfig
 from app.services.security_service import require_auth, require_permission
 
+from app.services.clickup_integration_validator import ClickUpIntegrationValidator
+
 webhook_bp = Blueprint('webhook_bp', __name__)
 logger = logging.getLogger(__name__)
+
+@webhook_bp.route('/api/webhooks/clickup-validator', methods=['GET', 'POST'])
+def run_clickup_validator():
+    token = request.headers.get("X-Cron-Token") or request.args.get("token")
+    valid_token = os.environ.get("CRON_SECRET", "default_cron_secret")
+    
+    if os.environ.get("FLASK_ENV") == "production" and valid_token == "default_cron_secret":
+        logger.error("[Validator] Cron Secret default detectado em producao. Configure CRON_SECRET.")
+        return jsonify({"error": "Configuracao invalida"}), 503
+        
+    if token != valid_token:
+        return jsonify({"error": "Nao autorizado"}), 401
+
+    try:
+        validator = ClickUpIntegrationValidator()
+        logs = validator.run_validation()
+        return jsonify({"message": "Validacao concluida", "logs_gerados": len(logs), "logs": logs}), 200
+    except Exception as e:
+        logger.error(f"[Validator Webhook] Erro ao executar validador: {str(e)}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
 
 @webhook_bp.route('/api/webhooks/zenvia', methods=['POST'])
 def zenvia_webhook():
