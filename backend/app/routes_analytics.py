@@ -374,28 +374,7 @@ def get_financeiro_implantacao(payload):
                 'status_cobranca': status_cobranca,
                 'mensalidade': mensalidade,
 
-            # Calculate days since conclusion
-            dias_desde_conclusao = None
-            if finished:
-                delta = datetime.now() - finished
-                dias_desde_conclusao = max(0, delta.days)
 
-            # Active step name
-            etapa = 'Concluída' if is_done else 'Não iniciado'
-            if not is_done and store.steps:
-                sorted_steps = sorted(store.steps, key=lambda x: x.id)
-                for step in sorted_steps:
-                    if step.start_real_at and not step.end_real_at:
-                        etapa = step.step_name.strip()
-                        break
-
-            lojas_detalhe.append({
-                'id': store.id,
-                'nome': store.store_name,
-                'implantador': store.implantador,
-                'etapa': etapa,
-                'status_cobranca': status_cobranca,
-                'mensalidade': mensalidade,
                 'data_conclusao': finished.isoformat() if finished else None,
                 'data_prevista_cobranca': None,
                 'dias_desde_conclusao': dias_desde_conclusao,
