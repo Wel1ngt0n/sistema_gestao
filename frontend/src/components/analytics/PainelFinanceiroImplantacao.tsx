@@ -79,6 +79,8 @@ const rotulosStatusCobranca: Record<string, string> = {
     sem_status_financeiro: 'Sem status',
     pendente_cobranca: 'Pronta cobranca',
     em_implantacao: 'Em implantacao',
+    devedor: 'Devendo',
+    cancelado: 'Cancelado',
 };
 
 export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroImplantacao> = ({ filtros, kpis }) => {
@@ -93,10 +95,14 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
         lojas_concluidas_nao_pagantes: resumo?.lojas_concluidas_nao_pagantes ?? 0,
         lojas_concluidas_nao_pagantes_explicitas: resumo?.lojas_concluidas_nao_pagantes_explicitas ?? resumo?.lojas_concluidas_nao_pagantes ?? 0,
         lojas_concluidas_sem_status: resumo?.lojas_concluidas_sem_status ?? 0,
+        lojas_concluidas_devedores: resumo?.lojas_concluidas_devedores ?? 0,
+        lojas_concluidas_canceladas: resumo?.lojas_concluidas_canceladas ?? 0,
         mensalidade_pendente_entrada: resumo?.mensalidade_pendente_entrada ?? 0,
         mrr_ativado: resumo?.mrr_ativado ?? kpis?.mrr_done_period ?? 0,
         mrr_concluido_nao_pagante: resumo?.mrr_concluido_nao_pagante ?? resumo?.mensalidade_pendente_entrada ?? 0,
         mrr_concluido_sem_status: resumo?.mrr_concluido_sem_status ?? 0,
+        mrr_concluido_devedor: resumo?.mrr_concluido_devedor ?? 0,
+        mrr_concluido_cancelado: resumo?.mrr_concluido_cancelado ?? 0,
         mrr_em_implantacao: resumo?.mrr_em_implantacao ?? kpis?.mrr_backlog ?? 0,
         mrr_pendente_cobranca: resumo?.mrr_pendente_cobranca ?? kpis?.mrr_backlog ?? 0,
         lojas_em_implantacao: resumo?.lojas_em_implantacao ?? kpis?.wip_stores ?? 0,
@@ -105,7 +111,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
     };
 
     const dadosGrafico = useMemo(() => ({
-        labels: ['Pagantes', 'Sem status', 'Nao pagantes', 'Prontas', 'Em implantacao'],
+        labels: ['Pagantes', 'Sem status', 'Nao pagantes', 'Devedores', 'Cancelados', 'Prontas', 'Em implantacao'],
         datasets: [
             {
                 label: 'Lojas',
@@ -113,6 +119,8 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                     resumoComFallback.lojas_concluidas_pagantes,
                     resumoComFallback.lojas_concluidas_sem_status,
                     resumoComFallback.lojas_concluidas_nao_pagantes_explicitas,
+                    resumoComFallback.lojas_concluidas_devedores,
+                    resumoComFallback.lojas_concluidas_canceladas,
                     resumoComFallback.lojas_prontas_para_cobranca,
                     resumoComFallback.lojas_em_implantacao,
                 ],
@@ -121,6 +129,8 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                     'rgba(18, 129, 49, 0.26)',
                     'rgba(113, 113, 122, 0.18)',
                     'rgba(255, 121, 0, 0.28)',
+                    'rgba(239, 68, 68, 0.28)',
+                    'rgba(75, 85, 99, 0.28)',
                     'rgba(234, 179, 8, 0.28)',
                     'rgba(59, 130, 246, 0.16)',
                 ],
@@ -128,6 +138,8 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                     'rgba(18, 129, 49, 0.72)',
                     'rgba(113, 113, 122, 0.48)',
                     'rgba(255, 121, 0, 0.72)',
+                    'rgba(239, 68, 68, 0.72)',
+                    'rgba(75, 85, 99, 0.72)',
                     'rgba(234, 179, 8, 0.72)',
                     'rgba(59, 130, 246, 0.5)',
                 ],
@@ -138,6 +150,8 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                     resumoComFallback.mrr_ativado,
                     resumoComFallback.mrr_concluido_sem_status,
                     resumoComFallback.mrr_concluido_nao_pagante,
+                    resumoComFallback.mrr_concluido_devedor,
+                    resumoComFallback.mrr_concluido_cancelado,
                     resumoComFallback.mrr_pendente_cobranca,
                     resumoComFallback.mrr_em_implantacao,
                 ],

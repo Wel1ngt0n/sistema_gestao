@@ -275,15 +275,25 @@ def get_financeiro_implantacao(payload):
                 return False
             return 'pronta' in status or 'cobranca' in status
 
+        def status_devedor(status):
+            return 'devend' in status
+
+        def status_cancelado(status):
+            return 'cancelad' in status
+
         # Classify stores
         lojas_concluidas_pagantes = 0
         lojas_concluidas_nao_pagantes = 0
         lojas_concluidas_sem_status = 0
+        lojas_concluidas_devedores = 0
+        lojas_concluidas_canceladas = 0
         lojas_em_implantacao = 0
         lojas_prontas_para_cobranca = 0
         mrr_ativado = 0.0
         mrr_concluido_nao_pagante = 0.0
         mrr_concluido_sem_status = 0.0
+        mrr_concluido_devedor = 0.0
+        mrr_concluido_cancelado = 0.0
         mrr_em_implantacao = 0.0
         mrr_pendente_cobranca = 0.0
         mensalidade_pendente_entrada = 0.0
@@ -320,6 +330,15 @@ def get_financeiro_implantacao(payload):
                     lojas_concluidas_sem_status += 1
                     mrr_concluido_sem_status += mensalidade
                     mensalidade_pendente_entrada += mensalidade
+                elif status_devedor(financeiro):
+                    status_cobranca = 'devedor'
+                    lojas_concluidas_devedores += 1
+                    mrr_concluido_devedor += mensalidade
+                    mensalidade_pendente_entrada += mensalidade
+                elif status_cancelado(financeiro):
+                    status_cobranca = 'cancelado'
+                    lojas_concluidas_canceladas += 1
+                    mrr_concluido_cancelado += mensalidade
                 else:
                     status_cobranca = 'nao_pagante'
                     lojas_concluidas_nao_pagantes += 1
@@ -354,6 +373,29 @@ def get_financeiro_implantacao(payload):
                 'etapa': etapa,
                 'status_cobranca': status_cobranca,
                 'mensalidade': mensalidade,
+
+            # Calculate days since conclusion
+            dias_desde_conclusao = None
+            if finished:
+                delta = datetime.now() - finished
+                dias_desde_conclusao = max(0, delta.days)
+
+            # Active step name
+            etapa = 'Concluída' if is_done else 'Não iniciado'
+            if not is_done and store.steps:
+                sorted_steps = sorted(store.steps, key=lambda x: x.id)
+                for step in sorted_steps:
+                    if step.start_real_at and not step.end_real_at:
+                        etapa = step.step_name.strip()
+                        break
+
+            lojas_detalhe.append({
+                'id': store.id,
+                'nome': store.store_name,
+                'implantador': store.implantador,
+                'etapa': etapa,
+                'status_cobranca': status_cobranca,
+                'mensalidade': mensalidade,
                 'data_conclusao': finished.isoformat() if finished else None,
                 'data_prevista_cobranca': None,
                 'dias_desde_conclusao': dias_desde_conclusao,
@@ -362,7 +404,7 @@ def get_financeiro_implantacao(payload):
         # Sort: non-paying concluded first, then by days_since_conclusion descending
         lojas_detalhe.sort(
             key=lambda x: (
-                0 if x['status_cobranca'] in {'nao_pagante', 'sem_status_financeiro'} else 1 if x['status_cobranca'] == 'pendente_cobranca' else 2,
+                0 if x['status_cobranca'] in {'nao_pagante', 'sem_status_financeiro', 'devedor'} else 1 if x['status_cobranca'] == 'pendente_cobranca' else 2,
                 -(x['dias_desde_conclusao'] or 0),
             )
         )
@@ -370,21 +412,23 @@ def get_financeiro_implantacao(payload):
         return jsonify({
             'resumo': {
                 'lojas_concluidas_pagantes': lojas_concluidas_pagantes,
-                'lojas_concluidas_nao_pagantes': lojas_concluidas_nao_pagantes + lojas_concluidas_sem_status,
+                'lojas_concluidas_nao_pagantes': lojas_concluidas_nao_pagantes + lojas_concluidas_sem_status + lojas_concluidas_devedores,
                 'lojas_concluidas_nao_pagantes_explicitas': lojas_concluidas_nao_pagantes,
                 'lojas_concluidas_sem_status': lojas_concluidas_sem_status,
+                'lojas_concluidas_devedores': lojas_concluidas_devedores,
+                'lojas_concluidas_canceladas': lojas_concluidas_canceladas,
                 'mensalidade_pendente_entrada': mensalidade_pendente_entrada,
                 'mrr_ativado': mrr_ativado,
                 'mrr_concluido_nao_pagante': mrr_concluido_nao_pagante,
                 'mrr_concluido_sem_status': mrr_concluido_sem_status,
+                'mrr_concluido_devedor': mrr_concluido_devedor,
+                'mrr_concluido_cancelado': mrr_concluido_cancelado,
                 'mrr_em_implantacao': mrr_em_implantacao,
                 'mrr_pendente_cobranca': mrr_pendente_cobranca,
                 'lojas_em_implantacao': lojas_em_implantacao,
                 'lojas_prontas_para_cobranca': lojas_prontas_para_cobranca,
-                'mrr_em_implantacao': mrr_em_implantacao,
             },
             'lojas': lojas_detalhe,
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
