@@ -209,7 +209,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
         }
 
         const cabecalhos = [
-            "ID", "Nome da Loja", "Implantador", "Etapa", "Status Cobranca", "Status Normalizado", 
+            "ID", "Nome da Loja", "CNPJ", "Implantador", "Etapa", "Status Cobranca", "Status Normalizado", 
             "Mensalidade (R$)", "Data Conclusao", "Dias desde Conclusao"
         ];
 
@@ -222,6 +222,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
         const linhas = lojas.map(l => [
             escapeCSV(l.id),
             escapeCSV(l.nome),
+            escapeCSV(l.cnpj || ''),
             escapeCSV(l.implantador || ''),
             escapeCSV(l.etapa),
             escapeCSV(rotulosStatusCobranca[l.status_cobranca] || l.status_cobranca.replace(/_/g, ' ')),

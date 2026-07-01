@@ -26,6 +26,7 @@ export interface LojaFinanceiroImplantacao {
     id: string | number;
     nome: string;
     implantador?: string;
+    cnpj?: string | null;
     etapa: string;
     status_cobranca: 'pagante' | 'nao_pagante' | 'sem_status_financeiro' | 'pendente_cobranca' | 'em_implantacao' | 'devedor' | 'cancelado';
     mensalidade: number;
