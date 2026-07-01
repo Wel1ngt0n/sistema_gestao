@@ -213,6 +213,16 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
             return `"${str.replace(/"/g, '""')}"`;
         };
 
+        const formatarDataCSV = (isoDate: string | null | undefined) => {
+            if (!isoDate) return '';
+            const d = new Date(isoDate);
+            if (isNaN(d.getTime())) return isoDate;
+            const dia = String(d.getDate()).padStart(2, '0');
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const ano = d.getFullYear();
+            return `${dia}/${mes}/${ano}`;
+        };
+
         const linhas = lojas.map(l => [
             escapeCSV(l.id),
             escapeCSV(l.nome),
@@ -222,7 +232,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
             escapeCSV(rotulosStatusCobranca[l.status_cobranca] || l.status_cobranca.replace(/_/g, ' ')),
             escapeCSV(l.status_cobranca),
             escapeCSV(l.mensalidade || 0),
-            escapeCSV(l.data_conclusao || ''),
+            escapeCSV(formatarDataCSV(l.data_conclusao)),
             escapeCSV(l.dias_desde_conclusao || 0)
         ].join(';'));
 
