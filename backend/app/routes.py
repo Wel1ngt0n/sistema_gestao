@@ -655,39 +655,6 @@ def bulk_link_stores(payload):
                 store.rede = parent_store.rede # Herda o nome da rede
                 count += 1
         
-@require_auth
-def bulk_link_stores(payload):
-    try:
-        data = request.json
-        store_ids = data.get('store_ids', [])
-        parent_id = data.get('parent_id')
-
-        if not store_ids or not parent_id:
-            return jsonify({'error': 'IDs das lojas e ID da matriz são obrigatórios'}), 400
-            
-        parent_store = Store.query.get(parent_id)
-        if not parent_store:
-             return jsonify({'error': 'Matriz não encontrada'}), 404
-             
-        # Garante que a matriz é do tipo Matriz
-        if parent_store.tipo_loja != 'Matriz':
-            parent_store.tipo_loja = 'Matriz'
-            if not parent_store.rede:
-                 parent_store.rede = parent_store.name
-
-        count = 0
-        for store_id in store_ids:
-            # Evita auto-referência
-            if int(store_id) == int(parent_id):
-                continue
-                
-            store = Store.query.get(store_id)
-            if store:
-                store.parent_id = parent_id
-                store.tipo_loja = 'Filial'
-                store.rede = parent_store.rede # Herda o nome da rede
-                count += 1
-        
         db.session.commit()
         return jsonify({'message': f'{count} lojas vinculadas com sucesso', 'count': count}), 200
 
