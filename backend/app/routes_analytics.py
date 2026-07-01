@@ -345,6 +345,8 @@ def get_financeiro_implantacao(payload):
                     mensalidade_pendente_entrada += mensalidade
             else:
                 if store.is_scheduled:
+            else:
+                if store.is_scheduled:
                     continue
                 status_cobranca = 'em_implantacao'
                 lojas_em_implantacao += 1
@@ -369,6 +371,7 @@ def get_financeiro_implantacao(payload):
                 'id': store.id,
                 'nome': store.store_name,
                 'implantador': store.implantador,
+                'cnpj': store.cnpj,
                 'etapa': etapa,
                 'status_cobranca': status_cobranca,
                 'mensalidade': mensalidade,
