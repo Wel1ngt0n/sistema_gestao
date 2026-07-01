@@ -345,8 +345,6 @@ def get_financeiro_implantacao(payload):
                     mensalidade_pendente_entrada += mensalidade
             else:
                 if store.is_scheduled:
-            else:
-                if store.is_scheduled:
                     continue
                 status_cobranca = 'em_implantacao'
                 lojas_em_implantacao += 1
