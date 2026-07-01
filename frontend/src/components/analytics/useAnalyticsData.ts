@@ -16,6 +16,20 @@ export interface KPIData {
     filial_count: number;
     total_points_done: number;
     total_points_wip: number;
+    meta_variavel_snapshot?: {
+        meta_geral_valor: number;
+        meta_geral_lojas: number;
+        ticket_medio: number;
+        lojas_meta_total: number;
+        lojas_entregues_ano: number;
+        lojas_restantes: number;
+        mrr_entregue_ano: number;
+        mrr_restante: number;
+        meses_restantes: number;
+        meta_mensal_recalculada: number;
+        meta_mrr_mensal_recalculada: number;
+        data_snapshot: string;
+    };
 }
 
 export interface TrendData {
@@ -23,6 +37,10 @@ export interface TrendData {
     throughput: number;
     total_points: number;
     total_mrr: number;
+    meta_mensal_variavel?: number;
+    meta_mrr_mensal_variavel?: number;
+    cumulative_throughput?: number;
+    cumulative_mrr?: number;
     cycle_time_avg: number;
     otd_percentage: number;
 }

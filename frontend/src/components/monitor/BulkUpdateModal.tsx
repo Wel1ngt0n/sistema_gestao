@@ -5,20 +5,22 @@ import { Calendar, CheckCircle2, X } from 'lucide-react';
 interface BulkUpdateModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (data: { status?: string, manual_finished_at?: string, reopen?: boolean }) => void;
+    onConfirm: (data: { status?: string, manual_finished_at?: string, reopen?: boolean, financeiro_status?: string }) => void;
     selectedCount: number;
     isLoading?: boolean;
 }
 
 export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCount, isLoading }: BulkUpdateModalProps) {
     const [status, setStatus] = useState('DONE');
+    const [financeiroStatus, setFinanceiroStatus] = useState('');
     const [finishDate, setFinishDate] = useState(new Date().toISOString().split('T')[0]);
 
     const handleConfirm = () => {
         onConfirm({ 
-            status: status === 'REOPEN' ? 'IN_PROGRESS' : status, 
+            status: status === 'REOPEN' || status === 'KEEP' ? undefined : (status === 'REOPEN' ? 'IN_PROGRESS' : status), 
             manual_finished_at: status === 'DONE' ? finishDate : undefined,
-            reopen: status === 'REOPEN'
+            reopen: status === 'REOPEN',
+            financeiro_status: financeiroStatus ? financeiroStatus : undefined
         });
     };
 
@@ -42,17 +44,34 @@ export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCo
                     <div className="p-6 space-y-6">
                         {/* Status Selection */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Status de Destino</label>
+                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Status de Destino (Implantação)</label>
                             <select 
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value)}
                                 className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                             >
+                                <option value="KEEP">Manter atual</option>
                                 <option value="DONE">Concluída (Finalizar Implantação)</option>
                                 <option value="IN_PROGRESS">Em Andamento</option>
                                 <option value="PAUSED">Pausada</option>
                                 <option value="WAITING">Aguardando</option>
                                 <option value="REOPEN">↩️ Reabrir Lojas (Voltar para Progresso)</option>
+                            </select>
+                        </div>
+
+                        {/* Status Financeiro Selection */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Status Financeiro</label>
+                            <select 
+                                value={financeiroStatus}
+                                onChange={(e) => setFinanceiroStatus(e.target.value)}
+                                className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                            >
+                                <option value="">Manter atual</option>
+                                <option value="Em dia">Em dia</option>
+                                <option value="Não paga mensalidade">Não paga mensalidade</option>
+                                <option value="Devendo">Devendo</option>
+                                <option value="Cancelado">Cancelado</option>
                             </select>
                         </div>
 

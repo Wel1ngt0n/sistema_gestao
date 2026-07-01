@@ -172,7 +172,7 @@ export default function MonitorV2() {
         }
     };
 
-    const handleBulkUpdate = async (updateData: { status?: string, manual_finished_at?: string, reopen?: boolean }) => {
+    const handleBulkUpdate = async (updateData: { status?: string, manual_finished_at?: string, reopen?: boolean, financeiro_status?: string }) => {
         // Obter os IDs reais das lojas selecionadas a partir do rowSelection (que usa índices)
         // No TanStack Table, se rowSelection = { "0": true }, significa que a linha 0 do modelo atual está selecionada.
         // Como o filteredData é o que passamos para a tabela, usamos ele.

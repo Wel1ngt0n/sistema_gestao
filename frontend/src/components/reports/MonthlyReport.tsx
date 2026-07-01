@@ -174,7 +174,7 @@ const MonthlyReport: React.FC = () => {
         }
     };
 
-    const handleBulkUpdate = async (updateData: { status?: string, manual_finished_at?: string }) => {
+    const handleBulkUpdate = async (updateData: { status?: string, manual_finished_at?: string, reopen?: boolean, financeiro_status?: string }) => {
         if (selectedStoreIds.length === 0) return;
 
         setBulkLoading(true);

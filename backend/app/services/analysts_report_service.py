@@ -303,16 +303,25 @@ class AnalystsReportService:
 
             # Cálculo de lojas e tipos de lojas históricas (sem filtro de cutoff)
             all_historical_stores = Store.query.filter(
-                or_(
-                    Store.implantador == imp,
-                    Store.implantador_atual == imp
-                ),
-                Store.status_norm != 'CANCELED'
+                Store.implantador == imp,
+                Store.status_norm == 'DONE'
             ).all()
+
+            all_historical_stores = [
+                s for s in all_historical_stores
+                if s.effective_finished_at
+                and s.effective_finished_at >= AnalystsReportService.CUTOFF_DATE
+                and (not end_date or s.effective_finished_at <= end_date)
+            ]
+
+            # MRR Total Historico (A partir de 2026)
+            mrr_historico = sum((s.valor_mensalidade or 0.0) for s in all_historical_stores)
 
             total_lojas_historico = len(all_historical_stores)
             matrizes_historico = sum(1 for s in all_historical_stores if s.tipo_loja and s.tipo_loja.lower() == 'matriz')
             filiais_historico = total_lojas_historico - matrizes_historico
+            retrabalho_historico = sum(1 for s in all_historical_stores if s.teve_retrabalho)
+            pct_retrabalho_historico = (retrabalho_historico / total_lojas_historico * 100) if total_lojas_historico > 0 else 0
             ativos_momento = len(ativas)
             
             # Carga Ponderada (Somente Ativas)
@@ -409,9 +418,13 @@ class AnalystsReportService:
                 "idle_critico_count": idle_critico_count,
                 "score": score,
                 "total_lojas_historico": total_lojas_historico,
+                "entregas_2026": total_lojas_historico,
                 "matrizes_historico": matrizes_historico,
                 "filiais_historico": filiais_historico,
-                "ativos_momento": ativos_momento
+                "retrabalhos_2026": retrabalho_historico,
+                "pct_retrabalho_2026": round(pct_retrabalho_historico, 1),
+                "ativos_momento": ativos_momento,
+                "mrr_historico": mrr_historico
             })
             
         # Sort by Carga Ponderada Descending by default
@@ -747,6 +760,15 @@ class AnalystsReportService:
                 "impact": "Saúde do Analista"
             })
         
+        # Novas Métricas 2026
+        concluidas_2026 = [s for s in concluidas if s.effective_finished_at and s.effective_finished_at >= AnalystsReportService.CUTOFF_DATE]
+        entregas_2026_total = len(concluidas_2026)
+        mrr_entregue_2026 = sum((s.valor_mensalidade or 0.0) for s in concluidas_2026)
+        matrizes_2026 = sum(1 for s in concluidas_2026 if s.tipo_loja and s.tipo_loja.lower() == 'matriz')
+        filiais_2026 = entregas_2026_total - matrizes_2026
+        ticket_medio_2026 = (mrr_entregue_2026 / entregas_2026_total) if entregas_2026_total > 0 else 0
+        retrabalhos_2026 = sum(1 for s in concluidas_2026 if s.teve_retrabalho)
+
         return {
             "summary": {
                 "implantador": implantador_name,
@@ -754,6 +776,12 @@ class AnalystsReportService:
                 "programadas": len(programadas),
                 "entregas_mes": len(concluidas_mes_list),
                 "entregues_total": len(concluidas),
+                "entregas_2026_total": entregas_2026_total,
+                "mrr_entregue_2026": mrr_entregue_2026,
+                "matrizes_2026": matrizes_2026,
+                "filiais_2026": filiais_2026,
+                "ticket_medio_2026": ticket_medio_2026,
+                "retrabalhos_2026": retrabalhos_2026,
                 "carga_ponderada": carga_ponderada,
                 "mrr_ativo": mrr_ativo,
                 "pct_sla_concluidas": round(pct_sla_concluidas, 1),
