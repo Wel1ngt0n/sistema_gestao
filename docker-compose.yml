@@ -34,6 +34,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    command: /bin/sh -c "sed -i 's/\\r$$//' entrypoint.sh && chmod +x entrypoint.sh && ./entrypoint.sh"
 
   # 3. Frontend (React + Vite)
   frontend:

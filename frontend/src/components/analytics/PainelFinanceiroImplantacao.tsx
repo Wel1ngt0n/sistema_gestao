@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Chart as GraficoReact } from 'react-chartjs-2';
 import 'chart.js/auto';
+import { Download } from 'lucide-react';
 import type { AnalyticsFiltersState as EstadoFiltrosAnalytics } from '../../hooks/useDashboardUrlParams';
 import type { KPIData as DadosKpi } from './useAnalyticsData';
 import { useDadosFinanceiroImplantacao } from '../../hooks/useDadosFinanceiroImplantacao';
@@ -181,6 +182,47 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
 
     const listaLojas = lojas.slice(0, 8);
 
+    const exportarCSV = () => {
+        if (!lojas || lojas.length === 0) {
+            alert("Nenhum dado financeiro para exportar.");
+            return;
+        }
+
+        const cabecalhos = [
+            "ID", "Nome da Loja", "Implantador", "Etapa", "Status Cobranca", "Status Normalizado", 
+            "Mensalidade (R$)", "Data Conclusao", "Dias desde Conclusao"
+        ];
+
+        const escapeCSV = (value: any) => {
+            if (value === null || value === undefined) return '""';
+            const str = String(value);
+            return `"${str.replace(/"/g, '""')}"`;
+        };
+
+        const linhas = lojas.map(l => [
+            escapeCSV(l.id),
+            escapeCSV(l.nome),
+            escapeCSV(l.implantador || ''),
+            escapeCSV(l.etapa),
+            escapeCSV(rotulosStatusCobranca[l.status_cobranca] || l.status_cobranca.replace(/_/g, ' ')),
+            escapeCSV(l.status_cobranca),
+            escapeCSV(l.mensalidade || 0),
+            escapeCSV(l.data_conclusao || ''),
+            escapeCSV(l.dias_desde_conclusao || 0)
+        ].join(';'));
+
+        const csvContent = [cabecalhos.join(';'), ...linhas].join('\n');
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `financeiro_lojas_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -249,13 +291,25 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
                 </div>
 
                 <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm xl:col-span-4">
-                    <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                        <span className="text-[#128131]"><IconeFinanceiro nome="cartao" /></span>
-                        Ação financeira por loja
-                    </h3>
-                    <p className="mt-1 text-sm text-zinc-500">
-                        Lista operacional para cobrar, ativar ou confirmar início de mensalidade.
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                        <div>
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+                                <span className="text-[#128131]"><IconeFinanceiro nome="cartao" /></span>
+                                Ação financeira por loja
+                            </h3>
+                            <p className="mt-1 text-sm text-zinc-500">
+                                Lista operacional para cobrar, ativar ou confirmar início de mensalidade.
+                            </p>
+                        </div>
+                        <button
+                            onClick={exportarCSV}
+                            className="flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm transition-all hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#128131]/20"
+                            title="Exportar todos os dados financeiros"
+                        >
+                            <Download size={14} className="text-[#128131]" />
+                            <span>Exportar</span>
+                        </button>
+                    </div>
 
                     <div className="mt-4 max-h-[410px] space-y-2 overflow-y-auto pr-1">
                         {listaLojas.length > 0 ? listaLojas.map((loja) => (
