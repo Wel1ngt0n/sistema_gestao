@@ -11,7 +11,7 @@ interface BulkUpdateModalProps {
 }
 
 export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCount, isLoading }: BulkUpdateModalProps) {
-    const [status, setStatus] = useState('DONE');
+    const [status, setStatus] = useState('KEEP');
     const [financeiroStatus, setFinanceiroStatus] = useState('');
     const [finishDate, setFinishDate] = useState(new Date().toISOString().split('T')[0]);
 
