@@ -14,6 +14,8 @@ export interface KPIData {
     avg_risk_score: number;
     matrix_count: number;
     filial_count: number;
+    matrix_count_done: number;
+    filial_count_done: number;
     total_points_done: number;
     total_points_wip: number;
     meta_variavel_snapshot?: {

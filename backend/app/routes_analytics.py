@@ -153,8 +153,8 @@ def get_risk_scatter(payload):
 def get_distribution(payload):
     try:
         from app.models import Store
+        # pyrefly: ignore [missing-import]
         from sqlalchemy import or_
-        
         # 1. Distribuição por Etapa (Gargalo Atual)
         # Active = Valendo None em todas as datas de fim (Mesma lógica do get_stores)
         active_stores = Store.query.filter(

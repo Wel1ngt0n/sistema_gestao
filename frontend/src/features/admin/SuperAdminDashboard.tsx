@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import {
     Trophy,
@@ -47,7 +47,7 @@ interface PerformanceSummary {
 }
 
 export default function SuperAdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'integration' | 'implantation'>('integration')
+    const [activeTab, setActiveTab] = useState<'integration' | 'implantation'>('implantation')
     const [data, setData] = useState<PerformanceSummary | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedCycle, setSelectedCycle] = useState(new Date().toISOString().slice(0, 7)) // YYYY-MM
@@ -63,10 +63,38 @@ export default function SuperAdminDashboard() {
     })
 
     useEffect(() => {
-        if (activeTab === 'integration') {
-            fetchPerformance()
+        fetchImplantation()
+    }, [selectedCycle])
+
+    const [implData, setImplData] = useState<PerformanceSummary | null>(null)
+    const [implRules, setImplRules] = useState<any>(null)
+    const [configModalOpen, setConfigModalOpen] = useState(false)
+
+    const fetchImplantation = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get(`/api/performance/implantation/summary?cycle=${selectedCycle}`)
+            setImplData(response.data)
+            setImplRules(response.data.rules)
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setLoading(false)
         }
-    }, [activeTab, selectedCycle])
+    }
+
+    const saveImplantationRules = async () => {
+        try {
+            await api.post('/api/performance/implantation/rules', {
+                cycle: selectedCycle,
+                rules: implRules
+            })
+            setConfigModalOpen(false)
+            fetchImplantation()
+        } catch (error) {
+            alert('Erro ao salvar regras')
+        }
+    }
 
     const fetchPerformance = async () => {
         try {
@@ -131,58 +159,35 @@ export default function SuperAdminDashboard() {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-1 bg-zinc-100/50 p-1 rounded-xl w-fit">
-                <button
-                    onClick={() => setActiveTab('integration')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'integration'
-                        ? 'bg-white text-orange-600 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-700'
-                        }`}
-                >
-                    Integração
-                </button>
-                <button
-                    onClick={() => setActiveTab('implantation')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'implantation'
-                        ? 'bg-white text-orange-600 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-700'
-                        }`}
-                >
-                    Implantação (Standby)
-                </button>
-            </div>
-
-            {activeTab === 'implantation' ? (
-                <div className="h-64 flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 rounded-3xl">
-                    <Briefcase size={48} className="mb-4 opacity-50" />
-                    <p>Módulo de Bônus de Implantação em Standby.</p>
-                </div>
-            ) : (
+            {/* Tabs removidas para focar em Implantação */}
+            {(activeTab === 'implantation' || activeTab === 'integration') && (
                 <div className="space-y-6">
-                    {/* Collective Cards */}
-                    {data && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex justify-end">
+                        <button onClick={() => setConfigModalOpen(true)} className="px-4 py-2 bg-zinc-800 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-zinc-700">
+                            ⚙️ Configurar Metas do Semestre
+                        </button>
+                    </div>
+                    {implData && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                                <div className="absolute right-0 top-0 p-4 opacity-20"><Target size={64} /></div>
                                 <h3 className="text-blue-100 font-bold uppercase text-xs mb-1">Coletivo: Volume (Pts)</h3>
-                                <div className="text-3xl font-bold">{data.collective_kpis.volume_points.toFixed(1)} <span className="text-base font-normal opacity-70">/ 80.0</span></div>
+                                <div className="text-3xl font-bold">{implData.collective_kpis.volume_points.toFixed(1)} <span className="text-base font-normal opacity-70">/ {implRules?.collective?.volume_target || 90}</span></div>
                             </div>
                             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                                <div className="absolute right-0 top-0 p-4 opacity-20"><CheckCircle size={64} /></div>
-                                <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
-                                <div className="text-3xl font-bold">{data.collective_kpis.quality_global.toFixed(1)}% <span className="text-base font-normal opacity-70">/ 90%</span></div>
+                                <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Prazo (SLA)</h3>
+                                <div className="text-3xl font-bold">{implData.collaborators.length > 0 ? (implData.collaborators.reduce((acc, u) => acc + u.metrics.sla_pct, 0) / implData.collaborators.length).toFixed(1) : 100}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.otd_target || 80}%</span></div>
+                            </div>
+                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                                <h3 className="text-purple-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
+                                <div className="text-3xl font-bold">{implData.collective_kpis.quality_global.toFixed(1)}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.quality_target || 80}%</span></div>
                             </div>
                             <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                                <div className="absolute right-0 top-0 p-4 opacity-20"><UserCheck size={64} /></div>
-                                <h3 className="text-amber-100 font-bold uppercase text-xs mb-1">Comportamental (Média)</h3>
-                                <div className="text-3xl font-bold">-</div>
-                                {/* Could calc average behavioral here if needed */}
+                                <h3 className="text-amber-100 font-bold uppercase text-xs mb-1">Coletivo: Churns</h3>
+                                <div className="text-3xl font-bold">{implData.collaborators.reduce((acc, u) => acc + u.metrics.churns, 0)} <span className="text-base font-normal opacity-70">/ {implRules?.collective?.churn_max || 1}</span></div>
                             </div>
                         </div>
                     )}
 
-                    {/* Users Table */}
                     <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-zinc-50/50 text-zinc-500 uppercase font-semibold text-xs border-b border-zinc-200">
@@ -200,7 +205,7 @@ export default function SuperAdminDashboard() {
                                 {loading && (
                                     <tr><td colSpan={7} className="p-8 text-center text-zinc-500">Calculando Scores...</td></tr>
                                 )}
-                                {data?.collaborators.map(user => (
+                                {implData?.collaborators.map(user => (
                                     <tr key={user.username} className="hover:bg-zinc-50/50/30">
                                         <td className="px-6 py-4 font-bold text-zinc-900">
                                             {user.username}
@@ -212,12 +217,11 @@ export default function SuperAdminDashboard() {
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex flex-col items-center">
                                                 <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-bold">{user.scores.individual}%</span>
-                                                <span className="text-[10px] text-zinc-500 mt-1">SLA: {user.metrics.sla_pct}%</span>
+                                                <span className="text-[10px] text-zinc-500 mt-1">Vol: {user.metrics.volume_points} / {implRules?.individual?.volume_target || 30} pts</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className={`px-2 py-1 rounded-lg font-bold ${user.metrics.churns > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
-                                                }`}>
+                                            <span className={`px-2 py-1 rounded-lg font-bold ${user.metrics.churns > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
                                                 {user.scores.behavioral}%
                                             </span>
                                         </td>
@@ -226,26 +230,109 @@ export default function SuperAdminDashboard() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             {user.metrics.churns > 0 ? (
-                                                <div className="flex items-center justify-center gap-1 text-rose-600 font-bold text-xs uppercase">
-                                                    <AlertTriangle size={12} /> {user.metrics.churns} Churn
-                                                </div>
-                                            ) : <span className="text-zinc-400">-</span>}
+                                                <span className="text-xs bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">
+                                                    {user.metrics.churns} Churns (-{user.metrics.churns * 50}%)
+                                                </span>
+                                            ) : '-'}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
+                                            <button 
                                                 onClick={() => openReview(user)}
-                                                className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-500 transition-colors"
+                                                className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                                                title="Avaliar Comportamento"
                                             >
-                                                <Edit2 size={16} />
+                                                <Edit2 size={16} className="text-zinc-600" />
                                             </button>
                                         </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+            <div className="space-y-6">
+                <div className="flex justify-end">
+                    <button onClick={() => setConfigModalOpen(true)} className="px-4 py-2 bg-zinc-800 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-zinc-700">
+                        ⚙️ Configurar Metas do Semestre
+                    </button>
                 </div>
-            )}
+                {implData && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                            <h3 className="text-blue-100 font-bold uppercase text-xs mb-1">Coletivo: Volume (Pts)</h3>
+                            <div className="text-3xl font-bold">{implData.collective_kpis.volume_points.toFixed(1)} <span className="text-base font-normal opacity-70">/ {implRules?.collective?.volume_target || 90}</span></div>
+                        </div>
+                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                            <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Prazo (SLA)</h3>
+                            <div className="text-3xl font-bold">{implData.collaborators.length > 0 ? (implData.collaborators.reduce((acc, u) => acc + u.metrics.sla_pct, 0) / implData.collaborators.length).toFixed(1) : 100}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.otd_target || 80}%</span></div>
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                            <h3 className="text-purple-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
+                            <div className="text-3xl font-bold">{implData.collective_kpis.quality_global.toFixed(1)}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.quality_target || 80}%</span></div>
+                        </div>
+                        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                            <h3 className="text-amber-100 font-bold uppercase text-xs mb-1">Coletivo: Churns</h3>
+                            <div className="text-3xl font-bold">{implData.collaborators.reduce((acc, u) => acc + u.metrics.churns, 0)} <span className="text-base font-normal opacity-70">/ {implRules?.collective?.churn_max || 1}</span></div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-zinc-50/50 text-zinc-500 uppercase font-semibold text-xs border-b border-zinc-200">
+                            <tr>
+                                <th className="px-6 py-4">Colaborador</th>
+                                <th className="px-6 py-4 text-center">Coletivo (40%)</th>
+                                <th className="px-6 py-4 text-center">Individual (40%)</th>
+                                <th className="px-6 py-4 text-center">Comport. (20%)</th>
+                                <th className="px-6 py-4 text-center">Score Final</th>
+                                <th className="px-6 py-4 text-center">Penalidades</th>
+                                <th className="px-6 py-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                            {loading && (
+                                <tr><td colSpan={7} className="p-8 text-center text-zinc-500">Calculando Scores...</td></tr>
+                            )}
+                            {implData?.collaborators.map(user => (
+                                <tr key={user.username} className="hover:bg-zinc-50/50/30">
+                                    <td className="px-6 py-4 font-bold text-zinc-900">
+                                        {user.username}
+                                        <div className="text-xs text-zinc-500 font-normal">{user.role}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold">{user.scores.collective}%</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-bold">{user.scores.individual}%</span>
+                                            <span className="text-[10px] text-zinc-500 mt-1">Vol: {user.metrics.volume_points} / {implRules?.individual?.volume_target || 30} pts</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-2 py-1 rounded-lg font-bold ${user.metrics.churns > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
+                                            {user.scores.behavioral}%
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="text-lg font-bold text-zinc-900">{user.scores.final}%</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        {user.metrics.churns > 0 ? (
+                                            <span className="text-xs bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">
+                                                {user.metrics.churns} Churns (-{user.metrics.churns * 50}%)
+                                            </span>
+                                        ) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button 
+                                            onClick={() => openReview(user)}
+                                            className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                                            title="Avaliar Comportamento"
+                                        >
+                                            <Edit2 size={16} className="text-zinc-600" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             {/* Modal Review */}
             {reviewModalOpen && selectedUser && (
@@ -257,7 +344,7 @@ export default function SuperAdminDashboard() {
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
-                                    Comunicação (0-100) <span className="text-zinc-900">{reviewForm.comm}</span>
+                                    {activeTab === 'implantation' ? 'Organização e Registro' : 'Comunicação'} (0-100) <span className="text-zinc-900">{reviewForm.comm}</span>
                                 </label>
                                 <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.comm} onChange={e => setReviewForm({ ...reviewForm, comm: Number(e.target.value) })}
@@ -265,7 +352,7 @@ export default function SuperAdminDashboard() {
                             </div>
                             <div>
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
-                                    Processos (0-100) <span className="text-zinc-900">{reviewForm.proc}</span>
+                                    {activeTab === 'implantation' ? 'Aderência aos Processos' : 'Processos'} (0-100) <span className="text-zinc-900">{reviewForm.proc}</span>
                                 </label>
                                 <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.proc} onChange={e => setReviewForm({ ...reviewForm, proc: Number(e.target.value) })}
@@ -273,7 +360,7 @@ export default function SuperAdminDashboard() {
                             </div>
                             <div>
                                 <label className="text-xs uppercase font-bold text-zinc-500 flex justify-between">
-                                    Responsabilidade (0-100) <span className="text-zinc-900">{reviewForm.resp}</span>
+                                    {activeTab === 'implantation' ? 'Conduta Profissional' : 'Responsabilidade'} (0-100) <span className="text-zinc-900">{reviewForm.resp}</span>
                                 </label>
                                 <input type="range" min="0" max="100" className="w-full mt-2 accent-amber-600"
                                     value={reviewForm.resp} onChange={e => setReviewForm({ ...reviewForm, resp: Number(e.target.value) })}
@@ -296,6 +383,74 @@ export default function SuperAdminDashboard() {
                         <div className="flex justify-end gap-2 mt-8">
                             <button onClick={() => setReviewModalOpen(false)} className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 rounded-lg">Cancelar</button>
                             <button onClick={saveReview} className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">Salvar Avaliação</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Configuração Implantação */}
+            {configModalOpen && implRules && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl border border-zinc-200 max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-lg font-bold mb-1">Configurar Metas - {selectedCycle}</h2>
+                        <p className="text-sm text-zinc-500 mb-6">Ajuste os alvos para o cálculo automático do semestre.</p>
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-zinc-700 border-b pb-2">Coletivo (40%)</h3>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Alvo de Volume (Pontos)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.collective.volume_target} onChange={e => setImplRules({...implRules, collective: {...implRules.collective, volume_target: Number(e.target.value)}})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Alvo de Prazo/SLA (%)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.collective.otd_target} onChange={e => setImplRules({...implRules, collective: {...implRules.collective, otd_target: Number(e.target.value)}})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Alvo de Qualidade (%)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.collective.quality_target} onChange={e => setImplRules({...implRules, collective: {...implRules.collective, quality_target: Number(e.target.value)}})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Limite de Churn (Max)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.collective.churn_max} onChange={e => setImplRules({...implRules, collective: {...implRules.collective, churn_max: Number(e.target.value)}})}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-zinc-700 border-b pb-2">Individual (40%)</h3>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Alvo de Volume (Pontos / Pessoa)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.individual.volume_target} onChange={e => setImplRules({...implRules, individual: {...implRules.individual, volume_target: Number(e.target.value)}})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Alvo de Qualidade (%)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.individual.quality_target} onChange={e => setImplRules({...implRules, individual: {...implRules.individual, quality_target: Number(e.target.value)}})}
+                                    />
+                                </div>
+                                <h3 className="font-bold text-zinc-700 border-b pb-2 mt-4">Geral</h3>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500">Threshold Mínimo para Bônus (%)</label>
+                                    <input type="number" className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2"
+                                        value={implRules.general.minimum_threshold} onChange={e => setImplRules({...implRules, general: {...implRules.general, minimum_threshold: Number(e.target.value)}})}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-8 border-t pt-4">
+                            <button onClick={() => setConfigModalOpen(false)} className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 rounded-lg">Cancelar</button>
+                            <button onClick={saveImplantationRules} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">Salvar Configurações</button>
                         </div>
                     </div>
                 </div>

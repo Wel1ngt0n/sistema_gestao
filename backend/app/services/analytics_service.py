@@ -154,9 +154,16 @@ class AnalyticsService:
         except: pass
 
         total_points_done = 0
+        matrix_count_done = 0
+        filial_count_done = 0
         done_types = throughput_query.with_entities(Store.tipo_loja).all()
         for s in done_types:
-            total_points_done += w_matriz if s.tipo_loja == 'Matriz' else w_filial
+            if s.tipo_loja == 'Matriz':
+                total_points_done += w_matriz
+                matrix_count_done += 1
+            else:
+                total_points_done += w_filial
+                filial_count_done += 1
 
         total_points_wip = 0
         wip_types = query.filter(Store.status_norm == 'IN_PROGRESS', Store.manual_finished_at.is_(None)).with_entities(Store.tipo_loja).all()
@@ -202,6 +209,8 @@ class AnalyticsService:
             "avg_risk_score": round(float(avg_risk), 1),
             "matrix_count": matrix_count,
             "filial_count": filial_count,
+            "matrix_count_done": matrix_count_done,
+            "filial_count_done": filial_count_done,
             "total_points_done": round(total_points_done, 1),
             "total_points_wip": round(total_points_wip, 1),
             "meta_variavel_snapshot": {

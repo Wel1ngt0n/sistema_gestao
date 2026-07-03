@@ -20,7 +20,8 @@ def get_performance_summary(payload):
     # Por enquanto, vamos buscar nomes distintos na tabela Store.integrador se não tivermos Users cadastrados.
     # Ideal: Usar tabela User. Vamos listar Users e se não tiver, fallback para nomes únicos.
     
-    users = User.query.filter_by(role='integrator').all()
+    from app.models import Role
+    users = User.query.filter(User.roles.any(Role.name.ilike('%integrator%'))).all()
     
     # Se não tiver usuários cadastrados, vamos criar objetos dummy baseados nos nomes encontrados nas lojas
     # Isso é para garantir que funcione mesmo sem users criados no sistema de auth
@@ -217,3 +218,32 @@ def save_review(payload):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+from app.services.implantation_bonus_service import ImplantationBonusService
+
+@performance_bp.route('/implantation/summary', methods=['GET'])
+@require_auth
+def get_implantation_summary(payload):
+    cycle = request.args.get('cycle', datetime.now().strftime('%Y-%m'))
+    summary = ImplantationBonusService.calculate_summary(cycle)
+    return jsonify(summary)
+
+@performance_bp.route('/implantation/rules', methods=['GET'])
+@require_auth
+def get_implantation_rules(payload):
+    cycle = request.args.get('cycle', datetime.now().strftime('%Y-%m'))
+    rules = ImplantationBonusService.get_rules(cycle)
+    return jsonify(rules)
+
+@performance_bp.route('/implantation/rules', methods=['POST'])
+@require_auth
+@require_permission('manage_performance')
+def save_implantation_rules(payload):
+    data = request.json
+    cycle = data.get('cycle', datetime.now().strftime('%Y-%m'))
+    if 'rules' not in data:
+        return jsonify({'error': 'Missing rules payload'}), 400
+    
+    rules = ImplantationBonusService.save_rules(cycle, data['rules'])
+    return jsonify(rules)

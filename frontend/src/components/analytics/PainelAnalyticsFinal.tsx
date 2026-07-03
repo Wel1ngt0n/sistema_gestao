@@ -444,12 +444,16 @@ export default function PainelAnalyticsFinal() {
                                                 <p className="mt-1 text-2xl font-semibold text-zinc-950">{kpis?.total_points_wip || 0}</p>
                                             </div>
                                             <div className="rounded-lg bg-zinc-50 p-4">
-                                                <p className="text-xs text-zinc-500">Matrizes</p>
-                                                <p className="mt-1 text-2xl font-semibold text-zinc-950">{kpis?.matrix_count || 0}</p>
+                                                <p className="text-xs text-zinc-500">Matrizes (Concluídas / WIP)</p>
+                                                <p className="mt-1 text-2xl font-semibold text-zinc-950">
+                                                    {kpis?.matrix_count_done || 0} <span className="text-sm font-normal text-zinc-400">/ {kpis?.matrix_count || 0}</span>
+                                                </p>
                                             </div>
                                             <div className="rounded-lg bg-zinc-50 p-4">
-                                                <p className="text-xs text-zinc-500">Filiais</p>
-                                                <p className="mt-1 text-2xl font-semibold text-zinc-950">{kpis?.filial_count || 0}</p>
+                                                <p className="text-xs text-zinc-500">Filiais (Concluídas / WIP)</p>
+                                                <p className="mt-1 text-2xl font-semibold text-zinc-950">
+                                                    {kpis?.filial_count_done || 0} <span className="text-sm font-normal text-zinc-400">/ {kpis?.filial_count || 0}</span>
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
