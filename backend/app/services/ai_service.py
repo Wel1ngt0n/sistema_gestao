@@ -67,9 +67,14 @@ class OperationalAIService:
                     {"role": "system", "content": "Você é um supervisor sênior de operações SaaS."},
                     {"role": "user", "content": prompt}
                 ],
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
+                max_tokens=2000,
+                user="system_user"
             )
-            raw_text = response.choices[0].message.content
+            message = response.choices[0].message
+            if getattr(message, 'refusal', None):
+                raise ValueError(f"IA recusou responder a requisição: {message.refusal}")
+            raw_text = message.content
             
             # OpenAI traz raw JSON se response_format for json_object
             result = json.loads(raw_text)
@@ -388,16 +393,19 @@ class OperationalAIService:
             - Seja conciso mas letal nos detalhes.
             """
 
-            # D. Chamada à API (OpenAI GPT-4o)
-            logger.info("[AI] Realizando chat operacional via GPT-4o...")
             res = self.client.chat.completions.create(
                 model='gpt-4o',
                 messages=[
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": user_message}
-                ]
+                ],
+                max_tokens=1500,
+                user="system_user"
             )
-            answer = res.choices[0].message.content
+            message = res.choices[0].message
+            if getattr(message, 'refusal', None):
+                raise ValueError(f"IA recusou responder a requisição: {message.refusal}")
+            answer = message.content
 
             
             # E. Ouro: Salvar Nova Memória a Longo Prazo

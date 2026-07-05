@@ -220,6 +220,7 @@ def get_financeiro_implantacao(payload):
     """
     try:
         from app.models import Store
+        from app.services.analytics_service import DATA_CUTOFF
 
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')

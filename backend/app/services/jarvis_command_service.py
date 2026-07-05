@@ -87,20 +87,36 @@ Você é o JARVIS. Responda à pergunta do gestor usando os dados reais do time 
 DADOS DO TIME: {json.dumps(cockpit_data, indent=2)}
 PERGUNTA: "{message}"
 
-Seja breve, use emojis e foque em insights.
+Seja breve, use emojis e foque in insights.
 """
         llm = LLMService()
-        # Usando call_openai_diagnostic mas tratando como texto se necessário
-        # Ou criando um método específico de chat
-        res = llm.openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "Você é o JARVIS, copiloto de operações da Instabuy."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        return {
-            "response": res.choices[0].message.content,
-            "type": "text"
-        }
+        if not llm.openai_client:
+            return {
+                "response": "Olá! Eu sou o Jarvis. A API Key da OpenAI não está configurada, então não consigo realizar análises no momento.",
+                "type": "text"
+            }
+            
+        try:
+            res = llm.openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "Você é o JARVIS, copiloto de operações da Instabuy."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=1000,
+                user="system_user"
+            )
+            msg_obj = res.choices[0].message
+            if getattr(msg_obj, 'refusal', None):
+                raise ValueError(f"IA recusou responder a requisição: {msg_obj.refusal}")
+            
+            return {
+                "response": msg_obj.content,
+                "type": "text"
+            }
+        except Exception as e:
+            logger.error(f"[Jarvis] Erro na chamada à OpenAI: {e}")
+            return {
+                "response": "Desculpe, ocorreu um erro de processamento ao consultar o Jarvis na OpenAI.",
+                "type": "text"
+            }

@@ -83,6 +83,16 @@ class ClickUpService:
                 time.sleep(2)
         return None
 
+    def adicionar_dependencia(self, task_id, task_depende_de_id):
+        """
+        Cria uma dependencia visivel no ClickUp, marcando a tarefa task_id
+        como bloqueada pela tarefa task_depende_de_id.
+        """
+        payload = {
+            "depends_on": task_depende_de_id
+        }
+        return self._post(f"task/{task_id}/dependency", payload=payload)
+
     def fetch_parent_tasks(self, date_updated_gt=None, include_closed=True):
         """Busca tarefas da Lista Principal (Lojas). Pagina por todas."""
         status_msg = "INCLUINDO CONCLUÍDAS" if include_closed else "APENAS EM ABERTO"

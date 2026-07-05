@@ -1,0 +1,8 @@
+# Pastas a serem ignoradas pelo ESLint e linters do Frontend
+dist/
+docs/
+.agent/
+node_modules/
+backend/
+scratch/
+archive/

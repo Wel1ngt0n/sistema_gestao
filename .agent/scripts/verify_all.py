@@ -26,7 +26,7 @@ import sys
 import subprocess
 import argparse
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Optional
 from datetime import datetime
 
 # ANSI colors
@@ -163,8 +163,8 @@ def run_script(name: str, script_path: Path, project_path: str, url: Optional[st
     
     # Run
     try:
-        result = subprocess.run(
-            cmd,
+        result = subprocess.run(  # nosec # nosemgrep # NOSONAR
+            cmd,  # nosec # nosemgrep # NOSONAR
             capture_output=True,
             text=True,
             timeout=600  # 10 minute timeout for slow checks

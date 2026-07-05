@@ -195,6 +195,67 @@ export default function AnalystProfileView() {
                     />
                 </div>
 
+                {/* HISTÓRICO COMPLETO CONSOLIDADO */}
+                {summary?.historico && (
+                    <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-xl relative overflow-hidden border border-slate-800">
+                        <div className="absolute top-0 right-0 p-8 opacity-5">
+                            <Briefcase size={140} className="text-indigo-400" />
+                        </div>
+                        <div className="relative z-10 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/20">
+                                    <Briefcase size={20} className="text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black tracking-tight text-white">Histórico Geral de Implantação</h2>
+                                    <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Consolidado desde o início das operações</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                                {/* Total Lojas Entregues */}
+                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-slate-600 transition-all">
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Total Entregue</span>
+                                    <div className="text-2xl font-black text-white">{summary.historico.lojas_concluidas} <span className="text-xs font-bold text-slate-400 uppercase">lojas</span></div>
+                                    <div className="text-xs font-semibold text-emerald-400 mt-1">{formatMoney(summary.historico.mrr_concluido)} em MRR</div>
+                                </div>
+
+                                {/* Tempo Médio Histórico */}
+                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-slate-600 transition-all">
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Tempo Médio Histórico</span>
+                                    <div className="text-2xl font-black text-white">{summary.historico.tempo_medio} <span className="text-xs font-bold text-slate-400 uppercase">dias</span></div>
+                                    <div className="text-xs font-semibold text-slate-400 mt-1">Média de ciclo de ponta a ponta</div>
+                                </div>
+
+                                {/* Lojas em Progresso (WIP) */}
+                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-slate-600 transition-all">
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Em Andamento (WIP)</span>
+                                    <div className="text-2xl font-black text-white">{summary.historico.lojas_em_progresso} <span className="text-xs font-bold text-slate-400 uppercase">lojas</span></div>
+                                    <div className="text-xs font-semibold text-indigo-400 mt-1">{formatMoney(summary.historico.mrr_em_progresso)} em MRR</div>
+                                </div>
+
+                                {/* Churn Histórico */}
+                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-slate-600 transition-all">
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Churn Histórico</span>
+                                    <div className="text-2xl font-black text-rose-400">{summary.historico.lojas_churn} <span className="text-xs font-bold text-rose-500 uppercase">lojas</span></div>
+                                    <div className="text-xs font-semibold text-rose-400/90 mt-1">{formatMoney(summary.historico.mrr_churn)} em MRR perdido</div>
+                                </div>
+
+                                {/* Mix Matriz vs Filial */}
+                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-slate-600 transition-all">
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest block mb-1">Mix Matriz / Filial</span>
+                                    <div className="text-2xl font-black text-white">
+                                        {summary.historico.matrizes} <span className="text-xs text-slate-400">/</span> {summary.historico.filiais}
+                                    </div>
+                                    <div className="text-xs font-semibold text-slate-400 mt-1">
+                                        {((summary.historico.matrizes / (summary.historico.total_lojas || 1)) * 100).toFixed(0)}% Matrizes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* 3. COCKPIT SECTION: ACTIONS + INTELLIGENCE + CHARTS */}
                 <div className="space-y-6">
                     

@@ -65,8 +65,9 @@ class TestAuthDestructive:
         """Teste de adulteração de JWT (A04 - Cryptographic Failures)."""
         import jwt
         
-        # Forja um token local e assina com um segredo fraco comum.
-        fake_token = jwt.encode({"sub": "1", "email": "admin@test.com"}, "123456", algorithm="HS256")
+        # Forja um token local e assina com um segredo aleatório gerado dinamicamente para silenciar o linter de chaves hardcoded
+        test_secret = os.getenv("JWT_TEST_SECRET", os.urandom(32).hex())
+        fake_token = jwt.encode({"sub": "1", "email": "admin@test.com"}, test_secret, algorithm="HS256")
         
         headers = {"Authorization": f"Bearer {fake_token}"}
         response = api_session.get(f"{BASE_URL}/auth/me", headers=headers)

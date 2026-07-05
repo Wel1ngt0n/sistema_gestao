@@ -21,20 +21,25 @@ interface PropriedadesPainelFinanceiroImplantacao {
 
 type NomeIconeFinanceiro = 'ok' | 'alerta' | 'relogio' | 'carteira' | 'dinheiro' | 'cartao';
 
-const iconesFinanceiros: Record<NomeIconeFinanceiro, string> = {
-    ok: '✓',
-    alerta: '!',
-    relogio: 'h',
-    carteira: '$',
-    dinheiro: '$',
-    cartao: 'R$',
-};
 
-const IconeFinanceiro = ({ nome }: { nome: NomeIconeFinanceiro }) => (
-    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded text-xs font-bold leading-none">
-        {iconesFinanceiros[nome]}
-    </span>
-);
+
+const IconeFinanceiro = ({ nome }: { nome: NomeIconeFinanceiro }) => {
+    let caractere = '';
+    switch (nome) {
+        case 'ok': caractere = '✓'; break;
+        case 'alerta': caractere = '!'; break;
+        case 'relogio': caractere = 'h'; break;
+        case 'carteira': 
+        case 'dinheiro': caractere = '$'; break;
+        case 'cartao': caractere = 'R$'; break;
+        default: caractere = ''; break;
+    }
+    return (
+        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded text-xs font-bold leading-none">
+            {caractere}
+        </span>
+    );
+};
 
 const CartaoResumo = ({
     rotulo,
