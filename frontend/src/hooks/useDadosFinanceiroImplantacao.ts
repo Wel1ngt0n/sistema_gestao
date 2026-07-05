@@ -17,7 +17,6 @@ export interface ResumoFinanceiroImplantacao {
     mrr_concluido_cancelado?: number;
     mrr_em_implantacao?: number;
     mrr_pendente_cobranca: number;
-    mrr_em_implantacao: number;
     lojas_em_implantacao: number;
     lojas_prontas_para_cobranca: number;
 }

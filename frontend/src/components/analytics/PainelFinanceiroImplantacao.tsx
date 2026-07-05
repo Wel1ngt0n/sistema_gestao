@@ -107,7 +107,6 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
         mrr_pendente_cobranca: resumo?.mrr_pendente_cobranca ?? kpis?.mrr_backlog ?? 0,
         lojas_em_implantacao: resumo?.lojas_em_implantacao ?? kpis?.wip_stores ?? 0,
         lojas_prontas_para_cobranca: resumo?.lojas_prontas_para_cobranca ?? 0,
-        mrr_em_implantacao: resumo?.mrr_em_implantacao ?? kpis?.mrr_backlog ?? 0,
     };
 
     const dadosGrafico = useMemo(() => ({
