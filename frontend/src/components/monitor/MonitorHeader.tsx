@@ -8,8 +8,8 @@ interface MonitorHeaderProps {
     isRefreshing: boolean;
     globalFilter: string;
     setGlobalFilter: (val: string) => void;
-    filterStatus: 'active' | 'concluded' | 'scheduled';
-    setFilterStatus: (val: 'active' | 'concluded' | 'scheduled') => void;
+    filterStatus: 'active' | 'concluded' | 'scheduled' | 'archived';
+    setFilterStatus: (val: 'active' | 'concluded' | 'scheduled' | 'archived') => void;
     advancedFilters: FilterState;
     setAdvancedFilters: (filters: FilterState) => void;
     uniqueAssignees: string[];

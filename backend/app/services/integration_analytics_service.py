@@ -1,4 +1,4 @@
-from app.models import db, Store, IntegrationMetric
+from app.models import db, Store, IntegrationMetric, TaskStep
 from sqlalchemy import func, or_, and_, desc
 from datetime import datetime
 import collections
@@ -12,36 +12,70 @@ class IntegrationAnalyticsService:
         """
         Calcula os 'Big Numbers' para o Dashboard de Integração.
         """
-        query = db.session.query(IntegrationMetric).join(Store)
+        # Universo de lojas (base de implantação)
+        all_stores = Store.query.all()
+        active_stores_global = [s for s in all_stores if not s.effective_finished_at and not s.is_scheduled]
+        concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
+        universe_stores = active_stores_global + concluded_stores_global
+        
+        store_ids = [s.id for s in universe_stores]
         
         # Filtros de data (baseado em end_date para concluídas)
         if start_date:
             pass # Implementar se necessário filtro global
             
-        metrics = query.all()
+        # Precisamos buscar métricas e TaskSteps para poder usar fallback
+        metrics_query = IntegrationMetric.query.filter(IntegrationMetric.store_id.in_(store_ids)).all()
+        metrics_by_store = {m.store_id: m for m in metrics_query}
+
+        steps_query = TaskStep.query.filter(TaskStep.store_id.in_(store_ids), TaskStep.step_list_name == 'INTEGRACAO').all()
+        steps_by_store = {step.store_id: step for step in steps_query}
         
-        total_volume = len(metrics)
-        ongoing = sum(1 for m in metrics if not m.end_date)
-        done = sum(1 for m in metrics if m.end_date)
-        
-        # SLA (Prazo < 60 dias)
+        total_volume = len(universe_stores)
+        ongoing = 0
+        done = 0
         sla_ok = 0
         total_finished_sla = 0
-        for m in metrics:
-            if m.end_date and m.start_date:
+        quality_ok = 0
+        churn_risk_count = 0
+        
+        for s in universe_stores:
+            m = metrics_by_store.get(s.id)
+            step = steps_by_store.get(s.id)
+            current_step_status = step.status if step else None
+
+            # Lógica robusta de datas
+            eff_start_date = m.start_date if m and m.start_date else None
+            eff_end_date = m.end_date if m and m.end_date else None
+
+            if not eff_end_date and current_step_status and current_step_status.upper() in ['DONE', 'CONCLUIDO', 'CONCLUÍDO', 'FINALIZADO', 'FINALIZADA']:
+                eff_end_date = step.end_real_at or step.closed_at
+            
+            if not eff_end_date and s.effective_finished_at:
+                eff_end_date = s.effective_finished_at
+
+            if not eff_start_date and step:
+                eff_start_date = step.start_real_at or step.created_at
+                
+            if not eff_start_date:
+                eff_start_date = s.effective_started_at
+
+            if eff_end_date:
+                done += 1
                 total_finished_sla += 1
-                days = (m.end_date - m.start_date).days
-                if days <= 60:
-                    sla_ok += 1
+                if eff_start_date:
+                    days = (eff_end_date - eff_start_date).days
+                    if days <= 60:
+                        sla_ok += 1
+                if m and m.post_go_live_bugs == 0:
+                    quality_ok += 1
+            else:
+                ongoing += 1
+                if m and m.churn_risk:
+                    churn_risk_count += 1
                     
         sla_pct = (sla_ok / total_finished_sla * 100) if total_finished_sla > 0 else 100.0
-        
-        # Qualidade (Sem bugs pós-live)
-        quality_ok = sum(1 for m in metrics if m.end_date and m.post_go_live_bugs == 0)
         quality_pct = (quality_ok / done * 100) if done > 0 else 100.0
-        
-        # Risco de Churn (Ativos)
-        churn_risk_count = sum(1 for m in metrics if not m.end_date and m.churn_risk)
 
         return {
             "total_volume": total_volume,

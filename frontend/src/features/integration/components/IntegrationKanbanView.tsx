@@ -42,7 +42,7 @@ const KANBAN_COLUMNS = [
     { id: 'prog_produto', title: 'PROGRESSO PRODUTO', match: ['progresso produto'] },
     { id: 'produtos_integ', title: 'PRODUTOS INTEGRADO', match: ['produtos integrado'] },
     { id: 'prog_pedido', title: 'PROGRESSO PEDIDO', match: ['progresso pedido'] },
-    { id: 'block_pedido', title: 'BLOQUEADO PEDIDO', match: ['bloqueado pedido'] },
+    { id: 'block_pedido', title: 'BLOQUEADO PEDIDO', match: ['bloqueado pedido', 'bloqueado'] },
     { id: 'revisao', title: 'REVISÃO', match: ['revisão'] },
     { id: 'implantado', title: 'IMPLANTADO', match: ['implantado'] },
 ];
@@ -56,7 +56,7 @@ export default function IntegrationKanbanView({ data, onEdit, onStatusChange }: 
         cols['others'] = [];
 
         data.forEach(store => {
-            const status = (store.status || '').toLowerCase();
+            const status = (store.current_status || store.status || '').toLowerCase();
             let matched = false;
 
             for (const col of KANBAN_COLUMNS) {
@@ -99,15 +99,15 @@ export default function IntegrationKanbanView({ data, onEdit, onStatusChange }: 
     };
 
     return (
-        <div className="flex gap-4 items-start min-w-full pb-4">
+        <div className="flex h-full min-w-max items-start gap-4 pb-4">
             {KANBAN_COLUMNS.map(col => (
                 <div
                     key={col.id}
-                    className="flex-none w-80 flex flex-col bg-slate-100/40/40 rounded-xl border border-slate-200/60 backdrop-blur-sm"
+                    className="flex h-full w-80 flex-none flex-col rounded-xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-sm"
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, col.id)}
                 >
-                    <div className="p-3 border-b border-slate-200/60 flex justify-between items-center bg-slate-100/40/40 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
+                    <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-white/95 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
                         <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-orange-500' : 'bg-slate-300'}`}></div>
                             {col.title}
@@ -117,7 +117,7 @@ export default function IntegrationKanbanView({ data, onEdit, onStatusChange }: 
                         </span>
                     </div>
 
-                    <div className="p-2 space-y-2.5 min-h-[150px]">
+                    <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto rounded-b-xl bg-slate-50/40 p-2.5">
                         {columns[col.id]?.map(store => (
                             <div
                                 key={store.id}
@@ -169,6 +169,11 @@ export default function IntegrationKanbanView({ data, onEdit, onStatusChange }: 
                                 </div>
                             </div>
                         ))}
+                        {columns[col.id]?.length === 0 && (
+                            <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center text-xs font-medium text-slate-400">
+                                Sem lojas nesta etapa
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}

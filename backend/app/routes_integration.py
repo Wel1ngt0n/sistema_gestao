@@ -16,86 +16,105 @@ def get_integration_dashboard(payload):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    # 1. Identificar Lojas na Fase de Integração ou Recém Integradas
-    # Critério: Possuem IntegrationMetric OU possuem TaskStep na lista INTEGRACAO
-    
-    # Vamos buscar todas as métricas de integração existentes
-    metrics_query = IntegrationMetric.query.join(Store)
-    
-    if start_date and end_date:
-        # Filtrar por data de fim se concluída, ou qualquer se em andamento?
-        # Para volume, usamos data de fim.
-        pass 
+    # 1. Pegar o universo de lojas (base de implantação)
+    all_stores = Store.query.all()
+    active_stores_global = [s for s in all_stores if not s.effective_finished_at and not s.is_scheduled]
+    concluded_stores_global = [s for s in all_stores if s.effective_finished_at and s.effective_finished_at.year >= 2026]
+    universe_stores = active_stores_global + concluded_stores_global
 
-    metrics = metrics_query.all()
+    store_ids = [s.id for s in universe_stores]
+
+    # Vamos buscar as métricas de integração dessas lojas
+    metrics_query = IntegrationMetric.query.filter(IntegrationMetric.store_id.in_(store_ids)).all()
+    metrics_by_store = {m.store_id: m for m in metrics_query}
     
-    # KPI 1: Volume (Pontos)
-    # Matriz = 1.0, Filial = 0.7
+    steps_query = TaskStep.query.filter(TaskStep.store_id.in_(store_ids), TaskStep.step_list_name == 'INTEGRACAO').all()
+    steps_by_store = {step.store_id: step for step in steps_query}
+
+    # KPIs
     total_points = 0.0
-    for m in metrics:
-        # Se concluído (tem end_date) e está dentro do período (se especificado)
-        # Por enquanto, somamos tudo que tem end_date para simplificar, ou filtramos no frontend
-        if m.end_date:
-            is_matriz = m.store.tipo_loja == 'Matriz'
-            points = 1.0 if is_matriz else 0.7
-            total_points += points
-
-    # KPI 2: SLA (< 60 dias)
     completed_in_sla = 0
     total_completed = 0
-    for m in metrics:
-        if m.end_date and m.start_date:
-            total_completed += 1
-            days = (m.end_date - m.start_date).days
-            if days <= 60:
-                completed_in_sla += 1
-    
-    sla_pct = (completed_in_sla / total_completed * 100) if total_completed > 0 else 100.0
+    quality_success = 0
+    doc_success = 0
 
-    # KPI 3: Qualidade (Sem bugs críticos em 30 dias)
-    # Consideramos sucesso se post_go_live_bugs == 0
-    quality_success = sum(1 for m in metrics if m.end_date and m.post_go_live_bugs == 0)
-    quality_pct = (quality_success / total_completed * 100) if total_completed > 0 else 100.0
-
-    # KPI 4: Documentação (100% das novas)
-    # Consideramos 'DONE' como sucesso
-    doc_success = sum(1 for m in metrics if m.documentation_status == 'DONE')
-    total_docs = len(metrics) # Considera todas, ou só as novas? Vamos considerar todas no painel
-    doc_pct = (doc_success / total_docs * 100) if total_docs > 0 else 0.0
-
-    # Lista Detalhada
     results = []
-    for m in metrics:
-        # Buscar status atual do step de integração
-        from app.models import TaskStep
-        step = TaskStep.query.filter_by(store_id=m.store.id, step_list_name='INTEGRACAO').first()
+
+    for s in universe_stores:
+        m = metrics_by_store.get(s.id)
+        step = steps_by_store.get(s.id)
         current_step_status = step.status if step else None
+
+        # Lógica robusta de datas com fallbacks
+        eff_start_date = m.start_date if m and m.start_date else None
+        eff_end_date = m.end_date if m and m.end_date else None
+
+        if not eff_end_date and current_step_status and current_step_status.upper() in ['DONE', 'CONCLUIDO', 'CONCLUÍDO', 'FINALIZADO', 'FINALIZADA']:
+            eff_end_date = step.end_real_at or step.closed_at
         
-        sla = m.sla_days or 0
-        if m.start_date and not m.end_date:
-            sla = (datetime.now() - m.start_date).days
+        if not eff_end_date and s.effective_finished_at:
+            eff_end_date = s.effective_finished_at
+
+        if not eff_start_date and step:
+            eff_start_date = step.start_real_at or step.created_at
+            
+        if not eff_start_date:
+            eff_start_date = s.effective_started_at
+
+        is_done = eff_end_date is not None
         
-        is_done = m.end_date is not None
+        sla = m.sla_days if m and m.sla_days else 0
+        if not sla and eff_start_date and eff_end_date:
+            sla = (eff_end_date - eff_start_date).days
+        elif not sla and eff_start_date and not eff_end_date:
+            sla = (datetime.now() - eff_start_date).days
+            
         on_time = sla <= 60 if is_done else None
         
+        is_matriz = s.tipo_loja == 'Matriz'
+        points = 1.0 if is_matriz else 0.7
+
+        if is_done:
+            total_completed += 1
+            if sla <= 60:
+                completed_in_sla += 1
+            if m and m.post_go_live_bugs == 0:
+                quality_success += 1
+            total_points += points
+        else:
+            # Também calculamos pontos em WIP
+            total_points += points
+
+        doc_status = m.documentation_status if m else 'PENDING'
+        if doc_status == 'DONE':
+            doc_success += 1
+
         results.append({
-            "id": m.store.id,
-            "name": m.store.store_name,
-            "integrador": m.store.integrador or "Não Atribuído",
-            "assignee": m.store.integrador or "Não Atribuído",
-            "rede": m.store.rede,
-            "tipo": m.store.tipo_loja,
-            "start_date": m.start_date.isoformat() if m.start_date else None,
-            "end_date": m.end_date.isoformat() if m.end_date else None,
+            "id": s.id,
+            "name": s.store_name,
+            "store_name": s.store_name,
+            "task_id": s.custom_store_id or s.clickup_task_id or str(s.id),
+            "integrador": s.integrador or "Não Atribuído",
+            "assignee": s.integrador or "Não Atribuído",
+            "rede": s.rede,
+            "tipo": s.tipo_loja,
+            "start_date": eff_start_date.isoformat() if eff_start_date else None,
+            "end_date": eff_end_date.isoformat() if eff_end_date else None,
             "sla_days": sla,
-            "status": "CONCLUÍDO" if is_done else "EM ANDAMENTO",
+            "status": "CONCLUÍDO" if is_done else ("ARQUIVADA" if s.status_norm == 'ARCHIVED' else "EM ANDAMENTO"),
             "current_status": current_step_status,
-            "doc_status": m.documentation_status,
-            "bugs": m.post_go_live_bugs,
-            "churn_risk": m.churn_risk,
+            "doc_status": doc_status,
+            "bugs": m.post_go_live_bugs if m else 0,
+            "churn_risk": m.churn_risk if m else False,
+            "has_blocking_issue": m.has_blocking_issue if m else False,
             "on_time": on_time
         })
         
+    sla_pct = (completed_in_sla / total_completed * 100) if total_completed > 0 else 100.0
+    quality_pct = (quality_success / total_completed * 100) if total_completed > 0 else 100.0
+    total_docs = len(universe_stores)
+    doc_pct = (doc_success / total_docs * 100) if total_docs > 0 else 0.0
+
     # Ordenar por status (Em andamento primeiro) e depois por data início
     results.sort(key=lambda x: (x['status'] == 'CONCLUÍDO', x['start_date'] or ''))
 

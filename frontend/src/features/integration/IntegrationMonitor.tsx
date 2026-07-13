@@ -66,9 +66,11 @@ export default function IntegrationMonitor() {
 
         // Status filter
         if (filterStatus === 'active') {
-            result = result.filter(d => d.status !== 'CONCLUÍDO')
-        } else {
+            result = result.filter(d => d.status !== 'CONCLUÍDO' && d.status !== 'ARQUIVADA')
+        } else if (filterStatus === 'concluded') {
             result = result.filter(d => d.status === 'CONCLUÍDO')
+        } else if (filterStatus === 'archived') {
+            result = result.filter(d => d.status === 'ARQUIVADA')
         }
 
         // Assignee filter
@@ -92,7 +94,7 @@ export default function IntegrationMonitor() {
 
     // Stats
     const stats = useMemo(() => {
-        const active = data.filter(d => d.status !== 'CONCLUÍDO')
+        const active = data.filter(d => d.status !== 'CONCLUÍDO' && d.status !== 'ARQUIVADA')
         const concluded = data.filter(d => d.status === 'CONCLUÍDO')
         const overSla = active.filter(d => d.sla_days > 60)
         return {
@@ -166,6 +168,7 @@ export default function IntegrationMonitor() {
                         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-2">
                             <option value="active">Ativas</option>
                             <option value="concluded">Concluídas</option>
+                            <option value="archived">Arquivadas</option>
                         </select>
                         <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-3">
                             <option value="all">Todos responsáveis</option>

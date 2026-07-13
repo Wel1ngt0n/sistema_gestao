@@ -2,12 +2,8 @@ import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import {
     Trophy,
-    Target,
     AlertTriangle,
-    Edit2,
-    CheckCircle,
-    UserCheck,
-    Briefcase
+    Edit2
 } from 'lucide-react'
 
 interface CollaboratorPerf {
@@ -47,8 +43,8 @@ interface PerformanceSummary {
 }
 
 export default function SuperAdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'integration' | 'implantation'>('implantation')
-    const [data, setData] = useState<PerformanceSummary | null>(null)
+    const [activeTab] = useState<'integration' | 'implantation'>('implantation')
+    const [, setData] = useState<PerformanceSummary | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedCycle, setSelectedCycle] = useState(new Date().toISOString().slice(0, 7)) // YYYY-MM
 
@@ -244,95 +240,13 @@ export default function SuperAdminDashboard() {
                                                 <Edit2 size={16} className="text-zinc-600" />
                                             </button>
                                         </td>
-            <div className="space-y-6">
-                <div className="flex justify-end">
-                    <button onClick={() => setConfigModalOpen(true)} className="px-4 py-2 bg-zinc-800 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-zinc-700">
-                        ⚙️ Configurar Metas do Semestre
-                    </button>
-                </div>
-                {implData && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                            <h3 className="text-blue-100 font-bold uppercase text-xs mb-1">Coletivo: Volume (Pts)</h3>
-                            <div className="text-3xl font-bold">{implData.collective_kpis.volume_points.toFixed(1)} <span className="text-base font-normal opacity-70">/ {implRules?.collective?.volume_target || 90}</span></div>
-                        </div>
-                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                            <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Prazo (SLA)</h3>
-                            <div className="text-3xl font-bold">{implData.collaborators.length > 0 ? (implData.collaborators.reduce((acc, u) => acc + u.metrics.sla_pct, 0) / implData.collaborators.length).toFixed(1) : 100}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.otd_target || 80}%</span></div>
-                        </div>
-                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                            <h3 className="text-purple-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
-                            <div className="text-3xl font-bold">{implData.collective_kpis.quality_global.toFixed(1)}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.quality_target || 80}%</span></div>
-                        </div>
-                        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                            <h3 className="text-amber-100 font-bold uppercase text-xs mb-1">Coletivo: Churns</h3>
-                            <div className="text-3xl font-bold">{implData.collaborators.reduce((acc, u) => acc + u.metrics.churns, 0)} <span className="text-base font-normal opacity-70">/ {implRules?.collective?.churn_max || 1}</span></div>
-                        </div>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                )}
-
-                <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-zinc-50/50 text-zinc-500 uppercase font-semibold text-xs border-b border-zinc-200">
-                            <tr>
-                                <th className="px-6 py-4">Colaborador</th>
-                                <th className="px-6 py-4 text-center">Coletivo (40%)</th>
-                                <th className="px-6 py-4 text-center">Individual (40%)</th>
-                                <th className="px-6 py-4 text-center">Comport. (20%)</th>
-                                <th className="px-6 py-4 text-center">Score Final</th>
-                                <th className="px-6 py-4 text-center">Penalidades</th>
-                                <th className="px-6 py-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-100">
-                            {loading && (
-                                <tr><td colSpan={7} className="p-8 text-center text-zinc-500">Calculando Scores...</td></tr>
-                            )}
-                            {implData?.collaborators.map(user => (
-                                <tr key={user.username} className="hover:bg-zinc-50/50/30">
-                                    <td className="px-6 py-4 font-bold text-zinc-900">
-                                        {user.username}
-                                        <div className="text-xs text-zinc-500 font-normal">{user.role}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold">{user.scores.collective}%</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-bold">{user.scores.individual}%</span>
-                                            <span className="text-[10px] text-zinc-500 mt-1">Vol: {user.metrics.volume_points} / {implRules?.individual?.volume_target || 30} pts</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-2 py-1 rounded-lg font-bold ${user.metrics.churns > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {user.scores.behavioral}%
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="text-lg font-bold text-zinc-900">{user.scores.final}%</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        {user.metrics.churns > 0 ? (
-                                            <span className="text-xs bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">
-                                                {user.metrics.churns} Churns (-{user.metrics.churns * 50}%)
-                                            </span>
-                                        ) : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <button 
-                                            onClick={() => openReview(user)}
-                                            className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
-                                            title="Avaliar Comportamento"
-                                        >
-                                            <Edit2 size={16} className="text-zinc-600" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
                 </div>
-            </div>
+            )}
 
             {/* Modal Review */}
             {reviewModalOpen && selectedUser && (

@@ -83,7 +83,7 @@ class ClickUpService:
                 time.sleep(2)
         return None
 
-    def fetch_parent_tasks(self, date_updated_gt=None, include_closed=True):
+    def fetch_parent_tasks(self, date_updated_gt=None, include_closed=True, archived=False):
         """Busca tarefas da Lista Principal (Lojas). Pagina por todas."""
         status_msg = "INCLUINDO CONCLUÍDAS" if include_closed else "APENAS EM ABERTO"
         self.logger.info(f"[ClickUp] Buscando lojas ({status_msg}) na lista {Config.LIST_ID_PRINCIPAL}...")
@@ -96,7 +96,7 @@ class ClickUpService:
                 "page": page, 
                 "subtasks": "true", 
                 "include_closed": "true" if include_closed else "false",
-                "archived": "false"
+                "archived": "true" if archived else "false"
             }
             if date_updated_gt:
                 params["date_updated_gt"] = date_updated_gt
@@ -117,7 +117,7 @@ class ClickUpService:
         self.logger.info(f"[ClickUp] Total de {len(tasks)} lojas encontradas.")
         return tasks
 
-    def fetch_parent_tasks_generator(self, date_updated_gt=None, include_closed=True):
+    def fetch_parent_tasks_generator(self, date_updated_gt=None, include_closed=True, archived=False):
         """Busca tarefas da Lista Principal (Lojas) e retorna por página."""
         status_msg = "INCLUINDO CONCLUÍDAS" if include_closed else "APENAS EM ABERTO"
         self.logger.info(f"[ClickUp] Buscando lojas ({status_msg}) na lista {Config.LIST_ID_PRINCIPAL} (Generator)...")
@@ -127,7 +127,7 @@ class ClickUpService:
                 "page": page, 
                 "subtasks": "true", 
                 "include_closed": "true" if include_closed else "false",
-                "archived": "false"
+                "archived": "true" if archived else "false"
             }
             if date_updated_gt:
                 params["date_updated_gt"] = date_updated_gt
@@ -156,7 +156,7 @@ class ClickUpService:
                     return f['id']
         return None
 
-    def fetch_tasks_from_list(self, list_id, date_updated_gt=None):
+    def fetch_tasks_from_list(self, list_id, date_updated_gt=None, archived=False):
         """Busca todas as tarefas de uma lista específica (inclui paginação)."""
         tasks = []
         page = 0
@@ -165,7 +165,7 @@ class ClickUpService:
                 "page": page,
                 "subtasks": "true",
                 "include_closed": "true",
-                "archived": "false",
+                "archived": "true" if archived else "false",
                 "limit": 100 # Explict limit
             }
             if date_updated_gt:
@@ -182,7 +182,7 @@ class ClickUpService:
                 break
         return tasks
     
-    def fetch_tasks_from_list_generator(self, list_id, date_updated_gt=None, include_closed=True):
+    def fetch_tasks_from_list_generator(self, list_id, date_updated_gt=None, include_closed=True, archived=False):
         """Busca todas as tarefas de uma lista específica iterando em blocos."""
         page = 0
         while True:
@@ -190,7 +190,7 @@ class ClickUpService:
                 "page": page,
                 "subtasks": "true",
                 "include_closed": "true" if include_closed else "false",
-                "archived": "false",
+                "archived": "true" if archived else "false",
                 "limit": 100
             }
             if date_updated_gt:
@@ -288,8 +288,11 @@ class ClickUpService:
                 end_date = s['since']
                 break
         
+        # BLOCKED: Verifica se teve algum status de bloqueio
+        has_blocking_issue = any('bloquead' in s['status'] for s in workflow_statuses)
+        
         self.logger.info(f"[ClickUp] Datas integração task {task_id}: início={start_date}, fim={end_date}")
-        return {'start_date': start_date, 'end_date': end_date}
+        return {'start_date': start_date, 'end_date': end_date, 'has_blocking_issue': has_blocking_issue}
 
     def get_task_comments(self, task_id):
         """

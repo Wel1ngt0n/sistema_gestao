@@ -171,8 +171,13 @@ class SyncService:
                 parent_tasks_dict[t['id']] = t
             
             # Passo B: Ciclo Atual (2026)
-            recent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=True)
+            recent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=True, archived=False)
             for t in recent_tasks:
+                parent_tasks_dict[t['id']] = t
+                
+            # Passo C: Tarefas Arquivadas Recentemente
+            archived_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=True, archived=True)
+            for t in archived_tasks:
                 parent_tasks_dict[t['id']] = t
                 
             parent_tasks = list(parent_tasks_dict.values())
@@ -543,6 +548,12 @@ class SyncService:
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, date_updated_gt=search_ts, include_closed=True):
                         for t in batch:
                             steps_dict[t['id']] = t
+                            
+                    # C: Etapas Arquivadas (para garantir que lojas que foram arquivadas tenham seus steps refletidos)
+                    self.logger.info(f"[{list_name}] Buscando etapas arquivadas...")
+                    for batch in self.clickup.fetch_tasks_from_list_generator(list_id, include_closed=True, archived=True):
+                        for t in batch:
+                            steps_dict[t['id']] = t
                     
                     steps_list = list(steps_dict.values())
                     self.logger.info(f"[{list_name}] Total de etapas encontradas: {len(steps_list)}")
@@ -626,7 +637,9 @@ class SyncService:
             
             # 1. Buscar Tarefas da Lista de Integração
             list_id = Config.LIST_IDS_STEPS['INTEGRACAO']
-            tasks = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None)
+            tasks_active = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None, archived=False)
+            tasks_arch = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None, archived=True)
+            tasks = tasks_active + tasks_arch
             
             if not tasks:
                 self.logger.info("Nenhuma tarefa de integração encontrada.")
@@ -682,6 +695,8 @@ class SyncService:
                         metric.start_date = dates['start_date']
                     if dates['end_date']:
                         metric.end_date = dates['end_date']
+                    
+                    metric.has_blocking_issue = dates.get('has_blocking_issue', False)
                     
                     # Fallback: se não achou via status, usar step dates
                     if not metric.start_date:

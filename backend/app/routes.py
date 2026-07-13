@@ -233,6 +233,9 @@ def get_stores(payload):
         # Active = nao concluidas e sem inicio futuro.
         query = query.filter(Store.manual_finished_at.is_(None), Store.end_real_at.is_(None), Store.finished_at.is_(None))
         query = query.filter(or_(Store.manual_start_date.is_(None), func.date(Store.manual_start_date) <= today))
+        query = query.filter(Store.status_norm != 'ARCHIVED')
+    elif status_filter == 'archived':
+        query = query.filter(Store.status_norm == 'ARCHIVED')
     elif status_filter == 'scheduled':
         # Scheduled = nao concluidas com data de inicio manual futura.
         query = query.filter(Store.manual_finished_at.is_(None), Store.end_real_at.is_(None), Store.finished_at.is_(None))

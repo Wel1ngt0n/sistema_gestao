@@ -37,7 +37,7 @@ export default function MonitorV2() {
         isLate: false,
     });
 
-    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded' | 'scheduled'>('active');
+    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded' | 'scheduled' | 'archived'>('active');
 
     // Estado da Modal de Detalhes (Nova UI)
     const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
@@ -107,6 +107,15 @@ export default function MonitorV2() {
     const filteredData = useMemo(() => {
         let res = data;
 
+        
+        if (filterStatus === 'active') {
+            res = res.filter(s => s.status !== 'CONCLUÍDO' && s.status !== 'ARQUIVADA');
+        } else if (filterStatus === 'concluded') {
+            res = res.filter(s => s.status === 'CONCLUÍDO');
+        } else if (filterStatus === 'archived') {
+            res = res.filter(s => s.status === 'ARQUIVADA');
+        }
+        
         if (globalFilter) {
             const lowerFilter = globalFilter.toLowerCase();
             res = res.filter(s =>

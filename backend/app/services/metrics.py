@@ -62,9 +62,14 @@ class MetricsService:
 
         # Normaliza status externo para os estados internos usados pelo sistema.
         raw_status = task_data.get('status', {}).get('status', 'unknown')
-        store.status = raw_status 
-        store.status_raw = raw_status
-        store.status_norm = StatusNormalizer.normalize(raw_status)
+        if task_data.get('archived', False):
+            store.status = 'ARQUIVADA'
+            store.status_raw = raw_status
+            store.status_norm = 'ARCHIVED'
+        else:
+            store.status = raw_status 
+            store.status_raw = raw_status
+            store.status_norm = StatusNormalizer.normalize(raw_status)
         
         # Registra mudanca de status somente em lojas existentes.
         if not is_new:
