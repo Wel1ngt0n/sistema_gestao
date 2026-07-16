@@ -11,6 +11,7 @@ import IntegrationDashboard from './features/integration/IntegrationDashboard'
 import IntegrationMonitor from './features/integration/IntegrationMonitor'
 import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
+import IntegrationV2Monitor from './features/integration-v2/IntegrationV2Monitor'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
 import { SupportDashboard } from './pages/SupportDashboard'
 
@@ -51,6 +52,7 @@ function App() {
                     <Route path="/integration" element={<Navigate to="/integration/dashboard" replace />} />
                     <Route path="/integration/dashboard" element={<IntegrationDashboard />} />
                     <Route path="/integration/monitor" element={<IntegrationMonitor />} />
+                    <Route path="/integration-v2/monitor" element={<IntegrationV2Monitor />} />
                     <Route path="/integration/analytics" element={<IntegrationAnalytics />} />
                     <Route path="/integration/reports" element={<IntegrationReports />} />
                     

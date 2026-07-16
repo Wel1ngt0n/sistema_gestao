@@ -889,3 +889,201 @@ class JarvisChatMessage(db.Model):
     role = db.Column(db.String(50), nullable=False) # user, assistant, system
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# --- Integration V2: dominio isolado do monitor legado ---
+
+class IntegrationV2Store(db.Model):
+    __tablename__ = 'integration_v2_stores'
+
+    id = db.Column(db.Integer, primary_key=True)
+    source_task_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    source_custom_id = db.Column(db.String(100), nullable=True, index=True)
+    business_id = db.Column(db.String(100), nullable=True, index=True)
+    store_name = db.Column(db.String(255), nullable=False, index=True)
+    source_url = db.Column(db.String(500), nullable=True)
+    source_created_at = db.Column(db.DateTime, nullable=True)
+    source_closed_at = db.Column(db.DateTime, nullable=True)
+    source_updated_at = db.Column(db.DateTime, nullable=True)
+    first_seen_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_seen_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    source_present = db.Column(db.Boolean, nullable=False, default=True)
+    reconciliation_status = db.Column(db.String(32), nullable=False, default='NOT_IN_INTEGRATION', index=True)
+    reconciliation_method = db.Column(db.String(32), nullable=True)
+    reconciliation_evidence = db.Column(db.Text, nullable=True)
+    source_snapshot = db.Column(db.Text, nullable=True)
+
+    integration_task = db.relationship(
+        'IntegrationV2Task',
+        back_populates='store',
+        uselist=False,
+        foreign_keys='IntegrationV2Task.store_id',
+    )
+
+
+class IntegrationV2Status(db.Model):
+    __tablename__ = 'integration_v2_statuses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    list_id = db.Column(db.String(64), nullable=False, index=True)
+    external_id = db.Column(db.String(160), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    color = db.Column(db.String(32), nullable=True)
+    native_type = db.Column(db.String(50), nullable=True)
+    category = db.Column(db.String(50), nullable=True)
+    position = db.Column(db.Integer, nullable=False, default=0)
+    active = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    identity_source = db.Column(db.String(32), nullable=False, default='CLICKUP_ID')
+    configuration_signature = db.Column(db.String(64), nullable=True)
+    first_seen_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_seen_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('list_id', 'external_id', name='uq_integration_v2_status_external'),
+    )
+
+
+class IntegrationV2Task(db.Model):
+    __tablename__ = 'integration_v2_tasks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    clickup_task_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    custom_id = db.Column(db.String(100), nullable=True, index=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('integration_v2_stores.id'), nullable=True, unique=True, index=True)
+    current_status_id = db.Column(db.Integer, db.ForeignKey('integration_v2_statuses.id'), nullable=True, index=True)
+    task_name = db.Column(db.String(255), nullable=False)
+    url = db.Column(db.String(500), nullable=True)
+    priority = db.Column(db.String(50), nullable=True)
+    tags_snapshot = db.Column(db.Text, nullable=True)
+    custom_fields_snapshot = db.Column(db.Text, nullable=True)
+    source_snapshot = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=True)
+    started_at = db.Column(db.DateTime, nullable=True)
+    due_at = db.Column(db.DateTime, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    closed_at = db.Column(db.DateTime, nullable=True)
+    source_updated_at = db.Column(db.DateTime, nullable=True)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    archived = db.Column(db.Boolean, nullable=False, default=False)
+    is_blocked = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    data_quality = db.Column(db.String(32), nullable=False, default='COMPLETE')
+    reconciliation_method = db.Column(db.String(32), nullable=True)
+    reconciliation_evidence = db.Column(db.Text, nullable=True)
+
+    store = db.relationship('IntegrationV2Store', back_populates='integration_task', foreign_keys=[store_id])
+    current_status = db.relationship('IntegrationV2Status', foreign_keys=[current_status_id])
+    assignee_links = db.relationship('IntegrationV2TaskAssignee', back_populates='task', cascade='all, delete-orphan')
+    status_history = db.relationship('IntegrationV2StatusHistory', back_populates='task', cascade='all, delete-orphan')
+    block_periods = db.relationship('IntegrationV2BlockPeriod', back_populates='task', cascade='all, delete-orphan')
+
+
+class IntegrationV2Assignee(db.Model):
+    __tablename__ = 'integration_v2_assignees'
+
+    id = db.Column(db.Integer, primary_key=True)
+    clickup_user_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    username = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=True)
+    avatar = db.Column(db.String(500), nullable=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+class IntegrationV2TaskAssignee(db.Model):
+    __tablename__ = 'integration_v2_task_assignees'
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('integration_v2_tasks.id'), nullable=False, index=True)
+    assignee_id = db.Column(db.Integer, db.ForeignKey('integration_v2_assignees.id'), nullable=False, index=True)
+    assigned_at = db.Column(db.DateTime, nullable=True)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    task = db.relationship('IntegrationV2Task', back_populates='assignee_links')
+    assignee = db.relationship('IntegrationV2Assignee')
+
+    __table_args__ = (
+        db.UniqueConstraint('task_id', 'assignee_id', name='uq_integration_v2_task_assignee'),
+    )
+
+
+class IntegrationV2StatusHistory(db.Model):
+    __tablename__ = 'integration_v2_status_history'
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('integration_v2_tasks.id'), nullable=False, index=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('integration_v2_stores.id'), nullable=True, index=True)
+    status_id = db.Column(db.Integer, db.ForeignKey('integration_v2_statuses.id'), nullable=False, index=True)
+    entered_at = db.Column(db.DateTime, nullable=True, index=True)
+    exited_at = db.Column(db.DateTime, nullable=True)
+    duration_seconds = db.Column(db.BigInteger, nullable=True)
+    is_current = db.Column(db.Boolean, nullable=False, default=False)
+    occurrence = db.Column(db.Integer, nullable=False, default=1)
+    timestamp_source = db.Column(db.String(50), nullable=False, default='CLICKUP_TIME_IN_STATUS')
+    timestamp_quality = db.Column(db.String(32), nullable=False, default='CONFIRMED')
+    idempotency_key = db.Column(db.String(64), nullable=False, unique=True)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    task = db.relationship('IntegrationV2Task', back_populates='status_history')
+    status = db.relationship('IntegrationV2Status')
+
+
+class IntegrationV2BlockPeriod(db.Model):
+    __tablename__ = 'integration_v2_block_periods'
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('integration_v2_tasks.id'), nullable=False, index=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('integration_v2_stores.id'), nullable=True, index=True)
+    status_id = db.Column(db.Integer, db.ForeignKey('integration_v2_statuses.id'), nullable=True)
+    started_at = db.Column(db.DateTime, nullable=False, index=True)
+    ended_at = db.Column(db.DateTime, nullable=True)
+    duration_seconds = db.Column(db.BigInteger, nullable=True)
+    is_current = db.Column(db.Boolean, nullable=False, default=False)
+    reason = db.Column(db.String(500), nullable=True)
+    reason_source = db.Column(db.String(50), nullable=True)
+    quality = db.Column(db.String(32), nullable=False, default='INFERRED_STATUS')
+    occurrence = db.Column(db.Integer, nullable=False, default=1)
+    idempotency_key = db.Column(db.String(64), nullable=False, unique=True)
+    synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    task = db.relationship('IntegrationV2Task', back_populates='block_periods')
+    status = db.relationship('IntegrationV2Status')
+
+
+class IntegrationV2StatusCatalogRun(db.Model):
+    __tablename__ = 'integration_v2_status_catalog_runs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='RUNNING')
+    list_id = db.Column(db.String(64), nullable=False)
+    configuration_signature = db.Column(db.String(64), nullable=True)
+    statuses_read = db.Column(db.Integer, nullable=False, default=0)
+    statuses_created = db.Column(db.Integer, nullable=False, default=0)
+    statuses_updated = db.Column(db.Integer, nullable=False, default=0)
+    statuses_deactivated = db.Column(db.Integer, nullable=False, default=0)
+    error_summary = db.Column(db.Text, nullable=True)
+
+
+class IntegrationV2SyncRun(db.Model):
+    __tablename__ = 'integration_v2_sync_runs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    run_type = db.Column(db.String(20), nullable=False, default='FULL')
+    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='RUNNING', index=True)
+    cursor = db.Column(db.String(100), nullable=True)
+    stores_read = db.Column(db.Integer, nullable=False, default=0)
+    stores_created = db.Column(db.Integer, nullable=False, default=0)
+    stores_updated = db.Column(db.Integer, nullable=False, default=0)
+    tasks_read = db.Column(db.Integer, nullable=False, default=0)
+    tasks_created = db.Column(db.Integer, nullable=False, default=0)
+    tasks_updated = db.Column(db.Integer, nullable=False, default=0)
+    histories_written = db.Column(db.Integer, nullable=False, default=0)
+    blocks_written = db.Column(db.Integer, nullable=False, default=0)
+    orphan_tasks = db.Column(db.Integer, nullable=False, default=0)
+    ambiguous_matches = db.Column(db.Integer, nullable=False, default=0)
+    error_summary = db.Column(db.Text, nullable=True)

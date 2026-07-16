@@ -20,7 +20,8 @@ import {
     User,
     LogOut,
     MessageSquare,
-    Sparkles
+    Sparkles,
+    Store
 } from 'lucide-react'
 import logo from '../assets/logo.png'
 
@@ -39,6 +40,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         'Implantação': true,
         'Integração': true,
+        'Nova Integração': true,
         'Suporte': true,
         'Configurações': true
     })
@@ -69,6 +71,13 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                         { to: '/integration/monitor', label: 'Monitor', icon: Target },
                         { to: '/integration/analytics', label: 'Analytics', icon: BarChart },
                         { to: '/integration/reports', label: 'Relatórios', icon: FileText },
+                    ]
+                },
+                {
+                    label: 'Nova Integração',
+                    icon: Store,
+                    children: [
+                        { to: '/integration-v2/monitor', label: 'Monitor de Lojas', icon: LayoutList },
                     ]
                 },
                 {

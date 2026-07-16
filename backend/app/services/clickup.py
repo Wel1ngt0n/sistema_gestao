@@ -205,6 +205,15 @@ class ClickUpService:
             page += 1
             if len(batch) < 100:
                 break
+
+    def get_list_definition(self, list_id):
+        """Retorna a configuracao atual da lista, incluindo os status do fluxo."""
+        return self._get(f"list/{list_id}")
+
+    def get_list_fields(self, list_id):
+        """Retorna os campos personalizados configurados em uma lista."""
+        data = self._get(f"list/{list_id}/field")
+        return data.get('fields', []) if data is not None else None
     
     def get_task_history(self, task_id):
         """

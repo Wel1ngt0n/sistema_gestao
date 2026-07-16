@@ -97,6 +97,7 @@ def create_app():
     from app.routes_scoring import scoring_bp
     from app.routes_admin import admin_bp
     from app.routes_integration import integration_bp
+    from app.routes_integration_v2 import integration_v2_bp
     from app.routes_auth import auth_bp
     from app.routes_profile import profile_bp
     
@@ -107,6 +108,7 @@ def create_app():
     app.register_blueprint(scoring_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(integration_bp)
+    app.register_blueprint(integration_v2_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
     

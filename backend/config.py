@@ -69,6 +69,9 @@ class Config:
         "POS_IMPLANTACAO": "901306837383"
     }
 
+    # Recorte operacional usado pelo novo monitor de Integracao.
+    INTEGRATION_V2_COHORT_YEAR = int(os.getenv("INTEGRATION_V2_COHORT_YEAR", "2026"))
+
     # Ajusta URLs antigas de Postgres e usa SQLite apenas como fallback de desenvolvimento.
     db_url = os.getenv('DATABASE_URL', 'sqlite:///metrics.db')
     if db_url.startswith("postgres://"):
