@@ -23,7 +23,7 @@ export const IntelligenceInsightBlock: React.FC<IntelligenceInsightBlockProps> =
     const [aiLoading, setAiLoading] = useState(false)
     const [showAnalysis, setShowAnalysis] = useState(false)
 
-    // Heuristic insights generated from data directly (no AI call needed)
+    // Gera percepções heurísticas diretamente dos dados, sem chamada de inteligência artificial.
     const insights = React.useMemo(() => {
         if (!analysts.length) return []
         const items: string[] = []
@@ -90,7 +90,7 @@ export const IntelligenceInsightBlock: React.FC<IntelligenceInsightBlockProps> =
 
     return (
         <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-            {/* Header */}
+            {/* Cabeçalho */}
             <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-4 py-3">
                 <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-100 bg-emerald-50">
@@ -110,7 +110,7 @@ export const IntelligenceInsightBlock: React.FC<IntelligenceInsightBlockProps> =
                 </button>
             </div>
 
-            {/* Heuristic Insights */}
+            {/* Percepções heurísticas */}
             {insights.length > 0 && (
                 <div className="border-b border-zinc-100 px-4 py-3">
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
@@ -129,7 +129,7 @@ export const IntelligenceInsightBlock: React.FC<IntelligenceInsightBlockProps> =
                 </div>
             )}
 
-            {/* AI Full Analysis (expandable) */}
+            {/* Análise completa por inteligência artificial, com conteúdo expansível */}
             {showAnalysis && (
                 <div className="max-h-60 overflow-y-auto border-b border-zinc-100 bg-zinc-50 px-4 py-3 scrollbar-thin scrollbar-thumb-zinc-200">
                     {aiLoading ? (
@@ -167,7 +167,7 @@ export const IntelligenceInsightBlock: React.FC<IntelligenceInsightBlockProps> =
                 </div>
             )}
 
-            {/* Question Input */}
+            {/* Campo para perguntas */}
             <div className="px-4 py-3">
                 <form onSubmit={handleQuestion} className="flex gap-2">
                     <input

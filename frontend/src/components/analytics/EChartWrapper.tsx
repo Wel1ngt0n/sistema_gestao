@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
 
-// Minimal wrapper to handle Theme and Resizing
+// Componente mínimo para aplicar o tema e acompanhar o redimensionamento.
 interface EChartWrapperProps {
     option: any;
     height?: string | number;
@@ -10,8 +10,8 @@ interface EChartWrapperProps {
 }
 
 export const EChartWrapper: React.FC<EChartWrapperProps> = ({ option, height = '300px', className, loading }) => {
-    // Detect dark mode - simple check on document class if ThemeProvider isn't readily available
-    // But let's simplify. ECharts has a 'dark' theme.
+    // Detecta o modo escuro pela classe do documento quando o provedor de tema não está disponível.
+    // O ECharts já fornece um tema escuro próprio.
     const isDark = document.documentElement.classList.contains('dark');
 
     return (

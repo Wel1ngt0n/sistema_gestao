@@ -60,7 +60,7 @@ class ImplantationBonusService:
         key = f"impl_bonus_config_{cycle}"
         config = SystemConfig.query.filter_by(key=key).first()
         if not config:
-            # Create default
+            # Cria a configuracao padrao.
             rules = ImplantationBonusService.get_default_rules()
             config = SystemConfig(key=key, value=json.dumps(rules), category='implantation_bonus')
             db.session.add(config)
@@ -89,7 +89,7 @@ class ImplantationBonusService:
         start_date, end_date = get_date_bounds(cycle)
         rules = ImplantationBonusService.get_rules(cycle)
         
-        # 1. Fetch Done Stores in the period
+        # 1. Busca as lojas concluidas no periodo.
         stores_done = db.session.query(Store).filter(
             or_(Store.status_norm == 'DONE', Store.manual_finished_at.isnot(None)),
             or_(
@@ -103,7 +103,7 @@ class ImplantationBonusService:
         ind_rules = rules.get('individual', {})
         beh_rules = rules.get('behavioral', {})
         
-        # Calculate Global KPIs
+        # Calcula os indicadores globais.
         total_points = 0.0
         on_time_count = 0
         quality_ok_count = 0
@@ -149,7 +149,7 @@ class ImplantationBonusService:
         c_qual_real = (quality_ok_count / total_stores * 100) if total_stores else 100
         c_qual_pct = min(100, (c_qual_real / col_rules.get('quality_target', 80)) * 100) if col_rules.get('quality_target') else 100
         
-        # Churn is manual via review per user. We sum it globally.
+        # O churn e informado manualmente na revisao e somado globalmente.
         global_churns = sum([r.churn_count for r in PerformanceReview.query.filter_by(cycle=cycle).all()])
         c_churn_pct = 100 if global_churns <= col_rules.get('churn_max', 1) else max(0, 100 - (global_churns * 50)) # Example penalty
         
@@ -180,7 +180,7 @@ class ImplantationBonusService:
             i_qual_real = (stats["quality_ok"] / stats["total"] * 100) if stats["total"] else 100
             i_qual_pct = min(100, (i_qual_real / ind_rules.get('quality_target', 80)) * 100) if ind_rules.get('quality_target') else 100
             
-            # Soft Skills from Review
+            # Competencias comportamentais registradas na revisao.
             review = PerformanceReview.query.filter_by(user_id=u_id, cycle=cycle).first() if u_id else None
             
             # We map soft_communication -> organization

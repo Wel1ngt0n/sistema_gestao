@@ -22,6 +22,16 @@ def print_header():
     print("="*60)
     print("")
 
+def get_python_cmd():
+    venv_python = os.path.join(BASE_DIR, '.venv', 'Scripts', 'python.exe')
+    if os.name != 'nt':
+        venv_python_nix = os.path.join(BASE_DIR, '.venv', 'bin', 'python')
+        if os.path.exists(venv_python_nix):
+            return f'"{venv_python_nix}"'
+    elif os.path.exists(venv_python):
+        return f'"{venv_python}"'
+    return 'python'
+
 def run_script_backend(script_name, docker=False, args=""):
     """
     Executa um script Python localizado em backend/scripts/maintenance/
@@ -40,7 +50,7 @@ def run_script_backend(script_name, docker=False, args=""):
             input("ENTER para voltar...")
             return
 
-        cmd = f'cd backend && python {target_path} {args}'
+        cmd = f'cd backend && {get_python_cmd()} {target_path} {args}'
 
     os.system(cmd)
     input("\n✅ Pressione ENTER para voltar...")
@@ -99,10 +109,10 @@ def handle_dados():
         elif op == '2': db_restore()
         elif op == '3': db_shell()
         elif op == '4': run_script_backend('patch_db.py', docker=True)
-        elif op == '5': run_script_backend('reset_db_v2.py', docker=True)
+        elif op == '5': run_script_backend('reset_db.py', docker=True)
         elif op == '0': break
 
-# --- 3. SYNC ---
+# --- 3. SINCRONIZACAO ---
 def menu_sync():
     print_header()
     print("--- 🔄 MENU SYNC chao---")
@@ -130,7 +140,7 @@ def handle_sync():
 def menu_diag():
     print_header()
     print("--- 🔎 MENU DIAGNÓSTICO ---")
-    print("   1. Verificar Integridade Geral (Verify V3)")
+    print("   1. Verificar integridade geral")
     print("   2. Analisar Métricas e KPIs (Report CLI)")
     print("   3. Checar Autenticação e Chaves")
     print("   4. Inspecionar Etapas (Steps)")
@@ -140,7 +150,7 @@ def menu_diag():
 def handle_diag():
     while True:
         op = menu_diag()
-        if op == '1': run_script_backend('verify_v3.py', docker=True)
+        if op == '1': run_script_backend('verify_system.py', docker=True)
         elif op == '2': run_script_backend('analyze_metrics_cli.py', docker=True)
         elif op == '3': run_script_backend('check_auth.py', docker=True)
         elif op == '4': run_script_backend('inspect_steps.py', docker=True)
@@ -171,7 +181,7 @@ def handle_manut():
 def run_local():
     print("\n🚀 Iniciando Backend e Frontend em janelas separadas...")
     if os.name == 'nt':
-        subprocess.Popen(f'start cmd /k "cd backend && python run.py"', shell=True)
+        subprocess.Popen(f'start cmd /k "cd backend && {get_python_cmd()} run.py"', shell=True)
         subprocess.Popen(f'start cmd /k "cd frontend && npm run dev"', shell=True)
     else:
         print("Em Linux/Mac, use tmux ou terminais manuais.")
@@ -207,20 +217,30 @@ def db_backup():
 
 def db_restore():
     print("\n📥 Restore do Banco...")
-    f = input("Arquivo .sql (padrão: backup_completo.sql): ") or "backup_completo.sql"
-    if not os.path.exists(f):
+    informed_path = input("Informe o caminho do arquivo .sql: ").strip().strip('"')
+    if not informed_path:
+        print("❌ O caminho do backup é obrigatório. Restore cancelado.")
+        input("ENTER...")
+        return
+
+    backup_path = os.path.abspath(os.path.expanduser(informed_path))
+    if not os.path.isfile(backup_path):
         print("❌ Arquivo não existe.")
         input("ENTER...")
         return
-    
+
     print("Importando...")
-    if os.name == 'nt':
-        cmd = f'cmd /c "type {f} | docker-compose exec -T db psql -U user -d metrics_db"'
+    with open(backup_path, 'rb') as backup_file:
+        result = subprocess.run(
+            ['docker-compose', 'exec', '-T', 'db', 'psql', '-U', 'user', '-d', 'metrics_db'],
+            stdin=backup_file,
+            check=False,
+        )
+    if result.returncode == 0:
+        print("✅ Restore concluído.")
     else:
-        cmd = f'cat {f} | docker-compose exec -T -i db psql -U user -d metrics_db'
-    
-    os.system(cmd)
-    input("✅ Fim. ENTER...")
+        print(f"❌ Restore falhou com código {result.returncode}.")
+    input("ENTER...")
 
 def db_shell():
     os.system('docker-compose exec db psql -U user -d metrics_db')

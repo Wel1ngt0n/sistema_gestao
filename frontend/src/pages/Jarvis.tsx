@@ -146,7 +146,7 @@ const Jarvis: React.FC = () => {
   return (
     <div className="flex h-[calc(100vh-140px)] bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm relative">
       
-      {/* Sidebar History Drawer */}
+      {/* Painel lateral do histórico */}
       <div className={`
         absolute inset-y-0 left-0 z-40 w-64 bg-zinc-50 border-r border-zinc-200 transform transition-transform duration-300 ease-in-out
         ${showHistory ? 'translate-x-0' : '-translate-x-full'}
@@ -193,10 +193,10 @@ const Jarvis: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Chat Area */}
+      {/* Área principal da conversa */}
       <div className="flex-1 flex flex-col min-w-0 bg-white">
         
-        {/* Header */}
+        {/* Cabeçalho */}
         <div className="bg-white border-b border-zinc-100 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button 
@@ -223,7 +223,7 @@ const Jarvis: React.FC = () => {
           </div>
         </div>
 
-        {/* Messages */}
+        {/* Mensagens */}
         <div 
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth"
@@ -314,7 +314,7 @@ const Jarvis: React.FC = () => {
           )}
         </div>
 
-        {/* Input Area */}
+        {/* Área de entrada */}
         <div className="p-6 bg-white border-t border-zinc-100">
           <div className="max-w-3xl mx-auto relative flex items-center gap-3">
             <div className="flex-1 relative">

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { AnalyticsFiltersState } from '../../hooks/useDashboardUrlParams';
 
-// Reuse existing interfaces
+// Reutiliza as interfaces existentes.
 export interface KPIData {
     wip_stores: number;
     throughput_period: number;
@@ -126,7 +126,7 @@ const buildParams = (filters: AnalyticsFiltersState) => {
 };
 
 export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
-    // Generate valid query keys from filters
+    // Gera chaves de consulta estáveis a partir dos filtros.
     const queryKey = [
         'analytics',
         filters.startDate?.toISOString(),
@@ -172,7 +172,7 @@ export const useAnalyticsData = (filters: AnalyticsFiltersState) => {
     const capacityQuery = useQuery({
         queryKey: ['capacity', filters.implantador],
         queryFn: async () => {
-            // Updated to use the new standardized scoring endpoint for capacity
+            // Usa o endpoint padronizado de pontuação de capacidade.
             const res = await api.get<CapacityData[]>('/api/scoring/capacity');
             return Array.isArray(res.data) ? res.data : [];
         }

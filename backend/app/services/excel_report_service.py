@@ -35,7 +35,7 @@ class ExcelReportService:
         goals = data.get('annual_goals', {})
         months = data.get('months', [])
         
-        # Calculate Global Ticket
+        # Calcula o ticket global.
         total_ytd_mrr = goals.get('mrr_ytd', 0)
         total_ytd_stores = goals.get('stores_ytd', 0)
         global_ticket = total_ytd_mrr / max(total_ytd_stores, 1)
@@ -377,7 +377,7 @@ class ExcelReportService:
             elif idx == 1: base_props = top_2_props
             elif idx == 2: base_props = top_3_props
             
-            # Mix with specific cell formats
+            # Combina com formatos especificos das celulas.
             fmt = workbook.add_format(base_props)
             
             ws_ranking.write(row, 0, idx + 1, fmt)

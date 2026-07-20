@@ -1,224 +1,141 @@
-﻿import { useState, useEffect, useMemo } from 'react'
-import { api } from '../../services/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-    LayoutList,
-    RefreshCw,
-    Search,
-} from 'lucide-react'
-import { IntegrationData } from '../../components/monitor/types'
-import IntegrationStoreModal from '../../components/monitor/IntegrationStoreModal'
-import IntegrationTableView from './components/IntegrationTableView'
-import IntegrationKanbanView from './components/IntegrationKanbanView'
-
-interface KPIs {
-    volume_points: number
-    volume_goal: number
-    sla_pct: number
-    quality_pct: number
-    doc_pct: number
-}
+    fetchAllIntegrationStores,
+    fetchIntegrationFilters,
+    fetchIntegrationKanbanSchema,
+    fetchIntegrationMonitor,
+    fetchIntegrationSyncStatus,
+    startIntegrationSync,
+} from './api';
+import IntegrationKanban from './components/IntegrationKanban';
+import IntegrationStoreDetail from './components/IntegrationStoreDetail';
+import IntegrationTable from './components/IntegrationTable';
+import IntegrationToolbar from './components/IntegrationToolbar';
+import { integrationQueryKeys } from './queryKeys';
+import { EMPTY_FILTERS, IntegrationFilterState, IntegrationStore } from './types';
 
 export default function IntegrationMonitor() {
-    const [data, setData] = useState<IntegrationData[]>([])
-    const [, setKpis] = useState<KPIs | null>(null)
-    const [loading, setLoading] = useState(true)
-
-    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban')
-    const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
-    const [filterStatus, setFilterStatus] = useState<'active' | 'concluded'>('active')
-    const [globalFilter, setGlobalFilter] = useState('')
-    const [editingItem, setEditingItem] = useState<IntegrationData | null>(null)
-    const [deepSyncing, setDeepSyncing] = useState(false)
+    const queryClient = useQueryClient();
+    const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() =>
+        localStorage.getItem('integration-monitor-view') === 'list' ? 'list' : 'kanban',
+    );
+    const [filters, setFilters] = useState<IntegrationFilterState>(EMPTY_FILTERS);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [page, setPage] = useState(1);
+    const [selectedStore, setSelectedStore] = useState<IntegrationStore | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchData()
-    }, [])
+        const timer = window.setTimeout(() => setDebouncedSearch(filters.search), 300);
+        return () => window.clearTimeout(timer);
+    }, [filters.search]);
 
-    const fetchData = async (silent = false) => {
-        try {
-            if (!silent) setLoading(true)
-            const response = await api.get('/api/integration/dashboard')
-            setData(response.data.integrations)
-            setKpis(response.data.kpis)
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, filters.statusId, filters.assigneeId, filters.reconciliationStatus, filters.blocked, filters.startDate, filters.endDate]);
 
-    const handleDeepSync = async (storeId: number) => {
-        setDeepSyncing(true)
-        try {
-            await api.post(`/api/deep-sync/store/${storeId}`)
-            alert("Deep Sync finalizado com sucesso! Histórico atualizado.")
-            await fetchData(true)
-        } catch (error) {
-            alert("Erro ao rodar Deep Sync.")
-        } finally {
-            setDeepSyncing(false)
-        }
-    }
+    const appliedFilters = useMemo(() => ({ ...filters, search: debouncedSearch }), [filters, debouncedSearch]);
 
-    // Filtered data
-    const filteredData = useMemo(() => {
-        let result = data
+    const monitorQuery = useQuery({
+        queryKey: integrationQueryKeys.monitor(viewMode, appliedFilters, page),
+        queryFn: () => viewMode === 'kanban'
+            ? fetchAllIntegrationStores(appliedFilters)
+            : fetchIntegrationMonitor(appliedFilters, page, 50),
+    });
+    const optionsQuery = useQuery({
+        queryKey: integrationQueryKeys.filters(),
+        queryFn: fetchIntegrationFilters,
+    });
+    const schemaQuery = useQuery({
+        queryKey: integrationQueryKeys.kanbanSchema(),
+        queryFn: fetchIntegrationKanbanSchema,
+    });
+    const syncStatusQuery = useQuery({
+        queryKey: integrationQueryKeys.syncStatus(),
+        queryFn: fetchIntegrationSyncStatus,
+        refetchInterval: (query) => query.state.data?.running ? 5000 : false,
+    });
 
-        // Status filter
-        if (filterStatus === 'active') {
-            result = result.filter(d => d.status !== 'CONCLUÍDO' && d.status !== 'ARQUIVADA')
-        } else if (filterStatus === 'concluded') {
-            result = result.filter(d => d.status === 'CONCLUÍDO')
-        } else if (filterStatus === 'archived') {
-            result = result.filter(d => d.status === 'ARQUIVADA')
-        }
+    const syncMutation = useMutation({
+        mutationFn: () => startIntegrationSync('INCREMENTAL'),
+        onSuccess: async () => {
+            setNotice('Sincronização solicitada. Os dados serão atualizados assim que o processamento terminar.');
+            await queryClient.invalidateQueries({ queryKey: integrationQueryKeys.all });
+        },
+        onError: () => setNotice('Não foi possível iniciar a sincronização. Verifique sua permissão e tente novamente.'),
+    });
 
-        // Assignee filter
-        if (assigneeFilter !== 'all') {
-            result = result.filter(d => d.assignee === assigneeFilter)
-        }
+    const handleViewModeChange = (mode: 'list' | 'kanban') => {
+        setViewMode(mode);
+        localStorage.setItem('integration-monitor-view', mode);
+    };
 
-        // Global search
-        if (globalFilter.trim()) {
-            const search = globalFilter.toLowerCase()
-            result = result.filter(d =>
-                d.name?.toLowerCase().includes(search) ||
-                d.assignee?.toLowerCase().includes(search) ||
-                d.rede?.toLowerCase().includes(search) ||
-                d.current_status?.toLowerCase().includes(search)
-            )
-        }
+    const handleRefresh = async () => {
+        setNotice(null);
+        await queryClient.invalidateQueries({ queryKey: integrationQueryKeys.all });
+    };
 
-        return result
-    }, [data, filterStatus, assigneeFilter, globalFilter])
-
-    // Stats
-    const stats = useMemo(() => {
-        const active = data.filter(d => d.status !== 'CONCLUÍDO' && d.status !== 'ARQUIVADA')
-        const concluded = data.filter(d => d.status === 'CONCLUÍDO')
-        const overSla = active.filter(d => d.sla_days > 60)
-        return {
-            total: active.length,
-            concluded: concluded.length,
-            overSla: overSla.length,
-        }
-    }, [data])
+    const stores = monitorQuery.data?.items || [];
+    const schema = schemaQuery.data || optionsQuery.data?.statuses || [];
 
     return (
-        <div className="flex flex-col h-full animate-in fade-in duration-500">
-            <header className="flex-none bg-white border border-zinc-200 rounded-lg shadow-sm z-30 transition-all duration-300">
-                <div className="p-5 space-y-5">
-                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-3 min-w-fit">
-                                <div className="p-2.5 bg-orange-50 rounded-lg border border-orange-100 text-[#ff7900]">
-                                    <LayoutList className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-semibold tracking-tight text-zinc-950">
-                                        Monitor de Integração
-                                    </h1>
-                                    <p className="text-xs font-medium text-zinc-500">
-                                        Visão Operacional
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="hidden md:block w-px h-10 bg-zinc-200"></div>
-
-                            <div className="hidden md:flex items-center gap-3">
-                                <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-zinc-50/50 transition-colors">
-                                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Ativas</span>
-                                    <span className="text-lg font-bold text-zinc-700 leading-none">{stats.total}</span>
-                                </div>
-                                <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-emerald-50 transition-colors border border-transparent hover:border-emerald-100">
-                                    <span className="text-[10px] uppercase font-bold text-emerald-500/80 tracking-wider">Concluídas</span>
-                                    <span className="text-lg font-bold text-emerald-600 leading-none">{stats.concluded}</span>
-                                </div>
-                                <div className="flex flex-col px-3 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-100">
-                                    <span className="text-[10px] uppercase font-bold text-rose-500/80 tracking-wider">&gt;60 Dias</span>
-                                    <span className="text-lg font-bold text-rose-600 leading-none">{stats.overSla}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-start xl:self-center">
-                            <button
-                                onClick={() => fetchData()}
-                                className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
-                                title="Atualizar"
-                            >
-                                <RefreshCw size={16} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                        <div className="relative lg:col-span-4">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                            <input
-                                type="text"
-                                placeholder="Buscar loja, responsável, rede ou status"
-                                value={globalFilter}
-                                onChange={(e) => setGlobalFilter(e.target.value)}
-                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-3 text-sm outline-none transition-all focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10"
-                            />
-                        </div>
-                        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-2">
-                            <option value="active">Ativas</option>
-                            <option value="concluded">Concluídas</option>
-                            <option value="archived">Arquivadas</option>
-                        </select>
-                        <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-3">
-                            <option value="all">Todos responsáveis</option>
-                            {Array.from(new Set(data.map(d => d.assignee as string).filter(Boolean))).sort().map(assignee => (
-                                <option key={assignee} value={assignee}>{assignee}</option>
-                            ))}
-                        </select>
-                        <select value={viewMode} onChange={(e) => setViewMode(e.target.value as any)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 lg:col-span-3">
-                            <option value="kanban">Visualização: Kanban</option>
-                            <option value="table">Visualização: Lista</option>
-                        </select>
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-1 pt-5 overflow-y-auto">
-                {loading ? (
-                    <div className="flex flex-col gap-4">
-                        <div className="h-64 bg-zinc-100 rounded-2xl animate-pulse"></div>
-                    </div>
-                ) : (
-                    <>
-                        {viewMode === 'table' && (
-                            <IntegrationTableView
-                                data={filteredData}
-                                onEdit={(item) => setEditingItem(item)}
-                                onRefetch={() => fetchData()}
-                            />
-                        )}
-                        {viewMode === 'kanban' && (
-                            <div className="overflow-x-auto pb-4 custom-scrollbar">
-                                <IntegrationKanbanView
-                                    data={filteredData}
-                                    onEdit={(item) => setEditingItem(item)}
-                                />
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-
-            {/* Modal */}
-            <IntegrationStoreModal
-                isOpen={!!editingItem}
-                onClose={() => setEditingItem(null)}
-                data={editingItem}
-                onSave={async () => { await fetchData(true) }}
-                onDeepSync={handleDeepSync}
-                isDeepSyncing={deepSyncing}
+        <div className="relative flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden bg-[#EEF0F8] p-4 text-slate-900 md:p-5">
+            <IntegrationToolbar
+                filters={filters}
+                options={optionsQuery.data}
+                viewMode={viewMode}
+                filtersOpen={filtersOpen}
+                refreshing={monitorQuery.isFetching}
+                syncing={syncMutation.isPending}
+                syncStatus={syncStatusQuery.data}
+                onFiltersChange={setFilters}
+                onViewModeChange={handleViewModeChange}
+                onToggleFilters={() => setFiltersOpen((open) => !open)}
+                onClearFilters={() => setFilters(EMPTY_FILTERS)}
+                onRefresh={handleRefresh}
+                onSync={() => syncMutation.mutate()}
             />
+
+            {notice && (
+                <div className="flex shrink-0 items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                    <span>{notice}</span>
+                    <button type="button" onClick={() => setNotice(null)} className="font-bold" aria-label="Fechar aviso">×</button>
+                </div>
+            )}
+
+            {monitorQuery.isError ? (
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-lg border border-slate-200 bg-white text-center shadow-sm">
+                    <AlertCircle size={32} className="text-rose-500" />
+                    <h2 className="mt-3 text-sm font-bold text-slate-800">Não foi possível carregar o monitor</h2>
+                    <p className="mt-1 max-w-md text-xs text-slate-500">A API de Integração não respondeu. Tente novamente em alguns instantes.</p>
+                    <button type="button" onClick={() => monitorQuery.refetch()} className="mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        <RefreshCw size={14} /> Tentar novamente
+                    </button>
+                </div>
+            ) : (
+                <div className="min-h-0 flex-1 overflow-hidden">
+                    {viewMode === 'kanban' ? (
+                        <div className="h-full min-w-0 overflow-x-auto overflow-y-hidden">
+                            <IntegrationKanban stores={stores} schema={schema} loading={monitorQuery.isLoading || schemaQuery.isLoading} onOpenStore={setSelectedStore} />
+                        </div>
+                    ) : (
+                        <IntegrationTable
+                            stores={stores}
+                            loading={monitorQuery.isLoading}
+                            page={monitorQuery.data?.page || page}
+                            pageSize={monitorQuery.data?.pageSize || 50}
+                            total={monitorQuery.data?.total || 0}
+                            onPageChange={setPage}
+                            onOpenStore={setSelectedStore}
+                        />
+                    )}
+                </div>
+            )}
+
+            <IntegrationStoreDetail store={selectedStore} onClose={() => setSelectedStore(null)} />
         </div>
-    )
+    );
 }

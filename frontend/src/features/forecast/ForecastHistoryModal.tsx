@@ -54,7 +54,7 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
 
-                {/* Header */}
+                {/* Cabeçalho */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50/50">
                     <div>
                         <h3 className="font-bold text-lg text-slate-900">Histórico de Alterações</h3>
@@ -65,7 +65,7 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Conteúdo */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {isLoading ? (
                         <div className="text-center text-slate-500 py-8">Carregando histórico...</div>
@@ -107,7 +107,7 @@ export default function ForecastHistoryModal({ storeId, storeName, isOpen, onClo
                     )}
                 </div>
 
-                {/* Footer */}
+                {/* Rodapé */}
                 <div className="p-4 border-t border-slate-200 bg-slate-50/50 text-right">
                     <button onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
                         Fechar

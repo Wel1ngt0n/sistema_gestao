@@ -13,7 +13,6 @@ import {
     ChevronRight,
     HelpCircle,
     X,
-    Target,
     Trophy,
     Rocket,
     Network,
@@ -21,7 +20,6 @@ import {
     LogOut,
     MessageSquare,
     Sparkles,
-    Store
 } from 'lucide-react'
 import logo from '../assets/logo.png'
 
@@ -40,7 +38,6 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
         'Implantação': true,
         'Integração': true,
-        'Nova Integração': true,
         'Suporte': true,
         'Configurações': true
     })
@@ -67,17 +64,8 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     label: 'Integração',
                     icon: Network,
                     children: [
-                        { to: '/integration/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                        { to: '/integration/monitor', label: 'Monitor', icon: Target },
+                        { to: '/integration/monitor', label: 'Monitor', icon: LayoutList },
                         { to: '/integration/analytics', label: 'Analytics', icon: BarChart },
-                        { to: '/integration/reports', label: 'Relatórios', icon: FileText },
-                    ]
-                },
-                {
-                    label: 'Nova Integração',
-                    icon: Store,
-                    children: [
-                        { to: '/integration-v2/monitor', label: 'Monitor de Lojas', icon: LayoutList },
                     ]
                 },
                 {
@@ -109,19 +97,19 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
 
     return (
         <div className="flex h-screen overflow-hidden bg-[#EEF0F8] text-slate-900">
-            {/* SEO Metadata */}
+            {/* Metadados para mecanismos de busca */}
             <div className="hidden" aria-hidden="true">
                 <meta name="description" content="CRM Instabuy - Gestão Operacional de E-commerce" />
                 <meta property="og:title" content="Instabuy CRM" />
             </div>
 
-            {/* Sidebar */}
+            {/* Menu lateral */}
             <aside
                 className={`${collapsed ? 'w-20' : 'w-72'}
                 bg-white border-r border-slate-200
                 flex flex-col transition-all duration-300 fixed h-full z-50 shadow-sm print:hidden`}
             >
-                {/* Logo Area */}
+                {/* Área da marca */}
                 <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-100">
                     <div className="relative group shrink-0">
                         <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
@@ -140,7 +128,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     )}
                 </div>
 
-                {/* Navigation */}
+                {/* Navegação */}
                 <nav className={`flex-1 py-6 px-3 space-y-6 ${collapsed ? 'overflow-visible' : 'overflow-y-auto no-scrollbar'}`}>
                     {navItems.map((group, idx) => (
                         <div key={idx}>
@@ -151,7 +139,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                             )}
                             <div className="space-y-1">
                                 {group.items.map((item: any) => {
-                                    // HAS CHILDREN (FOLDER)
+                                    // Item com submenu
                                     if (item.children) {
                                         const isOpen = openMenus[item.label] || false
                                         return (
@@ -175,7 +163,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                     )}
                                                 </button>
 
-                                                {/* Submenu - Expanded */}
+                                                {/* Submenu expandido */}
                                                 {!collapsed && isOpen && (
                                                     <div className="pl-4 space-y-1 relative before:absolute before:left-7 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 animate-in slide-in-from-top-2 duration-200">
                                                         {item.children.map((child: any) => (
@@ -197,7 +185,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                     </div>
                                                 )}
 
-                                                {/* Submenu - Collapsed (Floating) */}
+                                                {/* Submenu flutuante quando o menu está recolhido */}
                                                 {collapsed && (
                                                     <div className="absolute left-14 top-0 w-56 bg-white rounded-xl shadow-lg border border-slate-200 p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0 z-50">
                                                         <div className="px-3 py-2 border-b border-slate-100 mb-1">
@@ -227,7 +215,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                         )
                                     }
 
-                                    // SINGLE ITEM
+                                    // Item sem submenu
                                     const isActive = location.pathname === item.to
                                     const isJarvis = item.label === 'Jarvis Copilot'
 
@@ -238,7 +226,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                 className={({ isActive }) => `
                                                     flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
                                                     ${isActive
-                                                        ? isJarvis 
+                                                        ? isJarvis
                                                             ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 font-bold shadow-sm ring-1 ring-orange-100'
                                                             : 'bg-green-50 text-[#128131] font-bold shadow-sm ring-1 ring-green-100'
                                                         : isJarvis
@@ -251,7 +239,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                             >
                                                 <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'} ${isJarvis && isActive ? 'text-orange-500 animate-pulse' : ''}`} />
                                                 {!collapsed && <span>{item.label}</span>}
-                                                
+
                                                 {isJarvis && !collapsed && (
                                                     <span className="ml-auto text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-md font-black tracking-tighter uppercase">
                                                         AI
@@ -259,7 +247,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                                                 )}
                                             </NavLink>
 
-                                            {/* Tooltip for Collapsed Items */}
+                                            {/* Dica para itens do menu recolhido */}
                                             {collapsed && (
                                                 <div className="absolute left-14 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg shadow-lg invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0 whitespace-nowrap z-50 pointer-events-none">
                                                     {item.label}
@@ -274,7 +262,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     ))}
                 </nav>
 
-                {/* Footer */}
+                {/* Rodapé */}
                 <div className="p-3 border-t border-slate-200 bg-slate-50 flex flex-col gap-2">
                     <button
                         onClick={() => setCollapsed(!collapsed)}
@@ -286,13 +274,13 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                 </div>
             </aside>
 
-            {/* Main Content */}
+            {/* Conteúdo principal */}
             <main
                 className={`flex-1 flex min-w-0 flex-col h-screen overflow-hidden transition-all duration-300
                 ${collapsed ? 'ml-20' : 'ml-72'} print:ml-0 print:w-full print:bg-white
                 `}
             >
-                {/* Topbar */}
+                {/* Barra superior */}
                 <header className="sticky top-0 z-30 flex h-16 w-full shrink-0 items-center justify-end gap-4 border-b border-slate-200 bg-white/90 px-8 backdrop-blur-xl print:hidden">
                     <button
                         onClick={() => setShowDictionary(true)}
@@ -336,8 +324,8 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                 </div>
             </main>
 
-            {/* Super Admin Tab */}
-            <div 
+            {/* Atalho do superadministrador */}
+            <div
                 onClick={() => setSuperAdminOpen(true)}
                 className="fixed right-0 top-32 bg-slate-900 text-white px-1 py-6 rounded-l-md cursor-pointer hover:bg-slate-800 transition-colors z-40 shadow-lg flex items-center justify-center print:hidden"
                 style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
@@ -345,7 +333,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                 <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Super admin</span>
             </div>
 
-            {/* Super Admin Drawer */}
+            {/* Painel do superadministrador */}
             <div className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${superAdminOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col border-l border-slate-200 print:hidden`}>
                 <div className="flex items-center justify-between p-4 border-b border-slate-100">
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Super admin</h2>
@@ -360,7 +348,7 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                         <div className="space-y-3 bg-white border border-slate-200 rounded-xl p-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-slate-700">Modo de apresentação</span>
-                                <button 
+                                <button
                                     onClick={() => {
                                         const newMode = !presentationMode;
                                         setPresentationMode(newMode);
@@ -376,10 +364,10 @@ export default function CRMLayout({ setShowDictionary }: CRMLayoutProps) {
                     </div>
                 </div>
             </div>
-            
-            {/* Overlay */}
+
+            {/* Sobreposição */}
             {superAdminOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity print:hidden"
                     onClick={() => setSuperAdminOpen(false)}
                 />

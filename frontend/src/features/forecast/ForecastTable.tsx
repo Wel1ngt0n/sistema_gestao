@@ -36,7 +36,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
     const [saving, setSaving] = useState(false);
     const [historyStore, setHistoryStore] = useState<{ id: number, name: string } | null>(null);
 
-    // Helper para iniciar edição
+    // Função auxiliar para iniciar a edição.
     const startEdit = (row: ForecastData) => {
         setEditingId(row.id);
         setEditValues({
@@ -44,13 +44,13 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
         });
     };
 
-    // Helper para cancelar
+    // Função auxiliar para cancelar a edição.
     const cancelEdit = () => {
         setEditingId(null);
         setEditValues({});
     };
 
-    // Helper para salvar
+    // Função auxiliar para salvar a edição.
     const saveEdit = async () => {
         setSaving(true);
         try {
@@ -74,7 +74,7 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
         }
     };
 
-    // Define column helper with the interface
+    // Define o construtor de colunas com a interface da previsão.
     const columnHelper = createColumnHelper<ForecastData>();
 
     const columns = [
@@ -173,10 +173,10 @@ export default function ForecastTable({ data, onUpdate }: ForecastTableProps) {
                     )
                 }
 
-                // Highlight if manual override
+                // Destaca valores substituídos manualmente.
                 const isManual = !!info.row.original.manual_go_live_date;
 
-                // Safe date formatting
+                // Formata a data com tratamento para valores inválidos.
                 let formattedDate = '-';
                 if (info.getValue()) {
                     try {

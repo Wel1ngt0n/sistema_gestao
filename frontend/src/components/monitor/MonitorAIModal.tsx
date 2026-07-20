@@ -42,7 +42,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
         if (!force) setAnalysis(null); // Clear only if fresh load, keep old data while regenerating? No, clear to show loading.
         setError(null);
         try {
-            // New endpoint for network-aware analysis
+            // Endpoint de análise que considera os dados da rede.
             const url = `/api/ai/analyze-network/${storeId}${force ? '?force=true' : ''}`;
             const res = await api.post(url);
             setAnalysis(res.data);
@@ -91,7 +91,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                             leaveTo="opacity-0 scale-95"
                         >
                             <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 text-left align-middle shadow-xl transition-all">
-                                {/* Header */}
+                                {/* Cabeçalho */}
                                 <div className="p-6 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center">
                                     <div>
                                         <Dialog.Title as="h3" className="text-xl font-bold leading-6 text-white flex items-center gap-2">
@@ -109,7 +109,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                     </button>
                                 </div>
 
-                                {/* Body */}
+                                {/* Conteúdo */}
                                 <div className="p-8">
                                     {loading ? (
                                         <div className="space-y-6 animate-pulse">
@@ -141,7 +141,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                         </div>
                                     ) : analysis ? (
                                         <div className="space-y-8 animate-in fade-in duration-500">
-                                            {/* Status Row */}
+                                            {/* Linha de status */}
                                             <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                                                 <div className="flex flex-col">
                                                     <span className="text-xs uppercase font-bold text-slate-500">Nível de Risco Identificado</span>
@@ -165,7 +165,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 </div>
                                             </div>
 
-                                            {/* Summary */}
+                                            {/* Resumo */}
                                             <div>
                                                 <h4 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2">
                                                     📄 Resumo Executivo (Rede)
@@ -175,7 +175,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 </p>
                                             </div>
 
-                                            {/* Blockers */}
+                                            {/* Bloqueios */}
                                             {analysis.specific_blockers && analysis.specific_blockers.length > 0 && (
                                                 <div>
                                                     <h4 className="text-sm font-bold uppercase text-rose-400 mb-3 flex items-center gap-2">
@@ -192,7 +192,7 @@ export default function MonitorAIModal({ isOpen, onClose, store }: MonitorAIModa
                                                 </div>
                                             )}
 
-                                            {/* Action Plan */}
+                                            {/* Plano de ação */}
                                             <div>
                                                 <h4 className="text-sm font-bold uppercase text-emerald-400 mb-3 flex items-center gap-2">
                                                     ✅ Plano de Ação Sugerido

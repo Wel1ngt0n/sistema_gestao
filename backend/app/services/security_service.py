@@ -6,7 +6,7 @@ import datetime
 import logging
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, g
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +171,18 @@ def require_auth(f):
                 logger.warning(f"CSRF ausente ou invalido em {request.path}.")
                 return jsonify({"error": "Token CSRF ausente ou invalido.", "code": "CSRF_INVALID"}), 403
 
+        from app.models import User, db  # Import local para evitar ciclo no boot.
+
+        try:
+            user = db.session.get(User, int(payload.get('sub')))
+        except (TypeError, ValueError):
+            user = None
+        if user is None:
+            return jsonify({"error": "Usuario nao encontrado.", "code": "USER_NOT_FOUND"}), 401
+        if not user.is_active:
+            return jsonify({"error": "Usuario inativo.", "code": "USER_INACTIVE"}), 403
+        g.authenticated_user = user
+
         return f(payload, *args, **kwargs)
     return decorated_function
 
@@ -186,9 +198,11 @@ def require_permission(permission_name: str):
     def decorator(f):
         @wraps(f)
         def decorated_function(payload, *args, **kwargs):
-            from app.models import User  # Import local para evitar ciclo no boot.
-            
-            user = User.query.get(payload['sub'])
+            from app.models import User, db  # Import local para evitar ciclo no boot.
+
+            user = getattr(g, 'authenticated_user', None)
+            if user is None:
+                user = db.session.get(User, int(payload['sub']))
             if not user:
                 return jsonify({"error": "Usuário não encontrado.", "code": "USER_NOT_FOUND"}), 404
                 

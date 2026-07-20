@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from app.services.security_service import require_auth
+from app.services.security_service import require_auth, require_permission
 from app.services.analysts_report_service import AnalystsReportService
 from datetime import datetime
 
@@ -191,6 +191,7 @@ def get_analyst_details(payload, implantador_name):
 
 @analysts_reports_bp.route('/stores/<int:store_id>/operational', methods=['PATCH'])
 @require_auth
+@require_permission('manage_performance')
 def update_store_operational(payload, store_id):
     """
     Atualiza dados de controle operacional e observações privadas de uma loja.

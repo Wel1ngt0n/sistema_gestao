@@ -9,6 +9,7 @@ interface User {
     is_active: boolean;
     totp_enabled: boolean;
     roles: string[];
+    permissions: string[];
 }
 
 interface AuthContextType {
@@ -65,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             await api.post('/api/auth/logout');
         } catch {
-            // Mesmo se o cookie ja expirou, limpamos o estado local.
+            // Mesmo se o cookie já expirou, limpamos o estado local.
         } finally {
             setUser(null);
             setCsrfToken(null);
@@ -75,9 +76,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const hasPermission = (_permission: string): boolean => {
+    const hasPermission = (permission: string): boolean => {
         if (user?.roles.includes('Super Admin')) return true;
-        return false;
+        return user?.permissions?.includes(permission) ?? false;
     };
 
     return (

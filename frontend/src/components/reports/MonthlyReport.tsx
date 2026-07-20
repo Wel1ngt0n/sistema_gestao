@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, Download, Bot, FileText, Loader2, Users, CheckC
 import logo from '../../assets/logo.png';
 import { Dialog } from '@headlessui/react';
 import MonitorStoreModal from '../monitor/MonitorStoreModal';
-import MonitorStoreModalV2 from '../monitor/MonitorStoreModalV2';
+import ImplantationStoreCockpitModal from '../monitor/ImplantationStoreCockpitModal';
 import { Store } from '../monitor/types';
 import BulkActionBar from '../monitor/BulkActionBar';
 import BulkUpdateModal from '../monitor/BulkUpdateModal';
@@ -126,14 +126,14 @@ const MonthlyReport: React.FC = () => {
     const [aiLoading, setAiLoading] = useState(false);
     const [selectedMonthForAi, setSelectedMonthForAi] = useState<string | null>(null);
 
-    // Edit Modal State
+    // Estado dos modais de edição
     const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
-    const [isStoreModalV2Open, setIsStoreModalV2Open] = useState(false);
+    const [isStoreCockpitModalOpen, setIsStoreCockpitModalOpen] = useState(false);
     const [editingStore, setEditingStore] = useState<Store | null>(null);
     const [matrices, setMatrices] = useState<{ id: number, name: string }[]>([]);
     const [deepSyncLoading, setDeepSyncLoading] = useState(false);
 
-    // Bulk Selection State
+    // Estado da seleção em massa
     const [selectedStoreIds, setSelectedStoreIds] = useState<number[]>([]);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [bulkLoading, setBulkLoading] = useState(false);
@@ -161,12 +161,12 @@ const MonthlyReport: React.FC = () => {
         setExpandedMonth(expandedMonth === month ? null : month);
     };
 
-    const handleEditClick = async (storeId: number, isV2: boolean = false) => {
+    const handleEditClick = async (storeId: number, useCockpit: boolean = false) => {
         try {
             const response = await api.get(`/api/store/${storeId}`);
             setEditingStore(response.data.store);
             setMatrices(response.data.matrices);
-            if (isV2) setIsStoreModalV2Open(true);
+            if (useCockpit) setIsStoreCockpitModalOpen(true);
             else setIsStoreModalOpen(true);
         } catch (error) {
             console.error("Erro ao buscar detalhes da loja", error);
@@ -183,10 +183,10 @@ const MonthlyReport: React.FC = () => {
                 store_ids: selectedStoreIds,
                 ...updateData
             });
-            
+
             setSelectedStoreIds([]);
             setIsBulkModalOpen(false);
-            fetchReport(); 
+            fetchReport();
             alert(`${selectedStoreIds.length} lojas atualizadas com sucesso!`);
         } catch (err) {
             console.error("Erro no bulk update", err);
@@ -197,7 +197,7 @@ const MonthlyReport: React.FC = () => {
     };
 
     const toggleStoreSelection = (id: number) => {
-        setSelectedStoreIds(prev => 
+        setSelectedStoreIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
@@ -205,7 +205,7 @@ const MonthlyReport: React.FC = () => {
     const toggleAllInMonth = (monthStores: StoreReport[]) => {
         const monthIds = monthStores.map(s => s.id);
         const allSelected = monthIds.every(id => selectedStoreIds.includes(id));
-        
+
         if (allSelected) {
             setSelectedStoreIds(prev => prev.filter(id => !monthIds.includes(id)));
         } else {
@@ -224,7 +224,7 @@ const MonthlyReport: React.FC = () => {
         try {
             await api.put(`/api/store/${storeToSave.id}`, storeToSave);
             setIsStoreModalOpen(false);
-            setIsStoreModalV2Open(false);
+            setIsStoreCockpitModalOpen(false);
             fetchReport(); // recarrega o relatorio para atualizar
         } catch (error: any) {
             console.error("Erro ao salvar", error);
@@ -374,7 +374,7 @@ const MonthlyReport: React.FC = () => {
                 <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
             </header>
 
-            {/* ═══ ANNUAL GOALS ═══ */}
+            {/* Metas anuais */}
             <div className="animate-fade-in-up">
                 <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
                     <div className="flex items-center justify-between mb-5 flex-wrap gap-4">
@@ -388,7 +388,7 @@ const MonthlyReport: React.FC = () => {
                         </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* MRR Goal */}
+                        {/* Meta de receita recorrente */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-baseline">
                                 <span className="text-sm font-semibold text-zinc-600">MRR Recorrente</span>
@@ -406,7 +406,7 @@ const MonthlyReport: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Stores Goal */}
+                        {/* Meta de lojas */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-baseline">
                                 <span className="text-sm font-semibold text-zinc-600">Lojas Entregues</span>
@@ -425,7 +425,7 @@ const MonthlyReport: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Pontos YTD */}
+                    {/* Pontos acumulados no ano */}
                     <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-wrap gap-6">
                         <div className="flex items-center gap-2">
                             <BarChart3 size={14} className="text-[#ff7900]" />
@@ -450,7 +450,7 @@ const MonthlyReport: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Board Stages */}
+                    {/* Etapas do quadro */}
                     {wip && wip.board_stages.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-zinc-100">
                             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Distribuição no Board</p>
@@ -467,7 +467,7 @@ const MonthlyReport: React.FC = () => {
                 </div>
             </div>
 
-            {/* ═══ MONTHS ═══ */}
+            {/* Meses */}
             <div className="space-y-4 pb-10 animate-fade-in-up animation-delay-200 opacity-0">
                 {data.map((monthData) => (
                     <div key={monthData.month} className="rounded-lg border border-zinc-200 bg-white overflow-hidden shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
@@ -520,7 +520,7 @@ const MonthlyReport: React.FC = () => {
 
                         {expandedMonth === monthData.month && (
                             <div className="border-t border-zinc-100 p-5 bg-zinc-50/30">
-                                {/* Action Buttons - Hiding them on Print */}
+                                {/* Ações ocultadas durante a impressão */}
                                 <div className="flex flex-wrap gap-4 mb-6 justify-end items-center print:hidden">
                                     <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-zinc-200">
                                         <button onClick={(e) => { e.stopPropagation(); handleGenerateSummary(monthData, 'simple'); }}
@@ -542,7 +542,7 @@ const MonthlyReport: React.FC = () => {
                                     </button>
                                 </div>
 
-                                {/* Stats Grid — Row 1 */}
+                                {/* Primeira linha de indicadores */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
                                     {[
                                         { label: 'Lojas', value: monthData.stats.total_stores, color: 'text-zinc-800' },
@@ -561,7 +561,7 @@ const MonthlyReport: React.FC = () => {
                                     ))}
                                 </div>
 
-                                {/* Variation Badge */}
+                                {/* Indicador de variação */}
                                 {monthData.variation && (
                                     <div className="flex flex-wrap gap-3 mb-4">
                                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${monthData.variation.mrr_change >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -581,7 +581,7 @@ const MonthlyReport: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* MRR por Rede */}
+                                {/* Receita recorrente por rede */}
                                 {monthData.mrr_by_rede && monthData.mrr_by_rede.length > 1 && (
                                     <div className="mb-4">
                                         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">MRR por Rede</p>
@@ -595,7 +595,7 @@ const MonthlyReport: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Ranking por Implantador */}
+                                {/* Classificação por implantador */}
                                 {monthData.implantadores && monthData.implantadores.length > 0 && (
                                     <div className="mb-6">
                                         <h4 className="text-sm font-semibold text-zinc-600 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -622,7 +622,7 @@ const MonthlyReport: React.FC = () => {
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
                                                         <span className="flex items-center gap-1 font-medium text-zinc-700">
-                                                            <FileText size={12} />{imp.stores} {imp.stores === 1 ? 'loja' : 'lojas'} 
+                                                            <FileText size={12} />{imp.stores} {imp.stores === 1 ? 'loja' : 'lojas'}
                                                             <span className="text-zinc-400 font-normal">({imp.matriz_count}M / {imp.filial_count}F)</span>
                                                         </span>
                                                         <span className="flex items-center gap-1"><Clock size={12} />{imp.avg_days} dias</span>
@@ -639,14 +639,14 @@ const MonthlyReport: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Store Table */}
+                                {/* Tabela de lojas */}
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-zinc-500 uppercase bg-zinc-100/50 rounded-lg">
                                             <tr>
                                                 <th className="px-4 py-3 rounded-l-lg w-10">
-                                                    <input 
-                                                        type="checkbox" 
+                                                    <input
+                                                        type="checkbox"
                                                         className="rounded border-zinc-300 w-4 h-4 accent-orange-600"
                                                         checked={monthData.stores.length > 0 && monthData.stores.every(s => selectedStoreIds.includes(s.id))}
                                                         onChange={() => toggleAllInMonth(monthData.stores)}
@@ -667,8 +667,8 @@ const MonthlyReport: React.FC = () => {
                                             {monthData.stores.map((store) => (
                                                 <tr key={store.id} className={`border-b border-zinc-100 transition-colors ${selectedStoreIds.includes(store.id) ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-white/30'}`}>
                                                     <td className="px-4 py-3">
-                                                        <input 
-                                                            type="checkbox" 
+                                                        <input
+                                                            type="checkbox"
                                                             className="rounded border-zinc-300 w-4 h-4 accent-orange-600"
                                                             checked={selectedStoreIds.includes(store.id)}
                                                             onChange={() => toggleStoreSelection(store.id)}
@@ -700,14 +700,14 @@ const MonthlyReport: React.FC = () => {
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleEditClick(store.id); }}
                                                             className="p-1.5 text-zinc-400 hover:text-[#ff7900] hover:bg-orange-50 rounded transition-colors"
-                                                            title="Editar (V1)"
+                                                            title="Edição completa"
                                                         >
                                                             ✏️
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleEditClick(store.id, true); }}
                                                             className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                            title="Cockpit (V2)"
+                                                            title="Cockpit operacional"
                                                         >
                                                             🚀
                                                         </button>
@@ -723,7 +723,7 @@ const MonthlyReport: React.FC = () => {
                 ))}
             </div>
 
-            {/* AI Modal */}
+            {/* Modal de inteligência artificial */}
             <Dialog open={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} className="relative z-50">
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -764,13 +764,13 @@ const MonthlyReport: React.FC = () => {
                 </div>
             </Dialog>
 
-            <BulkActionBar 
+            <BulkActionBar
                 selectedCount={selectedStoreIds.length}
                 onClearSelection={() => setSelectedStoreIds([])}
                 onBulkAction={() => setIsBulkModalOpen(true)}
             />
 
-            <BulkUpdateModal 
+            <BulkUpdateModal
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
                 selectedCount={selectedStoreIds.length}
@@ -778,7 +778,7 @@ const MonthlyReport: React.FC = () => {
                 isLoading={bulkLoading}
             />
 
-            {/* Edit Store Modal */}
+            {/* Modal de edição completa da loja */}
             <MonitorStoreModal
                 isOpen={isStoreModalOpen}
                 onClose={() => setIsStoreModalOpen(false)}
@@ -789,10 +789,10 @@ const MonthlyReport: React.FC = () => {
                 isDeepSyncing={deepSyncLoading}
             />
 
-            {/* Edit Store Modal V2 */}
-            <MonitorStoreModalV2
-                isOpen={isStoreModalV2Open}
-                onClose={() => setIsStoreModalV2Open(false)}
+            {/* Cockpit operacional da loja */}
+            <ImplantationStoreCockpitModal
+                isOpen={isStoreCockpitModalOpen}
+                onClose={() => setIsStoreCockpitModalOpen(false)}
                 store={editingStore}
                 matrices={matrices}
                 onSave={handleSaveStore}

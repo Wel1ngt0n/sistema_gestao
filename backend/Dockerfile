@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Timezone to Brazil
+# Configura o fuso horario do Brasil
 ENV TZ=America/Sao_Paulo
 
 # Install Python dependencies
@@ -23,7 +23,7 @@ COPY . .
 # Environment variables
 ENV FLASK_APP=run.py
 ENV FLASK_RUN_HOST=0.0.0.0
-# Ensure stdout/stderr are flushed immediately
+# Garante o envio imediato de stdout e stderr
 ENV PYTHONUNBUFFERED=1 
 
 # Expose port

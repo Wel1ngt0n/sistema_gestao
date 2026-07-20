@@ -9,13 +9,13 @@ def init_scheduler(app):
     """Inicializa o agendador com a aplicação Flask."""
     if not app.config.get('SCHEDULER_API_ENABLED'):
         app.config['SCHEDULER_API_ENABLED'] = True
-    
+
     # Prevenir inicialização dupla
     if not scheduler.running:
         scheduler.init_app(app)
         scheduler.start()
         logger.info("⏰ Scheduler iniciado com sucesso.")
-    
+
     # Rodar sync de warm-up (apenas se for o primeiro do dia ou perdeu horario)
     with app.app_context():
         try:
@@ -25,10 +25,10 @@ def init_scheduler(app):
                 state = SyncState(id=1)
                 db.session.add(state)
                 db.session.commit()
-            
+
             now = datetime.now()
             last_sync = state.last_successful_sync_at
-            
+
             needs_sync = False
             if not last_sync or last_sync.date() < now.date():
                 needs_sync = True
@@ -53,7 +53,7 @@ def scheduled_vital_sync():
     """Job para sincronismo vital (rápido) durante o dia."""
     from app.services.sync_service import SyncService
     from app.models import SyncState
-    
+
     # Usar o app context do scheduler
     with scheduler.app.app_context():
         # Proteção contra concorrência
@@ -71,12 +71,39 @@ def scheduled_vital_sync():
         except Exception as e:
             logger.error(f"Erro no SYNC VITAL agendado: {e}")
 
+
+@scheduler.task(
+    'cron',
+    id='integration_sync_job',
+    hour='10,12,14,16,18',
+    minute=10,
+    max_instances=1,
+    coalesce=True,
+)
+def scheduled_integration_sync():
+    """Sincroniza o domínio de Integração sem permitir execução concorrente."""
+    from app.models import IntegrationSyncRun
+    from app.services.integration_sync_service import IntegrationSyncService
+
+    with scheduler.app.app_context():
+        if IntegrationSyncRun.query.filter_by(status='RUNNING').first():
+            logger.info("Sincronização de Integração já está em andamento; agendamento ignorado.")
+            return
+
+        try:
+            IntegrationSyncService().run('INCREMENTAL')
+            logger.info("Sincronização agendada de Integração finalizada.")
+        except RuntimeError as error:
+            logger.info("Sincronização agendada de Integração ignorada: %s", error)
+        except Exception:
+            logger.exception("Erro na sincronização agendada de Integração.")
+
 @scheduler.task('cron', id='sync_deep_job', hour=3, minute=0)
 def scheduled_deep_sync():
     """Job para sincronismo profundo (pesado) na madrugada."""
     from app.services.sync_service import SyncService
     from app.models import SyncState
-    
+
     with scheduler.app.app_context():
         # Proteção contra concorrência
         state = SyncState.query.get(1)

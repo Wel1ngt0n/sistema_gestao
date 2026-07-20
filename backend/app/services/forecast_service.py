@@ -102,7 +102,7 @@ class ForecastService:
             taxa = s.order_rate or 0.0
             pedidos = s.projected_orders or 0
             # Se tiver taxa e pedidos base, calcula. Se tiver só pedidos (flat), usa.
-            # Regra user: "pedidos_previstos_mes = projecao_pedidos_origem * taxa_pedido"
+            # Regra: pedidos previstos = projecao de origem vezes taxa de pedidos.
             # Assumindo q 'projected_orders' é a base.
             
             final_orders = 0
@@ -112,9 +112,9 @@ class ForecastService:
                 final_orders = pedidos # Se taxa 0, assume valor cheio se preenchido, ou 0.
             
             # MRR (Se valor unitário existir... não temos valor unitário por pedido no modelo ainda, 
-            # user falou "mrr_previsto_pedidos = pedidos * valor_unitario". 
+            # Regra: MRR previsto de pedidos = pedidos vezes valor unitario.
             # Vou assumir ticket médio padrão ou 0 por enquanto, ou usar mensalidade como proxy?)
-            # O user disse: "(se não existir valor unitário, manter apenas pedidos + taxa)". 
+            # Sem valor unitario, mantem apenas a quantidade e a taxa.
             # ok, MRR de Pedidos é diferente de MRR de Assinatura.
             # Vou deixar MRR Pedidos como 0 por enquanto ou criar campo se precisar.
             mrr_pedidos = 0.0 
@@ -125,7 +125,7 @@ class ForecastService:
             # Filtro de Ano/Mes (se solicitado)
             # Filtro de Ano (se solicitado)
             if year:
-                # month_key format: YYYY-MM
+                # Formato da chave mensal: AAAA-MM.
                 if not month_key.startswith(str(year)):
                     continue
                     
@@ -187,7 +187,7 @@ class ForecastService:
             else: summary[m]['filial_count'] += 1
             
             summary[m]['total_orders'] += item['projected_orders']
-            # MRR de Mensalidade ou Pedido? User falou "total de MRR previsto". 
+            # Considera o total de MRR previsto de mensalidade e pedidos.
             # Geralmente é o da assinatura + pedidos. Vou somar 0 por enquanto para pedidos.
             
             if item['status'] == 'ATRASADA':

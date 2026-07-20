@@ -5,6 +5,17 @@ import { useAnalyticsData } from './useAnalyticsData';
 import { useDashboardUrlParams } from '../../hooks/useDashboardUrlParams';
 import { Target } from 'lucide-react';
 
+const escapeHtml = (value: unknown): string => String(value ?? '').replace(
+    /[&<>"']/g,
+    (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+    }[character] ?? character),
+);
+
 export const RiskScatterPlot: React.FC = () => {
     const { filters } = useDashboardUrlParams();
     const { riskData } = useAnalyticsData(filters);
@@ -32,28 +43,35 @@ export const RiskScatterPlot: React.FC = () => {
                 if (score > 80) statusColor = '#dc2626';
                 else if (score > 50) statusColor = '#ff7900';
 
+                const safeName = escapeHtml(name);
+                const safeStatus = escapeHtml(status);
+                const safeStatusColor = escapeHtml(statusColor);
+                const safeScore = escapeHtml(score);
+                const safeDays = escapeHtml(days);
+                const safeMrr = escapeHtml(mrrFormatted);
+
                 return `
                     <div style="padding: 14px; min-width: 220px; font-family: 'Inter', sans-serif;">
                         <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px; color: #18181b;">
-                            ${name}
+                            ${safeName}
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${statusColor};"></span>
-                             <span style="font-size: 11px; font-weight: 700; color: ${statusColor}; text-transform: uppercase; letter-spacing: 0.04em;">${status}</span>
+                             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${safeStatusColor};"></span>
+                             <span style="font-size: 11px; font-weight: 700; color: ${safeStatusColor}; text-transform: uppercase; letter-spacing: 0.04em;">${safeStatus}</span>
                         </div>
 
                         <div style="background: #fafafa; border: 1px solid #f4f4f5; border-radius: 8px; padding: 10px; display: grid; gap: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="color: #71717a; font-size: 12px;">Risco</span>
-                                <b style="color: #18181b; font-size: 13px;">${score}/100</b>
+                                <b style="color: #18181b; font-size: 13px;">${safeScore}/100</b>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="color: #71717a; font-size: 12px;">Dias no gargalo</span>
-                                <b style="color: #18181b; font-size: 13px;">${days} dias</b>
+                                <b style="color: #18181b; font-size: 13px;">${safeDays} dias</b>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="color: #71717a; font-size: 12px;">MRR</span>
-                                <b style="color: #18181b; font-size: 13px;">${mrrFormatted}</b>
+                                <b style="color: #18181b; font-size: 13px;">${safeMrr}</b>
                             </div>
                         </div>
                     </div>

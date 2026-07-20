@@ -8,7 +8,7 @@ from sqlalchemy import func, or_, text
 
 from app.models import (
     db,
-    IntegrationMetric,
+    IntegrationStore,
     JarvisChatMessage,
     JarvisChatSession,
     Store,
@@ -19,7 +19,7 @@ from app.models import (
 from app.services.analysts_report_service import AnalystsReportService
 from app.services.analytics_service import AnalyticsService
 from app.services.forecast_service import ForecastService
-from app.services.integration_analytics_service import IntegrationAnalyticsService
+from app.services.integration_query_service import IntegrationQueryService
 from app.services.llm_service import LLMService
 from app.services.scoring_service import ScoringService
 
@@ -32,7 +32,9 @@ class JarvisService:
     SQL_ALLOWED_TABLES = {
         "stores",
         "tasks_steps",
-        "integration_metrics",
+        "integration_stores",
+        "integration_tasks",
+        "integration_block_periods",
         "support_conversations",
         "support_agent_performance",
     }
@@ -429,6 +431,34 @@ class JarvisService:
             "limitations": [] if summary else [f"Não há dados consolidados para {analyst_name}."],
         }
 
+    @staticmethod
+    def _integration_store_for_source(store):
+        """Localiza o registro canônico de Integração da loja de Implantação."""
+        predicates = []
+        if store.clickup_task_id:
+            predicates.append(IntegrationStore.source_task_id == str(store.clickup_task_id))
+        if store.custom_store_id:
+            predicates.extend([
+                IntegrationStore.source_custom_id == store.custom_store_id,
+                IntegrationStore.business_id == store.custom_store_id,
+            ])
+        if not predicates:
+            return None
+        return IntegrationStore.query.filter(or_(*predicates)).first()
+
+    @staticmethod
+    def _integration_block_context(integration_store):
+        task = integration_store.integration_task if integration_store else None
+        if not task:
+            return False, None
+        blocks = sorted(
+            task.block_periods,
+            key=lambda item: item.started_at or datetime.min,
+            reverse=True,
+        )
+        latest = blocks[0] if blocks else None
+        return bool(task.is_blocked), latest.reason if latest else None
+
     def _get_store_details(self, route):
         ref = route.get("entities", {}).get("store")
         if not ref:
@@ -441,11 +471,8 @@ class JarvisService:
         if not store:
             return self._tool_error("get_store_details", f"Loja não encontrada para referência: {ref}")
 
-        metric = (
-            IntegrationMetric.query.filter_by(store_id=store.id)
-            .order_by(IntegrationMetric.updated_at.desc())
-            .first()
-        )
+        integration_store = self._integration_store_for_source(store)
+        blocking_issue, blocker_reason = self._integration_block_context(integration_store)
         steps = sorted(store.steps or [], key=lambda step: step.idle_days or 0, reverse=True)[:8]
         return {
             "tool": "get_store_details",
@@ -462,9 +489,19 @@ class JarvisService:
                 "dias_totais_implantacao": getattr(store, "dias_totais_implantacao", None),
                 "tempo_contrato": store.tempo_contrato,
                 "mrr": store.valor_mensalidade,
-                "churn_risk": bool(metric.churn_risk) if metric else False,
-                "blocking_issue": bool(metric.has_blocking_issue) if metric else False,
-                "last_blocker_reason": metric.last_blocker_reason if metric else None,
+                "churn_risk": bool(integration_store and integration_store.churn_risk),
+                "blocking_issue": blocking_issue,
+                "last_blocker_reason": blocker_reason,
+                "post_integration_issue_count": (
+                    integration_store.post_integration_issue_count
+                    if integration_store and integration_store.post_integration_issue_count is not None
+                    else 0
+                ),
+                "documentation_status": (
+                    integration_store.documentation_status
+                    if integration_store and integration_store.documentation_status
+                    else "PENDING"
+                ),
             },
             "records": [
                 {
@@ -477,8 +514,8 @@ class JarvisService:
                 }
                 for step in steps
             ],
-            "alerts": self._store_alerts(store, metric),
-            "limitations": [] if metric else ["Não há IntegrationMetric vinculado a esta loja."],
+            "alerts": self._store_alerts(store, integration_store),
+            "limitations": [] if integration_store else ["Não há registro de Integração vinculado a esta loja."],
         }
 
     def _get_critical_stores(self, route):
@@ -833,18 +870,21 @@ class JarvisService:
         }
 
     def _get_integration_overview(self, route):
-        kpis = IntegrationAnalyticsService.get_kpi_cards()
-        trends = IntegrationAnalyticsService.get_monthly_trends(months=6)
+        kpis = IntegrationQueryService().metrics({})
+        status_records = kpis.get("by_status", [])
         return {
             "tool": "get_integration_overview",
             "status": "ok",
             "period": self._public_period(route["period"]),
-            "metrics": {**kpis, "trend_months": len(trends)},
-            "records": trends,
+            "metrics": {**kpis, "status_count": len(status_records)},
+            "records": status_records,
             "alerts": [
-                {"type": "integration_churn_risk", "message": f"{kpis.get('churn_risk_count', 0)} integrações com risco de churn."}
-            ] if kpis.get("churn_risk_count") else [],
-            "limitations": ["Integração usa IntegrationMetric; dados dependem de snapshot/atualização desse módulo."],
+                {
+                    "type": "integration_blocked",
+                    "message": f"{kpis.get('blocked_now', 0)} integrações bloqueadas no momento.",
+                }
+            ] if kpis.get("blocked_now") else [],
+            "limitations": ["Os dados dependem da última sincronização do domínio de Integração."],
         }
 
     def _query_database_fallback(self, route):
@@ -1114,7 +1154,8 @@ Regras:
         return None
 
     def _store_record(self, store):
-        metric = (store.integration_metrics or [None])[-1] if hasattr(store, "integration_metrics") else None
+        integration_store = self._integration_store_for_source(store)
+        blocking_issue, _ = self._integration_block_context(integration_store)
         return {
             "id": store.id,
             "name": store.store_name,
@@ -1126,8 +1167,8 @@ Regras:
             "tempo_contrato": store.tempo_contrato,
             "mrr": store.valor_mensalidade,
             "risk_score": self._store_risk_score(store),
-            "churn_risk": bool(metric.churn_risk) if metric else False,
-            "blocking_issue": bool(metric.has_blocking_issue) if metric else False,
+            "churn_risk": bool(integration_store and integration_store.churn_risk),
+            "blocking_issue": blocking_issue,
         }
 
     def _store_risk_score(self, store):
@@ -1140,21 +1181,27 @@ Regras:
             score += 25
         if store.status_norm == "BLOCKED":
             score += 20
-        metric = (store.integration_metrics or [None])[-1] if hasattr(store, "integration_metrics") else None
-        if metric and (metric.churn_risk or metric.has_blocking_issue):
+        integration_store = self._integration_store_for_source(store)
+        blocking_issue, _ = self._integration_block_context(integration_store)
+        if (integration_store and integration_store.churn_risk) or blocking_issue:
             score += 20
         return round(score, 1)
 
-    def _store_alerts(self, store, metric=None):
+    def _store_alerts(self, store, integration_store=None):
         alerts = []
         if (store.idle_days or 0) > 7:
             alerts.append({"type": "idle", "priority": "high", "message": f"Loja parada há {store.idle_days} dias."})
         if store.status_norm == "BLOCKED":
             alerts.append({"type": "blocked", "priority": "high", "message": "Loja está em status bloqueado."})
-        if metric and metric.churn_risk:
+        if integration_store and integration_store.churn_risk:
             alerts.append({"type": "churn", "priority": "high", "message": "Integração marcada com risco de churn."})
-        if metric and metric.has_blocking_issue:
-            alerts.append({"type": "blocking_issue", "priority": "medium", "message": metric.last_blocker_reason or "Há bloqueio registrado."})
+        blocking_issue, blocker_reason = self._integration_block_context(integration_store)
+        if blocking_issue:
+            alerts.append({
+                "type": "blocking_issue",
+                "priority": "medium",
+                "message": blocker_reason or "Há bloqueio registrado.",
+            })
         return alerts
 
     def _sla_alerts(self, stores):
@@ -1203,9 +1250,9 @@ Regras:
         mapping = {
             "get_team_performance": ["stores"],
             "get_analyst_performance": ["stores", "tasks_steps"],
-            "get_store_details": ["stores", "tasks_steps", "integration_metrics"],
-            "get_critical_stores": ["stores", "integration_metrics"],
-            "get_sla_risks": ["stores", "integration_metrics"],
+            "get_store_details": ["stores", "tasks_steps", "integration_stores", "integration_tasks"],
+            "get_critical_stores": ["stores", "integration_stores", "integration_tasks"],
+            "get_sla_risks": ["stores", "integration_stores", "integration_tasks"],
             "get_mrr_summary": ["stores"],
             "get_support_summary": ["support_conversations", "support_agent_performance"],
             "get_monthly_delivery_summary": ["stores"],
@@ -1216,7 +1263,7 @@ Regras:
             "get_scoring_overview": ["stores"],
             "get_forecast_summary": ["stores"],
             "get_financial_forecast": ["stores"],
-            "get_integration_overview": ["stores", "integration_metrics"],
+            "get_integration_overview": ["stores", "integration_stores", "integration_tasks"],
             "query_database": list(self.SQL_ALLOWED_TABLES),
         }
         return mapping.get(tool_name, [])

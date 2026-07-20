@@ -24,7 +24,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ date, onChange, label, p
                 </label>
             )}
             <Popover className="relative">
-                {({ }) => (
+                {() => (
                     <>
                         <Popover.Button
                             className={clsx(

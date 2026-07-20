@@ -82,7 +82,7 @@ export function OperationalControlModal({ isOpen, onClose, store, onSaveSuccess 
                         >
                             <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-[2.5rem] bg-[#EEF0F8] p-1 text-left align-middle shadow-2xl transition-all border border-white/20">
                                 <div className="bg-white rounded-[2.3rem] overflow-hidden">
-                                    {/* Header */}
+                                    {/* Cabeçalho */}
                                     <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                                         <div>
                                             <Dialog.Title as="h3" className="text-lg font-black text-slate-900 leading-tight">
@@ -96,7 +96,7 @@ export function OperationalControlModal({ isOpen, onClose, store, onSaveSuccess 
                                     </div>
 
                                     <div className="p-8 space-y-8">
-                                        {/* Operacional / SLA Section */}
+                                        {/* Seção operacional e de acordo de nível de serviço */}
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-4">
                                                 <CheckCircle2 size={16} className="text-indigo-600" />
@@ -136,7 +136,7 @@ export function OperationalControlModal({ isOpen, onClose, store, onSaveSuccess 
                                             </div>
                                         </div>
 
-                                        {/* Observações Privadas Section */}
+                                        {/* Seção de observações privadas */}
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-4">
                                                 <MessageSquareText size={16} className="text-indigo-600" />
@@ -150,7 +150,7 @@ export function OperationalControlModal({ isOpen, onClose, store, onSaveSuccess 
                                             />
                                         </div>
 
-                                        {/* Actions */}
+                                        {/* Ações */}
                                         <div className="flex gap-3 pt-4">
                                             <button
                                                 onClick={onClose}

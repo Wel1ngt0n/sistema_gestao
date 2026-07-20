@@ -170,7 +170,7 @@ class AnalystsReportService:
                 "is_top_performer": status == "HIGH_PERFORMANCE"
             })
 
-        # Build structured team_actions (top 3 decision priorities)
+        # Estrutura as tres principais prioridades de decisao da equipe.
         team_actions = []
 
         overloaded = [a for a in cockpit_analysts if a['action_priority'] == 'high'
@@ -218,7 +218,7 @@ class AnalystsReportService:
                 "impact": "medio"
             })
 
-        # Sort by priority ascending
+        # Ordena pela prioridade em ordem crescente.
         team_actions = sorted(team_actions, key=lambda x: x['priority'])[:3]
 
         avg_carga = sum(a['carga_ponderada'] for a in analysts_list) / len(analysts_list) if analysts_list else 0
@@ -432,7 +432,7 @@ class AnalystsReportService:
                 "mrr_historico": mrr_historico
             })
             
-        # Sort by Carga Ponderada Descending by default
+        # Ordena por carga ponderada decrescente por padrao.
         report.sort(key=lambda x: x['carga_ponderada'], reverse=True)
         
         # Para calculo geral de MRR da empresa no período selecionado:
@@ -874,7 +874,7 @@ class AnalystsReportService:
                 step_name = s.status or "Desconhecido"
                 gargalos_etapa[step_name] = gargalos_etapa.get(step_name, 0) + 1
                 
-        # Format top gargalos
+        # Formata os principais gargalos.
         top_gargalos = [{"etapa": k, "count": v} for k, v in gargalos_etapa.items()]
         top_gargalos.sort(key=lambda x: x['count'], reverse=True)
         

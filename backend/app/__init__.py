@@ -10,7 +10,8 @@ from app.models import db
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    
+    migration_mode = os.environ.get('SKIP_SCHEMA_BOOTSTRAP') == '1'
+
     # CORS via after_request para cobrir tambem respostas geradas por decorators.
     @app.after_request
     def add_cors_headers(response):
@@ -29,7 +30,7 @@ def create_app():
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
         response.headers['Access-Control-Max-Age'] = '86400'
         return response
-    
+
     # Cabecalhos de seguranca: mantem CSP explicita para o Flask-Talisman.
     csp = {
         'default-src': ['\'self\''],
@@ -58,38 +59,44 @@ def create_app():
         default_limits=["2000 per day", "500 per hour"],
         storage_uri="memory://"
     )
-    
+
     @limiter.request_filter
     def header_whitelist():
         return request.method == "OPTIONS"
-        
+
     app.limiter = limiter # Exposto para uso pontual em blueprints.
-    
+
     db.init_app(app)
     Migrate(app, db)
-    
+
     # Inicializa o agendador de sincronismo.
     from app.scheduler import init_scheduler
     # No Render, evita multiplas instancias do scheduler quando houver varios workers.
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or os.environ.get('FLASK_ENV') == 'production':
+    if not migration_mode and (
+        os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
+        or os.environ.get('FLASK_ENV') == 'production'
+    ):
         init_scheduler(app)
-    
-    # Garante tabelas em execucao local/CLI e aplica reparos leves de schema.
-    with app.app_context():
-        try:
-            db.create_all()
-            
-            # Reparo automatico de schema usado em ambientes legados.
+
+    # Migrations precisam enxergar o schema real antes de qualquer create_all.
+    if not migration_mode:
+        with app.app_context():
             try:
-                from app.services.schema_repair import repair_database_schema
-                repair_database_schema()
-            except Exception as repair_e:
-                app.logger.error(f"Falha ao reparar schema automaticamente: {repair_e}")
-        except Exception as e:
-            app.logger.error(f"Erro durante inicializacao do banco: {e}")
-        
+                db.create_all()
+
+                # Reparo automatico de schema usado em ambientes legados.
+                try:
+                    from app.services.schema_repair import repair_database_schema
+                    repair_database_schema()
+                except Exception as repair_e:
+                    app.logger.error(f"Falha ao reparar schema automaticamente: {repair_e}")
+            except Exception as e:
+                app.logger.error(f"Erro durante inicializacao do banco: {e}")
+    else:
+        app.logger.info("Bootstrap automatico de schema desativado durante migration.")
+
     app.logger.info("Banco de dados inicializado.")
-        
+
     # Registro dos blueprints da aplicacao.
     from app.routes import main_bp, api_bp
     from app.routes_analytics import analytics_bp
@@ -97,10 +104,9 @@ def create_app():
     from app.routes_scoring import scoring_bp
     from app.routes_admin import admin_bp
     from app.routes_integration import integration_bp
-    from app.routes_integration_v2 import integration_v2_bp
     from app.routes_auth import auth_bp
     from app.routes_profile import profile_bp
-    
+
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(analytics_bp)
@@ -108,17 +114,16 @@ def create_app():
     app.register_blueprint(scoring_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(integration_bp)
-    app.register_blueprint(integration_v2_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
-    
+
     from app.routes_jarvis import jarvis_bp
     app.register_blueprint(jarvis_bp)
-    
+
 
     from app.routes_forecast import forecast_bp
     app.register_blueprint(forecast_bp)
-    
+
     from app.routes_governance import gov_bp
     app.register_blueprint(gov_bp)
 
@@ -127,15 +132,15 @@ def create_app():
 
     from app.routes_notifications import notifications_bp
     app.register_blueprint(notifications_bp)
-    
+
     from app.routes_analysts_reports import analysts_reports_bp
     app.register_blueprint(analysts_reports_bp)
-    
+
     from app.routes_webhooks import webhook_bp
     app.register_blueprint(webhook_bp)
     limiter.exempt(webhook_bp)
-    
+
     from app.routes_support import support_bp
     app.register_blueprint(support_bp)
-    
+
     return app

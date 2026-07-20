@@ -85,7 +85,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
     const resumo = dadosFinanceiros?.resumo;
     const lojas = dadosFinanceiros?.lojas || [];
 
-    const resumoComFallback = {
+    const resumoComFallback = useMemo(() => ({
         lojas_concluidas_pagantes: resumo?.lojas_concluidas_pagantes ?? 0,
         lojas_concluidas_nao_pagantes: resumo?.lojas_concluidas_nao_pagantes ?? 0,
         lojas_concluidas_nao_pagantes_explicitas: resumo?.lojas_concluidas_nao_pagantes_explicitas ?? resumo?.lojas_concluidas_nao_pagantes ?? 0,
@@ -102,7 +102,7 @@ export const PainelFinanceiroImplantacao: React.FC<PropriedadesPainelFinanceiroI
         mrr_pendente_cobranca: resumo?.mrr_pendente_cobranca ?? kpis?.mrr_backlog ?? 0,
         lojas_em_implantacao: resumo?.lojas_em_implantacao ?? kpis?.wip_stores ?? 0,
         lojas_prontas_para_cobranca: resumo?.lojas_prontas_para_cobranca ?? 0,
-    };
+    }), [kpis, resumo]);
 
     const dadosGrafico = useMemo(() => ({
         labels: ['Pagantes', 'Sem status', 'Nao pagantes', 'Devedores', 'Cancelados', 'Prontas', 'Em implantacao'],

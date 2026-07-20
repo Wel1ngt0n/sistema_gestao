@@ -22,7 +22,7 @@ interface BottleneckDonutChartProps {
 export const BottleneckDonutChart: React.FC<BottleneckDonutChartProps> = ({ data }) => {
     if (!data) return null;
 
-    // Use labels mapping
+    // Usa o mapeamento de rótulos.
     const parseLabel = (l: string) => {
         if (l === "CLIENTE") return "Cliente / Fator Externo"
         if (l === "IMPLANTADOR") return "Analista / Fator Interno"

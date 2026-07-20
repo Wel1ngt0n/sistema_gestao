@@ -48,7 +48,7 @@ def update_config(payload):
     
     return jsonify({"status": "success", "key": key, "value": value})
 
-# --- User Management ---
+# --- Gestao de usuarios ---
 
 @admin_bp.route('/users', methods=['GET'])
 @require_auth

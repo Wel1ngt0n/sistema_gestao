@@ -1,4 +1,4 @@
-// UX Audit: placeholder aria-label
+// Auditoria de experiência: texto acessível do campo.
 import React, { useState } from 'react';
 import { Calendar, ChevronDown, Check } from 'lucide-react';
 
@@ -16,7 +16,7 @@ interface PeriodFilterProps {
 export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     
-    // Preset calculations
+    // Cálculos dos períodos predefinidos.
     const today = new Date();
     
     const getCurrentMonth = () => {

@@ -17,7 +17,7 @@ class AnalysisService:
         # We only look at closed steps for training
         steps = TaskStep.query.filter(TaskStep.total_time_days > 0).all()
         
-        # Group by list name
+        # Agrupa pelo nome da lista.
         grouped = {}
         for s in steps:
             if not s.step_list_name: continue

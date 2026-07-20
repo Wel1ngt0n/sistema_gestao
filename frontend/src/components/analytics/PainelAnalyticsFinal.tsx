@@ -148,7 +148,10 @@ export default function PainelAnalyticsFinal() {
         return (Array.isArray(desempenho) ? desempenho : []).map((item) => item.implantador).sort();
     }, [desempenho]);
 
-    const tendenciasSeguras = Array.isArray(tendencias) ? tendencias : [];
+    const tendenciasSeguras = useMemo(
+        () => Array.isArray(tendencias) ? tendencias : [],
+        [tendencias],
+    );
     const rotulosTendencia = tendenciasSeguras.map((item) => item.month);
     const snapshotMetaVariavel = useMemo(
         () => calcularSnapshotMetaVariavel(kpis, tendenciasSeguras),

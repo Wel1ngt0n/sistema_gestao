@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, send_file, current_app
 from app.services.forecast_service import ForecastService
 from app.models import db, Store
-from app.services.security_service import require_auth
+from app.services.security_service import require_auth, require_permission
 import pandas as pd
 import io
 from datetime import datetime
@@ -36,6 +36,7 @@ def get_summary(payload):
 
 @forecast_bp.route('/store/<int:store_id>', methods=['PUT'])
 @require_auth
+@require_permission('manage_performance')
 def update_store_forecast(payload, store_id):
     """
     Atualiza dados manuais de forecast da loja.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Store } from './types';
 import { formatDate, formatCurrency } from './monitorUtils';
@@ -60,19 +60,19 @@ export default function MonitorStoreModal({
     const [steps, setSteps] = useState<TaskStep[]>([]);
     const [loadingSteps, setLoadingSteps] = useState(false);
 
-    // Step Editing State
+    // Estado de edição das etapas.
     const [editingStepId, setEditingStepId] = useState<number | null>(null);
     const [editStartDate, setEditStartDate] = useState<string>("");
     const [editEndDate, setEditEndDate] = useState<string>("");
 
-    // Pauses State
+    // Estado das pausas.
     const [pauses, setPauses] = useState<StorePause[]>([]);
     const [loadingPauses, setLoadingPauses] = useState(false);
     const [newPauseReason, setNewPauseReason] = useState("");
     const [newPauseDate, setNewPauseDate] = useState("");
     const [showPauseForm, setShowPauseForm] = useState(false);
 
-    // Pause Editing State
+    // Estado de edição das pausas.
     const [editingPauseId, setEditingPauseId] = useState<number | null>(null);
     const [editPauseStartDate, setEditPauseStartDate] = useState<string>("");
     const [editPauseEndDate, setEditPauseEndDate] = useState<string>("");
@@ -89,17 +89,7 @@ export default function MonitorStoreModal({
         }
     }, [store]);
 
-    useEffect(() => {
-        if (activeTab === 'history' && localStore?.id) {
-            fetchLogs();
-        } else if (activeTab === 'steps' && localStore?.id) {
-            fetchSteps();
-        } else if (activeTab === 'pauses' && localStore?.id) {
-            fetchPauses();
-        }
-    }, [activeTab]);
-
-    const fetchPauses = async () => {
+    const fetchPauses = useCallback(async () => {
         if (!localStore?.id) return;
         setLoadingPauses(true);
         try {
@@ -110,7 +100,7 @@ export default function MonitorStoreModal({
         } finally {
             setLoadingPauses(false);
         }
-    };
+    }, [localStore?.id]);
 
     const handleAddPause = async () => {
         if (!localStore?.id || !newPauseDate) return;
@@ -123,11 +113,10 @@ export default function MonitorStoreModal({
             setNewPauseDate("");
             setShowPauseForm(false);
             fetchPauses();
-            // Refresh store details to update days calculation
-            // Mas o onSave atualiza o Pai? O pai passa 'store'. 
+            // Atualiza os detalhes da loja para recalcular os dias.
+            // Mas o onSave atualiza o pai? O pai passa a loja.
             // Precisamos atualizar o localStore ou pedir pro pai recarregar.
-            // O ideal seria chamar uma prop onRefresh se existisse, mas vamos confiar que o usuario vai dar refresh ou o deep sync.
-            // Porem, podemos atualizar o summary:
+            // Sem uma função de atualização do pai, o recarregamento ocorre pela sincronização completa.
             alert("Pausa iniciada com sucesso!");
         } catch (e: any) {
             alert("Erro ao criar pausa: " + (e.response?.data?.error || e.message));
@@ -173,7 +162,7 @@ export default function MonitorStoreModal({
     };
 
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
         if (!localStore?.id) return;
         setLoadingLogs(true);
         try {
@@ -184,9 +173,9 @@ export default function MonitorStoreModal({
         } finally {
             setLoadingLogs(false);
         }
-    };
+    }, [localStore?.id]);
 
-    const fetchSteps = async () => {
+    const fetchSteps = useCallback(async () => {
         if (!localStore?.id) return;
         setLoadingSteps(true);
         try {
@@ -197,7 +186,17 @@ export default function MonitorStoreModal({
         } finally {
             setLoadingSteps(false);
         }
-    };
+    }, [localStore?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'history') {
+            fetchLogs();
+        } else if (activeTab === 'steps') {
+            fetchSteps();
+        } else if (activeTab === 'pauses') {
+            fetchPauses();
+        }
+    }, [activeTab, fetchLogs, fetchPauses, fetchSteps]);
 
     const handleEditStep = (step: TaskStep) => {
         setEditingStepId(step.id);
@@ -242,7 +241,7 @@ export default function MonitorStoreModal({
 
     if (!isOpen || !localStore) return null;
 
-    // Helper para exibir campos Read-Only
+    // Função auxiliar para exibir campos somente para leitura.
     const ReadOnlyField = ({ label, value, className = "" }: { label: string, value: string | number | null | undefined, className?: string }) => (
         <div className={className}>
             <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">{label}</span>
@@ -252,13 +251,13 @@ export default function MonitorStoreModal({
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-            {/* Modal Container - Corrigido bg-white/dark (Force light mode colors if not dark) */}
+            {/* Contêiner do modal com cores compatíveis com os modos claro e escuro */}
             <div
                 className="bg-white text-slate-900 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
 
-                {/* Header */}
+                {/* Cabeçalho */}
                 <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="p-2 bg-orange-100 rounded-lg">
@@ -295,7 +294,7 @@ export default function MonitorStoreModal({
                     </button>
                 </div>
 
-                {/* Tabs Switcher */}
+                {/* Seletor de abas */}
                 <div className="flex px-6 border-b border-slate-200 bg-white shrink-0 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('info')}
@@ -336,11 +335,11 @@ export default function MonitorStoreModal({
 
                 </div>
 
-                {/* Content - Scrollable */}
+                {/* Conteúdo com rolagem */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {activeTab === 'info' ? (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* LEFT COLUMN: Main Info & Status */}
+                            {/* COLUNA ESQUERDA: INFORMAÇÕES PRINCIPAIS E STATUS */}
                             <div className="space-y-6 lg:col-span-2">
                                 {/* Datas e Prazos */}
                                 <div className="bg-slate-50/30 rounded-xl p-5 border border-slate-200">
@@ -407,7 +406,7 @@ export default function MonitorStoreModal({
                                         </div>
                                     </div>
 
-                                    {/* Risk Breakdown Section */}
+                                    {/* Composição do risco */}
                                     {localStore.risk_breakdown && (
                                         <div className="mt-4 pt-4 border-t border-slate-200">
                                             <h5 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Composição do Risco</h5>
@@ -555,9 +554,9 @@ export default function MonitorStoreModal({
                                 </div>
                             </div>
 
-                            {/* RIGHT COLUMN: Financial & Actions */}
+                            {/* COLUNA DIREITA: FINANCEIRO E AÇÕES */}
                             <div className="space-y-6">
-                                {/* Deep Sync Action */}
+                                {/* Ação de sincronização completa */}
                                 <div className="bg-gradient-to-br from-orange-50 to-white p-5 rounded-xl border border-orange-100 shadow-sm text-center">
                                     <button
                                         onClick={() => localStore.id && onDeepSync(localStore.id)}
@@ -595,7 +594,7 @@ export default function MonitorStoreModal({
                                     </div>
                                 </div>
 
-                                {/* Manual Finish Date */}
+                                {/* Data manual de conclusão */}
                                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                     <label className="block text-xs uppercase text-slate-500 font-bold mb-2">Data Manual de Fim</label>
                                     <input
@@ -624,7 +623,7 @@ export default function MonitorStoreModal({
                                     )}
                                 </div>
 
-                                {/* Notes */}
+                                {/* Observações */}
                                 <div>
                                     <label className="block text-xs uppercase text-slate-500 font-bold mb-1">Observações Privadas</label>
                                     <textarea
@@ -937,7 +936,7 @@ export default function MonitorStoreModal({
                                 <div className="relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                                     {logs.map((log) => (
                                         <div key={log.id} className="relative pl-10 pb-8 last:pb-0">
-                                            {/* Dot */}
+                                            {/* Marcador */}
                                             <div className={`absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center border-4 border-white z-10 shadow-sm ${(() => {
                                                 switch (log.source) {
                                                     case 'sync': return 'bg-orange-100 text-orange-600';
@@ -961,7 +960,7 @@ export default function MonitorStoreModal({
                                                 })()}
                                             </div>
 
-                                            {/* Card */}
+                                            {/* Cartão */}
                                             <div className="bg-white/50 p-4 rounded-xl border border-slate-200 shadow-sm hover:border-orange-300 transition-colors">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="text-xs font-black uppercase tracking-wider text-slate-400">
@@ -1008,7 +1007,7 @@ export default function MonitorStoreModal({
                     )}
                 </div>
 
-                {/* Footer Action */}
+                {/* Ações do rodapé */}
                 <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
                     <button
                         onClick={handleDelete}

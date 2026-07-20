@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
 import {
@@ -22,7 +22,7 @@ export default function AnalystProfileView() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     
-    // AI State
+    // Estado da inteligência artificial.
     const [aiResult, setAiResult] = useState<any>(null)
     const [aiLoading, setAiLoading] = useState(false)
 
@@ -32,16 +32,11 @@ export default function AnalystProfileView() {
         label: 'Todo o Período'
     })
 
-    // Modal State
+    // Estado do modal.
     const [selectedStore, setSelectedStore] = useState<any>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
 
-    useEffect(() => {
-        if (!name) return
-        fetchAnalyst()
-    }, [name, period])
-
-    const fetchAnalyst = async () => {
+    const fetchAnalyst = useCallback(async () => {
         try {
             setLoading(true)
             setError(null)
@@ -64,7 +59,12 @@ export default function AnalystProfileView() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [name, period.label])
+
+    useEffect(() => {
+        if (!name) return
+        fetchAnalyst()
+    }, [fetchAnalyst, name])
 
     const handleAIAnalysis = async () => {
         if (!name) return
@@ -124,7 +124,7 @@ export default function AnalystProfileView() {
         <div className="min-h-screen bg-zinc-50 pb-20">
             <div className="max-w-[1600px] mx-auto px-4 md:px-8 space-y-8 pt-8">
                 
-                {/* 1. TOP HEADER */}
+                {/* 1. CABEÇALHO PRINCIPAL */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     <div className="flex items-center gap-4">
                         <button
@@ -156,7 +156,7 @@ export default function AnalystProfileView() {
                     </div>
                 </div>
 
-                {/* 2. KPI GRID */}
+                {/* 2. GRADE DE INDICADORES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     <KPICard 
                         label="Carteira Ativa" 
@@ -195,12 +195,12 @@ export default function AnalystProfileView() {
                     />
                 </div>
 
-                {/* 3. COCKPIT SECTION: ACTIONS + INTELLIGENCE + CHARTS */}
+                {/* 3. PAINEL: AÇÕES, INTELIGÊNCIA E GRÁFICOS */}
                 <div className="space-y-6">
                     
-                    {/* TOP ROW: ACTION PLAN & STAGE METRICS */}
+                    {/* LINHA SUPERIOR: PLANO DE AÇÃO E MÉTRICAS DAS ETAPAS */}
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-                        {/* 3.1. INDIVIDUAL ACTION PLAN */}
+                        {/* 3.1. PLANO DE AÇÃO INDIVIDUAL */}
                         <div className="xl:col-span-2 bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2 bg-orange-50 rounded-lg border border-orange-100">
@@ -238,7 +238,7 @@ export default function AnalystProfileView() {
                             )}
                         </div>
 
-                        {/* STAGE METRICS (Quick List) */}
+                        {/* MÉTRICAS DAS ETAPAS EM LISTA RESUMIDA */}
                         <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm h-full">
                             <h3 className="font-black text-[10px] text-zinc-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
                                 <Activity className="text-[#ff7900]" size={14} />
@@ -255,9 +255,9 @@ export default function AnalystProfileView() {
                         </div>
                     </div>
 
-                    {/* MIDDLE ROW: CHARTS */}
+                    {/* LINHA INTERMEDIÁRIA: GRÁFICOS */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* RADAR */}
+                        {/* GRÁFICO RADAR */}
                         <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm flex flex-col">
                             <h3 className="font-black text-[10px] text-zinc-400 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
                                 <Activity className="text-[#ff7900]" size={14} />
@@ -272,7 +272,7 @@ export default function AnalystProfileView() {
                             </div>
                         </div>
 
-                        {/* CAUSE DIAGNOSTIC */}
+                        {/* DIAGNÓSTICO DE CAUSAS */}
                         <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
                             <h3 className="font-black text-[10px] text-zinc-400 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
                                 <ShieldAlert className="text-[#ff7900]" size={14} />
@@ -288,7 +288,7 @@ export default function AnalystProfileView() {
                         </div>
                     </div>
 
-                    {/* BOTTOM ROW: AI DIAGNOSTIC */}
+                    {/* LINHA INFERIOR: DIAGNÓSTICO POR INTELIGÊNCIA ARTIFICIAL */}
                     <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50">
                             <div className="flex items-center gap-3">
@@ -322,7 +322,7 @@ export default function AnalystProfileView() {
 
                             {aiResult && !aiResult.error && (
                                 <div className="space-y-6">
-                                    {/* Executive Summary */}
+                                    {/* Resumo executivo */}
                                     <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-100">
                                         <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                                             <Target size={12} />
@@ -333,9 +333,9 @@ export default function AnalystProfileView() {
                                         </p>
                                     </div>
 
-                                    {/* Grid Details */}
+                                    {/* Grade de detalhes */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Patterns */}
+                                        {/* Padrões */}
                                         <div className="space-y-3">
                                             <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Padrões Detectados</h3>
                                             <div className="space-y-2">
@@ -348,7 +348,7 @@ export default function AnalystProfileView() {
                                             </div>
                                         </div>
 
-                                        {/* Bottlenecks */}
+                                        {/* Gargalos */}
                                         <div className="space-y-3">
                                             <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Gargalos Operacionais</h3>
                                             <div className="space-y-2">
@@ -374,7 +374,7 @@ export default function AnalystProfileView() {
                     </div>
                 </div>
 
-                {/* 5. ACTIVE PORTFOLIO TABLE */}
+                {/* 5. TABELA DA CARTEIRA ATIVA */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-black text-zinc-950 flex items-center gap-2 tracking-tight">
@@ -471,7 +471,7 @@ export default function AnalystProfileView() {
                     </div>
                 </div>
                 
-                {/* 5.1. SCHEDULED PROJECTS (PROGRAMADAS) */}
+                {/* 5.1. PROJETOS AGENDADOS */}
                 {programadas.length > 0 && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -518,7 +518,7 @@ export default function AnalystProfileView() {
                 </div>
                 )}
 
-                {/* 6. RECENT DELIVERIES */}
+                {/* 6. ENTREGAS RECENTES */}
                 <div className="space-y-4">
                     <h2 className="text-xl font-black text-zinc-950 flex items-center gap-2 tracking-tight">
                         <CheckCircle className="text-emerald-500" size={22} />

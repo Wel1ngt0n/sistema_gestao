@@ -11,19 +11,19 @@ class SyncService:
         self.logger = logging.getLogger(__name__)
         self.clickup = ClickUpService()
         self.metrics = MetricsService()
-        
+
     def _sync_verbal_context(self, task_data):
         """
         Busca descrição e comentários recentes para enriquecer a IA (Raio-X).
         """
         task_id = task_data.get('id')
-        if not task_id: 
+        if not task_id:
             return
-        
+
         # 1. Descrição
         # Às vezes a descrição já vem no task_data, se não, buscaríamos (ClickUp API cost)
         # Por padrão, fetch_tasks do ClickUp traz text_content/description
-        
+
         # 2. Comentários (Endpoint separado)
         try:
             comments = self.clickup.get_task_comments(task_id)
@@ -38,10 +38,10 @@ class SyncService:
                     date_str = ""
                     if date_ms:
                         date_str = datetime.fromtimestamp(int(date_ms)/1000).strftime('%d/%m')
-                    
+
                     if text:
                         formatted.append(f"[{date_str}] {user}: {text}")
-                
+
                 task_data['comments_text'] = "\n".join(formatted)
         except Exception as e:
             self.logger.warning(f"Erro ao buscar comentários para task {task_id}: {e}")
@@ -124,7 +124,7 @@ class SyncService:
         if not state:
             state = SyncState(id=1)
             db.session.add(state)
-        
+
         state.last_shallow_sync_at = datetime.now()
         if success:
             state.last_successful_sync_at = datetime.now()
@@ -142,14 +142,14 @@ class SyncService:
         run_record = SyncRun(status="RUNNING")
         db.session.add(run_record)
         db.session.commit()
-        
+
         try:
-            self.logger.info(f"--- INICIANDO SYNC V2.5 ({'COMPLETO' if force_full else 'INCREMENTAL'}) ---")
-            
-            # Otimização Sync V3.5: Respeitar CUTOFF_DATE (01/01/2026)
+            self.logger.info(f"--- INICIANDO SINCRONIZAÇÃO ({'COMPLETA' if force_full else 'INCREMENTAL'}) ---")
+
+            # Respeita o recorte operacional configurado para a sincronização.
             from app.services.analysts_report_service import AnalystsReportService
             last_ts = self.get_last_sync_ts()
-            
+
             if force_full:
                 last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                 self.logger.info(f"Modo FORCE FULL ativado: Sincronizando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}.")
@@ -164,33 +164,34 @@ class SyncService:
 
             # 1. Buscar Lojas (Lógica de Cobertura Total 2026 + Ativas)
             parent_tasks_dict = {}
-            
+
             # Passo A: Ativas (Sempre)
             active_tasks = self.clickup.fetch_parent_tasks(include_closed=False)
             for t in active_tasks:
                 parent_tasks_dict[t['id']] = t
-            
+
             # Passo B: Ciclo Atual (2026)
             recent_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=True, archived=False)
             for t in recent_tasks:
                 parent_tasks_dict[t['id']] = t
-                
+
             # Passo C: Tarefas Arquivadas Recentemente
             archived_tasks = self.clickup.fetch_parent_tasks(date_updated_gt=last_ts, include_closed=True, archived=True)
             for t in archived_tasks:
                 parent_tasks_dict[t['id']] = t
-                
+
             parent_tasks = list(parent_tasks_dict.values())
             self.logger.info(f"Lojas modificadas/ativas encontradas: {len(parent_tasks)}")
-            
+
             # 2. Buscar Etapas
             steps_map = {} # { custom_id: [tarefas] }
-            
+
             all_steps = []
             with ThreadPoolExecutor(max_workers=5) as executor:
                 future_to_list = {
-                    executor.submit(self.clickup.fetch_tasks_from_list, list_id, last_ts): name 
+                    executor.submit(self.clickup.fetch_tasks_from_list, list_id, last_ts): name
                     for name, list_id in Config.LIST_IDS_STEPS.items()
+                    if name != 'INTEGRACAO'
                 }
                 for future in as_completed(future_to_list):
                      res = future.result()
@@ -199,11 +200,11 @@ class SyncService:
                          list_name = future_to_list[future]
                          for t in res:
                              t['step_type_name'] = list_name
-                         
+
                          all_steps.extend(res)
-            
+
             self.logger.info(f"Subtarefas (Etapas) modificadas: {len(all_steps)}")
-            
+
             # Mapear etapas para custom_id
             father_field_id = self.clickup.get_father_field_id()
             for task in all_steps:
@@ -213,18 +214,18 @@ class SyncService:
                         f_val = cf.get('value')
                         break
                 if f_val:
-                    if f_val not in steps_map: 
+                    if f_val not in steps_map:
                         steps_map[f_val] = []
                     steps_map[f_val].append(task)
-            
+
             processed_count = 0
-            
+
             # 3. Processar Lojas
             for p_task in parent_tasks:
                  try:
                       # Sincronizar Contexto Verbal (Raio-X)
                       self._sync_verbal_context(p_task)
-                      
+
                       self.metrics.process_store_data(p_task)
 
                       db.session.commit()
@@ -232,7 +233,7 @@ class SyncService:
                  except Exception as e:
                      db.session.rollback()
                      self.logger.error(f"Erro ao processar loja {p_task.get('name')}: {e}")
-                     # Registrar Erro V2.5
+                     # Registra o erro da loja para diagnóstico posterior.
                      err = SyncError(
                          sync_run_id=run_record.id,
                          task_id=p_task.get('id'),
@@ -241,11 +242,11 @@ class SyncService:
                      )
                      db.session.add(err)
                      db.session.commit()
-            
+
             # 3.1 Processar Etapas
             from app.models import Store
             steps_updated_count = 0
-            
+
             for custom_id, s_tasks in steps_map.items():
                 try:
                     store_db = Store.query.filter_by(custom_store_id=custom_id).first()
@@ -253,18 +254,18 @@ class SyncService:
                         for s_task in s_tasks:
                              # Sincronizar Contexto Verbal para Etapa
                              self._sync_verbal_context(s_task)
-                             
+
                              self.metrics.process_step_data(store_db, s_task)
 
                              steps_updated_count += 1
-                        
+
                         # Reaplicar regras
                         self.metrics.apply_training_completion_rule(store_db)
                         db.session.commit()
                 except Exception as e:
                     db.session.rollback()
                     self.logger.error(f"Erro ao processar etapas para a loja {custom_id}: {e}")
-                    # Registrar Erro V2.5
+                    # Registra o erro de processamento para diagnóstico posterior.
                     err = SyncError(
                         sync_run_id=run_record.id,
                         store_id=(store_db.id if store_db else None),
@@ -276,7 +277,7 @@ class SyncService:
 
             self.metrics.commit()
             self.update_sync_state(success=True)
-            
+
             # Atualizar Registro de Execução
             run_record.finished_at = datetime.now()
             run_record.status = "SUCCESS"
@@ -285,7 +286,7 @@ class SyncService:
             db.session.commit()
 
             self.logger.info("--- SYNC FINALIZADO ---")
-            
+
             # Pos-sync: notificacoes nao devem bloquear o resultado principal.
             try:
                 from app.services.notification_service import check_sla_alerts
@@ -294,9 +295,9 @@ class SyncService:
                     self.logger.info(f"Notificação SLA: {alert_result['alerts_count']} alertas enviados")
             except Exception as notif_err:
                 self.logger.warning(f"Erro ao enviar notificações pós-sync: {notif_err}")
-            
+
             return {"processed": processed_count, "steps_updated": len(all_steps)}
-            
+
         except Exception as e:
             self.logger.error(f"Erro fatal no sincronismo: {e}")
             run_record.finished_at = datetime.now()
@@ -304,47 +305,47 @@ class SyncService:
             run_record.error_summary = str(e)
             db.session.commit()
             raise e
-    
+
     def run_deep_sync(self, store_id):
         """
         Executa Deep Sync para uma loja específica.
         """
         from app.models import Store, StoreDeepSyncState, TimeInStatusCache
-        
+
         try:
             store = Store.query.get(store_id)
             if not store:
                 return {"error": "Loja nao encontrada"}
-            
+
             self.logger.info(f"Iniciando Deep Sync para loja: {store.store_name} ({store.clickup_task_id})")
-            
+
             # Buscar do ClickUp
             data = self.clickup.get_task_history(store.clickup_task_id)
             if not data:
                 return {"error": "Falha ao buscar historico no ClickUp"}
-            
-            # Atualizar Estado Deep Sync
+
+            # Atualiza o estado da sincronizacao profunda.
             dss = StoreDeepSyncState.query.get(store_id)
             if not dss:
                 dss = StoreDeepSyncState(store_id=store_id)
                 db.session.add(dss)
-            
+
             dss.last_deep_sync_at = datetime.now()
             dss.sync_status = "COMPLETE"
             dss.last_error = None
-            
+
             # Processar Histórico de Status
             # Limpar cache antigo
             TimeInStatusCache.query.filter_by(store_id=store_id).delete()
-            
+
             status_history = data.get('status_history', [])
             for item in status_history:
                 status_name = item.get('status')
                 total_time = item.get('total_time', {}).get('by_minute', 0) # Valor assumido em minutos.
-                
+
                 if total_time:
                     total_seconds = int(total_time) * 60
-                    
+
                     cache = TimeInStatusCache(
                         store_id=store_id,
                         status_name=status_name,
@@ -352,19 +353,19 @@ class SyncService:
                         total_days=round(total_seconds / 86400, 2)
                     )
                     db.session.add(cache)
-                
+
             db.session.commit()
-            
+
             # FORÇAR REAVALIAÇÃO DE REGRAS DE CONCLUSÃO
             self.metrics.apply_training_completion_rule(store)
             db.session.commit()
-            
+
             self.logger.info(f"Deep Sync finalizado para {store.store_name}")
             return {"status": "success", "history_items": len(status_history)}
-            
+
         except Exception as e:
             self.logger.error(f"Erro Deep Sync {store_id}: {e}")
-            
+
             # Reconsulta apos rollback para evitar objeto preso em sessao invalida.
             db.session.rollback()
             dss = StoreDeepSyncState.query.get(store_id)
@@ -378,20 +379,20 @@ class SyncService:
         """Gerador SSE com sincronismo incremental e logs de progresso."""
         from app.models import SyncRun, SyncError
         import traceback
-        
+
         # Registra a execucao antes de iniciar o streaming.
         run_record = SyncRun(status="RUNNING")
         db.session.add(run_record)
         db.session.commit()
-        
+
         try:
             mode_str = "VITAL" if vital_only else "DEEP"
-            yield f"data: 🚀 Iniciando Sync V3.0 ({mode_str} - {'COMPLETO' if force_full else 'INCREMENTAL'})...\n\n"
-            
-            # Otimização Sync V3.5: Respeitar CUTOFF_DATE (01/01/2026) no sincronismo completo
+            yield f"data: 🚀 Iniciando sincronização ({mode_str} - {'COMPLETA' if force_full else 'INCREMENTAL'})...\n\n"
+
+            # Respeita o recorte operacional também na sincronização completa.
             from app.services.analysts_report_service import AnalystsReportService
             last_ts = self.get_last_sync_ts()
-            
+
             if force_full:
                 last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                 yield f"data: ⚠️ Modo Completo Ativado: Sincronizando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
@@ -404,11 +405,11 @@ class SyncService:
             else:
                 last_ts = int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                 yield f"data: 🚀 Primeiro Sincronismo: Iniciando desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
-            
+
             # 1. Stores (Processamento em Tempo Real) - Cobertura Total 2026 + Ativas
             yield "data: 🔍 Buscando e processando lojas...\n\n"
             self.logger.info(f"--- INICIANDO BUSCA DE LOJAS (Cutoff: {AnalystsReportService.CUTOFF_DATE}) ---")
-            
+
             parent_tasks_dict = {}
             # A: Lojas em Aberto (Sempre sincronizar)
             yield "data: 📥 Sincronizando lojas em andamento...\n\n"
@@ -416,18 +417,18 @@ class SyncService:
             for batch in self.clickup.fetch_parent_tasks_generator(include_closed=False):
                 for t in batch:
                     parent_tasks_dict[t['id']] = t
-            
+
             # B: Lojas Concluídas este ano
             yield f"data: 📥 Sincronizando histórico desde {AnalystsReportService.CUTOFF_DATE.strftime('%d/%m/%Y')}...\n\n"
             self.logger.info(f"Buscando histórico de lojas desde {AnalystsReportService.CUTOFF_DATE}...")
             for batch in self.clickup.fetch_parent_tasks_generator(date_updated_gt=last_ts, include_closed=True):
                 for t in batch:
                     parent_tasks_dict[t['id']] = t
-            
+
             parent_tasks_list = list(parent_tasks_dict.values())
             self.logger.info(f"Total de lojas para processar: {len(parent_tasks_list)}")
             stores_processed = 0
-            
+
             def to_chunks(data_list, chunk_size):
                 for i in range(0, len(data_list), chunk_size):
                     yield data_list[i:i + chunk_size]
@@ -438,25 +439,25 @@ class SyncService:
                         try:
                             store_name = p_task.get('name', 'Desconhecido')
                             self.logger.info(f"Processando loja [{stores_processed + 1}]: {store_name}")
-                            
+
                             # Sincronizar Contexto Verbal (Raio-X) apenas se NÃO for Vital
                             if not vital_only:
                                 self._sync_verbal_context(p_task)
-                                
+
                                 # Capturar Time Tracking (V6)
                                 try:
                                     tt_data = self.clickup.get_task_time_tracking(p_task.get('id'))
                                     total_ms = sum(int(entry.get('duration', 0)) for entry in tt_data)
                                     p_task['total_time_tracked'] = int(total_ms / 1000) # segundos
-                                except (ValueError, TypeError, Exception): 
+                                except (ValueError, TypeError, Exception):
                                     pass
-                            
+
                             store_db = self.metrics.process_store_data(p_task)
-                            
+
                             # Se tivermos time tracked no p_task, atualizar no model
                             if p_task.get('total_time_tracked') is not None:
                                 store_db.total_time_tracked = p_task['total_time_tracked']
-                                
+
                                 # Capturar Time In Status (Histórico de Métricas V6)
                                 try:
                                     status_data = self.clickup.get_task_history(p_task.get('id'))
@@ -475,9 +476,9 @@ class SyncService:
                                                     total_days=round((int(total_min) * 60) / 86400, 2)
                                                 )
                                                 db.session.add(cache)
-                                except (ValueError, TypeError, Exception): 
+                                except (ValueError, TypeError, Exception):
                                     pass
-                            
+
                             db.session.commit()
                             stores_processed += 1
                         except Exception as e:
@@ -491,28 +492,28 @@ class SyncService:
                             )
                             db.session.add(err)
                             db.session.commit()
-                            
+
                         # MANTÉM A CONEXÃO SSE VIVA (EVITA TIMEOUT NO RENDER)
                         if not vital_only and stores_processed % 3 == 0:
                             yield f"data: ⏳ [Deep] {stores_processed} lojas detalhadas processadas...\n\n"
-                    
+
                     yield f"data: ⏳ Lote de lojas concluído. Total: {stores_processed}...\n\n"
                     batch = None # Libera referencia do lote processado.
 
             self.logger.info(f"--- FIM DO PROCESSAMENTO DE LOJAS: {stores_processed} processadas ---")
             yield f"data: ✅ {stores_processed} lojas sincronizadas.\n\n"
-            
+
             # 2. Steps (Processamento em Tempo Real por Batch) - OTIMIZADO
             yield "data: 📦 Buscando e processando etapas...\n\n"
             self.logger.info("--- INICIANDO BUSCA DE ETAPAS (SUBTAREFAS) ---")
             steps_processed = 0
             father_field_id = self.clickup.get_father_field_id()
             from app.models import Store, StoreSyncLog
-            
+
             # CACHE DE LOJAS: Evita milhares de queries individuais
             self.logger.info("Construindo cache de lojas...")
             store_cache = {s.custom_store_id: s for s in Store.query.all()}
-            
+
             # CACHE DE FLAGS MANUAIS: Evita milhares de queries individuais a StoreSyncLog
             self.logger.info("Construindo cache de flags manuais...")
             manual_flags = {}
@@ -526,74 +527,76 @@ class SyncService:
                 manual_flags[log.store_id].add(log.field_name)
 
             for list_name, list_id in Config.LIST_IDS_STEPS.items():
+                if list_name == 'INTEGRACAO':
+                    continue
                 try:
                     yield f"data: 📥 Iniciando busca da lista '{list_name}'...\n\n"
                     self.logger.info(f"Sincronizando lista de etapas: {list_name} ({list_id})")
-                    
+
                     # Lógica Dupla para Etapas:
                     # 1. Busca TODAS as etapas em aberto (independentemente da data)
                     # 2. Busca TODAS as etapas atualizadas desde o corte
-                    
+
                     steps_dict = {}
-                    
+
                     # A: Etapas em Aberto
                     self.logger.info(f"[{list_name}] Buscando etapas em aberto...")
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, include_closed=False):
                         for t in batch:
                             steps_dict[t['id']] = t
-                    
+
                     # B: Etapas do Ciclo Atual
                     self.logger.info(f"[{list_name}] Buscando etapas concluídas em 2026...")
                     search_ts = last_ts if last_ts else int(AnalystsReportService.CUTOFF_DATE.timestamp() * 1000)
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, date_updated_gt=search_ts, include_closed=True):
                         for t in batch:
                             steps_dict[t['id']] = t
-                            
+
                     # C: Etapas Arquivadas (para garantir que lojas que foram arquivadas tenham seus steps refletidos)
                     self.logger.info(f"[{list_name}] Buscando etapas arquivadas...")
                     for batch in self.clickup.fetch_tasks_from_list_generator(list_id, include_closed=True, archived=True):
                         for t in batch:
                             steps_dict[t['id']] = t
-                    
+
                     steps_list = list(steps_dict.values())
                     self.logger.info(f"[{list_name}] Total de etapas encontradas: {len(steps_list)}")
-                    
+
                     for s_task in steps_list:
                         try:
-                            # Encontrar Store via Custom Field
+                            # Localiza a loja pelo campo personalizado.
                             custom_id = None
                             for cf in s_task.get('custom_fields', []):
                                 if cf['id'] == father_field_id:
                                     custom_id = cf.get('value')
                                     break
-                            
+
                             if custom_id:
                                 # Usar CACHE em vez de Query
                                 store_db = store_cache.get(custom_id)
                                 if store_db:
                                     s_task['step_type_name'] = list_name
-                                    
+
                                     # Processar com Cache de Manual Flags
                                     self.metrics.process_step_data(store_db, s_task, manual_flags=manual_flags)
-                                    
+
                                     # Aplicar regra de treinamento
                                     self.metrics.apply_training_completion_rule(store_db)
-                                    
+
                                     steps_processed += 1
-                                    
+
                                     # BATCH COMMIT: Commita a cada 50 etapas em vez de 1 por 1
                                     if steps_processed % 50 == 0:
                                         db.session.commit()
                                         self.logger.info(f"[{list_name}] Batch de 50 etapas commitado. Total: {steps_processed}")
-                                    
+
                                     # MANTÉM A CONEXÃO SSE VIVA
                                     if not vital_only and steps_processed % 10 == 0:
                                         yield f"data: ⏳ [Deep] {steps_processed} etapas atualizadas...\n\n"
-                                        
+
                         except Exception as inner_e:
                             db.session.rollback()
                             self.logger.error(f"Erro na etapa {s_task.get('id')}: {inner_e}")
-                    
+
                     # Commit ao final de cada lista
                     db.session.commit()
                     self.logger.info(f"[{list_name}] Sincronização concluída.")
@@ -602,18 +605,18 @@ class SyncService:
                     self.logger.error(str(e))
                     yield f"data: ⚠️ Erro ao buscar lista '{list_name}': {str(e)}\n\n"
                     yield f"data: 🔄 Etapas processadas: {steps_processed}\n\n"
-    
+
             self.metrics.commit()
             self.update_sync_state(success=True)
-            
+
             # Atualizar Registro de Execução (Sucesso)
             run_record.finished_at = datetime.now()
             run_record.status = "SUCCESS"
             run_record.items_processed = stores_processed
             run_record.items_updated = stores_processed + steps_processed
             db.session.commit()
-            
-            yield "data: ✨ Sync V3.0 Finalizado!\n\n"
+
+            yield "data: ✨ Sincronização finalizada!\n\n"
             yield "data: [DONE]\n\n"
 
         except Exception as e:
@@ -625,130 +628,23 @@ class SyncService:
             db.session.commit()
             yield f"data: ❌ Erro Fatal: {str(e)}\n\n"
             yield "data: [DONE]\n\n"
-    def run_integration_sync(self):
-        """
-        Sincroniza APENAS a lista de Integração e atualiza métricas específicas.
-        Usa time_in_status do ClickUp para extrair datas reais de início/fim.
-        """
-        from app.models import Store, IntegrationMetric, TaskStep
-        
-        try:
-            self.logger.info("--- INICIANDO SYNC INTEGRAÇÃO ---")
-            
-            # 1. Buscar Tarefas da Lista de Integração
-            list_id = Config.LIST_IDS_STEPS['INTEGRACAO']
-            tasks_active = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None, archived=False)
-            tasks_arch = self.clickup.fetch_tasks_from_list(list_id, date_updated_gt=None, archived=True)
-            tasks = tasks_active + tasks_arch
-            
-            if not tasks:
-                self.logger.info("Nenhuma tarefa de integração encontrada.")
-                return {"processed": 0}
-                
-            self.logger.info(f"Tarefas de integração encontradas: {len(tasks)}")
-            
-            # 2. Processar Steps e mapear clickup_task_id por store
-            father_field_id = self.clickup.get_father_field_id()
-            updated_count = 0
-            # Mapa: store_id -> clickup_task_id (da subtarefa de integração)
-            store_task_map = {}
-            
-            for task in tasks:
-                custom_id = None
-                for cf in task.get('custom_fields', []):
-                    if cf['id'] == father_field_id:
-                        custom_id = cf.get('value')
-                        break
-                
-                if custom_id:
-                    store = Store.query.filter_by(custom_store_id=custom_id).first()
-                    if store:
-                        task['step_type_name'] = 'INTEGRACAO'
-                        self.metrics.process_step_data(store, task)
-                        
-                        assignees = task.get('assignees', [])
-                        if assignees:
-                            current_assignee = assignees[0]['username']
-                            store.integrador = current_assignee
-                            
-                        store_task_map[store.id] = task['id']
-                        updated_count += 1
-            
-            db.session.commit()
-            
-            # 3. Atualizar IntegrationMetric com datas reais via status history
-            self.logger.info(f"Buscando datas de integração para {len(store_task_map)} lojas...")
-            
-            import time as time_mod
-            for store_id, clickup_task_id in store_task_map.items():
-                store = Store.query.get(store_id)
-                metric = IntegrationMetric.query.filter_by(store_id=store_id).first()
-                if not metric:
-                    metric = IntegrationMetric(store_id=store_id, snapshot_date=datetime.now().date())
-                    db.session.add(metric)
-                
-                try:
-                    # Buscar datas reais via status change history
-                    dates = self.clickup.parse_integration_dates(clickup_task_id)
-                    
-                    if dates['start_date']:
-                        metric.start_date = dates['start_date']
-                    if dates['end_date']:
-                        metric.end_date = dates['end_date']
-                    
-                    metric.has_blocking_issue = dates.get('has_blocking_issue', False)
-                    
-                    # Fallback: se não achou via status, usar step dates
-                    if not metric.start_date:
-                        step = TaskStep.query.filter_by(store_id=store_id, step_list_name='INTEGRACAO').first()
-                        if step:
-                            metric.start_date = step.start_real_at or step.created_at
-                    
-                    if not metric.end_date:
-                        step = TaskStep.query.filter_by(store_id=store_id, step_list_name='INTEGRACAO').first()
-                        if step and step.end_real_at:
-                            metric.end_date = step.end_real_at
-                    
-                    # Calcular SLA
-                    if metric.start_date and metric.end_date:
-                        metric.sla_days = (metric.end_date - metric.start_date).days
-                    elif metric.start_date:
-                        # Em andamento: calcular dias até agora
-                        metric.sla_days = (datetime.now() - metric.start_date).days
-                    
-                    # Pequeno intervalo para respeitar o rate limit da API externa.
-                    time_mod.sleep(0.1)
-                    
-                except Exception as e:
-                    self.logger.warning(f"Erro ao buscar datas para store {store_id}: {e}")
-            
-            db.session.commit()
-            self.logger.info(f"--- SYNC INTEGRAÇÃO FINALIZADO: {updated_count} steps atualizados ---")
-            
-            return {"processed": updated_count, "stores_updated": len(store_task_map)}
-            
-        except Exception as e:
-            self.logger.error(f"Erro Sync Integração: {e}")
-            db.session.rollback()
-            raise e
-
     def run_implantacao_sync(self):
         """
         Sincroniza todas as listas EXCETO Integração.
         """
         from app.models import Store
         from concurrent.futures import ThreadPoolExecutor, as_completed
-        
+
         try:
             self.logger.info("--- INICIANDO SYNC RÁPIDO IMPLANTAÇÃO ---")
-            
+
             all_steps = []
             with ThreadPoolExecutor(max_workers=5) as executor:
                 future_to_list = {}
                 for name, list_id in Config.LIST_IDS_STEPS.items():
                     if name != 'INTEGRACAO':
                         future_to_list[executor.submit(self.clickup.fetch_tasks_from_list, list_id, None)] = name
-                        
+
                 for future in as_completed(future_to_list):
                      res = future.result()
                      if res:
@@ -756,45 +652,45 @@ class SyncService:
                          for t in res:
                              t['step_type_name'] = list_name
                          all_steps.extend(res)
-            
+
             if not all_steps:
                 self.logger.info("Nenhuma tarefa de implantação encontrada.")
                 return {"processed": 0}
-                
+
             self.logger.info(f"Tarefas de implantação encontradas: {len(all_steps)}")
-            
+
             # 2. Processar Steps
             father_field_id = self.clickup.get_father_field_id()
             updated_count = 0
             affected_store_ids = set()
-            
+
             for task in all_steps:
                 custom_id = None
                 for cf in task.get('custom_fields', []):
                     if cf['id'] == father_field_id:
                         custom_id = cf.get('value')
                         break
-                
+
                 if custom_id:
                     store = Store.query.filter_by(custom_store_id=custom_id).first()
                     if store:
                         self.metrics.process_step_data(store, task)
                         affected_store_ids.add(store.id)
                         updated_count += 1
-            
+
             db.session.commit()
-            
+
             # Recalcular regras de conclusão para lojas afetadas
             for store_id in affected_store_ids:
                 store = Store.query.get(store_id)
                 if store:
                     self.metrics.apply_training_completion_rule(store)
-            
+
             db.session.commit()
             self.logger.info(f"--- SYNC IMPLANTAÇÃO FINALIZADO: {updated_count} steps atualizados ---")
-            
+
             return {"processed": updated_count, "stores_updated": len(affected_store_ids)}
-            
+
         except Exception as e:
             self.logger.error(f"Erro Sync Implantação: {e}")
             db.session.rollback()

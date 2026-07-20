@@ -1,7 +1,10 @@
 #!/bin/sh
 set -e
 
-# Aguarda DB (opcional, mas recomendado; aqui vamos confiar no depends_on + retry do connect)
+# O healthcheck do Compose garante que o banco esteja pronto antes deste ponto.
+
+echo ">>> [Entrypoint] Applying database migrations..."
+SKIP_SCHEMA_BOOTSTRAP=1 flask db upgrade
 
 echo ">>> [Entrypoint] Running Daily Snapshot Job..."
 python jobs/run_daily_snapshot.py

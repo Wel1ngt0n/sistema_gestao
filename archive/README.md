@@ -8,4 +8,7 @@ Esta pasta guarda itens que nao fazem parte do runtime nem da documentacao ativa
 ## Regra
 - Nao usar esta pasta como dependencia da aplicacao.
 - Backups sensiveis continuam ignorados pelo Git via `*.sql`.
-- O arquivo `backup_completo.sql` permanece na raiz porque o `manage.py` usa esse nome como padrao no fluxo de restore.
+- Backups operacionais devem ficar em `backend/backups/` ou em armazenamento
+  privado externo, nunca na raiz nem rastreados pelo Git.
+- O `manage.py` exige o caminho explicito do arquivo antes de iniciar um
+  restore; nao existe mais backup padrao implicito.

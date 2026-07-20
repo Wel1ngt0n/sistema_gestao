@@ -121,3 +121,8 @@ desktop.ini
 # Ferramentas / Artefatos Locais Do Projeto
 # =============================================================================
 .gemini/
+
+# Instaladores locais criados acidentalmente na raiz do repositorio
+/Scripts/
+/scratch/
+/frontend/scratch/

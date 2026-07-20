@@ -63,26 +63,3 @@ export interface Store {
     manual_start_date?: string | null;
     reopen?: boolean;
 }
-
-export interface IntegrationData {
-    id: number;
-    name: string;
-    store_name: string;
-    rede: string | null;
-    tipo: string | null;
-    integrador: string | null;
-    assignee: string | null;
-    start_date: string | null;
-    end_date: string | null;
-    due_date: string | null;
-    sla_days: number;
-    status: string;
-    current_status: string | null;
-    doc_status: string;
-    bugs: number;
-    post_go_live_bugs: number;
-    churn_risk: boolean;
-    on_time: boolean | null;
-    points: number;
-    task_id: string;
-}

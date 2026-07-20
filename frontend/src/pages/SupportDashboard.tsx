@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ElementType, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from 'react';
 import {
   Activity,
   AlertCircle,
@@ -284,6 +284,11 @@ export const SupportDashboard = () => {
   const [editingNpsId, setEditingNpsId] = useState<number | null>(null);
   const [npsAgentDrafts, setNpsAgentDrafts] = useState<Record<number, string>>({});
   const [savingNpsId, setSavingNpsId] = useState<number | null>(null);
+  const queryRef = useRef({ selectedStartDate, selectedEndDate, groupBy, search });
+
+  useEffect(() => {
+    queryRef.current = { selectedStartDate, selectedEndDate, groupBy, search };
+  }, [groupBy, search, selectedEndDate, selectedStartDate]);
 
   const kpis = overview?.kpis || emptyKpis;
   const maxCloseReason = useMemo(() => {
@@ -305,19 +310,25 @@ export const SupportDashboard = () => {
     return Array.from(set).sort((left, right) => left.localeCompare(right, 'pt-BR'));
   }, [overview]);
 
-  const fetchWindows = async () => {
+  const fetchWindows = useCallback(async () => {
     const response = await api.get('/api/support/windows').catch(() => ({ data: [] }));
     setWindows(Array.isArray(response.data) ? response.data : []);
-  };
+  }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    const {
+      selectedStartDate: currentStartDate,
+      selectedEndDate: currentEndDate,
+      groupBy: currentGroupBy,
+      search: currentSearch,
+    } = queryRef.current;
     setLoading(true);
     try {
-      const query = `start_date=${selectedStartDate}&end_date=${selectedEndDate}&group_by=${groupBy}`;
+      const query = `start_date=${currentStartDate}&end_date=${currentEndDate}&group_by=${currentGroupBy}`;
       const [overviewRes, orphanRes, convRes] = await Promise.all([
         api.get(`/api/support/overview?${query}`),
         api.get('/api/support/orphans').catch(() => ({ data: [] })),
-        api.get(`/api/support/conversations?start_date=${selectedStartDate}&end_date=${selectedEndDate}&q=${encodeURIComponent(search)}&page_size=30`).catch(() => ({ data: { items: [] } })),
+        api.get(`/api/support/conversations?start_date=${currentStartDate}&end_date=${currentEndDate}&q=${encodeURIComponent(currentSearch)}&page_size=30`).catch(() => ({ data: { items: [] } })),
       ]);
       setOverview(overviewRes.data);
       setOrphans(Array.isArray(orphanRes.data) ? orphanRes.data : []);
@@ -325,24 +336,24 @@ export const SupportDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchWindows();
-  }, []);
+  }, [fetchWindows]);
 
   useEffect(() => {
     fetchData();
     const interval = window.setInterval(fetchData, 600000);
     return () => window.clearInterval(interval);
-  }, [selectedStartDate, selectedEndDate, groupBy]);
+  }, [fetchData, groupBy, selectedEndDate, selectedStartDate]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       if (activeTab === 'conversas') fetchData();
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [search]);
+  }, [activeTab, fetchData, search]);
 
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);

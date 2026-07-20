@@ -16,7 +16,7 @@ export default function ForecastPage() {
         status: ''
     });
 
-    // Fetch Summary
+    // Carrega o resumo.
     const { data: summaryData, isLoading: loadingSummary } = useQuery({
         queryKey: ['forecast-summary'],
         queryFn: async () => {
@@ -25,7 +25,7 @@ export default function ForecastPage() {
         }
     });
 
-    // Fetch Forecast Data
+    // Carrega os dados da previsão.
     const { data: forecastData, isLoading: loadingForecast, refetch } = useQuery({
         queryKey: ['forecast-data', filters],
         queryFn: async () => {
@@ -41,7 +41,7 @@ export default function ForecastPage() {
         }
     });
 
-    // Export Handler
+    // Processa a exportação.
     const handleExport = async () => {
         try {
             const params = new URLSearchParams();
@@ -68,7 +68,7 @@ export default function ForecastPage() {
 
     return (
         <div className="p-6 space-y-6 bg-slate-50 min-h-screen text-slate-900">
-            {/* Header */}
+            {/* Cabeçalho */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
@@ -95,12 +95,12 @@ export default function ForecastPage() {
                 </div>
             </div>
 
-            {/* Warning */}
+            {/* Aviso */}
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded text-amber-800 text-sm">
                 ⚠️ <strong>Atenção:</strong> Valores estimados com base em projeções operacionais. Datas manuais têm prioridade sobre SLA contratual.
             </div>
 
-            {/* Cards Summary */}
+            {/* Cartões de resumo */}
             <div className="overflow-x-auto pb-2">
                 {loadingSummary ? (
                     <div className="flex gap-4">
@@ -111,7 +111,7 @@ export default function ForecastPage() {
                 )}
             </div>
 
-            {/* Filters & Table */}
+            {/* Filtros e tabela */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200">
                 <div className="p-4 border-b border-slate-200 flex flex-wrap gap-4 items-center">
                     <div className="flex items-center gap-2 text-slate-500">

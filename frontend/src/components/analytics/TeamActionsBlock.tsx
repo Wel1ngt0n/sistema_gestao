@@ -106,7 +106,7 @@ export const TeamActionsBlock: React.FC<TeamActionsBlockProps> = ({ actions, isV
     )
 }
 
-// Simple Clock component since it wasn't imported
+// Ícone simples de relógio definido localmente para evitar outra importação.
 const Clock = ({ size, className }: { size: number, className: string }) => (
     <svg 
         xmlns="http://www.w3.org/2000/svg" 

@@ -46,7 +46,7 @@ export default function MetricsDictionaryModal({ isOpen, onClose }: MetricsDicti
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
 
-                {/* Header */}
+                {/* Cabeçalho */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
@@ -62,7 +62,7 @@ export default function MetricsDictionaryModal({ isOpen, onClose }: MetricsDicti
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Conteúdo */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
                     {sections.map((section, idx) => (
                         <div key={idx} className="space-y-4">
@@ -85,7 +85,7 @@ export default function MetricsDictionaryModal({ isOpen, onClose }: MetricsDicti
                     ))}
                 </div>
 
-                {/* Footer */}
+                {/* Rodapé */}
                 <div className="p-4 border-t border-slate-200 bg-slate-50/50 text-right">
                     <button onClick={onClose} className="px-6 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:opacity-90 transition-opacity shadow-lg">
                         Entendi

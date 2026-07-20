@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children, requiredPermission }: ProtectedRouteProps) =
     const { user, loading, hasPermission } = useAuth();
     const location = useLocation();
 
-    // Enquanto está validando o token cached
+    // Enquanto valida o token armazenado em cache.
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-900 text-zinc-100">
@@ -28,14 +28,14 @@ const ProtectedRoute = ({ children, requiredPermission }: ProtectedRouteProps) =
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Bloqueio Global: Força 2FA obritagório. 
-    // Só permite navegação se estivermos na própria tela de perfil para configurar, caso contrário joga pra lá.
+    // Bloqueio global: exige a configuração da autenticação em dois fatores.
+    // Permite acesso apenas ao perfil até que a configuração seja concluída.
     if (!user.totp_enabled && location.pathname !== '/profile') {
         return <Navigate to="/profile" state={{ force2FA: true }} replace />;
     }
 
     if (requiredPermission && !hasPermission(requiredPermission)) {
-        // Redireciona de volta ou para pagina de erro 403
+        // Exibe a página de acesso negado.
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-900 text-zinc-100 p-6">
                 <div className="text-center">

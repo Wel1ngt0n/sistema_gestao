@@ -87,7 +87,7 @@ def analyze():
 
         # 4. Retrabalho (Qualidade)
         # Considerar Apenas Lojas Concluídas para taxa de qualidade real? 
-        # Ou todas? O user pediu "% retrabalho". Geralmente é sobre o entregue ou total.
+        # O percentual de retrabalho considera o conjunto entregue.
         # Vou pegar do Total para ver incidencia geral, mas destacar Concluídas
         
         total_qual = len(done_stores)

@@ -13,7 +13,7 @@ export default function BulkActionBar({ selectedCount, onClearSelection, onBulkA
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 duration-500">
             <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-8 ring-1 ring-white/10">
                 
-                {/* Count & Info */}
+                {/* Contagem e informações */}
                 <div className="flex items-center gap-4">
                     <div className="bg-orange-500 text-white w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg shadow-orange-500/30">
                         {selectedCount}
@@ -24,10 +24,10 @@ export default function BulkActionBar({ selectedCount, onClearSelection, onBulkA
                     </div>
                 </div>
 
-                {/* Divider */}
+                {/* Divisor */}
                 <div className="w-px h-8 bg-zinc-700/50"></div>
 
-                {/* Actions */}
+                {/* Ações */}
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={onBulkAction}
@@ -47,7 +47,7 @@ export default function BulkActionBar({ selectedCount, onClearSelection, onBulkA
                     </button>
                 </div>
 
-                {/* Close/Clear */}
+                {/* Fechar e limpar */}
                 <button 
                     onClick={onClearSelection}
                     className="p-2 hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-white"

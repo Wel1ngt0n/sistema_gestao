@@ -145,7 +145,7 @@ export const MonitorFilterPanel: FC<MonitorFilterPanelProps> = ({
                     </select>
                 </div>
 
-                {/* Quick Toggles */}
+                {/* Atalhos de filtros */}
                 <div className="space-y-2 pt-2 border-t border-zinc-100">
                     <label className="text-xs font-bold uppercase text-zinc-500 tracking-wider">Filtros Rápidos</label>
                     <div className="flex flex-col gap-2">

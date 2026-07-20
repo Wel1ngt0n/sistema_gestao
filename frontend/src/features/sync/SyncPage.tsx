@@ -131,8 +131,17 @@ export default function SyncPage() {
             const response = await api.post(endpoint)
             const data = response.data
             addLog('success', `Sync rapido de ${label} concluido.`)
-            addLog('info', `Lojas atualizadas: ${data.stores_updated || 0}`)
-            addLog('info', `Itens processados: ${data.processed || 0}`)
+            if (type === 'integration') {
+                const run = data.run || {}
+                const stats = run.stats || {}
+                addLog('info', `Lojas lidas: ${stats.stores_read || 0} (Criadas: ${stats.stores_created || 0}, Atualizadas: ${stats.stores_updated || 0})`)
+                addLog('info', `Tarefas lidas: ${stats.tasks_read || 0} (Criadas: ${stats.tasks_created || 0}, Atualizadas: ${stats.tasks_updated || 0})`)
+                addLog('info', `Históricos gravados: ${stats.histories_written || 0}`)
+                addLog('info', `Períodos de bloqueio: ${stats.blocks_written || 0}`)
+            } else {
+                addLog('info', `Lojas atualizadas: ${data.stores_updated || 0}`)
+                addLog('info', `Itens processados: ${data.processed || 0}`)
+            }
         } catch (error) {
             addLog('error', `Falha no sync rapido de ${label}: ${error instanceof Error ? error.message : 'erro inesperado'}`)
         } finally {

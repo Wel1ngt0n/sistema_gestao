@@ -78,12 +78,12 @@ class ClickUpIntegrationValidator:
         return results
 
     def buscar_integracao_por_fallback(self, card_pai):
-        # Fallback by name or description URL
+        # Alternativa de busca pelo nome ou pela URL da descricao.
         loja_name = card_pai.get("name", "").lower()
         pai_url = card_pai.get("url", "")
         
         for task in self.integration_tasks_cache:
-            # Skip if it already has a different father_id
+            # Ignora quando ja existe outro identificador de matriz.
             fid = self._get_custom_field_value(task, FATHER_TASK_FIELD_ID)
             if fid and fid != card_pai.get("custom_id"):
                 continue
@@ -237,7 +237,7 @@ class ClickUpIntegrationValidator:
 
     def run_validation(self):
         logger.info(f"Iniciando Validador de Integracao no modo {self.mode.upper()}...")
-        # Get all parent tasks (Lojas) that are open
+        # Busca todas as tarefas-pai de lojas que continuam abertas.
         parent_tasks = self.clickup.fetch_parent_tasks(include_closed=False)
         for task in parent_tasks:
             self.validar_card_principal(task)

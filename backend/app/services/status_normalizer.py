@@ -34,5 +34,5 @@ class StatusNormalizer:
         if any(x in s for x in StatusNormalizer.NOT_STARTED_STATUSES):
             return "NOT_STARTED"
             
-        # Default fallback
+        # Valor alternativo padrao.
         return "IN_PROGRESS"

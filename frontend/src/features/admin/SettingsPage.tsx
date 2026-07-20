@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     AlertCircle,
     Bell,
@@ -64,7 +64,7 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
     security: { label: 'Seguranca', desc: 'Sessao, 2FA e limites de login.', icon: <Shield size={18} />, tone: 'text-rose-700 bg-rose-50 border-rose-200' },
     csv: { label: 'Import CSV', desc: 'Limites para importacoes e atualizacoes em massa.', icon: <Database size={18} />, tone: 'text-cyan-700 bg-cyan-50 border-cyan-200' },
     sync: { label: 'Sync', desc: 'Agenda, stale threshold e retentativas.', icon: <RefreshCw size={18} />, tone: 'text-orange-700 bg-orange-50 border-orange-200' },
-    support: { label: 'Suporte', desc: 'Regras de atendimento e processamento automatico.', icon: <Mail size={18} />, tone: 'text-violet-700 bg-violet-50 border-violet-200' },
+    support: { label: 'Suporte', desc: 'Regras de atendimento e processamento automatico.', icon: <Mail size={18} />, tone: 'text-orange-700 bg-orange-50 border-orange-200' },
     notifications: { label: 'Notificacoes', desc: 'Slack, alertas de SLA e resumo semanal.', icon: <Bell size={18} />, tone: 'text-pink-700 bg-pink-50 border-pink-200' },
     webhooks: { label: 'Webhooks e integracoes', desc: 'Zenvia, tokens e deduplicacao de eventos.', icon: <Webhook size={18} />, tone: 'text-teal-700 bg-teal-50 border-teal-200' },
 }
@@ -82,7 +82,7 @@ const BOOLEAN_KEYS = new Set([
 
 const NUMBER_HINTS = ['target', 'weight', 'days', 'hours', 'limit', 'max', 'attempts', 'window']
 const SECRET_HINTS = ['token', 'secret', 'password']
-// Keys that contain the user-facing token (needs to be visible + copyable, NOT masked)
+// Chaves com tokens destinados ao usuário: devem permanecer visíveis, copiáveis e sem máscara.
 const VISIBLE_TOKEN_KEYS = new Set(['webhook_token'])
 
 const getOrderedCategories = (configs: ConfigData) => {
@@ -131,19 +131,11 @@ export default function SettingsPage() {
 
     const activeItems = useMemo(() => {
         const needle = query.trim().toLowerCase()
-        // slack_user_mentions e admin_slack_id sao renderizados como secoes dedicadas
+        // slack_user_mentions e admin_slack_id são renderizados como seções dedicadas.
         const items = (configs[activeCategory] || []).filter((item) => item.key !== 'slack_user_mentions' && item.key !== 'admin_slack_id')
         if (!needle) return items
         return items.filter((item) => `${item.key} ${item.description}`.toLowerCase().includes(needle))
     }, [activeCategory, configs, query])
-
-    useEffect(() => { fetchConfig() }, [])
-
-    useEffect(() => {
-        if (activeCategory === 'notifications') {
-            fetchSlackImplantadores()
-        }
-    }, [activeCategory])
 
     useEffect(() => {
         if (!categories.includes(activeCategory) && categories.length > 0) {
@@ -151,12 +143,12 @@ export default function SettingsPage() {
         }
     }, [activeCategory, categories])
 
-    const showToast = (text: string, type: Toast['type']) => {
+    const showToast = useCallback((text: string, type: Toast['type']) => {
         setToast({ text, type })
         window.setTimeout(() => setToast(null), 4000)
-    }
+    }, [])
 
-    const fetchConfig = async () => {
+    const fetchConfig = useCallback(async () => {
         setLoading(true)
         try {
             const res = await api.get('/api/config')
@@ -173,7 +165,7 @@ export default function SettingsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [showToast])
 
     const parseSlackMentions = (value: string) => {
         try {
@@ -192,14 +184,24 @@ export default function SettingsPage() {
         return matchedKey ? mapping[matchedKey] : ''
     }
 
-    const fetchSlackImplantadores = async () => {
+    const fetchSlackImplantadores = useCallback(async () => {
         try {
             const res = await api.get('/api/config/slack-implantadores')
             setSlackImplantadores(res.data || [])
         } catch {
             setSlackImplantadores([])
         }
-    }
+    }, [])
+
+    useEffect(() => {
+        fetchConfig()
+    }, [fetchConfig])
+
+    useEffect(() => {
+        if (activeCategory === 'notifications') {
+            fetchSlackImplantadores()
+        }
+    }, [activeCategory, fetchSlackImplantadores])
 
     const handleSave = async () => {
         setSaving(true)
@@ -581,7 +583,7 @@ export default function SettingsPage() {
                                     )}
                                 </section>
 
-                                {/* ── Teste Avulso / Admin ── */}
+                                {/* ── Teste avulso de administração ── */}
                                 <section className="overflow-hidden rounded-lg border border-slate-200 bg-white p-5">
                                     <div className="mb-4 flex items-center gap-2">
                                         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700">

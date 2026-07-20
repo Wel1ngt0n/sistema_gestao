@@ -1,18 +1,18 @@
 ﻿
-// Helper para formatar moeda
+// Função auxiliar para formatar moeda.
 export const formatCurrency = (val: number | undefined | null) => {
     if (val === undefined || val === null) return '-';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 }
 
-// Helper para data
+// Função auxiliar para formatar data.
 export const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return '-';
     const [y, m, d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
 }
 
-// Helper para Cores de Status
+// Função auxiliar para definir as cores de status.
 export const getStatusColor = (status: string | null) => {
     if (!status) return 'bg-slate-100 text-slate-600 border-slate-200 border';
     const s = status.toLowerCase();
@@ -78,7 +78,7 @@ export const getStatusColor = (status: string | null) => {
     return 'bg-slate-100 text-slate-600 border-slate-200 border';
 }
 
-// Helper para Status do Deep Sync
+// Função auxiliar para exibir o status da sincronização completa.
 export const getDeepSyncColor = (status: string) => {
     switch (status) {
         case 'COMPLETE': return 'bg-green-100 text-green-700 border-green-200';

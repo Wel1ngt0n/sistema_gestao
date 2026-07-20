@@ -30,7 +30,7 @@ export const useDashboardUrlParams = () => {
         };
     }, [searchParams]);
 
-    // Update Filter Function (Compatible with legacy Context)
+    // Atualiza os filtros mantendo compatibilidade com o contexto existente.
     const updateFilter = (key: keyof AnalyticsFiltersState, value: any) => {
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);

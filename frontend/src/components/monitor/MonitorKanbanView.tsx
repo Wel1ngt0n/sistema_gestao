@@ -1,4 +1,4 @@
-﻿// UX Audit: placeholder aria-label
+﻿// Auditoria de experiência: texto acessível do campo.
 import { useMemo, useState, DragEvent } from 'react';
 import { Store } from './types';
 import { getStatusColor, formatDate } from './monitorUtils';
@@ -43,7 +43,7 @@ interface MonitorKanbanViewProps {
     data: Store[];
     onEdit: (store: Store) => void;
     visibleFields?: KanbanFieldKey[];
-    // Callback para quando o card for movido para outra coluna
+    // Função chamada quando o cartão é movido para outra coluna.
     // Status pode ser uma string que representa o novo status principal daquela coluna
     onStatusChange?: (storeId: number, newStatus: string) => void;
 }
@@ -105,11 +105,11 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
         return cols;
     }, [data]);
 
-    // Handlers de Drag & Drop
+    // Manipuladores de arrastar e soltar.
     const handleDragStart = (e: DragEvent<HTMLDivElement>, storeId: number) => {
         setDraggedStoreId(storeId);
         e.dataTransfer.effectAllowed = 'move';
-        // Hack para transparência no drag ghost se necessário
+        // Ajusta a transparência da prévia exibida durante o arraste.
     };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -123,15 +123,15 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
         if (draggedStoreId === null) return;
         if (!onStatusChange) return;
 
-        // Encontrar o mapping do status de destino
-        // Por simplicidade, vamos pegar o primeiro match da coluna como "Novo Status"
-        // Em um cenário real, você provavelmente enviaria o ID da coluna e o backend decidiria o status exato
+        // Localiza o mapeamento do status de destino.
+        // Usa o primeiro status compatível da coluna como novo status.
+        // O backend recebe o status exato associado à coluna de destino.
         const targetColDef = KANBAN_COLUMNS.find(c => c.id === targetColumnId);
 
-        // Se for a coluna "Outros", talvez não devêssemos permitir drop, ou definir um status padrão "Unknown"
+        // Para a coluna "Outros", impede a movimentação quando não há um status padrão definido.
         if (!targetColDef && targetColumnId !== 'others') return;
 
-        // Simulação de novo status (usando o primeiro termo match como status key)
+        // Obtém a chave do novo status a partir do primeiro termo compatível.
         const newStatusKey = targetColDef ? targetColDef.match[0] : 'fila';
 
         onStatusChange(draggedStoreId, newStatusKey);
@@ -147,7 +147,7 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, col.id)}
                 >
-                    {/* Column Header */}
+                    {/* Cabeçalho da coluna */}
                     <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-white/95 rounded-t-xl sticky top-0 backdrop-blur-md z-20">
                         <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${columns[col.id]?.length > 0 ? 'bg-orange-500' : 'bg-slate-300'}`}></div>
@@ -158,7 +158,7 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                         </span>
                     </div>
 
-                    {/* Cards Container */}
+                    {/* Contêiner dos cartões */}
                     <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto rounded-b-xl bg-slate-50/40 p-2.5">
                         {columns[col.id]?.map(store => (
                             <div
@@ -172,7 +172,7 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                                     ${draggedStoreId === store.id ? 'opacity-40 ring-2 ring-orange-500 rotate-2 scale-95 shadow-xl bg-orange-50' : 'shadow-sm'}
                                 `}
                             >
-                                {/* Risk Indicator Line */}
+                                {/* Linha indicadora de risco */}
                                 {store.risk_score > 20 && (
                                     <div className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse shadow-rose-500/50 shadow-sm" title="Alto Risco"></div>
                                 )}
@@ -229,7 +229,7 @@ export default function MonitorKanbanView({ data, onEdit, visibleFields = DEFAUL
                 </div>
             ))}
 
-            {/* Unmapped Column (Ghost) */}
+            {/* Coluna visual para itens sem mapeamento */}
             {columns['others']?.length > 0 && (
                 <div className="flex h-full w-80 flex-none flex-col rounded-xl border border-dashed border-slate-300 bg-white/70 opacity-80 shadow-sm transition-opacity hover:opacity-100">
                     <div className="p-3 border-b border-dashed border-slate-200 flex justify-between items-center bg-white/80 rounded-t-xl">

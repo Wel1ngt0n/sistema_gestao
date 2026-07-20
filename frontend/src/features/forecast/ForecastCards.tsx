@@ -1,4 +1,4 @@
-﻿// UX Audit: placeholder aria-label
+﻿// Auditoria de experiência: texto acessível do campo.
 import { AlertTriangle, CheckCircle, Package } from 'lucide-react';
 
 export default function ForecastCards({ summary }: { summary: any[] }) {
@@ -12,7 +12,7 @@ export default function ForecastCards({ summary }: { summary: any[] }) {
         <div className="flex gap-4 min-w-max pb-2">
             {summary.map((monthData, idx) => (
                 <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 w-72 flex-shrink-0 relative overflow-hidden group hover:border-blue-400 transition-colors">
-                    {/* Background Decor */}
+                    {/* Elemento decorativo de fundo */}
                     <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full pointer-events-none group-hover:from-blue-500/20 transition-all" />
 
                     <div className="flex justify-between items-start mb-3">
@@ -48,7 +48,7 @@ export default function ForecastCards({ summary }: { summary: any[] }) {
                             <span className="font-semibold text-slate-900">{monthData.total_orders.toLocaleString()}</span>
                         </div>
 
-                        {/* Risk Alert */}
+                        {/* Alerta de risco */}
                         {monthData.risk_count > 0 && (
                             <div className="mt-2 flex items-center gap-2 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1.5 rounded-lg border border-amber-100">
                                 <AlertTriangle size={12} />

@@ -17,7 +17,7 @@ export default function UserManagementPage() {
     const [search, setSearch] = useState('')
     const [showCreateModal, setShowCreateModal] = useState(false)
 
-    // Form State
+    // Estado do formulário.
     const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Operador', password: '' })
 
     useEffect(() => {
@@ -86,7 +86,7 @@ export default function UserManagementPage() {
                 </button>
             </div>
 
-            {/* Filters */}
+            {/* Filtros */}
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
                 <input
@@ -98,7 +98,7 @@ export default function UserManagementPage() {
                 />
             </div>
 
-            {/* Users List */}
+            {/* Lista de usuários */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {loading ? (
                     [...Array(6)].map((_, i) => (
@@ -154,7 +154,7 @@ export default function UserManagementPage() {
                 ))}
             </div>
 
-            {/* Create Modal */}
+            {/* Modal de criação */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-200 transform scale-100 animate-in zoom-in-95 duration-200">

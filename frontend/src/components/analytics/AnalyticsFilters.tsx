@@ -43,7 +43,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
 
     return (
         <div className="flex items-center gap-2 relative z-20">
-            {/* Refresh Button */}
+            {/* Botão de atualização */}
             <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
@@ -53,7 +53,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                 <RefreshCw className="w-4 h-4" />
             </button>
 
-            {/* Filter Toggle Button (Glass Style) */}
+            {/* Botão de exibição dos filtros com efeito de vidro */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`h-9 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all shadow-sm ${isOpen || hasActiveFilters
@@ -68,7 +68,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                 )}
             </button>
 
-            {/* Export Button */}
+            {/* Botão de exportação */}
             <button
                 onClick={handleExportCSV}
                 className="h-9 w-9 flex items-center justify-center bg-white text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors shadow-sm hover:text-orange-600"
@@ -77,7 +77,7 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({ availableImp
                 <Download className="w-4 h-4" />
             </button>
 
-            {/* Popup Panel (Glassmorphism) */}
+            {/* Painel flutuante com efeito de vidro */}
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" onClick={() => setIsOpen(false)} />

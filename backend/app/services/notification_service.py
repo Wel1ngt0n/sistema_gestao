@@ -75,7 +75,7 @@ def parse_slack_mentions():
         if isinstance(data, dict):
             mapping = data
     except json.JSONDecodeError:
-        # Fallback friendly format:
+        # Formato alternativo legivel:
         # Nome Sobrenome=U123ABC
         # Outro Nome: U456DEF
         for line in raw.splitlines():

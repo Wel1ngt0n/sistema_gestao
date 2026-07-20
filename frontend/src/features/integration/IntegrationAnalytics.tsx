@@ -1,381 +1,136 @@
-﻿// UX Audit: placeholder aria-label
-import { useState, Fragment, useEffect } from 'react';
-import { Tab } from '@headlessui/react';
-import { Skeleton } from '../../components/ui/Skeleton';
-import { api } from '../../services/api';
-import { IntegrationTeamMatrix } from './components/IntegrationTeamMatrix';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertTriangle,
-    BarChart3,
-    CheckCircle2,
-    Clock3,
-    LayoutDashboard,
-    ShieldCheck,
-    Trophy,
+    AlertCircle, AlertTriangle, ArrowUpRight, CheckCircle2, Clock3,
+    Database, Layers3, RefreshCw, ShieldAlert, Store, Users, X,
 } from 'lucide-react';
-import logo from '../../assets/logo.png';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler,
-    ChartOptions
-} from 'chart.js';
+import { useState } from 'react';
 import { Chart } from 'react-chartjs-2';
-
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
+import {
+    ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale,
     Tooltip,
-    Legend,
-    Filler
-);
+} from 'chart.js';
+import { fetchIntegrationFilters, fetchIntegrationMetrics, fetchIntegrationSyncStatus } from './api';
+import IntegrationAssigneeDetail from './components/IntegrationAssigneeDetail';
+import { integrationQueryKeys } from './queryKeys';
+import { EMPTY_FILTERS, IntegrationAssigneeMetric, IntegrationFilterState, IntegrationMetrics } from './types';
+import { formatDate, formatDuration, safeStatusColor } from './utils';
 
-function classNames(...classes: string[]) {
-    return classes.filter(Boolean).join(' ');
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } },
+    },
+} as const;
+
+function MetricCard({ label, value, detail, icon: Icon, tone = 'orange' }: {
+    label: string; value: string; detail: string; icon: typeof Store; tone?: 'orange' | 'green' | 'red' | 'slate';
+}) {
+    const tones = {
+        orange: 'border-t-[#ff7900] bg-orange-50 text-[#d96500]',
+        green: 'border-t-[#128131] bg-emerald-50 text-[#128131]',
+        red: 'border-t-rose-500 bg-rose-50 text-rose-600',
+        slate: 'border-t-slate-500 bg-slate-100 text-slate-600',
+    };
+    return (
+        <article className="rounded-xl border border-t-2 border-slate-200 border-t-transparent bg-white p-4 shadow-sm" style={{ borderTopColor: tone === 'orange' ? '#ff7900' : tone === 'green' ? '#128131' : tone === 'red' ? '#f43f5e' : '#64748b' }}>
+            <div className="flex items-start justify-between gap-3">
+                <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</p><p className="mt-2 text-2xl font-black text-slate-900">{value}</p></div>
+                <span className={`rounded-lg p-2 ${tones[tone]}`}><Icon size={18} /></span>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">{detail}</p>
+        </article>
+    );
 }
 
-const KPICard = ({ label, value, color, icon, subtext, tooltip }: any) => {
-    const Icon = icon;
+function LoadingState() {
+    return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white" />)}</div>;
+}
 
-    const textColors: any = {
-        orange: 'text-zinc-950',
-        green: 'text-zinc-950',
-        blue: 'text-zinc-950',
-        amber: 'text-zinc-950',
-        yellow: 'text-zinc-950',
-        slate: 'text-slate-600',
-        red: 'text-zinc-950'
-    };
+function AnalyticsContent({ metrics, filters }: { metrics: IntegrationMetrics; filters: IntegrationFilterState }) {
+    const [selectedAssignee, setSelectedAssignee] = useState<IntegrationAssigneeMetric | null>(null);
+    const stageLabels = metrics.byStatus.map((stage) => stage.statusName);
+    const stageColors = metrics.byStatus.map((stage) => safeStatusColor(stage.color));
+    const bottlenecks = [...metrics.byStatus].filter((stage) => stage.p90Seconds !== null).sort((a, b) => (b.p90Seconds || 0) - (a.p90Seconds || 0)).slice(0, 5);
+    const universe = [metrics.totalStores - metrics.notEntered - metrics.ambiguous - metrics.dataErrors, metrics.notEntered, metrics.ambiguous, metrics.dataErrors].map((value) => Math.max(0, value));
 
-    const accentColors: any = {
-        orange: 'bg-[#ff7900]',
-        green: 'bg-emerald-600',
-        blue: 'bg-blue-600',
-        amber: 'bg-amber-500',
-        yellow: 'bg-amber-500',
-        slate: 'bg-slate-600',
-        red: 'bg-rose-600'
-    };
+    return <>
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <MetricCard label="Total de lojas" value={String(metrics.totalStores)} detail="Histórico vindo da Implantação" icon={Store} tone="slate" />
+            <MetricCard label="Cobertura" value={`${metrics.coveragePercent.toLocaleString('pt-BR')}%`} detail="Lojas reconciliadas na Integração" icon={CheckCircle2} tone="green" />
+            <MetricCard label="Em andamento" value={String(metrics.workInProgress)} detail="Fluxo operacional atual" icon={Layers3} />
+            <MetricCard label="Concluídas" value={String(metrics.completedTotal)} detail="Finalizadas na Integração" icon={ArrowUpRight} tone="green" />
+            <MetricCard label="Bloqueadas agora" value={String(metrics.blockedNow)} detail={`${metrics.totalBlockPeriods} bloqueio(s) no histórico`} icon={ShieldAlert} tone="red" />
+            <MetricCard label="Lead time líquido" value={formatDuration(metrics.averageLeadTimeSeconds)} detail="Média sem períodos bloqueados" icon={Clock3} />
+        </section>
 
-    const iconColors: any = {
-        orange: 'text-orange-500',
-        green: 'text-emerald-600',
-        blue: 'text-sky-600',
-        amber: 'text-orange-500',
-        yellow: 'text-amber-600',
-        slate: 'text-slate-600',
-        red: 'text-rose-600'
-    };
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div><h2 className="font-bold text-slate-900">Lojas por etapa</h2><p className="text-xs text-slate-500">Distribuição atual nas etapas dinâmicas do ClickUp</p></div>
+                <div className="mt-5 h-72">{metrics.byStatus.length ? <Chart type="bar" options={chartOptions} data={{ labels: stageLabels, datasets: [{ data: metrics.byStatus.map((stage) => stage.count), backgroundColor: stageColors, borderRadius: 6 }] }} /> : <Empty label="Nenhuma etapa disponível" />}</div>
+                <ul className="sr-only">{metrics.byStatus.map((stage) => <li key={stage.statusId}>{stage.statusName}: {stage.count} loja(s)</li>)}</ul>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div><h2 className="font-bold text-slate-900">Tempo por etapa</h2><p className="text-xs text-slate-500">Mediana e P90; lacunas representam etapas sem amostra</p></div>
+                <div className="mt-5 h-72">{metrics.byStatus.length ? <Chart type="bar" options={{ ...chartOptions, plugins: { legend: { display: true, position: 'bottom' as const, labels: { boxWidth: 10 } } } }} data={{ labels: stageLabels, datasets: [{ label: 'Mediana (dias)', data: metrics.byStatus.map((stage) => stage.medianSeconds === null ? null : Number((stage.medianSeconds / 86400).toFixed(1))), backgroundColor: '#128131', borderRadius: 5 }, { label: 'P90 (dias)', data: metrics.byStatus.map((stage) => stage.p90Seconds === null ? null : Number((stage.p90Seconds / 86400).toFixed(1))), backgroundColor: '#ff7900', borderRadius: 5 }] }} /> : <Empty label="Nenhuma amostra de tempo" />}</div>
+                <ul className="sr-only">{metrics.byStatus.map((stage) => <li key={stage.statusId}>{stage.statusName}: mediana {formatDuration(stage.medianSeconds)} e P90 {formatDuration(stage.p90Seconds)}</li>)}</ul>
+            </article>
+        </section>
 
-    return (
-        <div className="group relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-            <div className={`absolute inset-x-0 top-0 h-0.5 rounded-t-lg opacity-70 ${accentColors[color]}`} />
-
-            <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</h3>
-                    <div className={`mt-2 text-3xl font-semibold tracking-tight ${textColors[color]}`}>
-                        {value}
-                    </div>
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="font-bold text-slate-900">Cobertura e qualidade</h2><p className="text-xs text-slate-500">Composição do universo monitorado</p>
+                <div className="mx-auto mt-4 h-48 max-w-xs"><Chart type="doughnut" options={{ responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }} data={{ labels: ['Reconciliadas', 'Ainda não entraram', 'Ambíguas', 'Erro de dados'], datasets: [{ data: universe, backgroundColor: ['#128131', '#94a3b8', '#ffb020', '#e11d48'], borderWidth: 0 }] }} /></div>
+                <p className="sr-only">Reconciliadas: {universe[0]}. Ainda não entraram: {universe[1]}. Ambíguas: {universe[2]}. Erros de dados: {universe[3]}.</p>
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><strong>{metrics.orphanTasks} tarefa(s) órfã(s)</strong><br />Indicador global: não muda com os filtros de lojas.</div>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="font-bold text-slate-900">Principais gargalos</h2><p className="text-xs text-slate-500">Etapas ordenadas pelo maior P90</p>
+                <div className="mt-4 space-y-3">{bottlenecks.length ? bottlenecks.map((stage, index) => <div key={stage.statusId} className="flex items-center gap-3 rounded-lg bg-slate-50 p-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-[#d96500]">{index + 1}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{stage.statusName}</p><p className="text-xs text-slate-500">{stage.count} loja(s) atualmente</p></div><span className="text-sm font-black text-slate-800">{formatDuration(stage.p90Seconds)}</span></div>) : <Empty label="Sem amostras para identificar gargalos" />}</div>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="font-bold text-slate-900">Eficiência do processo</h2><p className="text-xs text-slate-500">Comparativo dos tempos consolidados</p>
+                <div className="mt-5 space-y-4">
+                    {[['Lead time bruto médio', metrics.averageGrossTimeSeconds], ['Lead time bruto mediano', metrics.medianGrossTimeSeconds], ['Lead time líquido médio', metrics.averageLeadTimeSeconds]].map(([label, value]) => <div key={String(label)} className="flex items-center justify-between border-b border-slate-100 pb-3"><span className="text-sm text-slate-600">{label}</span><strong className="text-sm text-slate-900">{formatDuration(value as number | null)}</strong></div>)}
+                    <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">O tempo líquido desconsidera os períodos bloqueados registrados.</div>
                 </div>
-                <div className={`rounded-md border border-zinc-200 bg-zinc-50 p-2 transition-colors duration-200 group-hover:bg-white ${iconColors[color]}`}>
-                    <Icon size={18} strokeWidth={2} />
-                </div>
-                {tooltip && (
-                    <span className="sr-only">{tooltip}</span>
-                )}
-            </div>
+            </article>
+        </section>
 
-            <div className="h-1 w-full rounded-full bg-zinc-100">
-                <div className={`h-1 w-2/5 rounded-full ${accentColors[color]}`} />
-            </div>
-            {subtext && <p className="mt-3 text-sm text-zinc-500">{subtext}</p>}
-        </div>
-    );
-};
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2"><Users size={18} className="text-[#128131]" /><div><h2 className="font-bold text-slate-900">Performance por integrador</h2><p className="text-xs text-slate-500">Total atribuído, entregas e tempo líquido médio</p></div></div>
+            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead><tr className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500"><th className="px-3 py-3">Integrador</th><th className="px-3 py-3 text-right">Total atribuído</th><th className="px-3 py-3 text-right">Concluídas</th><th className="px-3 py-3 text-right">Taxa de conclusão</th><th className="px-3 py-3 text-right">Lead time líquido</th></tr></thead><tbody>{metrics.byAssignee.map((item) => <tr key={item.assigneeId} onClick={() => setSelectedAssignee(item)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedAssignee(item); }} tabIndex={0} role="button" aria-label={`Ver lojas e métricas de ${item.username}`} className="cursor-pointer border-b border-slate-100 outline-none transition-colors last:border-0 hover:bg-orange-50/50 focus:bg-orange-50"><td className="px-3 py-3 font-semibold text-slate-800"><span className="border-b border-dashed border-slate-300">{item.username}</span></td><td className="px-3 py-3 text-right">{item.count}</td><td className="px-3 py-3 text-right">{item.completedCount}</td><td className="px-3 py-3 text-right font-semibold text-[#128131]">{item.count ? `${Math.round((item.completedCount / item.count) * 100)}%` : '—'}</td><td className="px-3 py-3 text-right">{formatDuration(item.averageNetSeconds)}</td></tr>)}</tbody></table>{!metrics.byAssignee.length && <Empty label="Nenhum integrador no período selecionado" />}</div>
+            <p className="mt-3 text-xs text-slate-400">Clique em um integrador para ver suas lojas e métricas individuais.</p>
+        </section>
+        <IntegrationAssigneeDetail assignee={selectedAssignee} filters={filters} onClose={() => setSelectedAssignee(null)} />
+    </>;
+}
+
+function Empty({ label }: { label: string }) { return <div className="flex h-full min-h-24 items-center justify-center text-center text-sm text-slate-400">{label}</div>; }
 
 export default function IntegrationAnalytics() {
-    const [loading, setLoading] = useState(true);
-    const [dashData, setDashData] = useState<any>(null);
-    const [trendData, setTrendData] = useState<any[]>([]);
+    const queryClient = useQueryClient();
+    const [filters, setFilters] = useState<IntegrationFilterState>(EMPTY_FILTERS);
+    const invalidPeriod = Boolean(filters.startDate && filters.endDate && filters.startDate > filters.endDate);
+    const metricsQuery = useQuery({ queryKey: integrationQueryKeys.metrics(filters), queryFn: () => fetchIntegrationMetrics(filters), enabled: !invalidPeriod });
+    const optionsQuery = useQuery({ queryKey: integrationQueryKeys.filters(), queryFn: fetchIntegrationFilters });
+    const syncQuery = useQuery({ queryKey: integrationQueryKeys.syncStatus(), queryFn: fetchIntegrationSyncStatus });
+    const setFilter = (key: keyof IntegrationFilterState, value: string) => setFilters((current) => ({ ...current, [key]: value }));
+    const hasFilters = Object.values(filters).some(Boolean);
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
-            try {
-                setLoading(true);
-                const [dashRes, trendsRes] = await Promise.all([
-                    api.get('/api/integration/dashboard'),
-                    api.get('/api/integration/analytics/trends?months=6')
-                ]);
+    return <div className="min-h-full bg-[#EEF0F8] text-slate-900">
+        <div className="mx-auto max-w-[1600px] space-y-4 p-4 md:p-6">
+            <header className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="h-1 bg-gradient-to-r from-[#ff7900] via-orange-400 to-[#128131]" /><div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between"><div><span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#d96500]">Integração</span><h1 className="mt-1 text-2xl font-black text-slate-900">Analytics do setor de Integrações</h1><p className="mt-1 max-w-2xl text-sm text-slate-500">Visão gerencial do histórico vindo da Implantação e do fluxo operacional de Integração.</p><p className="mt-2 text-xs text-slate-400">Última sincronização: {formatDate(syncQuery.data?.lastSuccessfulSync || null, true)}</p></div><button type="button" onClick={() => queryClient.invalidateQueries({ queryKey: integrationQueryKeys.all })} disabled={metricsQuery.isFetching} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#ff7900] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#e66d00] disabled:opacity-50"><RefreshCw size={16} className={metricsQuery.isFetching ? 'animate-spin' : ''} />Atualizar dados</button></div></header>
 
-                setDashData(dashRes.data);
-                setTrendData(trendsRes.data || []);
-            } catch (error) {
-                console.error("Erro ao carregar analytics da integração", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6"><select aria-label="Filtrar por etapa" value={filters.statusId} onChange={(e) => setFilter('statusId', e.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value="">Todas as etapas</option>{optionsQuery.data?.statuses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select aria-label="Filtrar por integrador" value={filters.assigneeId} onChange={(e) => setFilter('assigneeId', e.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value="">Todos os integradores</option>{optionsQuery.data?.assignees.map((item) => <option key={String(item.id)} value={String(item.id)}>{item.name}</option>)}</select><select aria-label="Filtrar por situação do vínculo" value={filters.reconciliationStatus} onChange={(e) => setFilter('reconciliationStatus', e.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value="">Todos os vínculos</option><option value="MATCHED">Reconciliadas</option><option value="NOT_IN_INTEGRATION">Ainda não entraram</option><option value="AMBIGUOUS">Ambíguas</option><option value="DATA_ERROR">Erro de dados</option></select><select aria-label="Filtrar por bloqueio" value={filters.blocked} onChange={(e) => setFilter('blocked', e.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value="">Todos os bloqueios</option><option value="true">Bloqueadas agora</option><option value="false">Sem bloqueio atual</option></select><input aria-label="Data inicial" type="date" value={filters.startDate} onChange={(e) => setFilter('startDate', e.target.value)} className="h-10 rounded-lg border border-slate-200 px-3 text-sm" /><div className="flex gap-2"><input aria-label="Data final" type="date" value={filters.endDate} onChange={(e) => setFilter('endDate', e.target.value)} className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm" /><button type="button" title="Limpar filtros" aria-label="Limpar filtros" disabled={!hasFilters} onClick={() => setFilters(EMPTY_FILTERS)} className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30"><X size={16} /></button></div></div>{invalidPeriod && <p role="alert" className="mt-3 text-xs font-semibold text-rose-600">A data inicial não pode ser posterior à data final.</p>}{(optionsQuery.isError || syncQuery.isError) && <p className="mt-3 text-xs text-amber-700">Algumas informações auxiliares não puderam ser atualizadas. As métricas disponíveis continuam visíveis.</p>}</section>
 
-        fetchAnalytics();
-    }, []);
+            {invalidPeriod ? null : metricsQuery.isLoading ? <LoadingState /> : metricsQuery.isError ? <div className="flex min-h-72 flex-col items-center justify-center rounded-xl border border-rose-200 bg-white text-center"><AlertCircle className="text-rose-500" size={36} /><h2 className="mt-3 font-bold">Não foi possível carregar o Analytics</h2><p className="mt-1 text-sm text-slate-500">A API de métricas não respondeu. Tente atualizar os dados.</p><button type="button" onClick={() => metricsQuery.refetch()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"><RefreshCw size={15} />Tentar novamente</button></div> : metricsQuery.data && metricsQuery.data.totalStores > 0 ? <AnalyticsContent metrics={metricsQuery.data} filters={filters} /> : <div className="flex min-h-72 flex-col items-center justify-center rounded-xl border border-slate-200 bg-white text-center"><Database className="text-slate-300" size={38} /><h2 className="mt-3 font-bold">Nenhum dado encontrado</h2><p className="mt-1 text-sm text-slate-500">Ajuste os filtros ou sincronize o módulo para formar a base analítica.</p></div>}
 
-    if (loading) {
-        return (
-            <div className="w-full">
-                <div className="p-6 lg:p-10 space-y-10 w-full max-w-[1920px] mx-auto">
-                    <div>
-                        <Skeleton width={180} height={24} className="mb-5" />
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            {Array(8).fill(0).map((_, i) => (
-                                <Skeleton key={i} height={120} className="rounded-lg" />
-                            ))}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                        <Skeleton height={400} className="rounded-lg" />
-                        <Skeleton height={400} className="rounded-lg" />
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    const integrations = dashData?.integrations || [];
-    const kpisRaw = dashData?.kpis || {};
-
-    // Synthesize KPI Data
-    const activeIntegrations = integrations.filter((i: any) => i.status !== 'CONCLUÍDO');
-    const pointsTotal = activeIntegrations.reduce((acc: number, val: any) => acc + (val.points || 0), 0);
-    const riskTotal = integrations.filter((i: any) => i.churn_risk).length;
-
-    const kpis = {
-        wip: activeIntegrations.length,
-        done_total: kpisRaw.done_total || 0,
-        pct_prazo: kpisRaw.sla_pct || 0,
-        quality_pct: kpisRaw.quality_pct || 0,
-        volume_points: kpisRaw.volume_points || pointsTotal,
-        risk_count: riskTotal
-    };
-
-    const trendLabels = trendData.map((d: any) => d.month);
-
-    // Chart Configuration Options
-    const chartOptions: ChartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        scales: {
-            y: {
-                grid: { color: 'rgba(161, 161, 170, 0.1)' },
-                ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } },
-                border: { display: false }
-            },
-            x: {
-                grid: { display: false },
-                ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } },
-                border: { display: false }
-            }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: 'rgba(24, 24, 27, 0.9)',
-                titleColor: '#fff',
-                bodyColor: '#e4e4e7',
-                padding: 12,
-                cornerRadius: 12,
-                displayColors: true,
-                titleFont: { family: 'Inter', size: 13, weight: 'bold' },
-                bodyFont: { family: 'Inter', size: 12 },
-                borderColor: 'rgba(255,255,255,0.1)',
-                borderWidth: 1,
-            }
-        },
-        layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
-    };
-
-    // Chart 1: Throughput and Bugs
-    const throughputChartData = {
-        labels: trendLabels,
-        datasets: [
-            {
-                type: 'bar' as const,
-                label: 'Lojas Integradas',
-                data: trendData.map((d: any) => d.done_count),
-                backgroundColor: '#f97316', // Orange-500
-                hoverBackgroundColor: '#ea580c',
-                borderRadius: 6,
-                barPercentage: 0.6,
-                categoryPercentage: 0.8,
-            },
-            {
-                type: 'line' as const,
-                label: 'Volume de Bugs',
-                data: trendData.map((d: any) => d.bugs_count),
-                borderColor: '#ef4444', // Red-500
-                backgroundColor: '#ef4444',
-                pointBackgroundColor: '#ef4444',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                borderWidth: 3,
-                tension: 0.4,
-                yAxisID: 'y1'
-            }
-        ],
-    };
-
-    // Chart 2: Cycle Time / Lead Time
-    const efficiencyChartData = {
-        labels: trendLabels,
-        datasets: [
-            {
-                type: 'line' as const,
-                label: 'Lead Time Médio (dias)',
-                data: trendData.map((d: any) => d.avg_lead_time),
-                borderColor: '#84cc16', // Lime-500
-                backgroundColor: (context: any) => {
-                    const ctx = context.chart.ctx;
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                    gradient.addColorStop(0, 'rgba(132, 204, 22, 0.4)');
-                    gradient.addColorStop(1, 'rgba(132, 204, 22, 0.0)');
-                    return gradient;
-                },
-                pointBackgroundColor: '#84cc16',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-            }
-        ],
-    };
-
-    return (
-        <div className="w-full space-y-6 text-zinc-950">
-            <header className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white">
-                            <img src={logo} alt="Instabuy" className="h-7 w-auto object-contain" />
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Integração</p>
-                            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
-                                Analytics operacional
-                            </h1>
-                            <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-                                Deep dive de SLA, qualidade, bugs, riscos e performance do time.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600">
-                        <span className="h-2 w-2 rounded-full bg-[#128131]" />
-                        Atualizado em tempo real
-                    </div>
-                </div>
-                <div className="mt-5 h-1 w-24 rounded-full bg-[#ff7900]" />
-            </header>
-
-            <Tab.Group>
-                <Tab.List className="sticky top-5 z-20 mb-6 flex max-w-fit gap-1 rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
-                    {['Visão Geral', 'Eficiência', 'Time & Performance'].map((tabName) => (
-                        <Tab as={Fragment} key={tabName}>
-                            {({ selected }) => (
-                                <button
-                                    className={classNames(
-                                        'rounded-md px-4 py-2 text-sm font-semibold transition-all duration-200',
-                                        'focus:outline-none focus:ring-2 focus:ring-orange-500/20',
-                                        selected
-                                            ? 'bg-[#ff7900] text-white shadow-sm'
-                                            : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-950'
-                                    )}
-                                >
-                                    {tabName}
-                                </button>
-                            )}
-                        </Tab>
-                    ))}
-                </Tab.List>
-
-                <Tab.Panels>
-                    {/* --- ABA 1: VISÃO GERAL --- */}
-                    <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in-up animation-delay-100">
-                            <KPICard label="WIP (Integrações Ativas)" value={kpis.wip} color="orange" icon={LayoutDashboard} subtext="Lojas sendo integradas" />
-                            <KPICard label="SLA (No Prazo)" value={`${kpis.pct_prazo}%`} color={kpis.pct_prazo >= 90 ? 'green' : 'red'} icon={CheckCircle2} subtext="Integrações em dias" />
-                            <KPICard label="Qualidade" value={`${kpis.quality_pct}%`} color="blue" icon={ShieldCheck} subtext="Sem bugs pós go-live" />
-                            <KPICard label="Volume de Pontos" value={kpis.volume_points} color="amber" icon={Trophy} subtext="Complexidade em andamento" />
-                            <KPICard label="Risco de Churn" value={kpis.risk_count} color="red" icon={AlertTriangle} subtext="Integrações com alerta" />
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 animate-fade-in-up animation-delay-200">
-                            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md xl:col-span-2">
-                                <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                                    <BarChart3 size={16} className="text-[#ff7900]" />
-                                    Evolução Mensal (Integração vs Bugs)
-                                </h3>
-                                <div className="h-[350px]">
-                                    <Chart
-                                        type='bar'
-                                        data={throughputChartData}
-                                        options={{
-                                            ...chartOptions,
-                                            scales: {
-                                                ...chartOptions.scales,
-                                                y1: {
-                                                    type: 'linear',
-                                                    display: true,
-                                                    position: 'right',
-                                                    grid: { drawOnChartArea: false },
-                                                    ticks: { color: '#ef4444' }
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </Tab.Panel>
-
-                    {/* --- ABA 2: EFICIÊNCIA --- */}
-                    <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                        <div className="h-full rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md">
-                            <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                                <Clock3 size={16} className="text-[#128131]" />
-                                Lead Time de Integração
-                            </h3>
-                            <div className="h-[400px]">
-                                <Chart
-                                    type='line'
-                                    data={efficiencyChartData}
-                                    options={chartOptions}
-                                />
-                            </div>
-                        </div>
-                    </Tab.Panel>
-
-                    {/* --- ABA 3: TIME & PERFORMANCE --- */}
-                    <Tab.Panel className="space-y-8 animate-fade-in-up focus:outline-none">
-                        <div className="space-y-8 animate-fade-in-up duration-300">
-                            <IntegrationTeamMatrix integrations={integrations} />
-                        </div>
-                    </Tab.Panel>
-                </Tab.Panels>
-            </Tab.Group>
+            {!invalidPeriod && metricsQuery.data && (metricsQuery.data.ambiguous > 0 || metricsQuery.data.dataErrors > 0) && <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><AlertTriangle className="mt-0.5 shrink-0" size={18} /><div><strong>Atenção à qualidade da base</strong><p className="mt-0.5 text-xs">{metricsQuery.data.ambiguous} vínculo(s) ambíguo(s) e {metricsQuery.data.dataErrors} registro(s) com erro de dados.</p></div></div>}
         </div>
-    );
+    </div>;
 }

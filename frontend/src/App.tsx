@@ -5,13 +5,10 @@ import LoginScreen from './pages/LoginScreen'
 
 import CRMLayout from './layouts/CRMLayout'
 import Dashboard from './components/Dashboard'
-import Monitor from './components/MonitorV2'
+import ImplantationMonitor from './components/ImplantationMonitor'
 // Módulos de Integração
-import IntegrationDashboard from './features/integration/IntegrationDashboard'
 import IntegrationMonitor from './features/integration/IntegrationMonitor'
-import IntegrationReports from './features/integration/IntegrationReports'
 import IntegrationAnalytics from './features/integration/IntegrationAnalytics'
-import IntegrationV2Monitor from './features/integration-v2/IntegrationV2Monitor'
 import AnalystProfileView from './pages/implantadores/AnalystProfileView'
 import { SupportDashboard } from './pages/SupportDashboard'
 
@@ -32,10 +29,10 @@ function App() {
     return (
         <>
             <Routes>
-                {/* Rota pública de Login */}
+                {/* Rota pública de autenticação */}
                 <Route path="/login" element={<LoginScreen />} />
 
-                {/* Rotas Protegidas pelo AuthContext */}
+                {/* Rotas protegidas pelo contexto de autenticação */}
                 <Route element={
                     <ProtectedRoute>
                         <CRMLayout setShowDictionary={setShowDictionary} />
@@ -44,18 +41,17 @@ function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/jarvis" element={<Jarvis />} />
                     <Route path="/jarvis-cockpit" element={<Navigate to="/analytics" replace />} />
-                    <Route path="/monitor" element={<Monitor />} />
+                    <Route path="/monitor" element={<ImplantationMonitor />} />
                     <Route path="/team-diagnostics" element={<Navigate to="/analytics" replace />} />
                     <Route path="/team-diagnostics/:name" element={<AnalystProfileView />} />
 
                     {/* Suíte de Integração */}
-                    <Route path="/integration" element={<Navigate to="/integration/dashboard" replace />} />
-                    <Route path="/integration/dashboard" element={<IntegrationDashboard />} />
+                    <Route path="/integration" element={<Navigate to="/integration/monitor" replace />} />
                     <Route path="/integration/monitor" element={<IntegrationMonitor />} />
-                    <Route path="/integration-v2/monitor" element={<IntegrationV2Monitor />} />
                     <Route path="/integration/analytics" element={<IntegrationAnalytics />} />
-                    <Route path="/integration/reports" element={<IntegrationReports />} />
-                    
+                    <Route path="/integration/dashboard" element={<Navigate to="/integration/analytics" replace />} />
+                    <Route path="/integration/reports" element={<Navigate to="/integration/analytics" replace />} />
+
                     {/* Suporte Zenvia */}
                     <Route path="/support" element={<SupportDashboard />} />
 
@@ -63,20 +59,32 @@ function App() {
                     <Route path="/forecast" element={<ForecastPage />} />
                     <Route path="/reports" element={<MonthlyReport />} />
                     <Route path="/sync" element={
-                        <ProtectedRoute requiredPermission="manage_sync">
+                        <ProtectedRoute requiredPermission="sync_clickup">
                             <SyncPage />
                         </ProtectedRoute>
                     } />
 
-                    {/* Rotas de Admin */}
-                    <Route path="/admin/performance" element={<SuperAdminDashboard />} />
-                    <Route path="/admin/users" element={<UserManagementPage />} />
-                    <Route path="/admin/configs" element={<SettingsPage />} />
+                    {/* Rotas de administração */}
+                    <Route path="/admin/performance" element={
+                        <ProtectedRoute requiredPermission="manage_performance">
+                            <SuperAdminDashboard />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                        <ProtectedRoute requiredPermission="manage_users">
+                            <UserManagementPage />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/admin/configs" element={
+                        <ProtectedRoute requiredPermission="manage_system">
+                            <SettingsPage />
+                        </ProtectedRoute>
+                    } />
 
-                    {/* User Profile */}
+                    {/* Perfil do usuário */}
                     <Route path="/profile" element={<ProfilePage />} />
 
-                    {/* Catch all */}
+                    {/* Rota de fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
             </Routes>

@@ -1,5 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 
 db = SQLAlchemy()
 
@@ -93,9 +95,9 @@ class Store(db.Model):
     implantador = db.Column(db.String(255), nullable=True) # Responsável Atual
     implantador_original = db.Column(db.String(255), nullable=True) # Primeiro responsável
     implantador_atual = db.Column(db.String(255), nullable=True) # Atual explícito
-    integrador = db.Column(db.String(255), nullable=True) # Responsável Integração (V3)
+    integrador = db.Column(db.String(255), nullable=True) # Compatibilidade histórica; o domínio canônico usa IntegrationStore.
     
-    # Campos de Negócio / Comerciais (Sync ou Manual)
+    # Campos comerciais preenchidos por sincronizacao ou manualmente.
     valor_mensalidade = db.Column(db.Float, default=0.0)
     valor_implantacao = db.Column(db.Float, default=0.0)
     financeiro_status = db.Column(db.String(100), default="Não paga mensalidade")
@@ -103,7 +105,7 @@ class Store(db.Model):
     cnpj = db.Column(db.Text)
     crm = db.Column(db.Text)
     
-    # Novos Campos (Solicitação V3)
+    # Dados de rede e classificação da loja
     rede = db.Column(db.String(255)) # Nome da Rede (ex: Grupo Pão de Açúcar)
     tipo_loja = db.Column(db.String(100), default='Filial') # Matriz ou Filial
     
@@ -185,7 +187,7 @@ class Store(db.Model):
             return main_date
             
         if self.status_norm == 'DONE' and self.steps:
-             # Fallback 2: Data da última etapa concluída
+             # Alternativa 2: data da ultima etapa concluida.
              concluded_steps = [s.end_real_at for s in self.steps if s.end_real_at]
              if concluded_steps:
                  return max(concluded_steps)
@@ -312,7 +314,7 @@ class StoreDeepSyncState(db.Model):
     last_error = db.Column(db.Text, nullable=True)
     
     # Para evitar chamadas desnecessárias API:
-    # Se clickup_updated_at da loja não mudou, não precisamos rodar deep sync de novo
+    # Evita sincronizacao profunda quando a loja nao mudou no ClickUp.
     last_synced_clickup_updated_at = db.Column(db.String(50), nullable=True) 
 
 class TimeInStatusCache(db.Model):
@@ -438,7 +440,7 @@ class MetricsSnapshotDaily(db.Model):
     def __repr__(self):
         return f'<SnapshotDaily {self.snapshot_date} Store={self.store_id}>'
 
-# --- V2.5 Models (Governance & Audit) ---
+# --- Governança e auditoria ---
 
 class SyncRun(db.Model):
     __tablename__ = 'sync_runs'
@@ -472,53 +474,10 @@ class ForecastAuditLog(db.Model):
     
     store = db.relationship('Store', backref=db.backref('forecast_audits', cascade='all, delete-orphan'))
 
-# --- V3.0 Models (CRM Evolution) ---
-class IntegrationMetric(db.Model):
-    """
-    Métricas específicas do Módulo de Integração (V3).
-    Armazena estado atual e KPIs de cada loja em relação à integração.
-    """
-    __tablename__ = 'integration_metrics'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
-    snapshot_date = db.Column(db.Date, nullable=False, default=datetime.now) # Data do snapshot
-    
-    # SLA & Prazos
-    start_date = db.Column(db.DateTime, nullable=True) # Início real da integração
-    end_date = db.Column(db.DateTime, nullable=True) # Fim real da integração
-    sla_days = db.Column(db.Integer, default=0) # Dias corridos (end - start)
-    
-    # Qualidade (Pós-Go-Live)
-    post_go_live_bugs = db.Column(db.Integer, default=0) # Qtd falhas críticas nos primeiros 30 dias
-    churn_risk = db.Column(db.Boolean, default=False) # Se gerou risco de churn
-    
-    # Documentação
-    documentation_status = db.Column(db.String(20), default='PENDING') # PENDING, PARTIAL, DONE
-    
-    # Pontuação (Volume)
-    points = db.Column(db.Float, default=0.0) # 1.0 (Matriz) ou 0.7 (Filial)
-    
-    # Legado/Compatibilidade
-    lead_time_days = db.Column(db.Integer, default=0) 
-    ticket_count = db.Column(db.Integer, default=0)
-    has_blocking_issue = db.Column(db.Boolean, default=False)
-    last_blocker_reason = db.Column(db.String(255), nullable=True)
-    
-    updated_at = db.Column(db.DateTime, default=datetime.now)
-
-    store = db.relationship('Store', backref=db.backref('integration_metrics', cascade='all, delete-orphan'))
-
-    # Removendo Constraint de Data única para permitir Múltiplas entradas se necessário,
-    # mas por enquanto vamos manter 1 para 1 por loja como "Estado Atual"
-    # Se precisarmos de histórico, usaremos snapshots diários.
-    
-    def __repr__(self):
-        return f'<IntegrationMetric {self.store_id} Pts={self.points}>'
-
+# --- Evolução do CRM e performance ---
 class PerformanceReview(db.Model):
     """
-    Avaliação de Desempenho Mensal/Semestral (V3).
+    Avaliação de desempenho mensal ou semestral.
     Suporta regras 40/40/20.
     """
     __tablename__ = 'performance_reviews'
@@ -622,6 +581,11 @@ class User(db.Model):
         return False
         
     def to_dict(self):
+        permissions = sorted({
+            permission.name
+            for role in self.roles
+            for permission in role.permissions
+        })
         return {
             "id": self.id,
             "name": self.name,
@@ -629,7 +593,8 @@ class User(db.Model):
             "profile_picture": self.profile_picture,
             "is_active": self.is_active,
             "totp_enabled": self.totp_enabled,
-            "roles": [r.name for r in self.roles]
+            "roles": [r.name for r in self.roles],
+            "permissions": permissions,
         }
 
 class AuditLog(db.Model):
@@ -682,7 +647,7 @@ class AILongTermMemory(db.Model):
     
     created_at = db.Column(db.DateTime, default=datetime.now)
     
-    # Relação com Store
+    # Relacao com a loja.
     store = db.relationship('Store', backref=db.backref('ai_memories', cascade='all, delete-orphan', lazy=True))
 
     def __repr__(self):
@@ -891,10 +856,10 @@ class JarvisChatMessage(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-# --- Integration V2: dominio isolado do monitor legado ---
+# --- Integração: domínio operacional canônico ---
 
-class IntegrationV2Store(db.Model):
-    __tablename__ = 'integration_v2_stores'
+class IntegrationStore(db.Model):
+    __tablename__ = 'integration_stores'
 
     id = db.Column(db.Integer, primary_key=True)
     source_task_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
@@ -913,17 +878,38 @@ class IntegrationV2Store(db.Model):
     reconciliation_method = db.Column(db.String(32), nullable=True)
     reconciliation_evidence = db.Column(db.Text, nullable=True)
     source_snapshot = db.Column(db.Text, nullable=True)
+    manual_integrator_id = db.Column(
+        db.Integer,
+        db.ForeignKey(
+            'integration_assignees.id',
+            name='fk_integration_stores_manual_integrator',
+            ondelete='RESTRICT',
+        ),
+        nullable=True,
+        index=True,
+    )
+    quality_reviewer = db.Column(db.String(255), nullable=True)
+    had_post_integration_issues = db.Column(db.Boolean, nullable=True)
+    followed_integration_process = db.Column(db.Boolean, nullable=True)
+    quality_notes = db.Column(db.Text, nullable=True)
+    post_integration_issue_count = db.Column(db.Integer, nullable=True)
+    churn_risk = db.Column(db.Boolean, nullable=True)
+    documentation_status = db.Column(db.String(20), nullable=True)
+    manual_updated_at = db.Column(db.DateTime, nullable=True)
+    manual_updated_by = db.Column(db.String(255), nullable=True)
 
     integration_task = db.relationship(
-        'IntegrationV2Task',
+        'IntegrationTask',
         back_populates='store',
         uselist=False,
-        foreign_keys='IntegrationV2Task.store_id',
+        foreign_keys='IntegrationTask.store_id',
     )
+    manual_integrator = db.relationship('IntegrationAssignee', foreign_keys=[manual_integrator_id])
+    audit_logs = db.relationship('IntegrationAuditLog', back_populates='store', passive_deletes='all')
 
 
-class IntegrationV2Status(db.Model):
-    __tablename__ = 'integration_v2_statuses'
+class IntegrationStatus(db.Model):
+    __tablename__ = 'integration_statuses'
 
     id = db.Column(db.Integer, primary_key=True)
     list_id = db.Column(db.String(64), nullable=False, index=True)
@@ -941,18 +927,18 @@ class IntegrationV2Status(db.Model):
     synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     __table_args__ = (
-        db.UniqueConstraint('list_id', 'external_id', name='uq_integration_v2_status_external'),
+        db.UniqueConstraint('list_id', 'external_id', name='uq_integration_status_external'),
     )
 
 
-class IntegrationV2Task(db.Model):
-    __tablename__ = 'integration_v2_tasks'
+class IntegrationTask(db.Model):
+    __tablename__ = 'integration_tasks'
 
     id = db.Column(db.Integer, primary_key=True)
     clickup_task_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
     custom_id = db.Column(db.String(100), nullable=True, index=True)
-    store_id = db.Column(db.Integer, db.ForeignKey('integration_v2_stores.id'), nullable=True, unique=True, index=True)
-    current_status_id = db.Column(db.Integer, db.ForeignKey('integration_v2_statuses.id'), nullable=True, index=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('integration_stores.id'), nullable=True, unique=True, index=True)
+    current_status_id = db.Column(db.Integer, db.ForeignKey('integration_statuses.id'), nullable=True, index=True)
     task_name = db.Column(db.String(255), nullable=False)
     url = db.Column(db.String(500), nullable=True)
     priority = db.Column(db.String(50), nullable=True)
@@ -972,15 +958,15 @@ class IntegrationV2Task(db.Model):
     reconciliation_method = db.Column(db.String(32), nullable=True)
     reconciliation_evidence = db.Column(db.Text, nullable=True)
 
-    store = db.relationship('IntegrationV2Store', back_populates='integration_task', foreign_keys=[store_id])
-    current_status = db.relationship('IntegrationV2Status', foreign_keys=[current_status_id])
-    assignee_links = db.relationship('IntegrationV2TaskAssignee', back_populates='task', cascade='all, delete-orphan')
-    status_history = db.relationship('IntegrationV2StatusHistory', back_populates='task', cascade='all, delete-orphan')
-    block_periods = db.relationship('IntegrationV2BlockPeriod', back_populates='task', cascade='all, delete-orphan')
+    store = db.relationship('IntegrationStore', back_populates='integration_task', foreign_keys=[store_id])
+    current_status = db.relationship('IntegrationStatus', foreign_keys=[current_status_id])
+    assignee_links = db.relationship('IntegrationTaskAssignee', back_populates='task', cascade='all, delete-orphan')
+    status_history = db.relationship('IntegrationStatusHistory', back_populates='task', cascade='all, delete-orphan')
+    block_periods = db.relationship('IntegrationBlockPeriod', back_populates='task', cascade='all, delete-orphan')
 
 
-class IntegrationV2Assignee(db.Model):
-    __tablename__ = 'integration_v2_assignees'
+class IntegrationAssignee(db.Model):
+    __tablename__ = 'integration_assignees'
 
     id = db.Column(db.Integer, primary_key=True)
     clickup_user_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
@@ -991,30 +977,30 @@ class IntegrationV2Assignee(db.Model):
     synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 
-class IntegrationV2TaskAssignee(db.Model):
-    __tablename__ = 'integration_v2_task_assignees'
+class IntegrationTaskAssignee(db.Model):
+    __tablename__ = 'integration_task_assignees'
 
     id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.Integer, db.ForeignKey('integration_v2_tasks.id'), nullable=False, index=True)
-    assignee_id = db.Column(db.Integer, db.ForeignKey('integration_v2_assignees.id'), nullable=False, index=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('integration_tasks.id'), nullable=False, index=True)
+    assignee_id = db.Column(db.Integer, db.ForeignKey('integration_assignees.id'), nullable=False, index=True)
     assigned_at = db.Column(db.DateTime, nullable=True)
     synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    task = db.relationship('IntegrationV2Task', back_populates='assignee_links')
-    assignee = db.relationship('IntegrationV2Assignee')
+    task = db.relationship('IntegrationTask', back_populates='assignee_links')
+    assignee = db.relationship('IntegrationAssignee')
 
     __table_args__ = (
-        db.UniqueConstraint('task_id', 'assignee_id', name='uq_integration_v2_task_assignee'),
+        db.UniqueConstraint('task_id', 'assignee_id', name='uq_integration_task_assignee'),
     )
 
 
-class IntegrationV2StatusHistory(db.Model):
-    __tablename__ = 'integration_v2_status_history'
+class IntegrationStatusHistory(db.Model):
+    __tablename__ = 'integration_status_history'
 
     id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.Integer, db.ForeignKey('integration_v2_tasks.id'), nullable=False, index=True)
-    store_id = db.Column(db.Integer, db.ForeignKey('integration_v2_stores.id'), nullable=True, index=True)
-    status_id = db.Column(db.Integer, db.ForeignKey('integration_v2_statuses.id'), nullable=False, index=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('integration_tasks.id'), nullable=False, index=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('integration_stores.id'), nullable=True, index=True)
+    status_id = db.Column(db.Integer, db.ForeignKey('integration_statuses.id'), nullable=False, index=True)
     entered_at = db.Column(db.DateTime, nullable=True, index=True)
     exited_at = db.Column(db.DateTime, nullable=True)
     duration_seconds = db.Column(db.BigInteger, nullable=True)
@@ -1025,17 +1011,17 @@ class IntegrationV2StatusHistory(db.Model):
     idempotency_key = db.Column(db.String(64), nullable=False, unique=True)
     synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    task = db.relationship('IntegrationV2Task', back_populates='status_history')
-    status = db.relationship('IntegrationV2Status')
+    task = db.relationship('IntegrationTask', back_populates='status_history')
+    status = db.relationship('IntegrationStatus')
 
 
-class IntegrationV2BlockPeriod(db.Model):
-    __tablename__ = 'integration_v2_block_periods'
+class IntegrationBlockPeriod(db.Model):
+    __tablename__ = 'integration_block_periods'
 
     id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.Integer, db.ForeignKey('integration_v2_tasks.id'), nullable=False, index=True)
-    store_id = db.Column(db.Integer, db.ForeignKey('integration_v2_stores.id'), nullable=True, index=True)
-    status_id = db.Column(db.Integer, db.ForeignKey('integration_v2_statuses.id'), nullable=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('integration_tasks.id'), nullable=False, index=True)
+    store_id = db.Column(db.Integer, db.ForeignKey('integration_stores.id'), nullable=True, index=True)
+    status_id = db.Column(db.Integer, db.ForeignKey('integration_statuses.id'), nullable=True)
     started_at = db.Column(db.DateTime, nullable=False, index=True)
     ended_at = db.Column(db.DateTime, nullable=True)
     duration_seconds = db.Column(db.BigInteger, nullable=True)
@@ -1046,13 +1032,89 @@ class IntegrationV2BlockPeriod(db.Model):
     occurrence = db.Column(db.Integer, nullable=False, default=1)
     idempotency_key = db.Column(db.String(64), nullable=False, unique=True)
     synced_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    # Nulo representa bloqueio ainda sem decisao humana; somente True desconta o periodo.
+    discount_approved = db.Column(db.Boolean, nullable=True, default=None)
+    review_reason = db.Column(db.String(500), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by = db.Column(db.String(255), nullable=True)
 
-    task = db.relationship('IntegrationV2Task', back_populates='block_periods')
-    status = db.relationship('IntegrationV2Status')
+    task = db.relationship('IntegrationTask', back_populates='block_periods')
+    status = db.relationship('IntegrationStatus')
+
+    __table_args__ = (
+        db.CheckConstraint(
+            "(discount_approved IS NULL AND review_reason IS NULL "
+            "AND reviewed_at IS NULL AND reviewed_by IS NULL) OR "
+            "(discount_approved IS NOT NULL AND length(trim(review_reason)) > 0 "
+            "AND reviewed_at IS NOT NULL AND length(trim(reviewed_by)) > 0)",
+            name='ck_integration_block_review_complete',
+        ),
+    )
 
 
-class IntegrationV2StatusCatalogRun(db.Model):
-    __tablename__ = 'integration_v2_status_catalog_runs'
+class IntegrationAuditLog(db.Model):
+    __tablename__ = 'integration_audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    store_id = db.Column(
+        db.Integer,
+        db.ForeignKey(
+            'integration_stores.id',
+            name='fk_integration_audit_logs_store',
+            ondelete='RESTRICT',
+        ),
+        nullable=False,
+    )
+    action = db.Column(db.String(80), nullable=False)
+    field_name = db.Column(db.String(100), nullable=True)
+    old_value = db.Column(db.Text, nullable=True)
+    new_value = db.Column(db.Text, nullable=True)
+    reason = db.Column(db.Text, nullable=True)
+    changed_by_id = db.Column(db.Integer, nullable=True)
+    changed_by_name = db.Column(db.String(255), nullable=True)
+    changed_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        server_default=db.func.now(),
+    )
+
+    store = db.relationship('IntegrationStore', back_populates='audit_logs')
+
+    __table_args__ = (
+        db.Index('ix_integration_audit_logs_store_changed_at', 'store_id', 'changed_at'),
+    )
+
+
+class IntegrationAuditLogImmutableError(RuntimeError):
+    """Indica tentativa de alterar um registro append-only da Integracao."""
+
+
+def _reject_integration_audit_mutation(mapper, connection, target):
+    # Logs representam fatos historicos: correcoes devem gerar uma nova entrada, nunca reescrever a anterior.
+    raise IntegrationAuditLogImmutableError(
+        'Logs de auditoria da Integracao nao podem ser alterados ou excluidos.'
+    )
+
+
+event.listen(IntegrationAuditLog, 'before_update', _reject_integration_audit_mutation)
+event.listen(IntegrationAuditLog, 'before_delete', _reject_integration_audit_mutation)
+
+
+@event.listens_for(Session, 'do_orm_execute')
+def _reject_integration_audit_bulk_mutation(execute_state):
+    # UPDATE/DELETE em massa nao percorrem os eventos individuais do mapper e precisam de uma barreira propria.
+    if not (execute_state.is_update or execute_state.is_delete):
+        return
+    target_table = getattr(execute_state.statement, 'table', None)
+    if target_table is not None and target_table.name == IntegrationAuditLog.__tablename__:
+        raise IntegrationAuditLogImmutableError(
+            'Logs de auditoria da Integracao nao podem ser alterados ou excluidos.'
+        )
+
+
+class IntegrationStatusCatalogRun(db.Model):
+    __tablename__ = 'integration_status_catalog_runs'
 
     id = db.Column(db.Integer, primary_key=True)
     started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -1067,8 +1129,8 @@ class IntegrationV2StatusCatalogRun(db.Model):
     error_summary = db.Column(db.Text, nullable=True)
 
 
-class IntegrationV2SyncRun(db.Model):
-    __tablename__ = 'integration_v2_sync_runs'
+class IntegrationSyncRun(db.Model):
+    __tablename__ = 'integration_sync_runs'
 
     id = db.Column(db.Integer, primary_key=True)
     run_type = db.Column(db.String(20), nullable=False, default='FULL')

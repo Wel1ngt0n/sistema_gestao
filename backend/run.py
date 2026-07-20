@@ -19,13 +19,13 @@ def run_test_sync():
     )
     logger = logging.getLogger(__name__)
 
-    logger.info("--- INICIANDO SYNC DE TESTE (V2 - OTIMIZADO) ---")
+    logger.info("--- INICIANDO SINCRONIZAÇÃO DE TESTE ---")
     with app.app_context():
         try:
             service = SyncService()
             result = service.run_sync()
             logger.info(f"Resultado: {result}")
-            
+
         except Exception as e:
             logger.error(f"ERRO FATAL DURANTE TESTE: {e}", exc_info=True)
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     # O create_app ja inicializa tabelas e reparos; mantem contexto para compatibilidade local.
     with app.app_context():
         pass
-        
+
         logger.info("Banco de dados inicializado.")
 
 

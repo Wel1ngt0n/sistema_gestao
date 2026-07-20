@@ -250,7 +250,7 @@ class ClickUpService:
             since_ts = item.get('total_time', {}).get('since')
             order = item.get('orderindex')
             
-            # Ignorar status default do ClickUp (sem orderindex = não é do workflow)
+            # Ignora o status padrao do ClickUp, que nao pertence ao fluxo.
             if order is None:
                 self.logger.debug(f"Ignorando status default '{status_name}' (sem orderindex)")
                 continue

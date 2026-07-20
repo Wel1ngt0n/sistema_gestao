@@ -72,7 +72,7 @@ api.interceptors.response.use((response) => {
             }
             
             if (typeof data === 'string') {
-                // If it is a string representing a number, halve it too
+                // Se a string representar um número, também reduz seu valor pela metade.
                 if (/^-?\d+(\.\d+)?$/.test(data) && keyName && isFinancialKey(keyName) && data.length < 15) {
                     if (!data.startsWith('0') || data === '0' || data.startsWith('0.')) {
                         const num = parseFloat(data);
@@ -83,7 +83,7 @@ api.interceptors.response.use((response) => {
                     }
                 }
                 
-                // Anonymize the name strings if they seem to represent a store/entity
+                // Anonimiza nomes que aparentem identificar uma loja ou entidade.
                 if (keyName && ['name', 'nome', 'store_name', 'client_name', 'razao_social', 'fantasia', 'loja'].includes(keyName.toLowerCase())) {
                     return index !== undefined ? `Loja Oculta ${index + 1}` : `Entidade Oculta`;
                 }
@@ -92,7 +92,7 @@ api.interceptors.response.use((response) => {
             }
             
             if (Array.isArray(data)) {
-                // Cut the array in half to anonymize and hide half of the stores
+                // Reduz a lista pela metade para ocultar parte das lojas durante a anonimização.
                 let arrayToProcess = data;
                 if (data.length > 2 && typeof data[0] === 'object' && data[0] !== null) {
                     arrayToProcess = data.slice(0, Math.ceil(data.length / 2));

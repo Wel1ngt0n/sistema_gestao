@@ -20,7 +20,7 @@ def repair_database_schema():
         "ALTER TABLE tasks_steps ADD COLUMN IF NOT EXISTS description TEXT;",
         "ALTER TABLE tasks_steps ADD COLUMN IF NOT EXISTS last_comments TEXT;",
         
-        # Novas colunas (V3, V4, V5)
+        # Colunas acumuladas pelas evoluções do domínio de Implantação.
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS rede VARCHAR(100);",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS tipo_loja VARCHAR(50) DEFAULT 'Filial';",
         "ALTER TABLE stores ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES stores(id);",
@@ -57,7 +57,7 @@ def repair_database_schema():
 
 
         
-        # V3.1 - Expandir colunas VARCHAR estreitas para TEXT/VARCHAR(255) (fix StringDataRightTruncation)
+        # Expande colunas VARCHAR estreitas para evitar truncamento de dados.
         "ALTER TABLE stores ALTER COLUMN erp TYPE TEXT;",
         "ALTER TABLE stores ALTER COLUMN cnpj TYPE TEXT;",
         "ALTER TABLE stores ALTER COLUMN crm TYPE TEXT;",
@@ -69,7 +69,7 @@ def repair_database_schema():
         "ALTER TABLE stores ALTER COLUMN status TYPE VARCHAR(255);",
         "ALTER TABLE stores ALTER COLUMN status_raw TYPE VARCHAR(255);",
 
-        # V3.1 - Support Performance & NPS
+        # Campos de performance do Suporte e NPS.
         "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS agent_name VARCHAR(255);",
         "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS nps_score INTEGER;",
         "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS nps_comment TEXT;",
@@ -77,7 +77,7 @@ def repair_database_schema():
         "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS resolution_time_seconds INTEGER;",
         "ALTER TABLE support_conversations ADD COLUMN IF NOT EXISTS close_reason VARCHAR(255);",
 
-        # V3.1 - Tabela SupportAgentPerformance
+        # Tabela de performance dos agentes de Suporte.
         """CREATE TABLE IF NOT EXISTS support_agent_performance (
             id SERIAL PRIMARY KEY,
             agent_name VARCHAR(255) NOT NULL,

@@ -381,6 +381,7 @@ def get_stores(payload):
 
 @api_bp.route('/stores/<int:id>', methods=['DELETE'])
 @require_auth
+@require_permission('delete_store')
 def delete_store(payload, id):
     try:
         store = Store.query.get_or_404(id)
@@ -464,6 +465,7 @@ def get_store(payload, id):
 
 @api_bp.route('/store/<int:id>', methods=['PUT'])
 @require_auth
+@require_permission('edit_store')
 def update_store(payload, id):
     store = Store.query.get_or_404(id)
     data = request.json
@@ -590,6 +592,7 @@ def update_store(payload, id):
 
 @api_bp.route('/sync', methods=['POST'])
 @require_auth
+@require_permission('sync_clickup')
 def sync_clickup(payload):
     full = request.args.get('full', 'false').lower() == 'true'
     service = SyncService()
@@ -598,7 +601,7 @@ def sync_clickup(payload):
 
 @api_bp.route('/implantacao/sync', methods=['POST'])
 @require_auth
-@require_permission('manage_sync')
+@require_permission('sync_clickup')
 def sync_implantacao(payload):
     service = SyncService()
     try:
@@ -609,7 +612,7 @@ def sync_implantacao(payload):
 
 @api_bp.route('/implantacao/docs-sync', methods=['POST'])
 @require_auth
-@require_permission('manage_sync')
+@require_permission('sync_clickup')
 def sync_implantacao_docs(payload):
     from app.models import SystemConfig
     service = SyncService()
@@ -626,6 +629,7 @@ def sync_implantacao_docs(payload):
 
 @api_bp.route('/stores/bulk-link', methods=['POST'])
 @require_auth
+@require_permission('edit_store')
 def bulk_link_stores(payload):
     try:
         data = request.json
@@ -667,6 +671,7 @@ def bulk_link_stores(payload):
 
 @api_bp.route('/stores/bulk-update', methods=['POST'])
 @require_auth
+@require_permission('edit_store')
 def bulk_update_stores(payload):
     try:
         data = request.json
@@ -761,6 +766,7 @@ def bulk_update_stores(payload):
 
 @api_bp.route('/stores/import-spreadsheet', methods=['POST', 'OPTIONS'])
 @require_auth
+@require_permission('edit_store')
 def importar_planilha_lojas(payload):
     if request.method == 'OPTIONS':
         return jsonify({"status": "ok"}), 200
@@ -917,6 +923,7 @@ def get_store_logs(payload, id):
 
 @api_bp.route('/deep-sync/store/<int:id>', methods=['POST'])
 @require_auth
+@require_permission('sync_clickup')
 def deep_sync_store(payload, id):
     service = SyncService()
     result = service.run_deep_sync(id)
@@ -926,7 +933,7 @@ def deep_sync_store(payload, id):
 
 @api_bp.route('/sync/stream', methods=['GET'])
 @require_auth
-@require_permission('manage_sync')
+@require_permission('sync_clickup')
 def sync_stream(payload):
     full = request.args.get('full', 'false').lower() == 'true'
     vital_only = request.args.get('vital_only', 'false').lower() == 'true'
@@ -1114,7 +1121,7 @@ def get_monthly_implantation_report(payload):
     mrr_quase_entregue = 0.0
     mrr_em_risco = 0.0
     
-    # Board stages from store status
+    # Etapas do quadro derivadas do status da loja.
     board_stages = defaultdict(int)
     for s in wip_stores:
         stage_name = s.status or 'Sem Status'
@@ -1436,6 +1443,7 @@ def get_store_steps(payload, store_id):
 
 @api_bp.route('/stores/<int:store_id>/steps/<int:step_id>', methods=['PUT'])
 @require_auth
+@require_permission('edit_store')
 def update_store_step(payload, store_id, step_id):
     from app.models import db, TaskStep, StoreSyncLog
     from datetime import datetime
@@ -1536,7 +1544,7 @@ DEFAULT_CONFIGS = [
     {"key": "csv_max_file_mb", "value": "10", "description": "Tamanho maximo por arquivo CSV (MB)", "category": "csv"},
     {"key": "csv_max_files_per_import", "value": "5", "description": "Arquivos por importacao CSV", "category": "csv"},
     {"key": "csv_allow_update_existing", "value": "true", "description": "Permitir atualizar registros existentes via CSV", "category": "csv"},
-    # Sync
+    # Sincronizacao
     {"key": "sync_vital_schedule", "value": "10:00,12:00,14:00,16:00,18:00", "description": "Agenda do Vital Sync", "category": "sync"},
     {"key": "sync_deep_schedule", "value": "03:00", "description": "Agenda do Deep Sync", "category": "sync"},
     {"key": "sync_stale_after_hours", "value": "6", "description": "Horas ate considerar o Sync desatualizado", "category": "sync"},
@@ -1573,7 +1581,7 @@ def seed_default_configs():
     """Insere configs padrão se não existirem."""
     from app.models import SystemConfig
     
-    # Ensure category column exists (SQLite migration)
+    # Garante a coluna de categoria usada na migracao SQLite.
     try:
         db.session.execute(db.text("SELECT category FROM system_config LIMIT 1"))
     except Exception:
@@ -1737,6 +1745,7 @@ def get_store_pauses(payload, id):
 
 @api_bp.route('/stores/<int:id>/pauses', methods=['POST'])
 @require_auth
+@require_permission('edit_store')
 def add_store_pause(payload, id):
     from app.models import StorePause
     data = request.json
@@ -1763,6 +1772,7 @@ def add_store_pause(payload, id):
 
 @api_bp.route('/pauses/<int:pause_id>/close', methods=['PUT'])
 @require_auth
+@require_permission('edit_store')
 def close_pause(payload, pause_id):
     from app.models import StorePause
     data = request.json
@@ -1783,6 +1793,7 @@ def close_pause(payload, pause_id):
 
 @api_bp.route('/pauses/<int:pause_id>', methods=['PUT'])
 @require_auth
+@require_permission('edit_store')
 def update_pause(payload, pause_id):
     from app.models import StorePause
     data = request.json
@@ -1811,6 +1822,7 @@ def update_pause(payload, pause_id):
 
 @api_bp.route('/pauses/<int:pause_id>', methods=['DELETE'])
 @require_auth
+@require_permission('edit_store')
 def delete_pause(payload, pause_id):
     from app.models import StorePause
     try:
@@ -1824,7 +1836,9 @@ def delete_pause(payload, pause_id):
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/admin/backup', methods=['POST'])
-def manual_backup():
+@require_auth
+@require_permission('manage_system')
+def manual_backup(payload):
     try:
         from backup_manager import BackupManager
         success = BackupManager.run_backup()

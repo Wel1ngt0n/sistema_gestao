@@ -10,14 +10,12 @@ class Config:
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev_fallback_key_dont_use_in_prod")
     DEBUG = os.getenv("FLASK_ENV") == "development"
     IS_PRODUCTION = os.getenv("FLASK_ENV") == "production"
-    
+
     CLICKUP_API_KEY = os.getenv("CLICKUP_API_KEY", "").strip()
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    
-    # Origens permitidas no CORS. Mantem defaults de producao/desenvolvimento e
-    # permite complementar por CORS_ALLOWED_ORIGINS e FRONTEND_URL no ambiente.
-    _DEFAULT_CORS_ORIGINS = [
-        "https://sistema-gestao-one.vercel.app",
+
+    # Em producao, somente origens declaradas no ambiente recebem credenciais.
+    # Enderecos locais sao permitidos exclusivamente no desenvolvimento.
+    _LOCAL_CORS_ORIGINS = [
         "http://localhost:5173",
         "http://localhost:5177",
         "http://localhost:5003",
@@ -36,7 +34,11 @@ class Config:
     ]
     CORS_ALLOWED_ORIGINS = sorted({
         origin.rstrip("/")
-        for origin in (_DEFAULT_CORS_ORIGINS + _ENV_CORS_ORIGINS + _FRONTEND_URLS)
+        for origin in (
+            ([] if IS_PRODUCTION else _LOCAL_CORS_ORIGINS)
+            + _ENV_CORS_ORIGINS
+            + _FRONTEND_URLS
+        )
         if origin.strip()
     })
 
@@ -54,7 +56,7 @@ class Config:
 
     # IDs das listas extraidos das URLs do ClickUp.
     LIST_ID_PRINCIPAL = "211186088"
-    
+
     # Listas de etapas, mantidas com chaves do dominio externo.
     LIST_IDS_STEPS = {
         "SUBIR_APPS": "216936208",
@@ -69,17 +71,17 @@ class Config:
         "POS_IMPLANTACAO": "901306837383"
     }
 
-    # Recorte operacional usado pelo novo monitor de Integracao.
-    INTEGRATION_V2_COHORT_YEAR = int(os.getenv("INTEGRATION_V2_COHORT_YEAR", "2026"))
+    # Recorte operacional usado pelo Monitor de Integração.
+    INTEGRATION_COHORT_YEAR = int(os.getenv("INTEGRATION_COHORT_YEAR", "2026"))
 
     # Ajusta URLs antigas de Postgres e usa SQLite apenas como fallback de desenvolvimento.
     db_url = os.getenv('DATABASE_URL', 'sqlite:///metrics.db')
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-        
+
     SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+
     # Estabilidade para sincronismos longos em Render/Postgres.
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

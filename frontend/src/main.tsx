@@ -6,7 +6,7 @@ import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import './index.css'
 
-// Create a client
+// Cria o cliente de consultas compartilhado pela aplicação.
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {

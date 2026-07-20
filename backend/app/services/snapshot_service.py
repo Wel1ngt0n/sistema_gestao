@@ -26,7 +26,7 @@ class SnapshotService:
         count_updated = 0
         
         for s in stores:
-            # Calcular métricas 'on the fly' para congelar
+            # Calcula as metricas no momento do snapshot para congela-las.
             risk_score = (s.dias_em_progresso or 0) + (2 * (s.idle_days or 0))
             if s.financeiro_status == 'Devendo': risk_score += 15
             if s.teve_retrabalho: risk_score += 10

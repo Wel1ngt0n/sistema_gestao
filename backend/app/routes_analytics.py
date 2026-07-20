@@ -304,7 +304,7 @@ def get_financeiro_implantacao(payload):
             is_done = store.status_norm == 'DONE'
             financeiro = normalizar_status_financeiro(store.financeiro_status)
 
-            # Date filter for concluded stores: financial analytics follows the 2026 implementation cut.
+            # O financeiro considera lojas concluidas a partir do recorte de 2026.
             if is_done:
                 if not finished:
                     continue
@@ -350,7 +350,7 @@ def get_financeiro_implantacao(payload):
                 lojas_em_implantacao += 1
                 mrr_em_implantacao += mensalidade
 
-            # Calculate days since conclusion
+            # Calcula os dias desde a conclusao.
             dias_desde_conclusao = None
             if finished:
                 delta = datetime.now() - finished
@@ -380,7 +380,7 @@ def get_financeiro_implantacao(payload):
                 'dias_desde_conclusao': dias_desde_conclusao,
             })
 
-        # Sort: non-paying concluded first, then by days_since_conclusion descending
+        # Ordena concluidas sem pagamento primeiro e depois pelo maior atraso.
         lojas_detalhe.sort(
             key=lambda x: (
                 0 if x['status_cobranca'] in {'nao_pagante', 'sem_status_financeiro', 'devedor'} else 1 if x['status_cobranca'] == 'pendente_cobranca' else 2,

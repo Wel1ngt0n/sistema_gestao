@@ -67,7 +67,7 @@ class AnalyticsService:
         # dias_em_progresso é property, então não dá pra agregar direto no SQL facilmente sem field calculado.
         # Mas podemos pegar dados brutos e calcular no python se o volume não for gigante,
         # OU (melhor) usar a diferença de datas no banco se possível.
-        # Store tem start_real_at e end_real_at.
+        # A loja possui as datas reais de inicio e fim.
         
         cycle_time_avg = 0
         otd_percentage = 0
@@ -105,7 +105,7 @@ class AnalyticsService:
             otd_percentage = round((on_time_count / len(done_stores)) * 100, 1)
 
         # 6. Idle Stores (Lojas paradas > 5 dias, por exemplo)
-        # Store.idle_days é coluna real? Sim, linha 53 models.py
+        # `idle_days` e um campo persistido da loja.
         idle_stores_count = query.filter(
             Store.idle_days > 5, 
             Store.status_norm == 'IN_PROGRESS',
@@ -585,7 +585,7 @@ class AnalyticsService:
             # Normalizar Volume (ex: quem tem mais entregas ganha 100, outros proporcional)
             # Como não temos o max aqui fácil, vamos usar um cap razoável. 
             # Ou, melhor, manter o Volume como peso bruto mas limitado a 100 pontos?
-            # O user pediu: 0.40 * Volume_Concluidas.
+            # Aplica peso de 40% ao volume de concluidas.
             # Se a pessoa entregar 100 lojas, 40 pontos. Se entregar 1, 0.4.
             # Parece pouco para baixo volume. Vamos assumir que Volume é normalizado pelo MAX do período.
             
@@ -598,7 +598,7 @@ class AnalyticsService:
 
             # Como não temos o MAX volume aqui, vamos calcular o score parcial e depois normalizar o volume na ordenação?
             # NÃO, vamos usar um sistema de pontos simples: Cada entrega vale 1 ponto no sub-score de volume, até max 100?
-            # O user disse "0.40 * Volume_Concluidas". Vamos interpretar literalmente por enquanto, mas adicionando um fator.
+            # Mantem a regra de 40% do volume, ajustada pelo fator definido.
             # Melhor: Normalizar pelo maior volume da lista atual.
             
             raw_score_components = {
@@ -701,7 +701,7 @@ class AnalyticsService:
                     else:
                         reasons.append(f"Atraso ({days-contract}d)")
             
-            # Add stats
+            # Adiciona as estatisticas.
             if s.status_norm == 'IN_PROGRESS' and not s.manual_finished_at:
                 stats['wip'] += 1
             elif is_done:
@@ -932,7 +932,7 @@ class AnalyticsService:
             })
             
         # Ordenar por TOTAL SEMESTRE (equilibrar carga a longo prazo)
-        # Inverter para que quem tem MAIS pontos fique em cima? O user quer equilibrar.
+        # Prioriza quem possui menos pontos para equilibrar a distribuicao.
         # Geralmente lista de capacidade mostra quem está mais cheio primeiro.
         return sorted(capacity_data, key=lambda x: x['total_semester_points'], reverse=True)
 
@@ -966,7 +966,7 @@ class AnalyticsService:
             if count > 0:
                 avg_cycle_days = int(total_days / count)
         
-        # 2. Estrutura de Meses (Current Mês até +months)
+        # 2. Estrutura de meses, do atual ate o horizonte solicitado.
         today = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         forecast_map = {}
         
@@ -1184,7 +1184,7 @@ class AnalyticsService:
         Retorna dados para o gráfico de Scatter (Risco x Tempo).
         Lê da tabela MetricsSnapshotDaily para performance extrema.
         Se não tiver snapshot hoje, tenta fallback para cálculo on-the-fly ou dia anterior.
-        (Para simplificar V3: lê do snapshot do dia ou retorna vazio se não rodou job)
+        Lê o snapshot do dia ou retorna vazio quando o processamento ainda não foi executado.
         """
         if not target_date:
             target_date = date.today()

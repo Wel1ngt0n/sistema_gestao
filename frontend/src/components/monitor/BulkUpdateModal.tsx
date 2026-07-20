@@ -42,7 +42,7 @@ export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCo
                     </div>
 
                     <div className="p-6 space-y-6">
-                        {/* Status Selection */}
+                        {/* Seleção de status */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Status de Destino (Implantação)</label>
                             <select 
@@ -59,7 +59,7 @@ export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCo
                             </select>
                         </div>
 
-                        {/* Status Financeiro Selection */}
+                        {/* Seleção de status financeiro */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Status Financeiro</label>
                             <select 
@@ -75,7 +75,7 @@ export default function BulkUpdateModal({ isOpen, onClose, onConfirm, selectedCo
                             </select>
                         </div>
 
-                        {/* Date Selection (only if status is DONE) */}
+                        {/* Seleção de data, exibida somente para status concluído */}
                         {status === 'DONE' && (
                             <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Data de Conclusão</label>

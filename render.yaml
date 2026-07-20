@@ -3,7 +3,7 @@ services:
     name: clickup-crm-backend
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn --chdir backend --timeout 600 run:app
+    startCommand: sh backend/production-entrypoint.sh
     envVars:
       - key: FLASK_APP
         value: backend/app
@@ -13,13 +13,15 @@ services:
         value: 3.11.10
       - key: DATABASE_URL
         sync: false
+      - key: MIGRATION_DATABASE_URL
+        sync: false
       - key: JWT_SECRET_KEY
         sync: false
       - key: FLASK_SECRET_KEY
         sync: false
       - key: CLICKUP_API_KEY
         sync: false
-      - key: GEMINI_API_KEY
+      - key: OPENAI_API_KEY
         sync: false
       - key: FRONTEND_URL
         value: https://sistema-gestao-one.vercel.app

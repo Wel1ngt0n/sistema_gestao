@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../services/api'
 import {
     Trophy,
@@ -48,7 +48,7 @@ export default function SuperAdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [selectedCycle, setSelectedCycle] = useState(new Date().toISOString().slice(0, 7)) // YYYY-MM
 
-    // Modal Review
+    // Modal de revisão.
     const [reviewModalOpen, setReviewModalOpen] = useState(false)
     const [selectedUser, setSelectedUser] = useState<CollaboratorPerf | null>(null)
     const [reviewForm, setReviewForm] = useState({
@@ -58,15 +58,11 @@ export default function SuperAdminDashboard() {
         churns: 0
     })
 
-    useEffect(() => {
-        fetchImplantation()
-    }, [selectedCycle])
-
     const [implData, setImplData] = useState<PerformanceSummary | null>(null)
     const [implRules, setImplRules] = useState<any>(null)
     const [configModalOpen, setConfigModalOpen] = useState(false)
 
-    const fetchImplantation = async () => {
+    const fetchImplantation = useCallback(async () => {
         try {
             setLoading(true)
             const response = await api.get(`/api/performance/implantation/summary?cycle=${selectedCycle}`)
@@ -77,7 +73,11 @@ export default function SuperAdminDashboard() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [selectedCycle])
+
+    useEffect(() => {
+        fetchImplantation()
+    }, [fetchImplantation])
 
     const saveImplantationRules = async () => {
         try {
@@ -155,7 +155,7 @@ export default function SuperAdminDashboard() {
                 </div>
             </div>
 
-            {/* Tabs removidas para focar em Implantação */}
+            {/* Abas removidas para manter o foco na implantação */}
             {(activeTab === 'implantation' || activeTab === 'integration') && (
                 <div className="space-y-6">
                     <div className="flex justify-end">
@@ -173,8 +173,8 @@ export default function SuperAdminDashboard() {
                                 <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Prazo (SLA)</h3>
                                 <div className="text-3xl font-bold">{implData.collaborators.length > 0 ? (implData.collaborators.reduce((acc, u) => acc + u.metrics.sla_pct, 0) / implData.collaborators.length).toFixed(1) : 100}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.otd_target || 80}%</span></div>
                             </div>
-                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                                <h3 className="text-purple-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
+                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                                <h3 className="text-emerald-100 font-bold uppercase text-xs mb-1">Coletivo: Qualidade</h3>
                                 <div className="text-3xl font-bold">{implData.collective_kpis.quality_global.toFixed(1)}% <span className="text-base font-normal opacity-70">/ {implRules?.collective?.quality_target || 80}%</span></div>
                             </div>
                             <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
@@ -248,7 +248,7 @@ export default function SuperAdminDashboard() {
                 </div>
             )}
 
-            {/* Modal Review */}
+            {/* Modal de revisão */}
             {reviewModalOpen && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-200">
@@ -302,7 +302,7 @@ export default function SuperAdminDashboard() {
                 </div>
             )}
 
-            {/* Modal Configuração Implantação */}
+            {/* Modal de configuração da implantação */}
             {configModalOpen && implRules && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl border border-zinc-200 max-h-[90vh] overflow-y-auto">
