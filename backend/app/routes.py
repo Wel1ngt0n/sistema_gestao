@@ -1529,6 +1529,10 @@ DEFAULT_CONFIGS = [
     # Metas Anuais
     {"key": "annual_mrr_target", "value": "180000", "description": "Meta anual de MRR (R$)", "category": "goals"},
     {"key": "annual_stores_target", "value": "180", "description": "Meta anual de lojas entregues", "category": "goals"},
+    {"key": "integration_points_target", "value": "90", "description": "Meta semestral de pontos (Integracao)", "category": "goals"},
+    {"key": "integration_quality_target", "value": "90", "description": "Meta de qualidade pos-go-live % (Integracao)", "category": "goals"},
+    {"key": "integration_sla_target", "value": "80", "description": "Meta de SLA % (Integracao)", "category": "goals"},
+    {"key": "integration_docs_target", "value": "20", "description": "Meta de documentacao % (Integracao)", "category": "goals"},
     # Pesos
     {"key": "weight_matriz", "value": "1.0", "description": "Peso de pontuacao para Matriz", "category": "weights"},
     {"key": "weight_filial", "value": "0.7", "description": "Peso de pontuacao para Filial", "category": "weights"},

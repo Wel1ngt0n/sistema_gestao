@@ -256,6 +256,19 @@ export async function fetchIntegrationMetrics(filters: IntegrationFilterState): 
         averageGrossTimeSeconds: asNumber(payload.average_gross_seconds),
         medianGrossTimeSeconds: asNumber(payload.median_gross_seconds),
         averageLeadTimeSeconds: asNumber(payload.average_net_seconds),
+        collectiveMetas: payload.collective_metas ? {
+            pointsDelivered: asNumber(asRecord(payload.collective_metas).points_delivered) ?? 0,
+            qualitySuccessCount: asNumber(asRecord(payload.collective_metas).quality_success_count) ?? 0,
+            qualityTotalEvaluated: asNumber(asRecord(payload.collective_metas).quality_total_evaluated) ?? 0,
+            slaSuccessCount: asNumber(asRecord(payload.collective_metas).sla_success_count) ?? 0,
+            targets: {
+                points: asNumber(asRecord(asRecord(payload.collective_metas).targets).points) ?? 90,
+                qualityPercent: asNumber(asRecord(asRecord(payload.collective_metas).targets).quality_percent) ?? 90,
+                slaDays: asNumber(asRecord(asRecord(payload.collective_metas).targets).sla_days) ?? 60,
+                slaPercent: asNumber(asRecord(asRecord(payload.collective_metas).targets).sla_percent) ?? 80,
+                docsPercent: asNumber(asRecord(asRecord(payload.collective_metas).targets).docs_percent) ?? 20,
+            },
+        } : undefined,
         byStatus: asArray(payload.by_status).map((value) => {
             const status = asRecord(value);
             return {
@@ -277,6 +290,10 @@ export async function fetchIntegrationMetrics(filters: IntegrationFilterState): 
                 count: asNumber(assignee.count) ?? 0,
                 completedCount: asNumber(assignee.completed_count) ?? 0,
                 averageNetSeconds: asNumber(assignee.average_net_seconds),
+                pointsDelivered: asNumber(assignee.points_delivered) ?? 0,
+                slaSuccessCount: asNumber(assignee.sla_success_count) ?? 0,
+                qualitySuccessCount: asNumber(assignee.quality_success_count) ?? 0,
+                docsSuccessCount: asNumber(assignee.docs_success_count) ?? 0,
             };
         }),
     };

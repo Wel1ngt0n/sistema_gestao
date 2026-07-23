@@ -51,6 +51,54 @@ function LoadingState() {
     return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white" />)}</div>;
 }
 
+function MetasSection({ metrics }: { metrics: IntegrationMetrics }) {
+    if (!metrics.collectiveMetas) return null;
+    const { pointsDelivered, qualitySuccessCount, qualityTotalEvaluated, slaSuccessCount, targets } = metrics.collectiveMetas;
+    const qualityRate = qualityTotalEvaluated > 0 ? (qualitySuccessCount / qualityTotalEvaluated) * 100 : 0;
+    const slaRate = qualityTotalEvaluated > 0 ? (slaSuccessCount / qualityTotalEvaluated) * 100 : 0;
+    
+    return (
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="font-bold text-slate-900">Volume de Entregas</h2>
+                        <p className="text-xs text-slate-500">Meta: {targets.points} pts no semestre (Matriz: 1, Filial: 0.7)</p>
+                    </div>
+                    <span className="text-2xl font-black text-slate-900">{pointsDelivered.toFixed(1)} <span className="text-sm font-normal text-slate-500">/ {targets.points}</span></span>
+                </div>
+                <div className="mt-4 h-2 w-full rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[#ff7900]" style={{ width: `${Math.min(100, (pointsDelivered / targets.points) * 100)}%` }} />
+                </div>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="font-bold text-slate-900">Qualidade Pós-Go-Live</h2>
+                        <p className="text-xs text-slate-500">Meta: {targets.qualityPercent}% sem falhas críticas</p>
+                    </div>
+                    <span className="text-2xl font-black text-slate-900">{Math.round(qualityRate)}%</span>
+                </div>
+                <div className="mt-4 h-2 w-full rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[#128131]" style={{ width: `${qualityRate}%` }} />
+                </div>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="font-bold text-slate-900">SLA de Tempo Líquido</h2>
+                        <p className="text-xs text-slate-500">Meta: {targets.slaPercent}% das entregas em até {targets.slaDays} dias</p>
+                    </div>
+                    <span className="text-2xl font-black text-slate-900">{Math.round(slaRate)}%</span>
+                </div>
+                <div className="mt-4 h-2 w-full rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[#2563eb]" style={{ width: `${slaRate}%` }} />
+                </div>
+            </article>
+        </section>
+    );
+}
+
 function AnalyticsContent({ metrics, filters }: { metrics: IntegrationMetrics; filters: IntegrationFilterState }) {
     const [selectedAssignee, setSelectedAssignee] = useState<IntegrationAssigneeMetric | null>(null);
     const stageLabels = metrics.byStatus.map((stage) => stage.statusName);
@@ -67,6 +115,8 @@ function AnalyticsContent({ metrics, filters }: { metrics: IntegrationMetrics; f
             <MetricCard label="Bloqueadas agora" value={String(metrics.blockedNow)} detail={`${metrics.totalBlockPeriods} bloqueio(s) no histórico`} icon={ShieldAlert} tone="red" />
             <MetricCard label="Lead time líquido" value={formatDuration(metrics.averageLeadTimeSeconds)} detail="Média sem períodos bloqueados" icon={Clock3} />
         </section>
+
+        <MetasSection metrics={metrics} />
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -102,8 +152,8 @@ function AnalyticsContent({ metrics, filters }: { metrics: IntegrationMetrics; f
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2"><Users size={18} className="text-[#128131]" /><div><h2 className="font-bold text-slate-900">Performance por integrador</h2><p className="text-xs text-slate-500">Total atribuído, entregas e tempo líquido médio</p></div></div>
-            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead><tr className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500"><th className="px-3 py-3">Integrador</th><th className="px-3 py-3 text-right">Total atribuído</th><th className="px-3 py-3 text-right">Concluídas</th><th className="px-3 py-3 text-right">Taxa de conclusão</th><th className="px-3 py-3 text-right">Lead time líquido</th></tr></thead><tbody>{metrics.byAssignee.map((item) => <tr key={item.assigneeId} onClick={() => setSelectedAssignee(item)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedAssignee(item); }} tabIndex={0} role="button" aria-label={`Ver lojas e métricas de ${item.username}`} className="cursor-pointer border-b border-slate-100 outline-none transition-colors last:border-0 hover:bg-orange-50/50 focus:bg-orange-50"><td className="px-3 py-3 font-semibold text-slate-800"><span className="border-b border-dashed border-slate-300">{item.username}</span></td><td className="px-3 py-3 text-right">{item.count}</td><td className="px-3 py-3 text-right">{item.completedCount}</td><td className="px-3 py-3 text-right font-semibold text-[#128131]">{item.count ? `${Math.round((item.completedCount / item.count) * 100)}%` : '—'}</td><td className="px-3 py-3 text-right">{formatDuration(item.averageNetSeconds)}</td></tr>)}</tbody></table>{!metrics.byAssignee.length && <Empty label="Nenhum integrador no período selecionado" />}</div>
+            <div className="flex items-center gap-2"><Users size={18} className="text-[#128131]" /><div><h2 className="font-bold text-slate-900">Performance por integrador</h2><p className="text-xs text-slate-500">Métricas operacionais e metas individuais</p></div></div>
+            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead><tr className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500"><th className="px-3 py-3">Integrador</th><th className="px-3 py-3 text-right">Atribuído</th><th className="px-3 py-3 text-right">Concluídas</th><th className="px-3 py-3 text-right">Lead time</th><th className="px-3 py-3 text-right">Pontos</th><th className="px-3 py-3 text-right" title={`Meta: ${metrics.collectiveMetas?.targets.slaPercent ?? 80}% em até ${metrics.collectiveMetas?.targets.slaDays ?? 60} dias`}>SLA (≤{metrics.collectiveMetas?.targets.slaDays ?? 60}d)</th><th className="px-3 py-3 text-right" title={`Meta: ${metrics.collectiveMetas?.targets.qualityPercent ?? 90}% sem falhas`}>Qualidade</th><th className="px-3 py-3 text-right" title={`Meta: ${metrics.collectiveMetas?.targets.docsPercent ?? 20}% do bloco`}>Docs</th></tr></thead><tbody>{metrics.byAssignee.map((item) => <tr key={item.assigneeId} onClick={() => setSelectedAssignee(item)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedAssignee(item); }} tabIndex={0} role="button" aria-label={`Ver lojas e métricas de ${item.username}`} className="cursor-pointer border-b border-slate-100 outline-none transition-colors last:border-0 hover:bg-orange-50/50 focus:bg-orange-50"><td className="px-3 py-3 font-semibold text-slate-800"><span className="border-b border-dashed border-slate-300">{item.username}</span></td><td className="px-3 py-3 text-right">{item.count}</td><td className="px-3 py-3 text-right">{item.completedCount} <span className="text-xs text-slate-400">({item.count ? Math.round((item.completedCount / item.count) * 100) : 0}%)</span></td><td className="px-3 py-3 text-right">{formatDuration(item.averageNetSeconds)}</td><td className="px-3 py-3 text-right font-semibold text-slate-700">{item.pointsDelivered.toFixed(1)}</td><td className="px-3 py-3 text-right font-semibold text-[#ff7900]">{item.completedCount ? `${Math.round((item.slaSuccessCount / item.completedCount) * 100)}%` : '—'}</td><td className="px-3 py-3 text-right font-semibold text-[#128131]">{item.completedCount ? `${Math.round((item.qualitySuccessCount / item.completedCount) * 100)}%` : '—'}</td><td className="px-3 py-3 text-right font-semibold text-slate-600">{item.completedCount ? `${Math.round((item.docsSuccessCount / item.completedCount) * 100)}%` : '—'}</td></tr>)}</tbody></table>{!metrics.byAssignee.length && <Empty label="Nenhum integrador no período selecionado" />}</div>
             <p className="mt-3 text-xs text-slate-400">Clique em um integrador para ver suas lojas e métricas individuais.</p>
         </section>
         <IntegrationAssigneeDetail assignee={selectedAssignee} filters={filters} onClose={() => setSelectedAssignee(null)} />

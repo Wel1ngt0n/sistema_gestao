@@ -13,6 +13,7 @@ from app.models import (
     IntegrationBlockPeriod,
     IntegrationStatus,
     IntegrationStatusCatalogRun,
+    SystemConfig,
     IntegrationStatusHistory,
     IntegrationStore,
     IntegrationSyncRun,
@@ -188,7 +189,60 @@ class IntegrationQueryService:
                 'p90_seconds': percentile(durations, 0.90),
             })
 
-        assignee_stats = defaultdict(lambda: {'tasks': set(), 'completed': set(), 'net': []})
+        # Fetch stores types for points calculation
+        source_task_ids = [s.source_task_id for s in stores if s.source_task_id]
+        source_custom_ids = [s.source_custom_id for s in stores if s.source_custom_id]
+        business_ids = [s.business_id for s in stores if s.business_id]
+        source_stores = Store.query.filter(or_(
+            Store.clickup_task_id.in_(source_task_ids),
+            Store.custom_store_id.in_(source_custom_ids + business_ids)
+        )).all() if (source_task_ids or source_custom_ids or business_ids) else []
+        
+        source_map = {}
+        for s in source_stores:
+            if s.clickup_task_id: source_map[s.clickup_task_id] = s
+            if s.custom_store_id: source_map[s.custom_store_id] = s
+
+        points_map = {}
+        for store in stores:
+            src = source_map.get(store.source_task_id) or source_map.get(store.source_custom_id) or source_map.get(store.business_id)
+            tipo = src.tipo_loja if src else 'Filial'
+            points_map[store.id] = 1.0 if tipo == 'Matriz' else 0.7
+
+        configs_raw = SystemConfig.query.filter(SystemConfig.key.in_([
+            'integration_points_target', 
+            'integration_quality_target', 
+            'integration_sla_target', 
+            'integration_docs_target',
+            'sla_integration_days'
+        ])).all()
+        configs = {c.key: c.value for c in configs_raw}
+        
+        sla_days = int(configs.get('sla_integration_days', 60))
+        pts_target = float(configs.get('integration_points_target', 90))
+        quality_target = float(configs.get('integration_quality_target', 90))
+        sla_target = float(configs.get('integration_sla_target', 80))
+        docs_target = float(configs.get('integration_docs_target', 20))
+
+        completed_stores = [s for s in stores if s.integration_task and self.is_completed(s.integration_task)]
+        collective_metas = {
+            'points_delivered': sum(points_map.get(s.id, 0) for s in completed_stores),
+            'quality_success_count': sum(1 for s in completed_stores if s.had_post_integration_issues is not True),
+            'quality_total_evaluated': len(completed_stores),
+            'sla_success_count': sum(1 for s in completed_stores if self.store_timing(s)['net_seconds'] is not None and self.store_timing(s)['net_seconds'] <= (sla_days * 86400)),
+            'targets': {
+                'points': pts_target,
+                'quality_percent': quality_target,
+                'sla_days': sla_days,
+                'sla_percent': sla_target,
+                'docs_percent': docs_target,
+            }
+        }
+
+        assignee_stats = defaultdict(lambda: {
+            'tasks': set(), 'completed': set(), 'net': [], 
+            'points': 0.0, 'sla_success': 0, 'quality_success': 0, 'docs_success': 0
+        })
         for store in stores:
             task = store.integration_task
             if not task:
@@ -199,11 +253,22 @@ class IntegrationQueryService:
             for current_assignee_id in assignee_ids:
                 item = assignee_stats[current_assignee_id]
                 item['tasks'].add(task.id)
-                if self.is_completed(task):
-                    item['completed'].add(task.id)
                 timing = self.store_timing(store)
-                if timing['net_seconds'] is not None:
-                    item['net'].append(timing['net_seconds'])
+                net_sec = timing['net_seconds']
+                is_done = self.is_completed(task)
+                
+                if is_done:
+                    item['completed'].add(task.id)
+                    item['points'] += points_map.get(store.id, 0)
+                    if net_sec is not None and net_sec <= (sla_days * 86400):
+                        item['sla_success'] += 1
+                    if store.had_post_integration_issues is not True:
+                        item['quality_success'] += 1
+                    if store.followed_integration_process is True:
+                        item['docs_success'] += 1
+
+                if net_sec is not None:
+                    item['net'].append(net_sec)
 
         assignees = {
             item.id: item
@@ -215,6 +280,10 @@ class IntegrationQueryService:
             'count': len(values['tasks']),
             'completed_count': len(values['completed']),
             'average_net_seconds': int(statistics.mean(values['net'])) if values['net'] else None,
+            'points_delivered': values['points'],
+            'sla_success_count': values['sla_success'],
+            'quality_success_count': values['quality_success'],
+            'docs_success_count': values['docs_success'],
         } for assignee_id, values in assignee_stats.items()]
 
         return {
@@ -236,6 +305,7 @@ class IntegrationQueryService:
             'average_gross_seconds': int(statistics.mean(gross_values)) if gross_values else None,
             'median_gross_seconds': int(statistics.median(gross_values)) if gross_values else None,
             'average_net_seconds': int(statistics.mean(net_values)) if net_values else None,
+            'collective_metas': collective_metas,
             'by_status': by_status,
             'by_assignee': sorted(by_assignee, key=lambda item: (-item['count'], item['username'])),
         }

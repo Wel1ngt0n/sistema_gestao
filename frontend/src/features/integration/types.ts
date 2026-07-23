@@ -69,6 +69,19 @@ export interface IntegrationMetrics {
     averageGrossTimeSeconds: number | null;
     medianGrossTimeSeconds: number | null;
     averageLeadTimeSeconds: number | null;
+    collectiveMetas?: {
+        pointsDelivered: number;
+        qualitySuccessCount: number;
+        qualityTotalEvaluated: number;
+        slaSuccessCount: number;
+        targets: {
+            points: number;
+            qualityPercent: number;
+            slaDays: number;
+            slaPercent: number;
+            docsPercent: number;
+        };
+    };
     byStatus: IntegrationStatusMetric[];
     byAssignee: IntegrationAssigneeMetric[];
 }
@@ -90,6 +103,10 @@ export interface IntegrationAssigneeMetric {
     count: number;
     completedCount: number;
     averageNetSeconds: number | null;
+    pointsDelivered: number;
+    slaSuccessCount: number;
+    qualitySuccessCount: number;
+    docsSuccessCount: number;
 }
 
 export interface IntegrationFilters {
